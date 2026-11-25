@@ -1221,8 +1221,13 @@ class MainActivity : Activity() {
 
         val sensitive = remembered.isNotEmpty() || isLikelySensitive(prompt)
 
-        fun submit(allowCloud: Boolean) {
-            manaBrain.respond(effectivePrompt, allowCloud = allowCloud, sensitive = sensitive, onChunk = { chunk ->
+        fun submit(allowCloud: Boolean, preferredProvider: String? = null) {
+            manaBrain.respond(
+                effectivePrompt,
+                allowCloud = allowCloud,
+                sensitive = sensitive,
+                preferredCloudProvider = preferredProvider,
+                onChunk = { chunk ->
                 generated.append(chunk)
                 runOnUiThread { chatOutput?.append(chunk) }
             }) { result ->
@@ -1239,13 +1244,26 @@ class MainActivity : Activity() {
             }
         }
 
-        val mayUseCloud = !localRuntime.isReady() && (cloudGateway.isAvailable() || yandexProvider.isAvailable()) && !sensitive
-        if (mayUseCloud) {
+        val providers = buildList {
+            if (cloudGateway.isAvailable()) add(cloudGateway.id to cloudGateway.selectedProvider().title)
+            if (yandexProvider.isAvailable()) add(yandexProvider.id to "Yandex AI Studio")
+        }
+        val mayUseCloud = !localRuntime.isReady() && providers.isNotEmpty() && !sensitive
+        if (mayUseCloud && providers.size > 1) {
+            AlertDialog.Builder(this)
+                .setTitle("Выбери облачного провайдера")
+                .setMessage("Выбор отправит текст запроса выбранному сервису. Не отправляй пароли, ключи, платёжные данные, личную переписку или сведения из памяти.")
+                .setItems(providers.map { it.second }.toTypedArray()) { _, which ->
+                    submit(true, providers[which].first)
+                }
+                .setNegativeButton("Только локально") { _, _ -> submit(false) }
+                .show()
+        } else if (mayUseCloud) {
             AlertDialog.Builder(this)
                 .setTitle("Разрешить облачный запрос?")
-                .setMessage("Локальная модель сейчас недоступна. Отправить этот текст выбранному облачному провайдеру? Не отправляй пароли, ключи, платёжные данные или личную переписку. Без подтверждения запрос останется локальным.")
+                .setMessage("Локальная модель сейчас недоступна. Отправить текст в ${providers.first().second}? Запрос может тарифицироваться. Без подтверждения данные не покинут телефон.")
                 .setNegativeButton("Только локально") { _, _ -> submit(false) }
-                .setPositiveButton("Разрешить этот запрос") { _, _ -> submit(true) }
+                .setPositiveButton("Разрешить этот запрос") { _, _ -> submit(true, providers.first().first) }
                 .show()
         } else {
             submit(false)
