@@ -3,6 +3,7 @@ package com.mana.launcher
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.NotificationManager
 import android.app.role.RoleManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -13,6 +14,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.CallLog
+import android.provider.Settings
 import android.telecom.TelecomManager
 import android.view.Gravity
 import android.widget.Button
@@ -152,6 +154,10 @@ class ManaDialerActivity : Activity() {
     }
 
     private fun requestDialerRole() {
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQUEST_NOTIFICATIONS)
+            return
+        }
         if (Build.VERSION.SDK_INT < 29) {
             showMessage("Роль приложения телефона требует Android 10 или новее.")
             return
@@ -236,7 +242,18 @@ class ManaDialerActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_DIALER_ROLE) {
-            showMessage(if (resultCode == RESULT_OK) "MANA назначена приложением телефона. Теперь можно включить автоответ через 10 секунд." else "Роль телефона не изменена.")
+            if (resultCode == RESULT_OK) {
+                showMessage("MANA назначена приложением телефона. Теперь можно включить автоответ через 10 секунд.")
+                if (Build.VERSION.SDK_INT >= 34 && !getSystemService(NotificationManager::class.java).canUseFullScreenIntent()) {
+                    AlertDialog.Builder(this)
+                        .setTitle("Разрешить экран входящего вызова?")
+                        .setMessage("Для показа полноэкранного экрана MANA при звонке Android может потребовать отдельное разрешение полноэкранных уведомлений. Без него останется обычное уведомление.")
+                        .setNegativeButton("Позже", null)
+                        .setPositiveButton("Открыть настройки") { _, _ ->
+                            startActivity(Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:$packageName")))
+                        }.show()
+                }
+            } else showMessage("Роль телефона не изменена.")
         }
     }
 
@@ -246,6 +263,10 @@ class ManaDialerActivity : Activity() {
             pendingNumber?.let { numberInput.setText(it); pendingNumber = null; placeCall() }
         }
         if (requestCode == REQUEST_CALL_LOG && grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) showCallHistory()
+        if (requestCode == REQUEST_NOTIFICATIONS) {
+            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) requestDialerRole()
+            else showMessage("Для входящих звонков MANA нужен доступ к уведомлениям.")
+        }
     }
 
     private fun text(value: String, size: Int, color: Int, bold: Boolean = false) =
@@ -274,5 +295,6 @@ class ManaDialerActivity : Activity() {
         private const val REQUEST_DIALER_ROLE = 7401
         private const val REQUEST_CALL_PHONE = 7402
         private const val REQUEST_CALL_LOG = 7403
+        private const val REQUEST_NOTIFICATIONS = 7404
     }
 }
