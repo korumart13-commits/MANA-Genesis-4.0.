@@ -1,89 +1,83 @@
 # MANA Genesis 4.0 — implementation ledger
 
 Last reviewed: 2026-11-25  
-Target profile: realme RMX5566RU / RE645F, Android 16, arm64-v8a.  
-This ledger is authoritative for distinguishing implemented code from plans and prototypes. A catalog entry or UI placeholder is never counted as a working feature.
+Target profile: realme RMX5566RU / RE645F, Android 16, arm64-v8a.
+
+This is the authoritative completion ledger. A module catalog entry, UI placeholder, documentation page, or successful compile is not proof of a complete feature. Status is based on the source and CI evidence available in this repository.
 
 ## Status vocabulary
 
-- **Implemented + tested**: executable implementation exists and an automated test passes.
-- **Prototype**: executable partial behavior exists, but it is not integrated into the OS product or lacks required end-to-end behavior.
-- **Designed only**: architecture/catalog/documentation exists; no working implementation.
-- **Blocked**: requires an external artifact, device capability, API approval, license, or hardware source that is not in the repository.
+- **Implemented + tested** — executable source exists and automated tests pass.
+- **Prototype / partial** — executable source exists but is not fully integrated, lacks device validation, or implements only part of the requirement.
+- **Designed only** — architecture or catalog entry exists without executable feature behavior.
+- **Blocked** — missing OEM/device artifacts, user credentials, platform role, API approval, or hardware test.
 
-## Current verified changes
+## Current source and CI snapshot
 
-| Area | Status | Evidence / limits |
+| Area | Current status | What is actually present / what remains |
 |---|---|---|
-| Core module catalog | Implemented + tested | 27 module descriptors; catalog tests verify owner-requested coverage |
-| Local-first brain routing | Engine contract tested; Android adapter compile passed in run 45686047287 | Shared MANA Brain router calls LiteRT-LM local provider; launcher build has no cloud provider configured; GPU-first with CPU fallback compiles; device inference/model benchmark pending |
-| Cloud gateway dependency | Implemented + tested | Optional; not a dependency of MANA Brain |
-| Core boot lifecycle | Implemented + tested | JVM lifecycle and dependency ordering only; not Android init or kernel boot |
-| Encrypted MANA Diary core | Implemented + tested | AES-GCM file store, atomic replacement, search/update/export/delete approval; Android KeyStore adapter and UI compile passed in run 45684830885 |
-| Encrypted MANA Memory | Implemented + tested; Android UI/Brain retrieval source added, build pending | Separate AES-GCM file and key alias, categories, search, expiry candidates, pinned records and owner-approved forgetting; JVM tests pass; Android UI and local Brain prompt retrieval source compile passed in run 45686047287; retrieval uses simple text matching, not embeddings |
-| Life Manager core | Implemented + tested | Tasks persist through a separate AES-GCM encrypted file and Android Keystore alias; owner confirmation is required for consequential tasks; launcher screen source added; Android reminders/calendar adapter remain |
-| Smart Receptionist policy | Implemented + tested (policy only) | Playful profile, 10-second delay, unknown-number handling and summaries; every call decision requires owner consent; no actual call answering/screening |
-| Game Intelligence core | Implemented + tested (adapter contract) | Active sessions and allowlisted actions require an installed adapter and owner approval; launcher lists games and detects foreground game after user grants Usage Access; compile passed in run 45685024506; no generic screen automation |
-| Minecraft Bedrock bridge | Source starter + syntax CI passed | Official Script API 2.11.0 behavior-pack starter emits visible world telemetry and accepts owner-tagged ping/status only; no phone transport or in-game automation yet |
-| Future Updates core | Implemented + tested (state machine) | Idea → plan → build → test → owner approval → install; no self-compiling or system updater yet |
-| Android UI shell | Prototype, compiled in separate workflow | Java launcher/assistant shells; not a complete System UI |
-| Legacy launcher | Prototype; combined Gradle build passed in run 45684830885; latest memory/Life Manager/Brain adapter changes pending | Gradle/Kotlin launcher references MANA core and Brain, local model import/chat, Russian TTS, 3D overlay, encrypted diary, Life Manager and memory UI, game discovery and consented usage monitor; not included in the Soong product |
-| Floating avatar overlay | Prototype; renderer and voice compile verified in earlier runs, foreground/snap changes pending | User-enabled draggable overlay hosts a procedural OpenGL ES 2.0 full-body stylized 3D character with idle/blink/speech animation, three outfit palettes, accessory toggle and three expressions; draggable, snap-to-edge and visible stoppable foreground notification compile in run 45686560054; still a primitive-mesh character, not a production rigged/high-detail asset, and not device-tested |
-| Local model import | Hardened prototype | Streaming import, 16 GiB cap, free-space reserve, SHA-256 sidecar, temporary file and atomic replacement; no trusted publisher signature/model-license verification |
-| Local model runtime | Prototype; Gradle compile passed | LiteRT-LM Android 0.16.1 API is callable from the shared Brain adapter; GPU-first/CPU fallback compiles; no bundled weights, target-device benchmark, model compatibility matrix or full OS service integration |
-| Backup exposure | Corrected in launcher manifest | Android app backup disabled for model/user files |
-| JVM error handling | Corrected in LiteRT runtime | Ordinary exceptions handled; fatal JVM errors are not swallowed |
-| Core security policy | Implemented + tested as JVM policy | Not Android permission enforcement, SELinux, Binder authorization or filesystem sandbox |
-| Storage safety planner | Implemented + tested as JVM policy | Metadata model only; does not scan/move actual device files; permanent delete disabled |
-| Device-specific ROM | Blocked | Exact OEM kernel source, matching DTS/DTBO, vendor modules/blobs, VINTF, product tree, AVB and recovery/rollback validation are absent |
+| OS module catalog | Implemented + tested | 27 MANA/platform module descriptors and dependency graph. Catalog coverage does not implement the modules by itself. |
+| Core boot lifecycle | Implemented + tested (JVM) | Dependency ordering, lifecycle, rollback and health snapshot in host JVM. Not Android init, kernel boot or a ROM. |
+| MANA Brain routing | Implemented + tested | Local provider wins first; cloud requires explicit request permission; sensitive requests fail closed; provider selection is explicit. |
+| Android local inference | Prototype; source compile verified in earlier runs | LiteRT-LM Android Engine/Conversation adapter is connected to the launcher Brain bridge. Real inference, performance, thermal behavior and long sessions on RMX5566RU remain unverified. |
+| Local model catalog | Prototype with integrity checks | Pinned Gemma 4 E2B LiteRT-LM artifact, owner-initiated DownloadManager transfer, Wi-Fi-only download, size/free-space checks and SHA-256 verification. License acceptance and actual target-device inference still require validation. |
+| Cloud AI | Prototype; provider tests pass | OpenAI Responses, Anthropic Messages, Gemini generateContent and xAI Responses adapters. Android gateway encrypts credentials with Android Keystore and requires explicit per-request consent; local inference remains preferred. Provider account credentials and live calls are not supplied by this repository. |
+| Yandex AI Studio / VK | Adapter PR / integration pending | Yandex Foundation Models IAM/API-key adapter and read-only VK users.get adapter have source and fake-transport tests in review. Not yet wired into the Android UI or enabled by default. |
+| Encrypted MANA Memory | Implemented + tested (core), Android integration prototype | AES-GCM local persistence, categories, search, retention candidates and owner-controlled forgetting; Android local prompt retrieval uses text matching, not vector embeddings. |
+| MANA Diary | Implemented + tested (core), Android UI prototype | AES-GCM storage, update/search/export and owner-controlled deletion. Device lifecycle and recovery tests pending. |
+| MANA Life Manager | Implemented + tested (core), Android UI prototype | Encrypted task storage and confirmation rules. Full calendar/reminder integration is not complete. |
+| Contact Intelligence | Prototype | Explicit Android Contacts permission and local phone-number lookup. No contact data is uploaded. |
+| Smart Receptionist | Prototype / partial | Playful policy, 10-second preference, unknown-number handling, summary preference, Android CallScreeningService and owner role request. Screening can identify/notify; it does not answer, record or summarize live call audio. Android screening response deadlines do not support a 10-second wait. A separate default-dialer/InCallService implementation would be required for auto-answer. |
+| Avatar and voice | Prototype; Android compile/device checks pending | Full-body local glTF character with dark hair/navy clothing, face details and idle/speaking/emotion animation clips; SceneView/Filament-based 3D preview and owner-enabled floating overlay. Outfit/accessory/expression controls exist. Final skinned production rig, device GPU validation, battery/thermal profiling and robust animation synchronization remain acceptance gates. |
+| Floating overlay | Prototype | User must grant Android “display over other apps”; foreground notification and stop action are present. Drag/snap/tap lifecycle is implemented in source; exact behavior on realme firmware is not yet device-tested. |
+| Voice input/output | Prototype | Russian speech recognition and Android TTS integration. Actual voice gender, offline availability and quality depend on installed TTS/recognition engines and downloaded language data. |
+| Game Intelligence | Prototype / partial | Installed game discovery/launch and foreground game detection after Usage Access permission; action framework is allowlisted and owner-gated. No universal screen-reading or hidden input injection. |
+| Minecraft Bedrock | Working world-side prototype; phone bridge missing | Installable Behavior Pack source uses official Script API; commands spawn/follow/stay/status/hide the companion. Owner-tagged Script Event handshake exists. Pack CI validates/packages .mcpack. No authenticated Android-to-world transport or full autonomous bot yet. |
+| Future Updates | Core state machine + encrypted idea storage prototype | Idea → plan → build → test → owner approval → install workflow model. It does not self-compile the OS, sign a ROM, or install updates independently. |
+| Security policy | Implemented + tested as JVM model | Default-deny capabilities and audit events. Not Android permission enforcement, SELinux, Binder identity validation or filesystem sandboxing. |
+| Storage safety | Implemented + tested as JVM model | Reversible archive/quarantine/restore decision model. Does not scan or mutate actual phone files; destructive deletion remains approval-gated. |
+| Settings / Control Center / System UI | Partial | Launcher settings and feature controls exist. AOSP SystemUI, full system settings integration, quick settings tiles and privileged controls are not integrated into a product build. |
+| Yandex / VK apps and services | Partial | Read-only API adapter work is under review. Official OAuth app registration, owner credentials, complete Yandex/VK service workflows and Android integration remain. |
+| Device ecosystem | Designed only / partial | Bluetooth and device discovery concepts exist; watch, earbuds, car and multi-device local-node control are not complete. |
+| Recovery / updater | Designed only | No verified device recovery image, signed OTA, rollback test or stock restore package. |
+| AOSP / kernel / ROM | Blocked | No complete AOSP product build for exact RMX5566RU/RE645F. Exact OEM 5.15.197 kernel, matching DTS/DTBO, vendor modules/blobs, VINTF, AVB signing and recovery path are not verified. No bootable MANA OS image exists. |
 
-## Owner requirements — completion gates
+## Required completion gates
 
-### OS foundation and device integration
-- [ ] AOSP product tree and reproducible full product build for exact RMX5566RU/RE645F.
-- [ ] Exact OEM 5.15.197 kernel source, matching defconfig/DTS/DTBO, toolchain and vendor modules.
-- [ ] VINTF/HAL/vendor compatibility validation, partition map, A/B update and rollback tests.
-- [ ] Verified Boot/AVB signing design, SELinux domains and recovery image tested without risking the owner's daily phone.
-- [ ] MANA branding, boot animation, System UI, launcher, Settings and Control Center integrated into one product.
+### 1. Exact device and operating system
+- [ ] Obtain and verify exact OEM kernel source, defconfig, DTS/DTBO, vendor modules and toolchain for RMX5566RU/RE645F.
+- [ ] Complete matching VINTF/HAL/vendor compatibility and partition metadata.
+- [ ] Build the full Android 16 AOSP product reproducibly.
+- [ ] Integrate MANA Launcher, Brain service, SystemUI, Settings, Control Center, permissions and boot branding into one product.
+- [ ] Implement SELinux domains, Binder caller checks, AVB signing, A/B OTA and tested rollback/recovery.
+- [ ] Test install/restore on a spare or safely recoverable device before touching the owner's daily phone.
 
-### MANA intelligence and memory
-- [ ] Real LiteRT-LM Android runtime adapter wired to MANA Brain through a stable service/Binder contract.
-- [ ] Model manager with provenance, license, size/free-space, hash/signature, compatibility, atomic install and rollback checks.
-- [ ] Local model packaged or imported with measured RAM/storage/thermal performance on target hardware.
-- [ ] Durable encrypted local memory, retention controls, user review/export/erase and offline tests.
-- [ ] Cloud adapters for OpenAI, Anthropic, Google and xAI; opt-in per request, encrypted credential storage, no embedded API keys, sensitive-data guardrails and provider tests.
-- [ ] Adaptive learning limited to user-approved sources, provenance tracking, retrieval evaluation and safe resource scheduling.
+### 2. Intelligence and model lifecycle
+- [ ] Verify LiteRT-LM model compatibility, actual inference, memory use, latency, thermal load and battery on the target phone.
+- [ ] Add license acceptance, model provenance/signature verification, storage/RAM compatibility checks and safe model rollback.
+- [ ] Move Brain from launcher-only adapter to a stable OS service/Binder contract.
+- [ ] Complete provider selection/settings UI for all cloud adapters; use Android Keystore, no embedded keys, no cloud without per-request permission.
+- [ ] Add encrypted vector retrieval, evaluation and user-approved learning sources.
 
-### Avatar, voice and interaction
-- [ ] Production-quality original, fully rigged 3D character asset: current procedural primitive-mesh character is an initial 3D prototype, not a skinned mesh/skeleton/blendshape asset; outfit/accessory system and asset provenance remain.
-- [ ] Real-time procedural OpenGL ES 2.0 3D renderer and user-granted Android overlay host have been added to the launcher prototype; verify CI and target-device rendering. Integrate the renderer into the Soong MANA system product.
-- [ ] Drag, snap-to-edge, resize, hide/show, touch/gesture, lifecycle and accessibility tests for floating avatar.
-- [ ] Stable character identity/voice; outfit/accessory customization without changing body/face identity.
-- [ ] Speech-to-text is wired through Android recognizer intent in the launcher. Russian Android TextToSpeech output and avatar mouth animation have been added in source; verify build, installed Russian voice availability, true female voice selection, interruption and on-device behavior. Wake/gesture invocation remains incomplete.
-- [ ] Power-button/gesture invocation only through APIs supported by the target OS; no privileged interception assumption.
+### 3. Avatar and voice
+- [ ] Finish and validate a proper skinned character rig with facial blendshapes/visemes, clothing variants and stable identity.
+- [ ] Test idle, speaking, happy and playful animations in the floating overlay and full-screen preview.
+- [ ] Verify Russian TTS voice, offline speech recognition, interruption and animation synchronization on-device.
+- [ ] Profile GPU frame time, memory, battery and thermal behavior on RMX5566RU.
 
-### Personal modules
-- [ ] Diary with local persistence, search, edit, export and user-controlled deletion.
-- [ ] Life Manager with reminders/tasks/calendar adapters and explicit confirmation for consequential actions.
-- [ ] Contact Intelligence with scoped Contacts permission, local processing and user-visible explanations.
-- [ ] Smart Receptionist with playful character, 10-second delay, summaries, unknown-number flow, opt-in call screening and legal/telephony capability checks.
-- [ ] Yandex and VK adapters using official APIs, consent and secure token storage.
-- [ ] Future Updates pipeline: voice idea capture → review → plan → isolated build/test → signed update → owner approval → rollback.
-- [ ] Watch, earbuds, Bluetooth/Wi-Fi car and local-node integrations with pairing, least privilege and disconnect handling.
+### 4. Personal and game modules
+- [ ] Complete Smart Receptionist only through platform-supported call roles and explicit owner consent; implement a separate default-dialer flow if auto-answer remains required.
+- [ ] Complete calendar/reminder adapters, contact workflows and owner-visible data controls.
+- [ ] Complete Yandex and VK OAuth/settings flows and official API integration.
+- [ ] Pair Android Game Intelligence to Minecraft through an authenticated owner-controlled local bridge and test world.
+- [ ] Complete watch, earbuds, car and multi-device pairing with least privilege and disconnect handling.
 
-### Game Intelligence
-- [ ] Launch and detect game sessions without claiming arbitrary screen control.
-- [ ] Supported Android game integrations and explicit owner-authorized actions.
-- [ ] Minecraft Bedrock add-on/Script API or owner-controlled server bridge, with version compatibility and test world.
-- [ ] Game memory/learning scoped to each game, user opt-in, no anti-cheat bypass or hidden input injection.
+### 5. Security and release
+- [ ] Run dependency/SBOM scanning, static analysis, fuzzing and penetration testing.
+- [ ] Publish privacy policy, data-safety declarations, permission explanations and security documentation.
+- [ ] Run full AOSP build, device instrumentation, OTA/rollback, recovery and performance tests.
+- [ ] Never flash firmware until all device and recovery gates are verified.
 
-### Security and release
-- [ ] Real Android permission model, Binder caller verification, SELinux policy and non-privileged default.
-- [ ] Encrypted storage and keys held by Android Keystore; no plaintext secrets or API keys.
-- [ ] Threat model, dependency/SBOM scan, static analysis, fuzzing, penetration test and privacy/data-safety documentation.
-- [ ] Full AOSP build, automated device tests, battery/thermal/performance tests, OTA/rollback test and recovery drill.
-- [ ] No firmware flash until every device/boot/recovery gate is independently verified.
+## Completion rule
 
-## Non-negotiable completion rule
-
-A requirement is marked complete only after its implementation is in the OS product, the relevant automated tests pass, and device-dependent behavior is tested on the target hardware where applicable. A source file, catalog entry, CI compile, screenshot, or mockup alone does not satisfy that rule.
+A requirement is marked complete only after its implementation is integrated into the MANA OS product, automated tests pass, and device-dependent behavior is verified on the target hardware. A source file, model preview, adapter test, Gradle compile, Minecraft pack artifact or module descriptor alone does not satisfy that rule.
