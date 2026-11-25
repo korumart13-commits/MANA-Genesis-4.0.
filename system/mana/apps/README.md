@@ -11,7 +11,7 @@ This directory contains the first Android-framework-facing source for the integr
 
 Both modules are Soong android_app modules. Include system/mana/mana_product.mk from the eventual verified Android 16 product makefile to add them to PRODUCT_PACKAGES.
 
-They are product apps, not privileged apps: no privileged=true, special permissions, root access, overlay permission, accessibility service, contacts, microphone, camera, or network permission is requested. The platform certificate setting is for the controlled AOSP product build; it does not by itself grant privileged permissions.
+They are product apps, not privileged apps: no privileged=true, special permissions, root access, overlay permission, accessibility service, contacts, microphone, camera, or network permission is requested. Development modules use the default build certificate, not the platform certificate. A production release must use the owner's controlled release-signing process; private signing keys must never be committed.
 
 ## Not yet present
 
