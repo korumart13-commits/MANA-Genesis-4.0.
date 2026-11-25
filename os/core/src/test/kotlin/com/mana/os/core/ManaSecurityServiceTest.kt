@@ -44,11 +44,15 @@ class ManaSecurityServiceTest {
         assertFalse(service.auditSnapshot().isEmpty())
     }
 
-    @Test fun secretDataCannotBeSharedEvenWithGrant() {
+    @Test fun secretDataCannotBeSharedOrDeletedEvenWithGrant() {
         val service = ManaSecurityService()
         val share = capability.copy(action = SecurityAction.SHARE)
+        val delete = capability.copy(action = SecurityAction.DELETE)
         service.grant(SecurityGrant(share))
+        service.grant(SecurityGrant(delete))
         assertEquals(SecurityEffect.DENY,
             service.authorize(share, DataSensitivity.SECRET).effect)
+        assertEquals(SecurityEffect.DENY,
+            service.authorize(delete, DataSensitivity.SECRET).effect)
     }
 }
