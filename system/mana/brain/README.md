@@ -32,3 +32,20 @@ The eventual Android service must:
 - End-to-end Android instrumentation tests.
 
 The AIDL contract is not itself a running Binder service. Do not advertise the Assistant as connected until the adapter and client are built, permission-checked and tested in an Android 16 product image.
+
+
+## Android Binder transport status
+
+The Assistant package now declares a signature-protected `ManaBrainBinderService`
+and links the generated `mana.brain-java` AIDL library. The service validates
+request shape and returns explicit error `1001` (`ENGINE_NOT_PACKAGED`) rather
+than inventing an inference result. `isReady()` remains false and the engine
+version reports `not-packaged`.
+
+This is a real protected Binder endpoint, but it is **not yet a functioning
+inference service**. The canonical Kotlin/JVM engine depends on coroutines and
+Gson and is not currently built as an Android/Soong runtime artifact. The next
+integration gate is to package that exact engine (without a duplicate
+implementation), inject it into the service, and add Android instrumentation
+coverage. Launcher-side binding and user-facing readiness reporting remain
+pending.
