@@ -30,14 +30,21 @@ The current repository is the project coordination and source-foundation reposit
 - Preserve rollback and recovery capability. Never overwrite the stock boot chain while the device is locked.
 - Do not label an image bootable until it has been built from matching sources and passed image, partition, AVB and device tests.
 
-## Current stage
+## Current progress
 
-Stage 0 — target identification and source audit. Device properties are recorded in `device/RMX5566RU_TARGET_PROFILE.md`. Kernel source candidates are audited in `kernel/DEVICE_KERNEL_SOURCE_AUDIT.md`.
+- Target identity and firmware facts are recorded in `device/RMX5566RU_TARGET_PROFILE.md`.
+- Kernel source audit is in `kernel/DEVICE_KERNEL_SOURCE_AUDIT.md`; the currently reviewed public candidates do not match the RMX5566RU runtime kernel and are not approved.
+- A JVM-testable MANA system supervisor exists in `os/core`.
+- A typed 16-module system catalog now defines dependencies, required/optional criticality, failure behavior and permission boundaries. See `os/SYSTEM_MODULE_GRAPH.md`.
+- MANA Brain routing contract exists and prefers local inference, but a working LiteRT-LM runtime and model weights have not yet been integrated.
+- Separate launcher APK workflows are intentionally paused; launcher and System UI are planned as integrated OS components.
 
-Stage 1 — establish a reproducible Android 16 source manifest and verify the exact device kernel/device-tree/vendor inputs.
+## Build sequence
 
-Stage 2 — integrate the MANA system layer into the Android product build.
+1. Pin and sync a reproducible Android 16 AOSP source tree.
+2. Verify exact device kernel, device-tree and vendor inputs for RMX5566RU.
+3. Implement and test MANA framework service contracts, then integrate them as AOSP product modules.
+4. Build complete system images in CI and validate image/partition/AVB metadata.
+5. Perform device bring-up, recovery validation and hardware/security tests before any owner-controlled installation plan.
 
-Stage 3 — build and test the full system images in CI; no flashing during these stages.
-
-Stage 4 — device bring-up, recovery validation, AVB/signing and only then an owner-controlled installation plan.
+A source foundation, a successful JVM test, a successful AOSP image build and a bootable device image are separate milestones.
