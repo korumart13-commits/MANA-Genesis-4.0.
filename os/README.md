@@ -2,69 +2,61 @@
 
 ## Product direction
 
-MANA OS is an Android 16 AOSP-derived operating-system project for the realme RMX5566RU (RE645F). It is not a Linux distribution that can replace Android with a standalone kernel. The platform consists of:
+MANA OS is an Android 16 AOSP-derived operating-system project targeting the exact runtime hardware identity **realme RMX5566RU / RE645F, Qualcomm SM6225 / bengal / qcom**. The owner reports the retail name as realme C85 5G, but public C85 variant specifications conflict; the runtime SoC and kernel fingerprints are the engineering source of truth. See [device/kernel audit](DEVICE_KERNEL_SOURCE_AUDIT_2026-11-25.md).
 
-1. AOSP Android userspace and framework.
-2. A device-specific Linux kernel and Qualcomm vendor integration.
-3. MANA system services and privileged system applications.
-4. MANA System UI, launcher, settings, avatar runtime and local-first AI.
-5. Verified, signed OTA/update and recovery integration.
+MANA is intended to be one local-first OS experience: MANA Brain, launcher, avatar, voice, memory, personal modules, games, settings, control center, update and recovery services. The current repository contains a source foundation and Android prototypes, **not a complete bootable ROM**.
 
-The current repository is the project coordination and source-foundation repository. It does not yet contain a complete AOSP checkout, a validated device tree, vendor blobs, a matching kernel source/configuration, or a bootable image.
+## Current implementation
 
-## Required architecture
+- os/core: JVM-tested system lifecycle, module catalog, default-deny security policy, storage planner, encrypted Diary/Memory/Future Updates and adaptive-knowledge services.
+- engine/mana-brain: tested local-first provider routing; cloud is optional and requires explicit per-request permission.
+- launcher/: Android Gradle prototype with LiteRT-LM runtime adapter, pinned Gemma 4 E2B downloader and SHA-256 checks, multi-provider cloud gateway, Yandex AI Studio/Search, read-only VK connector, encrypted local memory/knowledge, Diary/Life Manager/Future Updates, contacts, call-screening/default-dialer prototype, SAF file quarantine, paired-device dashboard, voice interaction and SceneView/Filament 3D avatar with a user-enabled floating overlay.
+- game/minecraft-bedrock: official Script API Behavior Pack source and CI-packaged .mcpack world-side companion. It is not yet connected to the Android app through an authenticated bridge.
+- system/mana/apps: Soong source modules for MANA Launcher, Assistant, Settings and Control Center, plus a user-addable Quick Settings tile. These are non-privileged product shells, not a replacement for AOSP SystemUI.
+- os/IMPLEMENTATION_LEDGER.md: authoritative feature-by-feature status and acceptance gates.
 
-- `platform/`: AOSP manifest and product integration, once the exact source branch is pinned.
-- `device/realme/RMX5566RU/`: device tree, BoardConfig, fstab, init, VINTF, overlays and SELinux policy; create only from verified device data.
-- `kernel/realme/RMX5566RU/`: exact matching kernel source, defconfig, DTS/DTBO, modules and build configuration.
-- `vendor/realme/RMX5566RU/`: legally obtained proprietary blobs and extraction records.
-- `system/mana/`: MANA framework services, system applications, resources and product configuration.
-- `ai/`: MANA Brain, LiteRT-LM runtime adapter, model lifecycle, safety and offline data.
-- `security/`: AVB/signing, SELinux, permission model, update verification and threat model.
+The Gradle launcher and Soong product apps are still separate source generations. The launcher prototype's inference, avatar and personal modules are **not yet integrated into the Soong/AOSP product**. Successful JVM tests or Gradle/Soong compilation validate only those source targets; they do not prove device behavior.
 
-## Design principles
+## Device and platform blockers
 
-- Local-first operation. Cloud model providers are optional and require explicit owner opt-in.
-- No embedded API keys, hidden remote access, or bypass of Android permission boundaries.
-- Preserve hardware support: modem, radio, camera, audio, display, sensors, charging and power management must be validated against the exact device.
-- Preserve rollback and recovery capability. Never overwrite the stock boot chain while the device is locked.
-- Do not label an image bootable until it has been built from matching sources and passed image, partition, AVB and device tests.
+The repository does not yet contain:
+- a complete, pinned Android 16 AOSP checkout and reproducible product build;
+- the exact OEM Qualcomm kernel source matching Linux 5.15.197, defconfig, DTS/DTBO and vendor modules for RMX5566RU / RE645F;
+- verified VINTF/HAL/vendor blobs and partition metadata;
+- a tested AVB signing, SELinux, A/B OTA, recovery and stock-restore path;
+- a bootable MANA OS image tested on the target phone.
 
-## Current progress
+A public realme C85 5G kernel repository was audited and rejected because it is a different MediaTek configuration and Linux 5.15.180. Do not build or flash it for the owner's Qualcomm device.
 
-- Target identity and firmware facts are recorded in `device/RMX5566RU_TARGET_PROFILE.md`.
-- Kernel source audit is in `kernel/DEVICE_KERNEL_SOURCE_AUDIT.md`; the currently reviewed public candidates do not match the RMX5566RU runtime kernel and are not approved.
-- A JVM-testable MANA system supervisor exists in `os/core`.
-- A typed 16-module system catalog now defines dependencies, required/optional criticality, failure behavior and permission boundaries. See `os/SYSTEM_MODULE_GRAPH.md`.
-- MANA Brain routing contract exists and prefers local inference, but a working LiteRT-LM runtime and model weights have not yet been integrated.
-- MANA Launcher and MANA Assistant now exist as Android/Soong product-source modules under system/mana/apps; they are not standalone APKs and have not yet been built against AOSP.
+## Design and safety principles
+
+- Local inference is preferred; cloud providers remain optional and require explicit owner permission.
+- API keys are never embedded in source. Android credentials are encrypted using Android Keystore.
+- Personal memory and saved web knowledge are local and encrypted. Web snippets remain untrusted reference data, not instructions.
+- File cleanup scans only an owner-selected SAF folder. It quarantines and hashes a copy first; deleting an original requires a second explicit approval and matching hashes.
+- Smart Receptionist's optional 10-second auto-answer requires the owner to make MANA the default dialer and enable the setting. It is not enabled by default. Android does not expose ordinary third-party apps to the two-way PSTN audio stream, so AI conversation, recording and transcript summaries are not implemented.
+- Minecraft actions use the official Script API and owner-authorized commands; no anti-cheat bypass or hidden input injection.
+- Bluetooth and car actions remain constrained to Android-supported settings and explicitly paired devices; no manufacturer-specific vehicle control is claimed.
+- No firmware is considered installable until the exact device sources, verified boot chain, recovery and rollback are tested.
+
+## Build and validation
+
+CI currently covers:
+- JVM core and Brain tests;
+- Android Gradle launcher source compilation and unit tests;
+- non-privileged Soong UI source validation;
+- glTF structural checks and avatar variant validation;
+- Minecraft Behavior Pack syntax checks and .mcpack packaging.
+
+These are source/CI milestones, not a full AOSP build or on-device certification.
 
 ## Build sequence
 
-1. Pin and sync a reproducible Android 16 AOSP source tree.
-2. Verify exact device kernel, device-tree and vendor inputs for RMX5566RU.
-3. Implement and test MANA framework service contracts, then integrate them as AOSP product modules.
-4. Build complete system images in CI and validate image/partition/AVB metadata.
-5. Perform device bring-up, recovery validation and hardware/security tests before any owner-controlled installation plan.
+1. Obtain and verify the exact OEM kernel/device/vendor source package for RMX5566RU / RE645F.
+2. Pin and sync a reproducible Android 16 AOSP source tree.
+3. Unify the Gradle prototype features with the Soong product services and apps.
+4. Implement real Android Binder services, permissions, SELinux domains and product SystemUI integration.
+5. Build the complete AOSP product and verify AVB/partition/OTA metadata.
+6. Test on a spare or safely recoverable target device, including hardware, thermal, battery, security and rollback tests.
 
-A source foundation, a successful JVM test, a successful AOSP image build and a bootable device image are separate milestones.
-
-
-## Integrated UI source milestone
-
-- MANA Launcher HOME activity and MANA Assistant UI shell are present as Soong source modules; product inclusion is described in system/mana/mana_product.mk.
-- The assistant clearly reports that inference is not connected and does not fake responses or transmit prompts.
-- These Android sources have not yet been compiled against AOSP or tested on the RMX5566RU.
-
-## Security review
-
-See [source-level security review](SECURITY_REVIEW_2026-11-25.md). The review is not a penetration test or device certification.
-
-## Security and storage service milestone
-
-The host-JVM core now contains testable MANA Security and MANA Storage policy services. Security uses default-deny capability grants with audit events. Storage only evaluates registered metadata and supports user-approved reversible archive/quarantine plus restore; permanent deletion and real filesystem mutation are not implemented. Android Binder, runtime permission, SELinux, encryption, and device integration remain future work. See [service contract and integration gates](SECURITY_AND_STORAGE_SERVICES.md).
-
-
-## Full owner-requirements audit
-
-See [OWNER_FEATURE_AUDIT_2026-11-25.md](OWNER_FEATURE_AUDIT_2026-11-25.md) for the complete feature-by-feature status, duplicate launcher/assistant source finding, game integration boundaries, security gaps and required implementation order. The catalog now represents 27 modules, but this is architecture coverage rather than completed functionality.
+See [implementation ledger](IMPLEMENTATION_LEDGER.md), [owner requirements audit](OWNER_FEATURE_AUDIT_2026-11-25.md), [security review](SECURITY_REVIEW_2026-11-25.md) and [device/kernel audit](DEVICE_KERNEL_SOURCE_AUDIT_2026-11-25.md).
