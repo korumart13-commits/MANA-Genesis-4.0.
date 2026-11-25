@@ -16,7 +16,7 @@ Status: source discovery started; no candidate has been approved for building or
 
 Repository: https://github.com/realme-kernel-opensource/realme_C85_5G-AndroidV-kernel-source
 
-The repository name appears to match the C85 5G, but its checked source does not establish a match to this Qualcomm target:
+The repository name appears to match the C85 5G, but the checked source is not a match for this Qualcomm target. Public device references distinguish RMX5566 (C85, Qualcomm SM6225) from RMX5253 (C85 5G, MediaTek). The candidate source's latest commit explicitly targets RMX5253/MTK. Device naming must follow the model code, not the marketing name supplied in a filename. Additional public device listings support this distinction.\n\nTechnical mismatch details:
 - Its top-level kernel Makefile declares Linux 5.15.180, not the device's reported 5.15.197.
 - Its latest commit message says it synchronized code for RMX5253 and references an MTK release tag.
 - The inspected ARM64 defconfig list did not expose a bengal/SM6225 target configuration.
