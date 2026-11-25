@@ -238,6 +238,10 @@ class MainActivity : Activity() {
             ManaAvatar3DView.accessoryEnabled = !ManaAvatar3DView.accessoryEnabled
             showMessage(if (ManaAvatar3DView.accessoryEnabled) "Аксессуар включён." else "Аксессуар скрыт.")
         })
+        card.addView(action("Сменить выражение лица MANA") {
+            ManaAvatar3DView.expressionIndex = (ManaAvatar3DView.expressionIndex + 1) % 3
+            showMessage("Выражение лица изменено.")
+        })
         card.addView(action("Открыть зашифрованный дневник MANA") { showDiary() })
         card.addView(action("Открыть MANA Life Manager") { showLifeManager() })
         card.addView(action("Открыть локальную память MANA") { showMemory() })
