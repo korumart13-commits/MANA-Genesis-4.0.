@@ -1232,8 +1232,8 @@ class MainActivity : Activity() {
             .setTitle("Условия модели Gemma 4 E2B")
             .setMessage("Gemma 4 E2B распространяется под Apache 2.0. Перед загрузкой ознакомься с лицензией и официальной карточкой модели. Модель занимает 2,59 ГБ. Загрузка идёт только по Wi-Fi; после неё MANA проверит точный размер и SHA-256. Продолжая, ты подтверждаешь, что прочитал лицензию Apache 2.0.")
             .setNegativeButton("Отмена", null)
-            .setNeutralButton("Открыть лицензию Apache 2.0") { _, _ ->
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.apache.org/licenses/LICENSE-2.0")))
+             .setNeutralButton("Открыть карточку модели") { _, _ ->
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm")))
             }
             .setPositiveButton("Принимаю и скачать") { _, _ ->
                 try {
