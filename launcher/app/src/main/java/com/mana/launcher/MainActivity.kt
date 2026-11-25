@@ -11,6 +11,8 @@ import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.os.Build
+import android.provider.Settings
 import android.speech.RecognizerIntent
 import android.view.Gravity
 import android.view.MotionEvent
@@ -60,7 +62,7 @@ class MainActivity : Activity() {
     private var chatOutput: TextView? = null
     private var modelStatus: TextView? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onResume() {\n        super.onResume()\n        if (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(this)) {\n            startService(Intent(this, ManaFloatingAvatarService::class.java))\n        }\n    }\n\n    private fun requestFloatingAvatar() {\n        if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {\n            startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))\n        } else {\n            startService(Intent(this, ManaFloatingAvatarService::class.java))\n            showMessage("Плавающая MANA включена.")\n        }\n    }\n\n    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = bg
         window.navigationBarColor = bg
@@ -173,7 +175,7 @@ class MainActivity : Activity() {
             background = rounded(panelRaised, 22)
         }
         card.addView(label("MANA ASSISTANT", 11, accentSoft, true))
-        card.addView(label("Твой телефон. Твои правила.", 19, textColor, true))
+        card.addView(label("Твой телефон. Твои правила.", 19, textColor, true))\n        card.addView(action("Включить плавающий аватар поверх приложений") { requestFloatingAvatar() })
         card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Локальный ИИ: выбери .litertlm-модель в окне MANA.", 12, muted, false))
         val p = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(19) }
         content.addView(card, p)
