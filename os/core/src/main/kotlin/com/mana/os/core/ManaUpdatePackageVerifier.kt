@@ -53,9 +53,13 @@ class ManaUpdatePackageVerifier(
                 val entry = entries.nextElement()
                 val name = entry.name
                 require(names.add(name)) { "Duplicate ZIP entry is not allowed: $name" }
-                require(!entry.isDirectory && !name.startsWith("/") && !name.startsWith("\\") &&
-                    name.split('/', '\\').none { it == ".." || it.isBlank() }) {
+                require(!name.startsWith("/") && !name.startsWith("\\") &&
+                    name.trimEnd('/').split('/', '\\').none { it == ".." || it.isBlank() }) {
                     "Unsafe update ZIP path: $name"
+                }
+                if (entry.isDirectory) {
+                    require(name == "META-INF/") { "Unexpected update package directory: $name" }
+                    continue
                 }
                 require(name in ALLOWED_ENTRIES) { "Unexpected update package entry: $name" }
                 if (name == RELEASE_NOTES_NAME) require(entry.size in 0..MAX_RELEASE_NOTES_BYTES) { "Release notes are too large." }
