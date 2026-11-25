@@ -167,6 +167,8 @@ class ManaAvatar3DView(
             val t = (System.nanoTime() - startTime) / 1_000_000_000f
             val bob = sin(t * 1.45f) * 0.035f
             val sway = sin(t * 0.82f) * 2.2f
+            val armSwing = sin(t * 1.15f) * 5.0f
+            val legSwing = sin(t * 1.15f) * 1.8f
             val blink = if ((t % 4.6f) in 0.0f..0.16f) 0.12f else 1f
 
             // Back hair silhouette and long side locks.
@@ -175,20 +177,27 @@ class ManaAvatar3DView(
             draw(0.42f, -0.38f + bob, -0.12f, 0.19f, 0.78f, 0.22f, 8f + sway, hair)
             draw(-0.53f, -0.83f + bob, -0.10f, 0.13f, 0.42f, 0.16f, -14f + sway, hairHighlight)
             draw(0.52f, -0.80f + bob, -0.10f, 0.13f, 0.43f, 0.16f, 14f + sway, hairHighlight)
+            draw(-0.36f, -0.15f + bob, -0.02f, 0.055f, 0.68f, 0.075f, -5f + sway, hairHighlight)
+            draw(0.35f, -0.13f + bob, -0.02f, 0.055f, 0.70f, 0.075f, 6f + sway, hairHighlight)
 
             // Torso, waist, skirt, legs, boots, shoulders and articulated arms.
             draw(0f, -0.94f + bob, 0f, 0.57f, 0.70f, 0.31f, 0f, coat)
             draw(0f, -1.48f + bob, 0.01f, 0.37f, 0.22f, 0.25f, 0f, collar)
             draw(0f, -1.72f + bob, 0.01f, 0.48f, 0.32f, 0.34f, 0f, coat)
-            draw(-0.19f, -2.12f + bob, 0.02f, 0.145f, 0.48f, 0.17f, -2f + sway, stockings)
-            draw(0.19f, -2.12f + bob, 0.02f, 0.145f, 0.48f, 0.17f, 2f + sway, stockings)
+            draw(-0.19f, -2.12f + bob, 0.02f, 0.145f, 0.48f, 0.17f, -2f + legSwing, stockings)
+            draw(0.19f, -2.12f + bob, 0.02f, 0.145f, 0.48f, 0.17f, 2f - legSwing, stockings)
             draw(-0.19f, -2.56f + bob, 0.08f, 0.18f, 0.22f, 0.25f, -2f, boots)
             draw(0.19f, -2.56f + bob, 0.08f, 0.18f, 0.22f, 0.25f, 2f, boots)
             draw(0f, -1.68f + bob, 0.355f, 0.045f, 0.045f, 0.025f, 0f, glow)
-            draw(-0.47f, -0.60f + bob, 0f, 0.22f, 0.34f, 0.25f, -20f + sway, coat)
-            draw(0.47f, -0.60f + bob, 0f, 0.22f, 0.34f, 0.25f, 20f + sway, coat)
-            draw(-0.60f, -0.98f + bob, 0.02f, 0.16f, 0.48f, 0.17f, -8f, coat)
-            draw(0.60f, -0.98f + bob, 0.02f, 0.16f, 0.48f, 0.17f, 8f, coat)
+            // Articulated upper arms, forearms, cuffs and hands with gentle idle motion.
+            draw(-0.49f, -0.67f + bob, 0.01f, 0.19f, 0.34f, 0.20f, -18f + armSwing, coat)
+            draw(0.49f, -0.67f + bob, 0.01f, 0.19f, 0.34f, 0.20f, 18f - armSwing, coat)
+            draw(-0.61f, -1.02f + bob, 0.04f, 0.145f, 0.34f, 0.15f, -10f + armSwing, coat)
+            draw(0.61f, -1.02f + bob, 0.04f, 0.145f, 0.34f, 0.15f, 10f - armSwing, coat)
+            draw(-0.65f, -1.34f + bob, 0.10f, 0.105f, 0.14f, 0.10f, -5f + armSwing, skin)
+            draw(0.65f, -1.34f + bob, 0.10f, 0.105f, 0.14f, 0.10f, 5f - armSwing, skin)
+            draw(-0.61f, -1.18f + bob, 0.18f, 0.12f, 0.045f, 0.025f, -10f + armSwing, accent)
+            draw(0.61f, -1.18f + bob, 0.18f, 0.12f, 0.045f, 0.025f, 10f - armSwing, accent)
             draw(0f, -0.30f + bob, 0.04f, 0.22f, 0.20f, 0.20f, 0f, collar)
             draw(0f, -0.12f + bob, 0.02f, 0.18f, 0.27f, 0.18f, 0f, skin)
 
@@ -206,6 +215,8 @@ class ManaAvatar3DView(
             val eyeExpression = if (expressionIndex == 2) 1.22f else 1f
             draw(-0.17f, 0.52f + bob, 0.398f, 0.085f, 0.085f * blink * eyeExpression, 0.035f, 0f, eyeWhite)
             draw(0.17f, 0.52f + bob, 0.398f, 0.085f, 0.085f * blink * eyeExpression, 0.035f, 0f, eyeWhite)
+            draw(-0.17f, 0.64f + bob, 0.40f, 0.105f, 0.025f, 0.035f, -8f, hair)
+            draw(0.17f, 0.64f + bob, 0.40f, 0.105f, 0.025f, 0.035f, 8f, hair)
             draw(-0.17f, 0.52f + bob, 0.427f, 0.046f, 0.058f * blink * eyeExpression, 0.022f, 0f, iris)
             draw(0.17f, 0.52f + bob, 0.427f, 0.046f, 0.058f * blink * eyeExpression, 0.022f, 0f, iris)
             draw(-0.185f, 0.545f + bob, 0.447f, 0.016f, 0.020f, 0.012f, 0f, eyeWhite)
