@@ -20,6 +20,12 @@ import android.widget.EditText
 import android.net.Uri
 import java.io.File
 import java.io.FileOutputStream
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
+import java.security.DigestInputStream
+import java.security.MessageDigest
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import android.widget.FrameLayout
 import android.widget.GridLayout
 import android.widget.ImageView
@@ -325,9 +331,38 @@ class MainActivity : Activity() {
             try {
                 val directory = File(filesDir, "mana-models").apply { mkdirs() }
                 val target = File(directory, "selected-model.litertlm")
-                contentResolver.openInputStream(uri).use { input ->
-                    requireNotNull(input) { "Не удалось открыть файл." }
-                    FileOutputStream(target).use { output -> input.copyTo(output) }
+                val temp = File.createTempFile("mana-model-", ".part", directory)
+                try {
+                    val freeBytes = directory.usableSpace
+                    require(freeBytes > 256L * 1024L * 1024L) { "Недостаточно свободного места: оставь не менее 256 МБ резерва." }
+                    val digest = MessageDigest.getInstance("SHA-256")
+                    var copied = 0L
+                    contentResolver.openInputStream(uri).use { raw ->
+                        requireNotNull(raw) { "Не удалось открыть файл." }
+                        DigestInputStream(BufferedInputStream(raw), digest).use { input ->
+                            FileOutputStream(temp).use { fileOutput ->
+                                BufferedOutputStream(fileOutput).use { output ->
+                                    val buffer = ByteArray(1024 * 1024)
+                                    while (true) {
+                                        val read = input.read(buffer)
+                                        if (read < 0) break
+                                        copied += read
+                                        require(copied <= 16L * 1024L * 1024L * 1024L) { "Файл модели превышает безопасный лимит импорта 16 ГБ." }
+                                        require(copied + 256L * 1024L * 1024L <= freeBytes) { "Недостаточно места для безопасного импорта модели." }
+                                        output.write(buffer, 0, read)
+                                    }
+                                    output.flush()
+                                    fileOutput.fd.sync()
+                                }
+                            }
+                        }
+                    }
+                    require(copied > 0L) { "Файл модели пуст." }
+                    val hash = digest.digest().joinToString("") { "%02x".format(it) }
+                    Files.move(temp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+                    File(directory, "selected-model.sha256").writeText("$hash  selected-model.litertlm\\n")
+                } finally {
+                    if (temp.exists()) temp.delete()
                 }
                 runOnUiThread {
                     modelStatus?.text = "Загружаю ${target.name}…"
@@ -345,7 +380,7 @@ class MainActivity : Activity() {
                         }
                     }
                 }
-            } catch (error: Throwable) { runOnUiThread { showMessage("Ошибка импорта: ${error.message}") } }
+            } catch (error: Exception) { runOnUiThread { showMessage("Ошибка импорта: ${error.message}") } }
         }.start()
     }
 
