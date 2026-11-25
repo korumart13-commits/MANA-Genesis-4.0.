@@ -16,7 +16,7 @@ import kotlin.coroutines.resumeWithException
  * Connects the shared MANA Brain router to the on-device LiteRT-LM runtime.
  * This Android build deliberately has no cloud provider, so prompts remain local.
  */
-class ManaBrainBridge(private val localRuntime: LocalModelRuntime) {
+class ManaBrainBridge(\n    private val localRuntime: LocalModelRuntime,\n    private val cloudProvider: InferenceProvider? = null\n) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun respond(
@@ -52,8 +52,8 @@ class ManaBrainBridge(private val localRuntime: LocalModelRuntime) {
                             )
                         }
                 }
-                val brain = ManaBrain(localProvider)
-                brain.respond(BrainRequest(prompt = prompt, allowCloud = false, sensitive = false))
+                val brain = ManaBrain(localProvider, cloudProvider)
+                brain.respond(BrainRequest(prompt = prompt, allowCloud = allowCloud, sensitive = sensitive))
                 callback(Result.success(Unit))
             } catch (error: Exception) {
                 callback(Result.failure(error))
