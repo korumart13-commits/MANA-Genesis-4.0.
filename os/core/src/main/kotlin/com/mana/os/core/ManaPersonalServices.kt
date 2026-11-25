@@ -186,24 +186,65 @@ data class ManaLifeTask(
     val requiresConfirmation: Boolean = false
 )
 
-class ManaLifeManagerService {
-    private val tasks = linkedMapOf<String, ManaLifeTask>()
+interface ManaLifeTaskStore {
+    fun readAll(): List<ManaLifeTask>
+    fun writeAll(tasks: List<ManaLifeTask>)
+}
+
+/** Reuses the encrypted diary file format with a separate file/key alias per data domain. */
+class EncryptedFileManaLifeTaskStore(private val diaryStore: ManaDiaryStore) : ManaLifeTaskStore {
+    override fun readAll(): List<ManaLifeTask> = diaryStore.readAll().filter { "mana:life-task" in it.tags }.map { entry ->
+        val tags = entry.tags
+        val due = tags.firstOrNull { it.startsWith("due:") }?.removePrefix("due:")?.toLongOrNull()
+        ManaLifeTask(
+            id = entry.id,
+            title = entry.body,
+            dueAt = due?.let(Instant::ofEpochMilli),
+            completed = "completed:true" in tags,
+            requiresConfirmation = "confirm:true" in tags
+        )
+    }
+
+    override fun writeAll(tasks: List<ManaLifeTask>) {
+        diaryStore.writeAll(tasks.map { task ->
+            ManaDiaryEntry(
+                id = task.id,
+                title = "MANA Life Task",
+                body = task.title,
+                tags = setOf(
+                    "mana:life-task",
+                    "completed:${task.completed}",
+                    "confirm:${task.requiresConfirmation}",
+                    "due:${task.dueAt?.toEpochMilli() ?: "none"}"
+                ),
+                createdAt = Instant.now(),
+                updatedAt = Instant.now()
+            )
+        })
+    }
+}
+
+class ManaLifeManagerService(private val store: ManaLifeTaskStore? = null) {
+    private val tasks = store?.readAll()?.associateByTo(linkedMapOf()) { it.id } ?: linkedMapOf()
 
     @Synchronized fun add(title: String, dueAt: Instant? = null, requiresConfirmation: Boolean = false): ManaLifeTask {
         require(title.isNotBlank())
         val task = ManaLifeTask(java.util.UUID.randomUUID().toString(), title, dueAt, requiresConfirmation = requiresConfirmation)
         tasks[task.id] = task
+        persist()
         return task
     }
 
     @Synchronized fun complete(id: String, approvedByUser: Boolean): ManaLifeTask {
         val task = tasks[id] ?: error("Task not found")
         if (task.requiresConfirmation) require(approvedByUser) { "Owner confirmation is required for this task" }
-        return task.copy(completed = true).also { tasks[id] = it }
+        return task.copy(completed = true).also { tasks[id] = it; persist() }
     }
 
     @Synchronized fun list(includeCompleted: Boolean = false): List<ManaLifeTask> =
         tasks.values.filter { includeCompleted || !it.completed }.sortedBy { it.dueAt ?: Instant.MAX }
+
+    private fun persist() { store?.writeAll(tasks.values.toList()) }
 }
 
 data class ManaReceptionistSettings(
