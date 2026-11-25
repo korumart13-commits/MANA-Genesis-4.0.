@@ -89,7 +89,7 @@ class ManaAdaptiveLearningWorker(context: Context, params: WorkerParameters) : C
 
 object ManaAdaptiveLearningScheduler {
     fun enable(context: Context, topics: List<String>) {
-        val normalized = topics.map { it.trim() }.filter { it.length in 2..512 }.distinct().take(5)
+        val normalized = topics.map { it.trim() }.filter { it.length in 2..400 }.distinct().take(5)
         require(normalized.isNotEmpty()) { "Add at least one learning topic." }
         context.getSharedPreferences(ManaAdaptiveLearningWorker.PREFS, Context.MODE_PRIVATE)
             .edit().putBoolean(ManaAdaptiveLearningWorker.KEY_ENABLED, true)
