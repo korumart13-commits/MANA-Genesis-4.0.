@@ -17,7 +17,7 @@ This addendum records work completed after the original progress snapshot. All A
 ## Verified automated runs
 
 - Android Gradle source build with SAF quarantine, hash verification, owner-confirmed original deletion, Brain mirror check and glTF validation: run 45690856895 passed.
-- Android Gradle source build with avatar fallback and existing integrations: run 45691218064 passed.
+- Android Gradle source build with avatar fallback and existing integrations: run 45691218064 passed.\n- Android Gradle build plus unit tests (including Yandex Search REST request contract tests), Brain mirror and glTF validation: run 45692114974 passed.
 - MANA Model Manager staged-install JVM tests: run 45687689117 passed.
 - MANA Brain multi-provider routing tests: run 45687583299 passed.
 - Adaptive knowledge and module catalog JVM tests: runs 45689544497, 45689557101 and 45689623830 passed.
