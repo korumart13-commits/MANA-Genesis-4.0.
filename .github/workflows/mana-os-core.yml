@@ -1,0 +1,30 @@
+name: MANA OS Core — JVM verification
+
+on:
+  push:
+    paths:
+      - 'os/core/**'
+      - '.github/workflows/mana-os-core.yml'
+  pull_request:
+    paths:
+      - 'os/core/**'
+      - '.github/workflows/mana-os-core.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Test MANA OS Core
+        run: gradle -p os/core --no-daemon clean test
