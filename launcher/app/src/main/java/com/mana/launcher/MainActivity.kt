@@ -924,7 +924,7 @@ class MainActivity : Activity() {
             val id = catalog.enqueueGemma4E2B()
             if (id == -1L) {
                 activateCompletedModelDownload()
-                showMessage("Официальная модель уже загружена и проверена.")
+                showMessage("Официальная модель проверена. Подключаю её к локальному движку…")
             } else {
                 showMessage("Загрузка Gemma 4 E2B началась через Android Download Manager. Загрузка разрешена только по Wi-Fi. После завершения вернись в MANA — файл будет проверен и подключён.")
             }
@@ -937,7 +937,7 @@ class MainActivity : Activity() {
         val catalog = modelCatalog ?: return
         Thread {
             try {
-                val file = catalog.verifyCompletedDownload() ?: return@Thread
+                val file = catalog.verifiedSavedModel() ?: catalog.verifyCompletedDownload() ?: return@Thread
                 localRuntime.load(file) { result ->
                     runOnUiThread {
                         result.onSuccess { name ->
