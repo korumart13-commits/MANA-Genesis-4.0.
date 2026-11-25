@@ -24,7 +24,7 @@ class ManaAvatarPreviewActivity : ComponentActivity() {
             val avatarAsset = ManaAvatarState.assetName()
             val isSpeaking = ManaAvatarState.isSpeaking
             val expression = ManaAvatarState.expressionIndex
-            val animationName = when { isSpeaking -> "Speaking"; expression == 1 -> "Happy"; expression == 2 -> "Playful"; else -> "Idle" }
+            val animationName = when { isSpeaking -> "Speaking"; expression == 1 -> "Playful"; expression == 2 -> "Happy"; else -> "Idle" }
             SceneView(
                 modifier = Modifier.fillMaxSize(),
                 engine = engine,
