@@ -9,8 +9,15 @@ android {
         applicationId = "com.mana.launcher"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "4.0.0"
+        versionCode = 2
+        versionName = "4.0.1"
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
     }
     buildFeatures { buildConfig = true }
 }
