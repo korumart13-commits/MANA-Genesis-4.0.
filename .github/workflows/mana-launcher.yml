@@ -41,4 +41,4 @@ jobs:
           done
       - name: Compile launcher and LiteRT-LM prototype
         working-directory: launcher
-        run: gradle --no-daemon :app:assembleDebug
+        run: gradle --no-daemon :app:assembleDebug :app:testDebugUnitTest
