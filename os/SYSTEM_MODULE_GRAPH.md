@@ -4,7 +4,7 @@ This document describes the next integration layer after the JVM-testable system
 
 ## Implemented in this stage
 
-- A typed catalog of 26 MANA/platform modules, including the previously omitted owner-requested capabilities: local memory, voice, adaptive intelligence, future updates, Yandex, VK, developer center, local node, device ecosystem, and recovery.
+- A typed catalog of 27 MANA/platform modules, including the previously omitted owner-requested capabilities: local memory, voice, adaptive intelligence, future updates, Yandex, VK, developer center, local node, device ecosystem, and recovery.
 - Explicit dependency edges and deterministic topological startup order.
 - Required versus optional module classification.
 - Failure policy: required services abort or enter degraded mode; optional features are disabled without taking down the core.
@@ -15,7 +15,7 @@ The catalog is architecture metadata consumed by tests and later integration wor
 ## Service graph
 
 1. `platform.hardware` → `platform.security` → `platform.storage`
-2. `mana.modelmanager` → `mana.brain`
+2. `mana.modelmanager` + `mana.cloudgateway` → `mana.brain`
 3. `mana.brain` → memory, voice, avatar, adaptive intelligence, future updates, diary, life manager, contacts, game intelligence, Yandex and VK
 4. `mana.systemui` → launcher, settings, control center
 5. contacts + brain → receptionist
