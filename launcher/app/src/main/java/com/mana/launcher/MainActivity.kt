@@ -217,6 +217,19 @@ class MainActivity : Activity() {
             listOf("phone", "camera", "settings", "chrome", "messages", "телефон", "камера", "настройки", "сообщ").any(n::contains)
         }.take(8)
         renderGrid(favorites)
+        content.addView(label("MANA GAME INTELLIGENCE", 18, textColor, true).apply {
+            setPadding(0, dp(23), 0, dp(7))
+        })
+        val games = apps.filter { it.activityInfo.applicationInfo.category == android.content.pm.ApplicationInfo.CATEGORY_GAME }
+        if (games.isEmpty()) {
+            content.addView(label("Игры появятся здесь после установки. MANA сможет работать с ними через поддерживаемые игровые адаптеры.", 12, muted, false))
+        } else {
+            content.addView(label("${games.size} игр в списке приложений", 12, muted, false))
+            renderGrid(games.take(8))
+        }
+        content.addView(label("Запуск игр доступен сейчас. Управление игровым миром подключается только через официальные API или разрешённый серверный мост.", 11, muted, false).apply {
+            setPadding(0, dp(8), 0, dp(5))
+        })
         content.addView(label("Полный список приложений — во вкладке «Приложения».", 12, muted, false).apply {
             setPadding(0, dp(17), 0, 0)
         })
