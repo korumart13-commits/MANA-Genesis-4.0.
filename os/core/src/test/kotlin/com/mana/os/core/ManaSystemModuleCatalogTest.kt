@@ -50,6 +50,7 @@ class ManaSystemModuleCatalogTest {
         val brain = ManaSystemModuleCatalog.modules.single { it.id == "mana.brain" }
         assertEquals(ModuleCriticality.OPTIONAL, cloud.criticality)
         assertTrue("mana.cloudgateway" !in brain.dependencies)
+        assertTrue("mana.memory" in brain.dependencies)
         assertTrue(order.indexOf("mana.brain") < order.indexOf("mana.voice"))
         assertTrue(order.indexOf("mana.brain") < order.indexOf("mana.adaptiveintelligence"))
         assertTrue(order.indexOf("mana.updater") < order.indexOf("mana.recovery"))
