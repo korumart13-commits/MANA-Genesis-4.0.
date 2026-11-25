@@ -27,7 +27,7 @@ dependencies {
     implementation(platform("androidx.compose:compose-bom:2025.11.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")\n    implementation("androidx.documentfile:documentfile:1.0.1")
     implementation("androidx.lifecycle:lifecycle-runtime-android:2.8.7")
     implementation(project(":core"))
     implementation("com.google.ai.edge.litertlm:litertlm-android:0.16.1")
