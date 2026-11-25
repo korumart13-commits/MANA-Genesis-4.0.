@@ -1,6 +1,6 @@
 package com.mana.launcher
 
-import android.app.Activity
+import androidx.activity.ComponentActivity
 import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Color
@@ -17,7 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 
 /** Owner-facing setup for official Yandex AI Studio and read-only VK connectors. */
-class ManaIntegrationSettingsActivity : Activity() {
+class ManaIntegrationSettingsActivity : ComponentActivity() {
     private val backgroundColor = Color.rgb(4, 7, 14)
     private val surfaceColor = Color.rgb(13, 32, 59)
     private val accentColor = Color.rgb(90, 190, 255)
@@ -34,7 +34,7 @@ class ManaIntegrationSettingsActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(18), dp(18), dp(18), dp(18))
-            setBackgroundColor(backgroundColor)
+            setBackgroundColor(this@ManaIntegrationSettingsActivity.backgroundColor)
         }
         root.addView(text("Интеграции MANA", 25, foregroundColor, true))
         root.addView(text("Ключи хранятся локально в AES-GCM через Android Keystore. Облачные запросы не запускаются автоматически.", 13, mutedColor))
@@ -117,17 +117,17 @@ class ManaIntegrationSettingsActivity : Activity() {
         EditText(this).apply {
             hint = hintText
             setText(initial)
-            setTextColor(foregroundColor)
-            setHintTextColor(mutedColor)
+            setTextColor(this@ManaIntegrationSettingsActivity.foregroundColor)
+            setHintTextColor(this@ManaIntegrationSettingsActivity.mutedColor)
             inputType = if (password) InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
                 else InputType.TYPE_CLASS_TEXT
             isSingleLine = true
             setPadding(dp(12), dp(8), dp(12), dp(8))
-            setBackgroundColor(surfaceColor)
+            setBackgroundColor(this@ManaIntegrationSettingsActivity.surfaceColor)
             layoutParams = LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(7) }
         }
 
-    private fun section(value: String) = text(value, 18, accentColor, true).apply {
+    private fun section(value: String) = text(value, 18, this@ManaIntegrationSettingsActivity.accentColor, true).apply {
         setPadding(0, dp(22), 0, dp(5))
     }
 
