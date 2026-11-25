@@ -117,7 +117,8 @@ class ManaDocumentStorageActivity : Activity() {
 
     private fun walk(folder: DocumentFile, found: MutableMap<String, DocumentFile>, depth: Int) {
         if (depth > 5 || found.size >= MAX_CANDIDATES) return
-        folder.listFiles().forEach { child ->
+        val children = try { folder.listFiles() } catch (_: SecurityException) { return }
+        children.forEach { child ->
             if (found.size >= MAX_CANDIDATES) return
             if (child.isDirectory) {
                 if (child.name != QUARANTINE_DIR) walk(child, found, depth + 1)
@@ -129,6 +130,8 @@ class ManaDocumentStorageActivity : Activity() {
 
     private fun isCandidate(file: DocumentFile): Boolean {
         val name = (file.name ?: "").lowercase()
+        val size = file.length()
+        if (size <= 0L || size > MAX_FILE_BYTES) return false
         val extension = name.substringAfterLast('.', "")
         if (extension in PROTECTED_EXTENSIONS) return false
         val ageDays = if (file.lastModified() > 0L) (System.currentTimeMillis() - file.lastModified()) / DAY_MS else 0L
@@ -164,7 +167,6 @@ class ManaDocumentStorageActivity : Activity() {
                         body = source.uri.toString() + "\n" + target.uri.toString(),
                         tags = setOf(
                             TAG,
-                            "quarantine-uri:${target.uri}",
                             "sha256:$expectedHash",
                             "bytes:${source.length()}"
                         ),
@@ -204,7 +206,8 @@ class ManaDocumentStorageActivity : Activity() {
             card.addView(button("Восстановить копию в выбранную папку") { restore(entry, uri) })
             if ("original-deleted" !in entry.tags) card.addView(button("Удалить оригинал после проверки") { confirmDeleteOriginal(entry, uri) })
             if ("original-deleted" !in entry.tags) card.addView(button("Удалить оригинал после проверки и подтверждения") { confirmDeleteOriginal(entry, uri) })
-            card.addView(button("Удалить только копию из карантина") { confirmDeleteCopy(entry, uri) })
+            val onlyCopy = "original-deleted" in entry.tags
+            card.addView(button(if (onlyCopy) "Удалить единственную оставшуюся копию" else "Удалить только копию из карантина") { confirmDeleteCopy(entry, uri) })
             root.addView(card)
         }
     }
@@ -221,6 +224,15 @@ class ManaDocumentStorageActivity : Activity() {
                 try {
                     val copied = copyAndHash(source.uri, target.uri)
                     require(copied == expected && sha256(target.uri) == expected) { "Проверка восстановленной копии не прошла." }
+                    synchronized(store) {
+                        store.writeAll(store.readAll().map {
+                            if (it.id == entry.id) it.copy(
+                                body = target.uri.toString() + "\\n" + quarantineUri,
+                                tags = it.tags - "original-deleted",
+                                updatedAt = Instant.now()
+                            ) else it
+                        })
+                    }
                     runOnUiThread { showMessage("Файл восстановлен как $name. Копия в карантине сохранена.") }
                 } catch (error: Exception) {
                     target.delete()
@@ -265,7 +277,7 @@ class ManaDocumentStorageActivity : Activity() {
     private fun confirmDeleteCopy(entry: ManaDiaryEntry, quarantineUri: String) {
         AlertDialog.Builder(this)
             .setTitle("Удалить копию из карантина?")
-            .setMessage("Оригинал в исходной папке не затрагивается. Удаляется только проверенная копия MANA_Review.")
+            .setMessage(if ("original-deleted" in entry.tags) "Исходник уже удалён. Это последняя оставшаяся копия; её удаление приведёт к безвозвратной потере файла." else "Оригинал в исходной папке не затрагивается. Удаляется только проверенная копия MANA_Review.")
             .setNegativeButton("Отмена", null)
             .setPositiveButton("Удалить копию") { _, _ ->
                 executor.execute {
