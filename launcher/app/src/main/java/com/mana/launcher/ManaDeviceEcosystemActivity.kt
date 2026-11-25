@@ -24,18 +24,18 @@ import android.widget.TextView
  * control commands are performed.
  */
 class ManaDeviceEcosystemActivity : Activity() {
-    private val background = 0xFF04070E.toInt()
-    private val panel = 0xFF0D203B.toInt()
-    private val foreground = 0xFFEEF6FF.toInt()
-    private val muted = 0xFF9AB0C9.toInt()
-    private val accent = 0xFF48B4FF.toInt()
+    private val backgroundColor = 0xFF04070E.toInt()
+    private val panelColor = 0xFF0D203B.toInt()
+    private val foregroundColor = 0xFFEEF6FF.toInt()
+    private val mutedColor = 0xFF9AB0C9.toInt()
+    private val accentColor = 0xFF48B4FF.toInt()
     private lateinit var content: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = background
-        window.navigationBarColor = background
-        val scroll = ScrollView(this).apply { setBackgroundColor(background) }
+        window.statusBarColor = backgroundColor
+        window.navigationBarColor = backgroundColor
+        val scroll = ScrollView(this).apply { setBackgroundColor(backgroundColor) }
         content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(28), dp(20), dp(24))
@@ -51,11 +51,11 @@ class ManaDeviceEcosystemActivity : Activity() {
     }
 
     private fun renderHeader() {
-        content.addView(text("MANA DEVICES", 28, foreground, true))
-        content.addView(text("Устройства и подключения", 14, accent, true))
+        content.addView(text("MANA DEVICES", 28, foregroundColor, true))
+        content.addView(text("Устройства и подключения", 14, accentColor, true))
         content.addView(text(
             "MANA показывает уже сопряжённые Bluetooth-устройства. Поиск новых устройств и изменение сетевых подключений выполняются штатными средствами Android.",
-            12, muted, false
+            12, mutedColor, false
         ))
         content.addView(action("Обновить список") { renderDevices() })
         content.addView(action("Открыть настройки Bluetooth") {
@@ -72,22 +72,22 @@ class ManaDeviceEcosystemActivity : Activity() {
         val manager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
         val adapter = manager.adapter
         if (adapter == null) {
-            content.addView(text("Bluetooth не поддерживается этим устройством.", 14, muted, false))
+            content.addView(text("Bluetooth не поддерживается этим устройством.", 14, mutedColor, false))
             return
         }
         if (!adapter.isEnabled) {
-            content.addView(text("Bluetooth выключен. Включи его в системных настройках.", 14, muted, false))
+            content.addView(text("Bluetooth выключен. Включи его в системных настройках.", 14, mutedColor, false))
             return
         }
         val devices = try {
             adapter.bondedDevices.orEmpty().sortedBy { safeName(it).lowercase() }
         } catch (_: SecurityException) {
-            content.addView(text("Android не предоставил доступ к сопряжённым устройствам.", 14, muted, false))
+            content.addView(text("Android не предоставил доступ к сопряжённым устройствам.", 14, mutedColor, false))
             return
         }
-        content.addView(text("СОПРЯЖЁННЫЕ УСТРОЙСТВА · ${devices.size}", 13, accent, true))
+        content.addView(text("СОПРЯЖЁННЫЕ УСТРОЙСТВА · ${devices.size}", 13, accentColor, true))
         if (devices.isEmpty()) {
-            content.addView(text("Пока нет сопряжённых устройств. Добавь часы, наушники или автомобиль через настройки Bluetooth.", 13, muted, false))
+            content.addView(text("Пока нет сопряжённых устройств. Добавь часы, наушники или автомобиль через настройки Bluetooth.", 13, mutedColor, false))
         } else {
             devices.forEach { device ->
                 val name = safeName(device).ifBlank { "Bluetooth-устройство" }
@@ -101,10 +101,10 @@ class ManaDeviceEcosystemActivity : Activity() {
                 val card = LinearLayout(this).apply {
                     orientation = LinearLayout.VERTICAL
                     setPadding(dp(14), dp(12), dp(14), dp(12))
-                    setBackgroundColor(panel)
+                    setBackgroundColor(panelColor)
                 }
-                card.addView(text(name, 15, foreground, true))
-                card.addView(text("$category · $kind · Сопряжено", 11, muted, false))
+                card.addView(text(name, 15, foregroundColor, true))
+                card.addView(text("$category · $kind · Сопряжено", 11, mutedColor, false))
                 card.setOnClickListener { startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) }
                 val params = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) }
                 content.addView(card, params)
@@ -112,7 +112,7 @@ class ManaDeviceEcosystemActivity : Activity() {
         }
         content.addView(text(
             "Часы и наушники управляются через совместимые Android-профили. Управление автомобилем возможно только через официальный API производителя или разрешённый интерфейс автомобиля; универсальные команды MANA не отправляет.",
-            11, muted, false
+            11, mutedColor, false
         ))
     }
 
@@ -143,8 +143,8 @@ class ManaDeviceEcosystemActivity : Activity() {
     private fun action(value: String, onClick: () -> Unit) = Button(this).apply {
         text = value
         isAllCaps = false
-        setTextColor(foreground)
-        setBackgroundColor(panel)
+        setTextColor(foregroundColor)
+        setBackgroundColor(panelColor)
         gravity = Gravity.CENTER
         setOnClickListener { onClick() }
         layoutParams = LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(7) }
@@ -156,7 +156,7 @@ class ManaDeviceEcosystemActivity : Activity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_CONNECT) {
             if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) renderDevices()
-            else content.addView(text("Доступ Bluetooth не предоставлен. MANA не может читать список сопряжённых устройств.", 12, muted, false))
+            else content.addView(text("Доступ Bluetooth не предоставлен. MANA не может читать список сопряжённых устройств.", 12, mutedColor, false))
         }
     }
 
