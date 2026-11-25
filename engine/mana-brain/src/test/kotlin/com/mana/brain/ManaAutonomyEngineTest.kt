@@ -73,6 +73,26 @@ class ManaAutonomyEngineTest {
     }
 
     @Test
+    fun plannerFailureIsRecordedForRecovery() = runBlocking {
+        val journal = MemoryJournal()
+        val planner = object : ResearchPlanner {
+            override suspend fun propose(goal: ResearchGoal): ResearchExperiment {
+                error("planner unavailable")
+            }
+            override suspend fun reflect(goal: ResearchGoal, experiment: ResearchExperiment, outcome: ExperimentOutcome) = "unused"
+        }
+        val engine = ManaAutonomyEngine(
+            planner,
+            ResearchRunner { error("runner must not execute") },
+            journal
+        )
+        val report = engine.cycle(ResearchGoal("g3", "Recover from planner failure"))
+        assertEquals(ResearchStatus.FAILED, report.status)
+        assertEquals("proposal", journal.entries.single().experimentId)
+        assertEquals("planner unavailable", journal.entries.single().observation)
+    }
+
+    @Test
     fun unverifiedExperimentNeverCountsAsCompletedLearning() = runBlocking {
         val journal = MemoryJournal()
         val planner = object : ResearchPlanner {
