@@ -3,7 +3,7 @@
 Status: device profile recorded from the owner's previously supplied Termux audit. This file is a build/compatibility target, not proof of a bootable ROM.
 
 ## Confirmed device data
-- Product/model: realme RMX5566RU (realme C85 5G)
+- Product/model: realme RMX5566RU (realme C85; 5G retail naming must be verified separately)
 - Device: RE645F
 - SoC/platform: Qualcomm SM6225, board/platform bengal, hardware qcom
 - Android: 16 / API 36
@@ -45,3 +45,7 @@ Status: device profile recorded from the owner's previously supplied Termux audi
 - Stage 2: install and validate the APK without modifying system partitions.
 - Stage 3: gather/verify OEM device sources and compatibility metadata before any ROM/device-tree work.
 - Stage 4: only after source and recovery prerequisites are proven, evaluate a device-specific ROM build. No universal flash package is acceptable.
+
+
+## Model-code clarification
+Independent device listings identify RMX5566/RE645F as the Qualcomm SM6225-based realme C85, while RMX5253 is listed as the C85 5G/MediaTek variant. The device codename and SoC audit take precedence over a marketing label. Do not select RMX5253 firmware or kernel sources for RMX5566RU.
