@@ -304,6 +304,7 @@ class MainActivity : Activity() {
             val next = (preferences.getInt("avatar_outfit_index", 0) + 1) % 3
             preferences.edit().putInt("avatar_outfit_index", next).apply()
             ManaAvatar3DView.outfitIndex = next
+            ManaAvatarState.outfitIndex = next
             refreshFloatingAvatarStyle()
             showMessage("Наряд аватара изменён. Лицо и голос остались прежними.")
         })
@@ -312,6 +313,7 @@ class MainActivity : Activity() {
             val enabled = !preferences.getBoolean("avatar_accessory_enabled", true)
             preferences.edit().putBoolean("avatar_accessory_enabled", enabled).apply()
             ManaAvatar3DView.accessoryEnabled = enabled
+            ManaAvatarState.accessoryEnabled = enabled
             refreshFloatingAvatarStyle()
             showMessage(if (enabled) "Аксессуар включён." else "Аксессуар скрыт.")
         })
