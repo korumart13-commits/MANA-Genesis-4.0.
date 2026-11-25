@@ -39,7 +39,7 @@ class ManaDocumentStorageActivity : Activity() {
         )
         selectedTree = getSharedPreferences(PREFS, MODE_PRIVATE).getString(KEY_TREE, null)?.let(Uri::parse)
         buildUi()
-        refresh()
+        if (selectedTree != null) scan() else refresh()
     }
 
     private fun buildUi() {
@@ -91,6 +91,8 @@ class ManaDocumentStorageActivity : Activity() {
             val found = linkedMapOf<String, DocumentFile>()
             val tree = DocumentFile.fromTreeUri(this, uri)
             if (tree != null) walk(tree, found, 0)
+            val alreadyQuarantined = synchronized(store) { store.readAll().filter { TAG in it.tags }.map { it.body }.toSet() }
+            found.keys.removeAll(alreadyQuarantined)
             runOnUiThread {
                 if (root.childCount > 4) root.removeViews(4, root.childCount - 4)
                 candidates.clear()
