@@ -30,4 +30,25 @@ class ManaSystemModuleCatalogTest {
         assertTrue(required.isNotEmpty())
         assertTrue(required.all { it.failurePolicy != ModuleFailurePolicy.DISABLE_MODULE })
     }
+    @Test fun ownerRequestedModulesAreRepresentedInCatalog() {
+        val ids = ManaSystemModuleCatalog.modules.map { it.id }.toSet()
+        val required = setOf(
+            "mana.brain", "mana.modelmanager", "mana.memory", "mana.voice",
+            "mana.avatar", "mana.adaptiveintelligence", "mana.futureupdates",
+            "mana.yandex", "mana.vk", "mana.diary", "mana.lifemanager",
+            "mana.contacts", "mana.receptionist", "mana.gameintelligence",
+            "mana.launcher", "mana.systemui", "mana.settings", "mana.controlcenter",
+            "mana.updater", "mana.recovery", "mana.localnode",
+            "mana.deviceecosystem", "mana.developercenter"
+        )
+        assertTrue(ids.containsAll(required), "Missing owner-requested modules: ${required - ids}")
+    }
+
+    @Test fun extendedModuleDependenciesRemainAcyclic() {
+        val order = ManaSystemModuleCatalog.dependencyOrder()
+        assertTrue(order.indexOf("mana.brain") < order.indexOf("mana.voice"))
+        assertTrue(order.indexOf("mana.brain") < order.indexOf("mana.adaptiveintelligence"))
+        assertTrue(order.indexOf("mana.updater") < order.indexOf("mana.recovery"))
+    }
+
 }
