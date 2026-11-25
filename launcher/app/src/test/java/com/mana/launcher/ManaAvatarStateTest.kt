@@ -44,6 +44,11 @@ class ManaAvatarStateTest {
         assertEquals("mana_avatar_genesis_speaking.gltf", ManaAvatarState.assetName())
     }
 
+    @Test fun happyExpressionUsesHappyAnimationOnBaseGeometry() {
+        ManaAvatarState.expressionIndex = 2
+        assertEquals("mana_avatar_genesis.gltf", ManaAvatarState.assetName())
+    }
+
     @Test fun invalidOutfitIndexFallsBackToBase() {
         ManaAvatarState.outfitIndex = 99
         assertEquals("mana_avatar_genesis.gltf", ManaAvatarState.assetName())
