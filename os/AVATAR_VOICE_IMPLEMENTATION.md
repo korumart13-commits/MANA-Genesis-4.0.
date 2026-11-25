@@ -5,6 +5,7 @@
 - `ManaAvatar3DView.kt` renders a full-body stylized character using OpenGL ES 2.0 lit sphere meshes.
 - Character design: long dark hair, blue highlights/eyes, dark navy clothing, face, hands/arms, legs and boots.
 - Idle animation: body bob, slight hair sway, periodic blinking.
+- Appearance controls: three outfit palettes, accessory toggle and three facial expression states; body/face/hair identity remains fixed.
 - Speaking animation: mouth movement is toggled by the Android TextToSpeech utterance listener.
 - `ManaFloatingAvatarService.kt` hosts the renderer in a draggable overlay window. The owner must explicitly grant Android's special “display over other apps” permission.
 - The overlay does not capture keyboard focus or inject touches into the foreground application.
@@ -20,7 +21,7 @@ The overlay lives in the legacy Gradle launcher prototype. It is not yet part of
 
 Workflow: [MANA Launcher — Gradle source verification](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/workflows/mana-launcher.yml)
 
-The earlier launcher baseline compiled successfully in run 45680858694. Subsequent OpenGL, full-body and TTS commits have separate workflow runs; do not treat the earlier success as validation of later commits. A successful Gradle compile validates Kotlin/Android packaging only, not GPU rendering or device behavior.
+The integrated launcher, Brain source mirror, local memory, diary and Life Manager source compiled successfully in run 45686283259. The OpenGL renderer and TTS also compiled in earlier run 45686047287. Later outfit/accessory/expression changes have their own queued Gradle runs. A successful Gradle compile validates Kotlin/Android packaging only, not GPU rendering or device behavior.
 
 ## Next acceptance gates
 
