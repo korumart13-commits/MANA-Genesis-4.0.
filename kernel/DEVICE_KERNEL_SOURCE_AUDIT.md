@@ -4,7 +4,7 @@ Status: source discovery started; no candidate has been approved for building or
 
 ## Target facts
 
-- Product identifier: realme RMX5566RU / RE645F (owner describes it as realme C85 5G; exact marketing variant remains under verification)
+- Product identifier: realme RMX5566RU / RE645F; hardware evidence matches realme C85 4G (Snapdragon 685), not the separate C85 5G (Dimensity 6300) listed on realme's product pages. The owner had described the phone as C85 5G; the device properties are the authoritative build target.
 - Device codename: RE645F
 - SoC: Qualcomm SM6225
 - Board/platform: bengal
