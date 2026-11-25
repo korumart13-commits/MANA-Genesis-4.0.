@@ -167,10 +167,12 @@ class ManaAutonomyEngine(
     private val journal: ResearchJournal
 ) {
     suspend fun cycle(goal: ResearchGoal): AutonomyCycleReport {
-        val experiment = planner.propose(goal)
-        require(experiment.goalId == goal.id) { "Planner returned an experiment for another goal" }
-
+        var experimentId: String? = null
         return try {
+            val experiment = planner.propose(goal)
+            experimentId = experiment.id
+            require(experiment.goalId == goal.id) { "Planner returned an experiment for another goal" }
+
             val outcome = runner.run(experiment)
             val status = when {
                 !outcome.success -> ResearchStatus.FAILED
@@ -201,11 +203,15 @@ class ManaAutonomyEngine(
             val message = error.message?.take(240) ?: "Research cycle failed"
             journal.append(
                 ResearchJournalEntry(
-                    goal.id, experiment.id, ResearchStatus.FAILED, message, emptyList(),
+                    goal.id,
+                    experimentId ?: "proposal",
+                    ResearchStatus.FAILED,
+                    message,
+                    emptyList(),
                     "Retry only after diagnosing the recorded failure"
                 )
             )
-            AutonomyCycleReport(goal.id, experiment.id, ResearchStatus.FAILED, message)
+            AutonomyCycleReport(goal.id, experimentId, ResearchStatus.FAILED, message)
         }
     }
 }
