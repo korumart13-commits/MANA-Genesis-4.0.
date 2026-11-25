@@ -1,10 +1,19 @@
 # RMX5566RU device/kernel source compatibility audit
 
 Audit date: 2026-11-25  
-Owner-reported retail name: realme C85 5G; runtime identity: realme C85 (4G), RMX5566RU / RE645F  
+Owner-reported retail name: realme C85 5G; exact runtime identity: RMX5566RU / RE645F  
 Owner-provided runtime facts: Qualcomm SM6225, `ro.board.platform=bengal`, `ro.hardware=qcom`, arm64-v8a, Linux kernel `5.15.197-android13-8-o-01074-gdfa4acfa411e`, Android 16.
 
-## Device-name correction\n\nThe user's diagnostics identify Qualcomm SM6225/bengal/qcom. realme's official specifications distinguish the standard **realme C85** (Snapdragon 685, 4G) from **realme C85 5G** (MediaTek Dimensity 6300). Therefore RMX5566RU / SM6225 should be treated as the standard realme C85 (4G), not the C85 5G. The retail name was easy to conflate, but the SoC and build properties determine the target.\n\n- Official realme C85 (Snapdragon 685): https://www.realme.com/global/realme-c85/specs\n- Official realme C85 5G (Dimensity 6300): https://www.realme.com/global/realme-c85-5g/specs\n- Independent RMX5566 / RE645F mapping: https://www.deviceinfo.app/devices/realme/c85/\n\n## Result
+## Device identity discrepancy
+
+The user's live diagnostics identify Qualcomm SM6225 / bengal / qcom. realme's public specifications list Snapdragon 685 for the standard C85 and MediaTek Dimensity 6300 for the C85 5G. realme's security-device listing also associates the RMX5566 marketing code with C85 5G, so public marketing/model mappings are not fully consistent. The runtime SoC, board, hardware and kernel fingerprints are the controlling engineering target. Until the OEM confirms the regional SKU, this project must target **RMX5566RU / RE645F with Qualcomm SM6225**, and must not assume that a generic C85 5G MediaTek source applies.
+
+- Official realme C85 (Snapdragon 685): https://www.realme.com/global/realme-c85/specs
+- Official realme C85 5G (Dimensity 6300): https://www.realme.com/global/realme-c85-5g/specs
+- realme security device list: https://www.realme.com/global/security
+- Independent RMX5566 / RE645F hardware mapping: https://www.deviceinfo.app/devices/realme/c85/
+
+## Result
 
 **The exact OEM kernel/device package is still not verified. Do not build or flash a kernel from the repository below.**
 
