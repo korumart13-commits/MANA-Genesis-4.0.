@@ -230,6 +230,22 @@ class MainActivity : Activity() {
         content.addView(label("Запуск игр доступен сейчас. Управление игровым миром подключается только через официальные API или разрешённый серверный мост.", 11, muted, false).apply {
             setPadding(0, dp(8), 0, dp(5))
         })
+        content.addView(action("Разрешить обнаружение активной игры") {
+            startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+        }, LinearLayout.LayoutParams(-1, dp(42)))
+        content.addView(action("Проверить текущую игру") {
+            val monitor = ManaGameSessionMonitor(this)
+            if (!monitor.hasUsageAccess()) {
+                showMessage("Сначала разреши MANA доступ к статистике использования приложений.")
+            } else {
+                val activePackage = monitor.foregroundPackage()
+                val activeGame = games.firstOrNull { it.activityInfo.packageName == activePackage }
+                showMessage(
+                    if (activeGame != null) "Сейчас запущена игра: ${activeGame.loadLabel(packageManager)}"
+                    else "Активная игра не обнаружена. Пакет переднего приложения: ${activePackage ?: "не определён"}"
+                )
+            }
+        }, LinearLayout.LayoutParams(-1, dp(42)))
         content.addView(label("Полный список приложений — во вкладке «Приложения».", 12, muted, false).apply {
             setPadding(0, dp(17), 0, 0)
         })
