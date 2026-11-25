@@ -30,9 +30,11 @@ class ManaCallScreeningService : CallScreeningService() {
         // Local contact lookup and owner notification must never delay ringing.
 
         Thread {
-            val known = runCatching {
-                ManaContactIntelligence(this).findByPhone(number) != null
-            }.getOrDefault(false)
+            val contacts = ManaContactIntelligence(this)
+            // Without Contacts permission, do not label every caller as unknown.
+            val known = if (!contacts.hasPermission()) true else runCatching {
+                contacts.findByPhone(number) != null
+            }.getOrDefault(true)
             val decision = ManaSmartReceptionistPolicy().onIncomingCall(numberKnown = known)
             if (decision.unknownCaller) notifyOwner(number)
         }.start()
