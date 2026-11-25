@@ -3,6 +3,10 @@ pluginManagement {
     repositories { gradlePluginPortal(); mavenCentral(); google() }
 }
 dependencyResolutionManagement {
-    repositories { mavenCentral() }
+    repositories {
+        // Google-hosted Maven Central mirror reduces transient central throttling.
+        maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2/") }
+        mavenCentral()
+    }
 }
 rootProject.name = "mana-brain-engine"
