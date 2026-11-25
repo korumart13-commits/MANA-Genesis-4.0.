@@ -1,6 +1,7 @@
 package com.mana.launcher
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.ResolveInfo
@@ -21,6 +22,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.text.InputType
 import android.net.Uri
 import java.io.File
 import java.io.FileOutputStream
@@ -38,6 +40,8 @@ import android.widget.ScrollView
 import android.widget.TextView
 import java.util.Locale
 import kotlin.math.max
+import com.mana.os.core.EncryptedFileManaDiaryStore
+import com.mana.os.core.ManaDiaryService
 
 class MainActivity : Activity() {
     private val bg = Color.rgb(4, 7, 14)
@@ -65,6 +69,8 @@ class MainActivity : Activity() {
     private var modelStatus: TextView? = null
     private var textToSpeech: TextToSpeech? = null
     @Volatile private var voiceReady = false
+    private var diaryService: ManaDiaryService? = null
+    private var editingDiaryId: String? = null
 
     private fun requestFloatingAvatar() {
         if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
@@ -82,7 +88,7 @@ class MainActivity : Activity() {
         window.decorView.setBackgroundColor(bg)
         localRuntime = LocalModelRuntime(File(cacheDir, "mana-litert-cache"))
         manaBrain = ManaBrainBridge(localRuntime)
-        initializeVoice()
+        diaryService = try { ManaDiaryService(EncryptedFileManaDiaryStore(File(filesDir, "mana/diary.bin"), ManaAndroidKeyProvider())) } catch (error: Exception) {\n            showMessage("Дневник пока недоступен: ${error.message}")\n            null\n        }\n        initializeVoice()
         loadApps()
         buildShell()
         showHome()
@@ -193,7 +199,7 @@ class MainActivity : Activity() {
         }
         card.addView(label("MANA ASSISTANT", 11, accentSoft, true))
         card.addView(label("Твой телефон. Твои правила.", 19, textColor, true))
-        card.addView(action("Включить плавающий аватар поверх приложений") { requestFloatingAvatar() })
+        card.addView(action("Включить плавающий аватар поверх приложений") { requestFloatingAvatar() })\n        card.addView(action("Открыть зашифрованный дневник MANA") { showDiary() })
         card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Локальный ИИ: выбери .litertlm-модель в окне MANA.", 12, muted, false))
         val p = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(19) }
         content.addView(card, p)
@@ -338,6 +344,127 @@ class MainActivity : Activity() {
         }
         rootFrame.addView(overlay, lp)
         avatarPanel = overlay
+    }
+
+    private fun showDiary() {
+        val diary = diaryService
+        if (diary == null) {
+            showMessage("Дневник недоступен: проверь Android Keystore и хранилище.")
+            return
+        }
+        showingDrawer = false
+        search.setText("")
+        editingDiaryId = null
+        content.removeAllViews()
+        content.addView(label("Дневник MANA", 24, textColor, true))
+        content.addView(label("Локально и с шифрованием AES-GCM. Записи не отправляются в облако.", 12, muted, false))
+        val title = EditText(this).apply {
+            hint = "Заголовок"
+            setTextColor(textColor)
+            setHintTextColor(muted)
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            background = rounded(panelRaised, 12)
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+        }
+        content.addView(title, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(12) })
+        val body = EditText(this).apply {
+            hint = "Твоя запись..."
+            setTextColor(textColor)
+            setHintTextColor(muted)
+            gravity = Gravity.TOP
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            minLines = 4
+            background = rounded(panelRaised, 12)
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+        }
+        content.addView(body, LinearLayout.LayoutParams(-1, dp(120)).apply { topMargin = dp(8) })
+        val searchField = EditText(this).apply {
+            hint = "Поиск по дневнику"
+            setTextColor(textColor)
+            setHintTextColor(muted)
+            singleLine = true
+            background = rounded(panelRaised, 12)
+            setPadding(dp(12), 0, dp(12), 0)
+        }
+        content.addView(searchField, LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(12) })
+        val entriesBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        lateinit var renderEntries: (String) -> Unit
+        val save = action("Сохранить запись") {
+            val heading = title.text.toString().trim()
+            val text = body.text.toString().trim()
+            if (heading.isBlank() || text.isBlank()) {
+                showMessage("Добавь заголовок и текст записи.")
+            } else try {
+                val currentId = editingDiaryId
+                if (currentId == null) diary.create(heading, text)
+                else diary.update(currentId, heading, text, emptySet())
+                editingDiaryId = null
+                title.setText("")
+                body.setText("")
+                renderEntries(searchField.text.toString())
+                showMessage("Запись сохранена в зашифрованном дневнике.")
+            } catch (error: Exception) {
+                showMessage("Не удалось сохранить запись: ${error.message}")
+            }
+        }
+        content.addView(save, LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(8) })
+        content.addView(action("Экспортировать дневник") {
+            val share = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, diary.exportText())
+            }
+            startActivity(Intent.createChooser(share, "Экспорт дневника MANA"))
+        }, LinearLayout.LayoutParams(-1, dp(42)))
+        content.addView(label("Записи", 17, textColor, true).apply { setPadding(0, dp(14), 0, dp(7)) })
+        content.addView(entriesBox, LinearLayout.LayoutParams(-1, -2))
+        renderEntries = { query ->
+            entriesBox.removeAllViews()
+            diary.search(query).forEach { entry ->
+                val item = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dp(12), dp(10), dp(12), dp(10))
+                    background = rounded(panelRaised, 13)
+                }
+                item.addView(label(entry.title, 14, textColor, true))
+                item.addView(label(entry.body.take(180), 11, muted, false))
+                val actions = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
+                actions.addView(action("Открыть") {
+                    editingDiaryId = entry.id
+                    title.setText(entry.title)
+                    body.setText(entry.body)
+                    save.text = "Сохранить изменения"
+                }, LinearLayout.LayoutParams(0, dp(38), 1f))
+                actions.addView(action("Удалить") {
+                    AlertDialog.Builder(this)
+                        .setTitle("Удалить запись?")
+                        .setMessage("Запись будет удалена из локального зашифрованного дневника.")
+                        .setNegativeButton("Отмена", null)
+                        .setPositiveButton("Удалить") { _, _ ->
+                            try {
+                                diary.delete(entry.id, approvedByUser = true)
+                                if (editingDiaryId == entry.id) {
+                                    editingDiaryId = null
+                                    title.setText("")
+                                    body.setText("")
+                                    save.text = "Сохранить запись"
+                                }
+                                renderEntries(searchField.text.toString())
+                            } catch (error: Exception) {
+                                showMessage("Не удалось удалить запись: ${error.message}")
+                            }
+                        }.show()
+                }, LinearLayout.LayoutParams(0, dp(38), 1f))
+                item.addView(actions)
+                entriesBox.addView(item, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+            }
+            if (entriesBox.childCount == 0) entriesBox.addView(label("Записей пока нет.", 12, muted, false))
+        }
+        searchField.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { renderEntries(s?.toString().orEmpty()) }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
+        renderEntries("")
     }
 
     private fun chooseModelFile() {
