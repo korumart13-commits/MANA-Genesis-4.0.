@@ -22,7 +22,7 @@ class ManaAdaptiveLearningWorker(context: Context, params: WorkerParameters) : C
         val prefs = applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (!prefs.getBoolean(KEY_ENABLED, false)) return Result.success()
         val topics = prefs.getString(KEY_TOPICS, "").orEmpty()
-            .lineSequence().map { it.trim() }.filter { it.length in 2..512 }.distinct().take(5).toList()
+            .lineSequence().map { it.trim() }.filter { it.length in 2..400 }.distinct().take(5).toList()
         if (topics.isEmpty()) {
             saveStatus(prefs, "Добавь хотя бы одну тему для поиска.", 0)
             return Result.success()
