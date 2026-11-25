@@ -6,15 +6,17 @@ import android.os.Looper
 import android.telecom.Call
 import android.telecom.InCallService
 import android.telecom.VideoProfile
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Optional default-dialer integration. It is inert until the owner explicitly
- * grants ROLE_DIALER and enables the 10-second auto-answer preference.
+ * Optional default-dialer integration. Inert until the owner explicitly grants
+ * ROLE_DIALER and enables the 10-second auto-answer preference.
  */
 class ManaInCallService : InCallService() {
     private val handler = Handler(Looper.getMainLooper())
-    private var activeCallback: Call.Callback? = null
-    private var autoAnswerTask: Runnable? = null
+    private val callbacks = ConcurrentHashMap<Call, Call.Callback>()
+    private val answerTasks = ConcurrentHashMap<Call, Runnable>()
 
     override fun onCreate() {
         super.onCreate()
@@ -23,46 +25,61 @@ class ManaInCallService : InCallService() {
 
     override fun onCallAdded(call: Call) {
         super.onCallAdded(call)
+        calls.addIfAbsent(call)
         currentCall = call
-        activeCallback = object : Call.Callback() {
+        val callback = object : Call.Callback() {
             override fun onStateChanged(call: Call, state: Int) {
-                if (state != Call.STATE_RINGING) cancelAutoAnswer()
+                if (state != Call.STATE_RINGING) cancelAutoAnswer(call)
+                if (currentCall === call && state == Call.STATE_DISCONNECTED) {
+                    currentCall = calls.lastOrNull { it !== call && it.state != Call.STATE_DISCONNECTED }
+                }
                 broadcastCallChanged()
             }
         }
-        call.registerCallback(activeCallback!!)
-        val launch = Intent(this, ManaDialerActivity::class.java)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            .putExtra(ManaDialerActivity.EXTRA_INCOMING_CALL, true)
-        runCatching { startActivity(launch) }
+        callbacks[call] = callback
+        call.registerCallback(callback)
+        launchInCallUi()
         scheduleAutoAnswerIfEnabled(call)
         broadcastCallChanged()
     }
 
     override fun onCallRemoved(call: Call) {
-        cancelAutoAnswer()
-        activeCallback?.let { runCatching { call.unregisterCallback(it) } }
-        activeCallback = null
-        if (currentCall === call) currentCall = null
+        cancelAutoAnswer(call)
+        callbacks.remove(call)?.let { runCatching { call.unregisterCallback(it) } }
+        calls.remove(call)
+        if (currentCall === call) currentCall = calls.lastOrNull { it.state != Call.STATE_DISCONNECTED }
         broadcastCallChanged()
         super.onCallRemoved(call)
+    }
+
+    override fun onBringToForeground(showDialpad: Boolean) {
+        super.onBringToForeground(showDialpad)
+        launchInCallUi(showDialpad)
+    }
+
+    private fun launchInCallUi(showDialpad: Boolean = false) {
+        val launch = Intent(this, ManaDialerActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            .putExtra(ManaDialerActivity.EXTRA_INCOMING_CALL, true)
+            .putExtra(ManaDialerActivity.EXTRA_SHOW_DIALPAD, showDialpad)
+        runCatching { startActivity(launch) }
     }
 
     private fun scheduleAutoAnswerIfEnabled(call: Call) {
         val enabled = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(KEY_AUTO_ANSWER, false)
         if (!enabled || call.state != Call.STATE_RINGING) return
         val task = Runnable {
-            if (currentCall === call && call.state == Call.STATE_RINGING) {
+            if (calls.contains(call) && call.state == Call.STATE_RINGING) {
                 runCatching { call.answer(VideoProfile.STATE_AUDIO_ONLY) }
             }
+            answerTasks.remove(call)
         }
-        autoAnswerTask = task
+        answerTasks[call] = task
         handler.postDelayed(task, AUTO_ANSWER_DELAY_MS)
     }
 
-    private fun cancelAutoAnswer() {
-        autoAnswerTask?.let(handler::removeCallbacks)
-        autoAnswerTask = null
+    private fun cancelAutoAnswer(call: Call) {
+        answerTasks.remove(call)?.let(handler::removeCallbacks)
     }
 
     private fun broadcastCallChanged() {
@@ -70,9 +87,13 @@ class ManaInCallService : InCallService() {
     }
 
     override fun onDestroy() {
-        cancelAutoAnswer()
-        activeService = null
+        answerTasks.values.forEach(handler::removeCallbacks)
+        answerTasks.clear()
+        callbacks.forEach { (call, callback) -> runCatching { call.unregisterCallback(callback) } }
+        callbacks.clear()
+        calls.clear()
         currentCall = null
+        activeService = null
         super.onDestroy()
     }
 
@@ -82,10 +103,14 @@ class ManaInCallService : InCallService() {
         const val ACTION_CALL_STATE_CHANGED = "com.mana.launcher.CALL_STATE_CHANGED"
         const val AUTO_ANSWER_DELAY_MS = 10_000L
 
+        private val calls = CopyOnWriteArrayList<Call>()
+
         @Volatile var currentCall: Call? = null
             private set
         @Volatile var activeService: ManaInCallService? = null
             private set
+
+        fun activeCalls(): List<Call> = calls.toList()
 
         fun answerCurrentCall() {
             currentCall?.takeIf { it.state == Call.STATE_RINGING }?.answer(VideoProfile.STATE_AUDIO_ONLY)
@@ -97,6 +122,13 @@ class ManaInCallService : InCallService() {
 
         fun endCurrentCall() {
             currentCall?.disconnect()
+        }
+
+        fun holdCurrentCall() {
+            currentCall?.let { call ->
+                if (call.state == Call.STATE_ACTIVE) call.hold()
+                else if (call.state == Call.STATE_HOLDING) call.unhold()
+            }
         }
 
         fun setMuted(muted: Boolean) {
