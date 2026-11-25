@@ -259,6 +259,9 @@ class MainActivity : Activity() {
         card.addView(label("MANA ASSISTANT", 11, accentSoft, true))
         card.addView(label("Твой телефон. Твои правила.", 19, textColor, true))
         card.addView(action(if (getSharedPreferences("mana.settings", MODE_PRIVATE).getBoolean("floating_avatar_enabled", false)) "Выключить плавающий 3D-аватар" else "Включить плавающий 3D-аватар") { requestFloatingAvatar() })
+        card.addView(action("Открыть полноценную 3D-модель MANA") {
+            startActivity(Intent(this, ManaAvatarPreviewActivity::class.java))
+        })
         card.addView(action("Сменить наряд MANA") {
             ManaAvatar3DView.outfitIndex = (ManaAvatar3DView.outfitIndex + 1) % 3
             showMessage("Наряд аватара изменён. Внешность и голос остались прежними.")
