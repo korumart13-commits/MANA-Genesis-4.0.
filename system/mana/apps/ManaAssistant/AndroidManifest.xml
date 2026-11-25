@@ -1,5 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.mana.assistant">
+
+    <permission
+        android:name="com.mana.permission.BIND_BRAIN"
+        android:protectionLevel="signature" />
+
     <application android:label="MANA"
         android:theme="@android:style/Theme.Material.NoActionBar"
         android:allowBackup="false" android:supportsRtl="true">
@@ -9,5 +14,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service
+            android:name=".ManaBrainBinderService"
+            android:exported="true"
+            android:permission="com.mana.permission.BIND_BRAIN" />
     </application>
 </manifest>
