@@ -149,6 +149,25 @@ class ManaIntegrationSettingsActivity : ComponentActivity() {
             ManaAdaptiveLearningScheduler.disable(this)
             refreshStatus("Фоновое обучение выключено.")
         })
+        root.addView(button("Просмотреть локальную базу знаний") {
+            val items = adaptiveKnowledge.list()
+            if (items.isEmpty()) {
+                refreshStatus("Локальная база знаний пока пуста.")
+            } else {
+                AlertDialog.Builder(this)
+                    .setTitle("Сохранённые источники: ${items.size}")
+                    .setItems(items.map { it.title + "\\n" + it.sourceUrl }.toTypedArray()) { _, which ->
+                        val item = items[which]
+                        confirmRemove("Забыть источник «${item.title}»?") {
+                            adaptiveKnowledge.forget(item.id, ownerApproved = true)
+                            refreshStatus("Источник удалён из локальной базы знаний.")
+                        }
+                    }
+                    .setNegativeButton("Закрыть", null)
+                    .show()
+            }
+        })
+
         root.addView(section("VK — только чтение"))
         root.addView(text("Поддерживаются только users.get и wall.get. MANA не публикует записи, не ставит реакции и не отправляет сообщения.", 12, mutedArgb))
         val vkToken = field("VK access token", password = true)
