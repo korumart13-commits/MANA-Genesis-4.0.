@@ -45,7 +45,7 @@ class ManaIntegrationSettingsActivity : Activity() {
         root.addView(text("Официальный API Yandex Cloud. Запросы могут тарифицироваться по условиям твоего аккаунта.", 12, mutedColor))
         val yandexKey = field("Секретный API-ключ Yandex", password = true)
         val folder = field("ID каталога Yandex Cloud")
-        val model = field("Модель", initial = "yandexgpt-5-lite")
+        val model = field("Model ID (пример: yandexgpt/latest)", initial = "yandexgpt/latest")
         root.addView(yandexKey); root.addView(folder); root.addView(model)
         root.addView(button("Сохранить и включить Yandex") {
             try {
@@ -74,7 +74,7 @@ class ManaIntegrationSettingsActivity : Activity() {
             }
         })
         root.addView(button("Официальная документация Yandex") {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://aistudio.yandex.ru/ru/docs/ai-studio/api-ref/authentication")))
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://yandex.cloud/en/docs/ai-studio/api-ref/authentication")))
         })
 
         root.addView(section("VK — только чтение"))
