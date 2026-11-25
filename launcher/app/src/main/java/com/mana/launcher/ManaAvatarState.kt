@@ -15,16 +15,12 @@ object ManaAvatarState {
 
     fun loadFromPreferences(context: Context) {
         val prefs = context.getSharedPreferences("mana.settings", Context.MODE_PRIVATE)
-        outfitIndex = prefs.getInt("avatar_outfit_index", 0).takeIf { it in 0..2 } ?: 0
+        outfitIndex = prefs.getInt("avatar_outfit_index", 0).coerceIn(0, 2)
         accessoryEnabled = prefs.getBoolean("avatar_accessory_enabled", true)
     }
 
     fun assetName(): String {
-        val base = when (outfitIndex) {
-            1 -> "mana_avatar_genesis_casual"
-            2 -> "mana_avatar_genesis_evening"
-            else -> "mana_avatar_genesis"
-        } + if (accessoryEnabled) "" else "_no_accessory"
+        val base = ManaAvatarAssetSelector.assetName(outfitIndex, accessoryEnabled).removeSuffix(".gltf")
         val expression = when {
             isSpeaking -> "speaking"
             expressionIndex == 1 -> "playful"
@@ -36,7 +32,19 @@ object ManaAvatarState {
 
 object ManaAvatarAssetSelector {
     fun assetName(context: Context): String {
-        ManaAvatarState.loadFromPreferences(context)
-        return ManaAvatarState.assetName()
+        val prefs = context.getSharedPreferences("mana.settings", Context.MODE_PRIVATE)
+        return assetName(
+            prefs.getInt("avatar_outfit_index", 0),
+            prefs.getBoolean("avatar_accessory_enabled", true)
+        )
+    }
+
+    fun assetName(outfitIndex: Int, accessoryEnabled: Boolean): String {
+        val base = when (outfitIndex.coerceIn(0, 2)) {
+            1 -> "mana_avatar_genesis_casual.gltf"
+            2 -> "mana_avatar_genesis_evening.gltf"
+            else -> "mana_avatar_genesis.gltf"
+        }
+        return if (accessoryEnabled) base else base.removeSuffix(".gltf") + "_no_accessory.gltf"
     }
 }
