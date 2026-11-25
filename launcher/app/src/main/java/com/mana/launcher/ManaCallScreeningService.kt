@@ -39,6 +39,8 @@ class ManaCallScreeningService : CallScreeningService() {
     }
 
     private fun notifyOwner(number: String) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) return
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= 26) {
             manager.createNotificationChannel(
@@ -50,10 +52,11 @@ class ManaCallScreeningService : CallScreeningService() {
         val notification = builder
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("MANA: неизвестный номер")
-            .setContentText(if (number.isBlank()) "Входящий номер не определён" else "Входящий вызов: $number")
+            .setContentText(if (number.isBlank()) "Входящий номер не определён" else "Входящий вызов с неизвестного номера")
+            .setVisibility(Notification.VISIBILITY_PRIVATE)
             .setAutoCancel(true)
             .build()
-        manager.notify((System.currentTimeMillis() % Int.MAX_VALUE).toInt(), notification)
+        runCatching { manager.notify((System.currentTimeMillis() % Int.MAX_VALUE).toInt(), notification) }
     }
 
     companion object {
