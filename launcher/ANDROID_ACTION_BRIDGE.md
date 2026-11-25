@@ -56,3 +56,8 @@ The Android launcher now exposes **Управление функциями те�
 - This remains an ordinary app-level integration. It does not grant root, shell, Device Owner, privileged Binder access, or firmware control.
 
 The UI currently executes explicit owner-button actions through the policy controller. It is not yet a natural-language-to-action pipeline from MANA Brain; that must be added as a typed proposal stage with independent owner confirmation where required.
+
+
+## Direct owner command path
+
+The launcher also routes a deliberately small set of exact owner phrases through `ManaOwnerCommandParser` before sending other text to MANA Brain. Current supported forms are torch on/off, DND on/off, brightness 0–255, and app launch by explicit package ID. Unrecognized text is not treated as a device action. Parsed requests are passed to the non-exported controls activity, shown in a confirmation dialog, and still require the matching capability to have been enabled. Model-generated prose is not accepted as an executable action request.
