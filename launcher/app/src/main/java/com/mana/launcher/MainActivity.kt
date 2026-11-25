@@ -1162,17 +1162,27 @@ class MainActivity : Activity() {
     private fun downloadOfficialModel() {
         val catalog = modelCatalog
         if (catalog == null) { showMessage("Хранилище загрузок Android недоступно."); return }
-        try {
-            val id = catalog.enqueueGemma4E2B()
-            if (id == -1L) {
-                activateCompletedModelDownload()
-                showMessage("Официальная модель проверена. Подключаю её к локальному движку…")
-            } else {
-                showMessage("Загрузка Gemma 4 E2B началась через Android Download Manager. Загрузка разрешена только по Wi-Fi. После завершения вернись в MANA — файл будет проверен и подключён.")
+        AlertDialog.Builder(this)
+            .setTitle("Условия модели Gemma 4 E2B")
+            .setMessage("Перед загрузкой ознакомься с лицензией упаковки Apache 2.0 и дополнительными условиями Google Gemma Terms of Use и Prohibited Use Policy. Модель занимает 2,59 ГБ. Загрузка идёт только по Wi-Fi; после неё MANA проверит точный размер и SHA-256. Продолжая, ты подтверждаешь, что прочитал и принимаешь условия использования модели.")
+            .setNegativeButton("Отмена", null)
+            .setNeutralButton("Открыть условия Gemma") { _, _ ->
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://ai.google.dev/gemma/terms")))
             }
-        } catch (error: Exception) {
-            showMessage("Не удалось начать загрузку: " + error.message)
-        }
+            .setPositiveButton("Принимаю и скачать") { _, _ ->
+                try {
+                    val id = catalog.enqueueGemma4E2B(licenseAccepted = true)
+                    if (id == -1L) {
+                        activateCompletedModelDownload()
+                        showMessage("Официальная модель проверена. Подключаю её к локальному движку…")
+                    } else {
+                        showMessage("Загрузка Gemma 4 E2B началась через Android Download Manager. Загрузка разрешена только по Wi-Fi. После завершения вернись в MANA — файл будет проверен и подключён.")
+                    }
+                } catch (error: Exception) {
+                    showMessage("Не удалось начать загрузку: " + error.message)
+                }
+            }
+            .show()
     }
 
     private fun activateCompletedModelDownload() {
