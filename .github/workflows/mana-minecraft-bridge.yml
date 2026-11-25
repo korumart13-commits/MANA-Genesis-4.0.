@@ -1,0 +1,34 @@
+name: MANA Minecraft Bedrock bridge — source checks
+
+on:
+  push:
+    paths:
+      - 'game/minecraft-bedrock/**'
+      - '.github/workflows/mana-minecraft-bridge.yml'
+  pull_request:
+    paths:
+      - 'game/minecraft-bedrock/**'
+      - '.github/workflows/mana-minecraft-bridge.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate behavior pack manifest
+        run: node -e "const m=JSON.parse(require('fs').readFileSync('game/minecraft-bedrock/manifest.json')); if(m.dependencies[0].version!=='2.11.0') process.exit(1);"
+      - name: Validate script syntax
+        run: node --check game/minecraft-bedrock/scripts/mana_bridge.js
+      - name: Verify no outbound transport is embedded
+        run: |
+          if grep -En 'fetch\(|XMLHttpRequest|WebSocket|axios|http[s]?://' game/minecraft-bedrock/scripts/mana_bridge.js; then
+            echo "Unexpected network transport found"
+            exit 1
+          fi
