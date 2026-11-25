@@ -106,4 +106,35 @@ class ManaSystemCoreTest {
         assertEquals(emptyList(), events)
     }
 
+
+    @Test fun statusSnapshotIsAtomicAndReportsRunningModules() {
+        val descriptor = SystemModuleDescriptor(
+            "base", "com.mana.base", emptySet(),
+            ModuleCriticality.REQUIRED, ModuleFailurePolicy.ABORT_BOOT, "read-only test boundary"
+        )
+        val core = ManaSystemCore(device)
+        core.register(object : ManaSystemModule {
+            override val id = "base"
+            override fun start(context: ManaSystemContext) = Unit
+        })
+        core.boot()
+        val snapshot = core.statusSnapshot(listOf(descriptor))
+        assertEquals(BootPhase.READY, snapshot.phase)
+        assertEquals(SystemReadiness.READY, snapshot.readiness)
+        assertEquals(ModuleState.RUNNING, snapshot.modules.single().state)
+        assertEquals(emptyList(), snapshot.requiredFailures)
+    }
+
+    @Test fun statusSnapshotBlocksWhenRequiredModuleIsMissing() {
+        val descriptor = SystemModuleDescriptor(
+            "required.service", "com.mana.required", emptySet(),
+            ModuleCriticality.REQUIRED, ModuleFailurePolicy.ABORT_BOOT, "read-only test boundary"
+        )
+        val core = ManaSystemCore(device)
+        core.boot()
+        val snapshot = core.statusSnapshot(listOf(descriptor))
+        assertEquals(SystemReadiness.BLOCKED, snapshot.readiness)
+        assertEquals(listOf("required.service"), snapshot.missingHealthRecords)
+    }
+
 }

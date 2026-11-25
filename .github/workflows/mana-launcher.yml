@@ -29,10 +29,14 @@ jobs:
           packages: 'platforms;android-36'
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.9'
-      - name: Verify Android Brain mirror matches tested engine source
+          gradle-version: '8.11.1'
+      - name: Verify Android app consumes the canonical tested Brain module
         working-directory: .
-        run: diff -u engine/mana-brain/src/main/kotlin/com/mana/brain/ManaBrain.kt launcher/app/src/main/java/com/mana/brain/ManaBrain.kt
+        run: |
+          grep -F 'include(":app", ":core", ":brain")' launcher/settings.gradle.kts
+          grep -F 'project(":brain").projectDir = file("../engine/mana-brain")' launcher/settings.gradle.kts
+          grep -F 'implementation(project(":brain"))' launcher/app/build.gradle.kts
+          test ! -f launcher/app/src/main/java/com/mana/brain/ManaBrain.kt
       - name: Validate embedded full-body MANA glTF asset
         working-directory: .
         run: |
@@ -42,3 +46,11 @@ jobs:
       - name: Compile launcher and LiteRT-LM prototype
         working-directory: launcher
         run: gradle --no-daemon :app:assembleDebug :app:testDebugUnitTest
+
+      - name: Publish Android companion APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Genesis-4.0-Android-Companion-APK
+          path: launcher/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30

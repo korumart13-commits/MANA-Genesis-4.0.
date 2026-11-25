@@ -1,4 +1,5 @@
 pluginManagement {
+    plugins { id("org.jetbrains.kotlin.jvm") version "2.2.21" }
     repositories { google(); mavenCentral(); gradlePluginPortal() }
 }
 dependencyResolutionManagement {
@@ -6,5 +7,6 @@ dependencyResolutionManagement {
     repositories { google(); mavenCentral() }
 }
 rootProject.name = "MANA-Launcher"
-include(":app", ":core")
+include(":app", ":core", ":brain")
+project(":brain").projectDir = file("../engine/mana-brain")
 project(":core").projectDir = file("../os/core")

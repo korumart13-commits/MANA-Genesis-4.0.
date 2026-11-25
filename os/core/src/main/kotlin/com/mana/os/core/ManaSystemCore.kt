@@ -35,6 +35,17 @@ interface ManaSystemModule {
     fun stop(context: ManaSystemContext) {}
 }
 
+data class ManaSystemStatusSnapshot(
+    val phase: BootPhase,
+    val readiness: SystemReadiness,
+    val modules: List<ModuleHealth>,
+    val requiredFailures: List<String>,
+    val optionalFailures: List<String>,
+    val missingHealthRecords: List<String>,
+    val catalogErrors: List<String>,
+    val generatedAt: Instant = Instant.now()
+)
+
 data class ManaSystemContext(
     val device: DeviceFacts,
     val services: MutableMap<String, Any> = mutableMapOf()
@@ -120,6 +131,26 @@ class ManaSystemCore(private val device: DeviceFacts) {
     }
 
     fun healthSnapshot(): List<ModuleHealth> = lock.withLock { health.values.toList() }
+
+    /**
+     * Atomic, read-only status contract for Android UI/service adapters.
+     * The snapshot exposes module health and readiness only; it grants no system privileges.
+     */
+    fun statusSnapshot(
+        catalog: List<SystemModuleDescriptor> = ManaSystemModuleCatalog.modules
+    ): ManaSystemStatusSnapshot = lock.withLock {
+        val moduleSnapshot = health.values.toList()
+        val report = ManaSystemReadinessEvaluator.evaluate(phase, catalog, moduleSnapshot)
+        ManaSystemStatusSnapshot(
+            phase = phase,
+            readiness = report.readiness,
+            modules = moduleSnapshot,
+            requiredFailures = report.requiredFailures,
+            optionalFailures = report.optionalFailures,
+            missingHealthRecords = report.missingHealthRecords,
+            catalogErrors = report.catalogErrors
+        )
+    }
 
     private fun validateDependencies() {
         modules.values.forEach { module ->

@@ -7,22 +7,20 @@ android {
     namespace = "com.mana.launcher"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.mana.launcher"
+        // Separate from the AOSP HOME package com.mana.launcher.
+        applicationId = "com.mana.genesis"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "4.0.2"
+        versionCode = 4
+        versionName = "4.0.3"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
+    kotlinOptions { jvmTarget = "17" }
     buildFeatures { buildConfig = true; compose = true }
 }
-
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2025.11.00"))
     implementation("androidx.compose.ui:ui")
@@ -31,6 +29,7 @@ dependencies {
     implementation("androidx.documentfile:documentfile:1.0.1")
     implementation("androidx.lifecycle:lifecycle-runtime-android:2.8.7")
     implementation(project(":core"))
+    implementation(project(":brain"))
     implementation("com.google.ai.edge.litertlm:litertlm-android:0.16.1")
     implementation("io.github.sceneview:sceneview:4.18.0")
     implementation("androidx.activity:activity-compose:1.10.1")
