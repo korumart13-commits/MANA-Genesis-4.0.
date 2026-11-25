@@ -1369,7 +1369,10 @@ class MainActivity : Activity() {
                 override fun onResults(results: Bundle?) {
                     val spoken = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
                     runOnUiThread {
-                        if (!spoken.isNullOrBlank()) {
+                        val target = voiceTarget
+                        voiceTarget = null
+                        if (!spoken.isNullOrBlank() && target != null) target.setText(spoken)
+                        else if (!spoken.isNullOrBlank()) {
                             chatInput?.setText(spoken)
                             sendToLocalModel()
                         }
