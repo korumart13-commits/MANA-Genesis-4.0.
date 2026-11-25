@@ -7,11 +7,8 @@ import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.view.Gravity
-import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -53,6 +50,7 @@ class ManaDeviceControlsActivity : Activity() {
     override fun onResume() {
         super.onResume()
         if (pendingCapability != "device.torch") reconcilePendingCapability()
+        reconcileRevokedCapabilities()
         refreshController()
         if (::status.isInitialized) status.text = "Активные разрешения MANA: ${enabledResources().size} из ${capabilities.size}"
     }
@@ -219,6 +217,19 @@ class ManaDeviceControlsActivity : Activity() {
         pendingCapability = null
         refreshController()
         if (::status.isInitialized) status.text = "Разрешение включено. MANA может использовать только соответствующую функцию."
+    }
+
+    private fun reconcileRevokedCapabilities() {
+        val active = enabledResources()
+        capabilities.forEach { capability ->
+            if (capability.resource != pendingCapability &&
+                prefs.getBoolean(capability.resource, false) &&
+                capability.resource !in active
+            ) {
+                prefs.edit().putBoolean(capability.resource, false).apply()
+                capabilitySwitches[capability.resource]?.isChecked = false
+            }
+        }
     }
 
     private fun enabledResources(): Set<String> = capabilities
