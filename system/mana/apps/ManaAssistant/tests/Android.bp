@@ -1,0 +1,9 @@
+android_test {
+    name: "ManaBrainInstrumentationTests",
+    manifest: "AndroidManifest.xml",
+    srcs: ["src/**/*.java"],
+    static_libs: ["mana.brain-java"],
+    instrumentation_for: "ManaAssistant",
+    test_suites: ["device-tests"],
+    certificate: "default",
+}
