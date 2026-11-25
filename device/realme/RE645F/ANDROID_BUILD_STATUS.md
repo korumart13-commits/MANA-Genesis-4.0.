@@ -8,7 +8,7 @@
 - The Launcher binds to that service, checks readiness and submits asynchronous prompts.
 - Device-side Android instrumentation tests cover Binder binding, engine metadata and request/result correlation.
 - The JVM test suite includes Android-runtime adapter tests.
-- The local LiteRT-LM InferenceProvider implementation is not yet present/registered. Until one is installed, isReady() is false and requests return an explicit inference-unavailable error. No generated or placeholder answer is returned.
+- The Soong-side LiteRT-LM InferenceProvider is not yet present/registered. Until one is installed, isReady() is false and the Binder returns an explicit inference-unavailable error. The Soong Launcher then forwards the original prompt to the existing com.mana.genesis companion APK, which contains LiteRT-LM Android 0.16.1, LocalModelRuntime and ManaBrainBridge. That companion remains a separate APK, not part of the Soong system image.
 - Cloud provider adapters remain excluded from the Soong library because their Gson and kotlinx-coroutines dependencies are not yet supplied as verified Soong modules.
 
 ## Why a complete firmware image cannot be built yet
