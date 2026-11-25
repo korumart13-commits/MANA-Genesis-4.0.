@@ -72,7 +72,7 @@ jobs:
           packages: "platforms;android-36"
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.9"
+          gradle-version: "8.11.1"
       - name: Ensure Android app consumes the single tested MANA Brain module
         run: |
           grep -F 'include(":app", ":core", ":brain")' launcher/settings.gradle.kts
@@ -87,6 +87,13 @@ jobs:
       - name: Build Android prototype and run unit tests
         working-directory: launcher
         run: gradle --no-daemon :app:assembleDebug :app:testDebugUnitTest
+      - name: Publish Android companion APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Genesis-4.0-Android-Companion-APK
+          path: launcher/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
 
   soong-source-check:
     name: MANA Android product source validation
@@ -135,6 +142,10 @@ jobs:
     needs: [core-tests, brain-tests, android-prototype, soong-source-check]
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: MANA-Genesis-4.0-Android-Companion-APK
+          path: dist/android-companion
       - name: Package all current MANA source modules
         shell: bash
         run: |
@@ -152,6 +163,7 @@ jobs:
           evidence is present in this repository. Do not flash this archive.
           EOF
           sha256sum dist/MANA_Genesis_4.0_UNIFIED_SOURCE.zip > dist/SHA256SUMS.txt
+          sha256sum dist/android-companion/app-debug.apk >> dist/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
           name: MANA-Genesis-4.0-unified-source
