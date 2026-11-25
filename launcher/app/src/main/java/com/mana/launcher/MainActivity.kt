@@ -358,18 +358,7 @@ class MainActivity : Activity() {
         })
         content.addView(action("ЗАПРОСИТЬ ВСЕ ДОСТУПНЫЕ РАЗРЕШЕНИЯ") {
             val requested = mutableListOf<String>()
-            val candidates = listOf(
-                Manifest.permission.RECORD_AUDIO,
-                Manifest.permission.READ_CONTACTS,
-                Manifest.permission.CALL_PHONE,
-                Manifest.permission.READ_CALL_LOG
-            ) + if (Build.VERSION.SDK_INT >= 33) listOf(Manifest.permission.POST_NOTIFICATIONS) else emptyList() +
-                if (Build.VERSION.SDK_INT >= 31) listOf(Manifest.permission.BLUETOOTH_CONNECT) else emptyList()
-            candidates.distinct().forEach { permission ->
-                if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) requested.add(permission)
-            }
-            if (requested.isNotEmpty()) requestPermissions(requested.toTypedArray(), permissionSetupRequestCode)
-            else showMessage("Все доступные обычные разрешения уже выданы. Проверь специальные доступы ниже.")
+            requestAllAvailableRuntimePermissions()
         }, LinearLayout.LayoutParams(-1, dp(50)).apply { topMargin = dp(12) })
         content.addView(action("ЗАВЕРШИТЬ НАСТРОЙКУ И ОТКРЫТЬ MANA") {
             getSharedPreferences("mana.settings", MODE_PRIVATE).edit()
@@ -380,6 +369,26 @@ class MainActivity : Activity() {
         rootFrame.removeAllViews()
         rootFrame.addView(page)
         setContentView(rootFrame)
+        val prefs = getSharedPreferences("mana.settings", MODE_PRIVATE)
+        if (!prefs.getBoolean("permission_batch_requested", false)) {
+            prefs.edit().putBoolean("permission_batch_requested", true).apply()
+            content.post { requestAllAvailableRuntimePermissions() }
+        }
+    }
+
+    private fun requestAllAvailableRuntimePermissions() {
+        val candidates = listOf(
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.READ_CONTACTS,
+            Manifest.permission.CALL_PHONE,
+            Manifest.permission.READ_CALL_LOG
+        ) + (if (Build.VERSION.SDK_INT >= 33) listOf(Manifest.permission.POST_NOTIFICATIONS) else emptyList()) +
+            (if (Build.VERSION.SDK_INT >= 31) listOf(Manifest.permission.BLUETOOTH_CONNECT) else emptyList())
+        val requested = candidates.distinct().filter {
+            checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (requested.isNotEmpty()) requestPermissions(requested.toTypedArray(), permissionSetupRequestCode)
+        else showMessage("Все обычные разрешения из списка уже выданы. Проверь специальные доступы ниже.")
     }
 
     private fun addSetupAction(title: String, detail: String, state: String, run: () -> Unit) {
