@@ -60,7 +60,16 @@ class ManaBrainBridge(
                             )
                         }
                 }
-                val response = ManaBrain(localProvider, cloudProviders).respond(
+                val personaCloudProviders = cloudProviders.map { provider ->
+                    object : InferenceProvider {
+                        override val id: String get() = provider.id
+                        override fun isAvailable(): Boolean = provider.isAvailable()
+                        override suspend fun generate(prompt: String): String = provider.generate(
+                            ManaPersona.SYSTEM_PROMPT + "\\n\\nЗапрос владельца:\\n" + prompt
+                        )
+                    }
+                }
+                val response = ManaBrain(localProvider, personaCloudProviders).respond(
                     BrainRequest(
                         prompt = prompt,
                         allowCloud = allowCloud,
