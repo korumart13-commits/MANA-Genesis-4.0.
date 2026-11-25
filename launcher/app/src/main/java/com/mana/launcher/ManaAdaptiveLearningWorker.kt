@@ -6,6 +6,8 @@ import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.ExistingWorkPolicy
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.mana.os.core.EncryptedFileManaAdaptiveKnowledgeStore
@@ -100,12 +102,20 @@ object ManaAdaptiveLearningScheduler {
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             UNIQUE_WORK, ExistingPeriodicWorkPolicy.UPDATE, request
         )
+        val initialRun = OneTimeWorkRequestBuilder<ManaAdaptiveLearningWorker>()
+            .setConstraints(constraints)
+            .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            INITIAL_WORK, ExistingWorkPolicy.KEEP, initialRun
+        )
     }
 
     fun disable(context: Context) {
         context.getSharedPreferences(ManaAdaptiveLearningWorker.PREFS, Context.MODE_PRIVATE)
             .edit().putBoolean(ManaAdaptiveLearningWorker.KEY_ENABLED, false).apply()
         WorkManager.getInstance(context).cancelUniqueWork(UNIQUE_WORK)
+        WorkManager.getInstance(context).cancelUniqueWork(INITIAL_WORK)
     }
 
     fun isEnabled(context: Context): Boolean =
@@ -113,4 +123,5 @@ object ManaAdaptiveLearningScheduler {
             .getBoolean(ManaAdaptiveLearningWorker.KEY_ENABLED, false)
 
     private const val UNIQUE_WORK = "mana-adaptive-yandex-search"
+    private const val INITIAL_WORK = "mana-adaptive-yandex-search-initial"
 }
