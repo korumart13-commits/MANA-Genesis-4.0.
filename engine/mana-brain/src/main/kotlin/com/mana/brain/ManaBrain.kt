@@ -3,21 +3,18 @@ package com.mana.brain
 /**
  * MANA Brain routing contract.
  *
- * The engine prefers a local inference provider. Cloud providers are only
- * considered when the owner enables network use and local inference is
- * unavailable or the request explicitly permits cloud processing.
- *
- * This module deliberately does not claim to contain model weights or an
- * inference runtime. A LiteRT-LM adapter is supplied in a later integration
- * step after the exact supported Android artifact/API is pinned.
+ * Local inference is always preferred. Cloud inference is an explicit,
+ * per-request fallback and sensitive requests are never sent to a provider.
  */
 data class BrainRequest(
     val prompt: String,
     val allowCloud: Boolean = false,
-    val sensitive: Boolean = false
+    val sensitive: Boolean = false,
+    val preferredCloudProvider: String? = null
 ) {
     init {
         require(prompt.isNotBlank()) { "Prompt must not be blank" }
+        require(preferredCloudProvider == null || preferredCloudProvider.isNotBlank())
     }
 }
 
@@ -35,8 +32,17 @@ interface InferenceProvider {
 
 class ManaBrain(
     private val localProvider: InferenceProvider,
-    private val cloudProvider: InferenceProvider? = null
+    private val cloudProviders: List<InferenceProvider> = emptyList()
 ) {
+    constructor(localProvider: InferenceProvider, cloudProvider: InferenceProvider?) :
+        this(localProvider, listOfNotNull(cloudProvider))
+
+    init {
+        require(cloudProviders.map { it.id }.distinct().size == cloudProviders.size) {
+            "Cloud provider identifiers must be unique"
+        }
+    }
+
     suspend fun respond(request: BrainRequest): BrainResponse {
         if (localProvider.isAvailable()) {
             return BrainResponse(
@@ -46,12 +52,22 @@ class ManaBrain(
             )
         }
 
-        val cloud = cloudProvider
-        if (!request.allowCloud || request.sensitive || cloud == null || !cloud.isAvailable()) {
+        if (!request.allowCloud || request.sensitive || cloudProviders.isEmpty()) {
             throw InferenceUnavailableException(
                 "Local inference is unavailable and cloud processing is not permitted."
             )
         }
+
+        val candidates = if (request.preferredCloudProvider == null) {
+            cloudProviders
+        } else {
+            cloudProviders.filter { it.id == request.preferredCloudProvider }
+        }
+        val cloud = candidates.firstOrNull { it.isAvailable() }
+            ?: throw InferenceUnavailableException(
+                request.preferredCloudProvider?.let { "Requested cloud provider '$it' is unavailable." }
+                    ?: "No permitted cloud provider is available."
+            )
 
         return BrainResponse(
             text = cloud.generate(request.prompt),
