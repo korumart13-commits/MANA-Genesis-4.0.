@@ -22,10 +22,12 @@ Google's published Gemma 4 measurements are from other hardware (for example, S2
 
 1. Keep the existing local model unless the owner chooses to replace it.
 2. Never silently download several gigabytes or consume the owner's data plan.
-3. Verify source, license, file size, SHA-256 and free space before install.
-4. Test CPU first; test GPU only after checking the device's OpenCL/Vulkan driver support and stability.
+3. Verify the official repository, Apache-2.0 license, expected file size, SHA-256 and free space before activation.
+4. The current prototype tries the LiteRT-LM GPU backend first and falls back to CPU if initialization fails; benchmark both paths on the target phone before choosing a default.
 5. Benchmark time-to-first-token, decode tokens/second, peak resident memory, temperature, battery drain and crash recovery.
 6. Reject a model that causes memory pressure, thermal throttling or foreground-app instability.
 7. Keep a known-good previous model so rollback is possible.
 
-The app currently imports a user-selected `.litertlm` file and now tries LiteRT-LM GPU initialization first, falling back to CPU if GPU initialization fails. The manifest declares optional `libvndksupport.so` and `libOpenCL.so` libraries. This is only a backend selection attempt: it does not prove that the target's Adreno driver supports the model or that GPU inference is stable. Automatic catalog download, cryptographic publisher verification and device benchmark gating are still future implementation tasks.
+The launcher now offers an owner-initiated download of the official Gemma 4 E2B IT LiteRT-LM file from the LiteRT Community Hugging Face repository. The download uses Android Download Manager, disallows metered/roaming connections, checks free space, enforces an expected size range, and verifies the publisher-listed SHA-256 `181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c` before the file is activated. A previously verified file can be reactivated without downloading it again. The model repository lists Apache-2.0 licensing. The app stores the file in app-specific external storage; it does not silently start a download.
+
+The runtime tries the GPU backend first and falls back to CPU if GPU initialization fails. The manifest declares optional `libvndksupport.so` and `libOpenCL.so` libraries. This is only a backend selection attempt: it does not prove that the target's Adreno driver supports this model or that GPU inference is stable. The exact RMX5566RU still needs a real-device benchmark covering time-to-first-token, decode speed, peak RAM, temperature, battery drain and app stability before this model can be called compatible or default.
