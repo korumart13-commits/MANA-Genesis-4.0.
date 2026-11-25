@@ -62,6 +62,27 @@ class ManaSystemReadinessEvaluatorTest {
         assertTrue(report.catalogErrors.isNotEmpty())
     }
 
+    @Test fun registeredRequiredModuleDoesNotCountAsReady() {
+        val report = ManaSystemReadinessEvaluator.evaluate(
+            BootPhase.READY, listOf(required),
+            listOf(ModuleHealth(required.id, ModuleState.REGISTERED))
+        )
+        assertEquals(SystemReadiness.BLOCKED, report.readiness)
+        assertEquals(1, report.requiredFailures.size)
+    }
+
+    @Test fun duplicateHealthRecordsAreCatalogErrorsAndBlockReadiness() {
+        val report = ManaSystemReadinessEvaluator.evaluate(
+            BootPhase.READY, listOf(required),
+            listOf(
+                ModuleHealth(required.id, ModuleState.RUNNING),
+                ModuleHealth(required.id, ModuleState.RUNNING)
+            )
+        )
+        assertEquals(SystemReadiness.BLOCKED, report.readiness)
+        assertTrue(report.catalogErrors.contains("Duplicate module health records."))
+    }
+
     @Test fun coldSystemIsNotReady() {
         val report = ManaSystemReadinessEvaluator.evaluate(BootPhase.COLD, listOf(required),
             listOf(ModuleHealth(required.id, ModuleState.REGISTERED)))
