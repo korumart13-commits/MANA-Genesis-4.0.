@@ -29,6 +29,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Verify Android Brain mirror matches tested engine source
+        working-directory: .
+        run: diff -u engine/mana-brain/src/main/kotlin/com/mana/brain/ManaBrain.kt launcher/app/src/main/java/com/mana/brain/ManaBrain.kt
       - name: Compile launcher and LiteRT-LM prototype
         working-directory: launcher
         run: gradle --no-daemon :app:assembleDebug
