@@ -61,6 +61,20 @@ public final class ManaHomeActivity extends Activity {
     private EditText brainPrompt;
     private IBrainService brainService;
     private boolean brainBound;
+    private final ServiceConnection brainConnection = new ServiceConnection() {
+        @Override public void onServiceConnected(ComponentName name, IBinder service) {
+            brainService = IBrainService.Stub.asInterface(service);
+            try {
+                boolean ready = brainService != null && brainService.isReady();
+                brainStatus.setText(ready ? "MANA Brain connected and ready" : "MANA Brain connected; local model unavailable");
+            } catch (RemoteException error) { brainStatus.setText("MANA Brain: service communication error"); }
+        }
+        @Override public void onServiceDisconnected(ComponentName name) {
+            brainService = null;
+            brainStatus.setText("MANA Brain: connection lost");
+        }
+    };
+
 
     private static final class AppEntry {
         final String label;
@@ -69,6 +83,22 @@ public final class ManaHomeActivity extends Activity {
             this.label = label;
             this.packageName = packageName;
         }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Intent service = new Intent();
+        service.setClassName("com.mana.assistant", "com.mana.assistant.ManaBrainBinderService");
+        brainBound = bindService(service, brainConnection, Context.BIND_AUTO_CREATE);
+        if (!brainBound && brainStatus != null) brainStatus.setText("MANA Brain service is not installed");
+    }
+
+    @Override
+    protected void onStop() {
+        if (brainBound) { unbindService(brainConnection); brainBound = false; }
+        brainService = null;
+        super.onStop();
     }
 
     @Override
