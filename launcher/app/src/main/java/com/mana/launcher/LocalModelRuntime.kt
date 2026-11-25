@@ -6,8 +6,6 @@ import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Contents
-import com.google.ai.edge.litertlm.ConversationConfig
-import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.SamplerConfig
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.collect
