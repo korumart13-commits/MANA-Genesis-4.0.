@@ -30,3 +30,13 @@ These are integrated source modules intended for the future MANA product image. 
 The product now declares the generated `mana.brain-java` AIDL library in `system/mana/mana_product.mk`. Its source contract is in `system/mana/brain/aidl`; the transport-neutral `ManaBrainFacade` delegates to the canonical JVM engine in `engine/mana-brain`.
 
 This is **not yet a running Android Binder service**. The assistant application is not yet binding to it. A signature permission, caller UID/package/signature validation, Android Service adapter, cancellation/concurrency handling and instrumentation tests are still required. Do not describe the Assistant as Binder-connected until those pieces are implemented and tested.
+
+
+### Brain Binder integration boundary
+
+`ManaAssistant` now hosts a signature-protected Binder service and links
+`mana.brain-java`. The service is intentionally fail-closed: until the canonical
+Kotlin/JVM engine is packaged for Soong, requests receive an explicit
+`ENGINE_NOT_PACKAGED` error and readiness is false. No placeholder AI output
+is generated. Launcher binding, engine packaging, and Android instrumentation
+tests are still outstanding.
