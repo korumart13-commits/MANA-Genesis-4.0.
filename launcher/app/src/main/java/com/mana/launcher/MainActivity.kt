@@ -97,6 +97,7 @@ class MainActivity : Activity() {
     private val audioPermissionRequestCode = 4111
     private val contactsPermissionRequestCode = 4112
     private val callScreeningRoleRequestCode = 4113
+    private val assistantRoleRequestCode = 4114
     private val notificationPermissionRequestCode = 4114
     private lateinit var contactIntelligence: ManaContactIntelligence
 
@@ -185,6 +186,7 @@ class MainActivity : Activity() {
         loadApps()
         buildShell()
         showHome()
+        openAvatarIfRequested(intent)
         val savedModel = modelCatalog?.savedModelPath()?.let(::File) ?: File(filesDir, "mana-models/selected-model.litertlm")
         if (savedModel.isFile) {
             localRuntime.load(savedModel) { result ->
@@ -194,6 +196,36 @@ class MainActivity : Activity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        openAvatarIfRequested(intent)
+    }
+
+    private fun openAvatarIfRequested(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_OPEN_AVATAR, false) == true && ::avatarButton.isInitialized) {
+            intent.removeExtra(EXTRA_OPEN_AVATAR)
+            avatarButton.post { avatarButton.performClick() }
+        }
+    }
+
+    private fun requestAssistantRole() {
+        if (Build.VERSION.SDK_INT < 29) {
+            showMessage("Роль системного ассистента требует Android 10 или новее.")
+            return
+        }
+        val roleManager = getSystemService(RoleManager::class.java)
+        if (!roleManager.isRoleAvailable(RoleManager.ROLE_ASSISTANT)) {
+            showMessage("На этой прошивке роль системного ассистента недоступна.")
+            return
+        }
+        if (roleManager.isRoleHeld(RoleManager.ROLE_ASSISTANT)) {
+            showMessage("MANA уже выбрана системным ассистентом. Долгое нажатие кнопки питания сработает, если realme назначает этот жест цифровому ассистенту.")
+            return
+        }
+        startActivityForResult(roleManager.createRequestRoleIntent(RoleManager.ROLE_ASSISTANT), assistantRoleRequestCode)
     }
 
     override fun onResume() {
@@ -321,6 +353,8 @@ class MainActivity : Activity() {
             ManaAvatar3DView.expressionIndex = next
             showMessage("Выражение лица изменено.")
         })
+        card.addView(action("Назначить MANA системным ассистентом") { requestAssistantRole() })
+        card.addView(label("После назначения жест или долгое нажатие питания откроет MANA только если прошивка realme передаёт его выбранному ассистенту.", 11, muted, false))
         card.addView(action("Открыть зашифрованный дневник MANA") { showDiary() })
         card.addView(action("Открыть MANA Life Manager") { showLifeManager() })
         card.addView(action("Открыть MANA Future Updates") {
@@ -1404,6 +1438,9 @@ class MainActivity : Activity() {
                 showMessage("Доступ к контактам не предоставлен.")
             }
         }
+        if (requestCode == assistantRoleRequestCode) {
+            showMessage(if (resultCode == RESULT_OK) "MANA назначена системным ассистентом." else "Назначение системного ассистента отменено.")
+        }
         if (requestCode == notificationPermissionRequestCode) {
             if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) requestCallScreeningRole()
             else showMessage("Уведомления выключены; MANA не сможет сообщать об неизвестных вызовах.")
@@ -1551,5 +1588,9 @@ class MainActivity : Activity() {
             paint.textSize = side * .17f
             canvas.drawText("M", cx, cy + r * .82f, paint)
         }
+    }
+
+    companion object {
+        const val EXTRA_OPEN_AVATAR = "com.mana.launcher.OPEN_AVATAR_FROM_SYSTEM_ASSISTANT"
     }
 }
