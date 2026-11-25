@@ -40,7 +40,7 @@ object ManaSystemModuleCatalog {
             ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "model files and license metadata"),
         SystemModuleDescriptor("mana.cloudgateway", "com.mana.cloudgateway", setOf("platform.security"),
             ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "OpenAI, Anthropic, Google and xAI adapters; per-provider opt-in; secrets in secure storage"),
-        SystemModuleDescriptor("mana.brain", "com.mana.brain", setOf("platform.security", "platform.storage", "mana.modelmanager"),
+        SystemModuleDescriptor("mana.brain", "com.mana.brain", setOf("platform.security", "platform.storage", "mana.modelmanager", "mana.memory"),
             ModuleCriticality.REQUIRED, ModuleFailurePolicy.ENTER_DEGRADED, "local inference; cloud opt-in only"),
         SystemModuleDescriptor("mana.avatar", "com.mana.avatar", setOf("mana.brain"),
             ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "camera/microphone only by explicit permission"),
@@ -63,8 +63,7 @@ object ManaSystemModuleCatalog {
         SystemModuleDescriptor("mana.gameintelligence", "com.mana.gameintelligence", setOf("mana.brain"),
             ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "per-game user consent"),
         SystemModuleDescriptor("mana.updater", "com.mana.updater", setOf("platform.security", "platform.storage"),
-            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "signed updates and rollback metadata")
-,
+            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "signed updates and rollback metadata"),
         SystemModuleDescriptor("mana.memory", "com.mana.memory", setOf("platform.storage", "platform.security"),
             ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "encrypted local memory; user controls export and deletion"),
         SystemModuleDescriptor("mana.voice", "com.mana.voice", setOf("mana.brain", "platform.security"),
@@ -84,7 +83,8 @@ object ManaSystemModuleCatalog {
         SystemModuleDescriptor("mana.deviceecosystem", "com.mana.deviceecosystem", setOf("platform.security"),
             ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "explicit Bluetooth/Wi-Fi pairing and scoped device permissions"),
         SystemModuleDescriptor("mana.recovery", "com.mana.recovery", setOf("platform.security", "platform.storage", "mana.updater"),
-            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "verified recovery and rollback; device-specific boot chain only")    )
+            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "verified recovery and rollback; device-specific boot chain only")
+    )
 
     fun validate(): List<String> {
         val errors = mutableListOf<String>()
