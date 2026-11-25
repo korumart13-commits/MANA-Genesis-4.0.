@@ -1,0 +1,21 @@
+aidl_interface {
+    name: "mana.brain",
+    srcs: [
+        "com/mana/brain/BrainRequest.aidl",
+        "com/mana/brain/BrainResponse.aidl",
+        "com/mana/brain/IBrainService.aidl",
+        "com/mana/brain/IBrainCallback.aidl",
+    ],
+    unstable: true,
+    backend: {
+        java: {
+            enabled: true,
+        },
+        cpp: {
+            enabled: false,
+        },
+        ndk: {
+            enabled: false,
+        },
+    },
+}
