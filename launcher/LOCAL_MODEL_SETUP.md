@@ -1,23 +1,42 @@
-# MANA Genesis 4.0 — Local model setup
+# MANA Genesis 4.0 — локальная модель
 
-## Runtime included in the launcher
+## Что подключено в Android-прототипе
 
-The Android launcher now includes Google's LiteRT-LM Android runtime and a local model import flow. The runtime library is packaged in the APK; model weights are deliberately stored separately in app-private storage because a model is hundreds of megabytes and should not inflate the installer.
+- LiteRT-LM Android 0.16.1.
+- Локальная модель имеет приоритет; GPU backend пробуется первым, затем runtime пытается загрузить CPU backend.
+- Модель хранится отдельно от APK в приватном каталоге приложения.
+- Импорт ограничен 16 ГБ, проверяет свободное место, считает SHA-256, пишет во временный файл и атомарно заменяет установленную модель.
+- Облачный резерв OpenAI / Anthropic / Gemini / xAI выключен по умолчанию. Ключи хранятся в AES-GCM с ключом Android Keystore. Каждый облачный запрос требует отдельного подтверждения; контекст локальной памяти не передаётся в облако.
 
-## Suggested starter model for RMX5566RU
+Официальный Android API: https://developers.google.com/edge/litert-lm/android
 
-- Model: Gemma 3 1B IT, INT4 LiteRT-LM
-- File: `gemma3-1b-it-int4.litertlm`
-- Approximate download size: 584 MB
-- Backend configured initially: CPU (safe compatibility baseline)
-- Model page: https://huggingface.co/litert-community/Gemma3-1B-IT
+## Кандидат для RMX5566RU
 
-Before downloading, sign in to Hugging Face and accept the Gemma license terms on the model page. Then download the `.litertlm` file to the phone. In MANA, open the floating avatar, choose **Выбрать локальную модель**, and select that file. The app copies it to its private model folder and initializes LiteRT-LM on a dedicated background thread.
+Gemma 4 E2B IT в формате LiteRT-LM:
+- Репозиторий: https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm
+- Файл: gemma-4-E2B-it.litertlm
+- Размер: около 2.59 GB на диске.
+- Опубликованный SHA-256: 181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c.
+- Репозиторий указывает Apache 2.0 для упаковки; исходные веса Gemma также подпадают под Gemma Terms of Use и Prohibited Use Policy.
 
-The model is not automatically embedded in the APK and the app does not bypass the model's license gate. No model is considered installed until initialization succeeds on the phone.
+Это кандидат, а не подтверждённая производительность на realme RMX5566RU. Публичные измерения карточки модели получены на других устройствах и не переносятся на SM6225. Для телефона нужно измерить загрузку, RAM, скорость генерации, нагрев и расход батареи. Не выбирай варианты Google Tensor / Tensor G5/G6 или специализированные NPU для другого устройства: в RMX5566RU Qualcomm SM6225.
 
-## Notes
+## Более лёгкий резервный вариант
 
-The selected starter is a conservative 1B INT4 model, not a claim that it is the most capable model available. Its published LiteRT-LM artifact is about 584 MB; actual memory use also includes runtime, KV cache, and Android. The device's SM6225 chipset is Qualcomm, so Google Tensor-specific NPU artifacts must not be selected. CPU is the initial backend; GPU acceleration can be evaluated separately after device testing.
+Для первого запуска и проверки совместимости можно использовать LiteRT Community Gemma 3 1B IT, если доступный .litertlm артефакт совместим с текущей версией LiteRT-LM. Он меньше, но слабее. Сравнение моделей и скорость на телефоне ещё предстоит проверить.
 
-The current avatar artwork remains a lightweight drawn placeholder. A real animated 3D character needs a separately licensed rigged GLB/GLTF asset and a renderer; it is not falsely represented as included by the LLM runtime.
+## Установка модели на телефоне
+
+1. Открой официальный репозиторий модели на Hugging Face и проверь лицензионные условия.
+2. Скачай именно файл .litertlm. Для Gemma 4 E2B выбери обычный gemma-4-E2B-it.litertlm, а не файл для Google Tensor или другого специализированного устройства.
+3. В MANA открой аватар → «Выбрать локальную модель» → выбери скачанный файл.
+4. Дождись завершения импорта и инициализации. Статус «модель готова» появляется только после успешной загрузки runtime.
+
+Импортируемый файл получает локальную SHA-256 sidecar-сумму, но приложение ещё не сверяет её автоматически с доверенным каталогом издателя. Перед установкой критически важной модели проверяй SHA-256 по официальной карточке вручную.
+
+## Ограничения
+
+- Модель не вшита в APK и не скачивается скрытно.
+- Устройство не прошло физический benchmark с Gemma 4 E2B; если памяти или ускорителя не хватит, выбери меньшую модель.
+- Gradle compile проверяет сборку исходников, но не гарантирует, что конкретный файл модели загрузится на RMX5566RU.
+- Этот Android-прототип ещё не является собранной MANA OS прошивкой.
