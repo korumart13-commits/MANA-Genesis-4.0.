@@ -45,6 +45,14 @@ class ManaFloatingAvatarService : Service() {
             onTap = {
                 startActivity(Intent(this, MainActivity::class.java)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP))
+            },
+            onDragEnd = {
+                val metrics = resources.displayMetrics
+                val maxX = (metrics.widthPixels - params.width).coerceAtLeast(0)
+                val maxY = (metrics.heightPixels - params.height).coerceAtLeast(0)
+                params.x = if (params.x + params.width / 2 < metrics.widthPixels / 2) 0 else maxX
+                params.y = params.y.coerceIn(0, maxY)
+                try { avatar?.let { windowManager.updateViewLayout(it, params) } } catch (_: IllegalArgumentException) { }
             }
         ).also { view ->
             try { windowManager.addView(view, params) } catch (_: SecurityException) { stopSelf() }
