@@ -44,6 +44,8 @@ import com.mana.os.core.EncryptedFileManaDiaryStore
 import com.mana.os.core.ManaDiaryService
 import com.mana.os.core.EncryptedFileManaLifeTaskStore
 import com.mana.os.core.ManaLifeManagerService
+import com.mana.os.core.EncryptedFileManaMemoryStore
+import com.mana.os.core.ManaMemoryService
 
 class MainActivity : Activity() {
     private val bg = Color.rgb(4, 7, 14)
@@ -73,6 +75,7 @@ class MainActivity : Activity() {
     @Volatile private var voiceReady = false
     private var diaryService: ManaDiaryService? = null
     private var lifeManager: ManaLifeManagerService? = null
+    private var memoryService: ManaMemoryService? = null
     private var editingDiaryId: String? = null
 
     private fun requestFloatingAvatar() {
@@ -103,6 +106,16 @@ class MainActivity : Activity() {
             )
         } catch (error: Exception) {
             showMessage("Планировщик пока недоступен: ${error.message}")
+            null
+        }
+        memoryService = try {
+            ManaMemoryService(
+                EncryptedFileManaMemoryStore(
+                    EncryptedFileManaDiaryStore(File(filesDir, "mana/memory.bin"), ManaAndroidKeyProvider(), "mana.memory.v1")
+                )
+            )
+        } catch (error: Exception) {
+            showMessage("Память MANA пока недоступна: ${error.message}")
             null
         }
         initializeVoice()
@@ -218,7 +231,7 @@ class MainActivity : Activity() {
         card.addView(label("Твой телефон. Твои правила.", 19, textColor, true))
         card.addView(action("Включить плавающий аватар поверх приложений") { requestFloatingAvatar() })
         card.addView(action("Открыть зашифрованный дневник MANA") { showDiary() })
-        card.addView(action("Открыть MANA Life Manager") { showLifeManager() })
+        card.addView(action("Открыть MANA Life Manager") { showLifeManager() })\n        card.addView(action("Открыть локальную память MANA") { showMemory() })
         card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Локальный ИИ: выбери .litertlm-модель в окне MANA.", 12, muted, false))
         val p = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(19) }
         content.addView(card, p)
@@ -392,6 +405,98 @@ class MainActivity : Activity() {
         }
         rootFrame.addView(overlay, lp)
         avatarPanel = overlay
+    }
+
+    private fun showMemory() {
+        val memory = memoryService
+        if (memory == null) {
+            showMessage("Локальная память недоступна.")
+            return
+        }
+        showingDrawer = false
+        search.setText("")
+        content.removeAllViews()
+        content.addView(label("ЛОКАЛЬНАЯ ПАМЯТЬ MANA", 22, textColor, true))
+        content.addView(label("Память хранится на устройстве в AES-GCM зашифрованном файле. В контекст локального ИИ попадают только совпавшие записи.", 12, muted, false))
+        val category = EditText(this).apply {
+            hint = "Категория, например: предпочтения"
+            setTextColor(textColor)
+            setHintTextColor(muted)
+            isSingleLine = true
+            background = rounded(panelRaised, 12)
+            setPadding(dp(12), 0, dp(12), 0)
+        }
+        val value = EditText(this).apply {
+            hint = "Что MANA должна помнить"
+            setTextColor(textColor)
+            setHintTextColor(muted)
+            minLines = 2
+            gravity = Gravity.TOP
+            background = rounded(panelRaised, 12)
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+        }
+        content.addView(category, LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(12) })
+        content.addView(value, LinearLayout.LayoutParams(-1, dp(76)).apply { topMargin = dp(8) })
+        val query = EditText(this).apply {
+            hint = "Найти в памяти"
+            setTextColor(textColor)
+            setHintTextColor(muted)
+            isSingleLine = true
+            background = rounded(panelRaised, 12)
+            setPadding(dp(12), 0, dp(12), 0)
+        }
+        content.addView(query, LinearLayout.LayoutParams(-1, dp(44)).apply { topMargin = dp(8) })
+        val itemsBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        lateinit var render: (String) -> Unit
+        content.addView(action("Сохранить в память") {
+            val cat = category.text.toString().trim()
+            val text = value.text.toString().trim()
+            if (cat.isBlank() || text.isBlank()) showMessage("Укажи категорию и содержание.")
+            else try {
+                memory.remember(cat, text)
+                value.setText("")
+                render(query.text.toString())
+                showMessage("Сохранено в локальной памяти.")
+            } catch (error: Exception) {
+                showMessage("Не удалось сохранить: ${error.message}")
+            }
+        }, LinearLayout.LayoutParams(-1, dp(44)).apply { topMargin = dp(8) })
+        content.addView(label("Сохранённые сведения", 17, textColor, true).apply { setPadding(0, dp(14), 0, dp(7)) })
+        content.addView(itemsBox, LinearLayout.LayoutParams(-1, -2))
+        render = { term ->
+            itemsBox.removeAllViews()
+            memory.recall(term).forEach { item ->
+                val card = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dp(12), dp(9), dp(12), dp(9))
+                    background = rounded(panelRaised, 12)
+                }
+                card.addView(label(item.category, 13, accentSoft, true))
+                card.addView(label(item.content, 12, textColor, false))
+                card.addView(action("Забыть") {
+                    AlertDialog.Builder(this)
+                        .setTitle("Забыть это?")
+                        .setMessage("Сведения будут удалены из зашифрованной локальной памяти.")
+                        .setNegativeButton("Отмена", null)
+                        .setPositiveButton("Забыть") { _, _ ->
+                            try {
+                                memory.forget(item.id, approvedByUser = true)
+                                render(query.text.toString())
+                            } catch (error: Exception) {
+                                showMessage("Не удалось забыть: ${error.message}")
+                            }
+                        }.show()
+                })
+                itemsBox.addView(card, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+            }
+            if (itemsBox.childCount == 0) itemsBox.addView(label("Пока нет сохранённых сведений.", 12, muted, false))
+        }
+        query.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { render(s?.toString().orEmpty()) }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
+        render("")
     }
 
     private fun showLifeManager() {
@@ -645,7 +750,12 @@ class MainActivity : Activity() {
         if (prompt.isBlank()) return
         chatOutput?.text = "Ты: $prompt\n\nMANA думает…"
         val generated = StringBuilder()
-        manaBrain.respond(prompt, { chunk ->
+        val remembered = memoryService?.recall(prompt)?.take(4).orEmpty()
+        val effectivePrompt = if (remembered.isEmpty()) prompt else {
+            val memoryContext = remembered.joinToString("\n") { "- [${it.category}] ${it.content}" }
+            "Локальный контекст памяти владельца (используй только если релевантно):\n$memoryContext\n\nЗапрос владельца:\n$prompt"
+        }
+        manaBrain.respond(effectivePrompt, { chunk ->
             generated.append(chunk)
             runOnUiThread { chatOutput?.append(chunk) }
         }) { result ->
