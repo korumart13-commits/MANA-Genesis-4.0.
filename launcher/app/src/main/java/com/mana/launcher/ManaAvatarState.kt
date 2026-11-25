@@ -15,12 +15,12 @@ object ManaAvatarState {
 
     fun loadFromPreferences(context: Context) {
         val prefs = context.getSharedPreferences("mana.settings", Context.MODE_PRIVATE)
-        outfitIndex = prefs.getInt("avatar_outfit_index", 0).coerceIn(0, 2)
+        outfitIndex = prefs.getInt("avatar_outfit_index", 0).takeIf { it in 0..2 } ?: 0
         accessoryEnabled = prefs.getBoolean("avatar_accessory_enabled", true)
     }
 
     fun assetName(): String {
-        val base = when (outfitIndex.coerceIn(0, 2)) {
+        val base = when (outfitIndex) {
             1 -> "mana_avatar_genesis_casual"
             2 -> "mana_avatar_genesis_evening"
             else -> "mana_avatar_genesis"
