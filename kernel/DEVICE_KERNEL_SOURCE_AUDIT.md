@@ -4,7 +4,7 @@ Status: source discovery started; no candidate has been approved for building or
 
 ## Target facts
 
-- Product identifier: realme RMX5566RU / RE645F; hardware evidence matches realme C85 4G (Snapdragon 685), not the separate C85 5G (Dimensity 6300) listed on realme's product pages. The owner had described the phone as C85 5G; the device properties are the authoritative build target.
+- Product identifier: realme RMX5566RU / RE645F; hardware evidence matches realme C85 4G (Snapdragon 685), not the separate C85 5G (Dimensity 6300) listed on realme's product pages. The owner had described the phone as C85 5G; model mapping confirms RMX5566/RE645F is C85 (4G), while C85 5G is RMX5253/RE644C. The device properties are the authoritative build target.
 - Device codename: RE645F
 - SoC: Qualcomm SM6225
 - Board/platform: bengal
@@ -18,7 +18,7 @@ Repository: https://github.com/realme-kernel-opensource/realme_C85_5G-AndroidV-k
 
 The repository name matches a separate C85 5G software target, but its latest source commit explicitly targets RMX5253 and a MediaTek release. The owner's device diagnostics instead report RMX5566RU / RE645F, Qualcomm SM6225, `bengal`, `qcom` and Adreno 610. realme's public product pages currently list Snapdragon 685 for C85 and Dimensity 6300 for C85 5G, so the owner-reported marketing name and public model mapping are not fully consistent. The exact runtime SoC/platform values from the phone must take precedence for kernel matching; do not treat the RMX5253/MediaTek source as compatible.
 
-Official comparison: https://www.realme.com/my/realme-c85/specs (Snapdragon 685) and https://www.realme.com/my/realme-c85-5g/specs (Dimensity 6300). These public specifications demonstrate why the runtime hardware audit is required rather than relying on the retail name alone.
+Official comparison: https://www.realme.com/my/realme-c85/specs (Snapdragon 685) and https://www.realme.com/my/realme-c85-5g/specs (Dimensity 6300). These public specifications and model mapping demonstrate why the runtime hardware audit is required rather than relying on the retail name alone. Model mapping reference: https://playgist.com/en/tools/google-play-compatibility/realme-1/
 
 Technical mismatch details:
 - Its top-level kernel Makefile declares Linux 5.15.180, not the device's reported 5.15.197.
