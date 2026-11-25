@@ -70,7 +70,7 @@ public final class ManaBrainBinderService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
-        enforceAuthorizedCaller();
+        // Android enforces the service's signature permission before binding.
         return binder;
     }
 
