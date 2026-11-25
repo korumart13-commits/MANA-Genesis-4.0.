@@ -175,7 +175,7 @@ class ManaFloatingAvatarService : LifecycleService() {
         } else startForeground(NOTIFICATION_ID, notification)
     }
 
-    override fun onBind(intent: Intent?): IBinder? = super.onBind(intent)
+    override fun onBind(intent: Intent): IBinder? = super.onBind(intent)
 
     override fun onDestroy() {
         avatarView?.let {
