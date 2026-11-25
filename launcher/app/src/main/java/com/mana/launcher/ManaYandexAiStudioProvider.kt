@@ -60,7 +60,6 @@ class ManaYandexAiStudioProvider(context: Context) : InferenceProvider {
             connection.setRequestProperty("Authorization", "Api-Key ${config.apiKey}")
             connection.setRequestProperty("Content-Type", "application/json")
             connection.setRequestProperty("Accept", "application/json")
-            connection.setRequestProperty("x-folder-id", config.folderId)
             val body = JSONObject()
                 .put("modelUri", "gpt://${config.folderId}/${config.modelId}")
                 .put("completionOptions", JSONObject().put("stream", false).put("temperature", 0.6).put("maxTokens", "2048"))
