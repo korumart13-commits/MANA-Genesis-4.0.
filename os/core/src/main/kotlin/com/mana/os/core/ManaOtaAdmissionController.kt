@@ -48,9 +48,9 @@ class ManaOtaAdmissionController(
     var lastFailure: String? = null
         private set
 
-    fun inspect(manifest: OtaManifest, device: OtaDeviceProfile, observedSha256: String): OtaAdmission {
+    fun inspect(manifest: OtaManifest, device: OtaDeviceProfile, observedSha256: String, observedPayloadSizeBytes: Long): OtaAdmission {
         val reasons = mutableListOf<String>()
-        if (state == OtaState.APPLYING) reasons += "An update is already applying."
+        if (state == OtaState.APPLYING || state == OtaState.STAGED || state == OtaState.APPLIED) reasons += "Current OTA state does not allow a new inspection."
         if (manifest.version <= device.installedVersion) reasons += "Update is not newer than installed version."
         if (manifest.minVersion > device.installedVersion) reasons += "Installed version is below the update minimum."
         if (manifest.product != device.product) reasons += "Product mismatch."
@@ -58,9 +58,11 @@ class ManaOtaAdmissionController(
         if (!device.fingerprint.startsWith(manifest.fingerprintPrefix)) reasons += "Build fingerprint mismatch."
         if (!manifest.payloadSha256.matches(Regex("[a-fA-F0-9]{64}"))) reasons += "Manifest SHA-256 is malformed."
         if (!observedSha256.equals(manifest.payloadSha256, ignoreCase = true)) reasons += "Payload SHA-256 mismatch."
-        if (manifest.payloadSizeBytes <= 0) reasons += "Payload size is invalid."
+        if (manifest.payloadSizeBytes <= 0 || observedPayloadSizeBytes <= 0) reasons += "Payload size is invalid."
+        if (observedPayloadSizeBytes != manifest.payloadSizeBytes) reasons += "Payload size mismatch."
         if (manifest.signingKeyId.isBlank()) reasons += "Signing key identity is missing."
         if (!signatureVerifier.verify(manifest, observedSha256)) reasons += "OTA signature verification failed."
+        if (device.batteryPercent !in 0..100) reasons += "Battery percentage is outside the valid range."
         if (device.batteryPercent < 50 && !device.charging) reasons += "Battery is too low for unattended staging."
         if (!device.unmeteredNetwork) reasons += "Unmetered network is required for unattended staging."
 
