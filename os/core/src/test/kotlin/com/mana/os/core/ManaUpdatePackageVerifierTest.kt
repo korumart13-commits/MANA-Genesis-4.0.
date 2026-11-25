@@ -11,7 +11,6 @@ import java.util.Properties
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
@@ -58,7 +57,7 @@ class ManaUpdatePackageVerifierTest {
         assertEquals("4.0.3", result.version)
         assertEquals(device, result.device)
         assertTrue(result.payloadFile.isFile)
-        assertContentEquals(payload, result.payloadFile.readBytes())
+        assertEquals(payload.toList(), result.payloadFile.readBytes().toList())
         assertFailsWith<IllegalArgumentException> {
             ManaUpdatePackageVerifier(publicKey, "OTHER_DEVICE").verify(archive, File(directory, "wrong-device"), 1)
         }
