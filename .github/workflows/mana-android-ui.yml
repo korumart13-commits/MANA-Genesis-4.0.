@@ -1,0 +1,54 @@
+name: MANA Android UI — source verification
+
+on:
+  push:
+    paths:
+      - 'system/mana/apps/**'
+      - 'system/mana/mana_product.mk'
+      - '.github/workflows/mana-android-ui.yml'
+  pull_request:
+    paths:
+      - 'system/mana/apps/**'
+      - 'system/mana/mana_product.mk'
+      - '.github/workflows/mana-android-ui.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android 16 SDK platform
+        run: sdkmanager "platforms;android-36"
+      - name: Compile MANA UI Java sources against Android 16 API
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/mana-ui-classes"
+          javac -source 17 -target 17 \
+            -classpath "$ANDROID_HOME/platforms/android-36/android.jar" \
+            -d "$RUNNER_TEMP/mana-ui-classes" \
+            $(find system/mana/apps -name '*.java' -print)
+      - name: Validate manifests and permission surface
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import xml.etree.ElementTree as ET
+          android_ns = "{http://schemas.android.com/apk/res/android}"
+          manifests = list(pathlib.Path("system/mana/apps").glob("*/AndroidManifest.xml"))
+          assert len(manifests) == 2, f"Expected 2 app manifests, found {len(manifests)}"
+          for path in manifests:
+              root = ET.parse(path).getroot()
+              permissions = [node.attrib.get(android_ns + "name", "") for node in root.findall("uses-permission")]
+              assert not permissions, f"{path} unexpectedly requests permissions: {permissions}"
+              for activity in root.findall("./application/activity"):
+                  assert activity.attrib.get(android_ns + "exported") == "true", f"{path}: activity exported must be explicit"
+          print("Validated 2 manifests: no runtime permissions requested; exported activities are explicit.")
+          PY
