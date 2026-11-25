@@ -113,6 +113,7 @@
         <activity android:name=".ManaDevicesActivity" android:exported="false" />
         <activity android:name=".ManaFutureUpdatesActivity" android:exported="false" />
         <activity android:name=".ManaAdaptiveLearningActivity" android:exported="false" />
+        <activity android:name=".ManaAutonomyActivity" android:exported="false" android:label="MANA Autonomous Research" />
         <activity
             android:name=".ManaTermuxAgentActivity"
             android:exported="true"
