@@ -136,7 +136,8 @@ class ManaFloatingAvatarService : LifecycleService() {
 
     private fun openAssistant() {
         startActivity(Intent(this, MainActivity::class.java)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP))
+            .putExtra(MainActivity.EXTRA_OPEN_AVATAR, true)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP))
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
