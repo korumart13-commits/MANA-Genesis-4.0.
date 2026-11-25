@@ -66,11 +66,27 @@ class ManaYandexAiStudioProvider(context: Context) : InferenceProvider {
                 .put("max_output_tokens", 2048)
             connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
             val code = connection.responseCode
-            val response = (if (code in 200..299) connection.inputStream else connection.errorStream)
-                ?.bufferedReader()?.use { it.readText() }.orEmpty()
-            check(code in 200..299) { "Yandex AI Studio returned HTTP $code." }
+            val response = readBounded(if (code in 200..299) connection.inputStream else connection.errorStream)
+            check(code in 200..299) { "Yandex AI Studio returned HTTP $code. Check the folder, model, API key and quota." }
             extractText(JSONObject(response))
         } finally { connection.disconnect() }
+    }
+
+    private fun readBounded(stream: java.io.InputStream?, limit: Int = 2 * 1024 * 1024): String {
+        if (stream == null) return ""
+        stream.use { input ->
+            val output = java.io.ByteArrayOutputStream()
+            val buffer = ByteArray(8192)
+            var total = 0
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                total += count
+                require(total <= limit) { "Yandex response exceeded the 2 MiB safety limit." }
+                output.write(buffer, 0, count)
+            }
+            return output.toString("UTF-8")
+        }
     }
 
     private fun extractText(root: JSONObject): String {
