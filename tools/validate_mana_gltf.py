@@ -48,7 +48,8 @@ def main(path):
         require(count >= 0, f"accessor {index} has invalid count")
         view = views[view_index]
         stride = view.get("byteStride", COMPONENT_BYTES[component] * width)
-        required = count * stride
+        accessor_offset = accessor.get("byteOffset", 0)
+        required = accessor_offset + (count - 1) * stride + COMPONENT_BYTES[component] * width if count else accessor_offset
         require(required <= view.get("byteLength", 0), f"accessor {index} exceeds its bufferView")
 
     materials = document.get("materials", [])
@@ -75,6 +76,19 @@ def main(path):
     for scene in scenes:
         for node in scene.get("nodes", []):
             require(0 <= node < len(nodes), "scene references invalid node")
+
+    for skin_index, skin in enumerate(document.get("skins", [])):
+        joints = skin.get("joints", [])
+        require(bool(joints), f"skin {skin_index} has no joints")
+        for joint in joints:
+            require(0 <= joint < len(nodes), f"skin {skin_index} has invalid joint node")
+        if "skeleton" in skin:
+            require(0 <= skin["skeleton"] < len(nodes), f"skin {skin_index} has invalid skeleton root")
+        if "inverseBindMatrices" in skin:
+            accessor_index = skin["inverseBindMatrices"]
+            require(0 <= accessor_index < len(accessors), f"skin {skin_index} has invalid inverse bind accessor")
+            require(accessors[accessor_index].get("type") == "MAT4", f"skin {skin_index} inverse bind accessor must be MAT4")
+            require(accessors[accessor_index].get("count", 0) >= len(joints), f"skin {skin_index} inverse bind matrix count is too small")
 
     animations = document.get("animations", [])
     require(bool(animations), "avatar must include at least one animation")
