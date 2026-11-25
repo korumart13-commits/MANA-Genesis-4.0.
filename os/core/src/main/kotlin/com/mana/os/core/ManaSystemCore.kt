@@ -64,9 +64,14 @@ class ManaSystemCore(private val device: DeviceFacts) {
 
     fun boot(): List<ModuleHealth> = lock.withLock {
         check(phase == BootPhase.COLD) { "Boot already started." }
+        phase = BootPhase.HARDWARE_DISCOVERY
         try {
-            phase = BootPhase.HARDWARE_DISCOVERY
             validateDependencies()
+        } catch (configurationError: Throwable) {
+            phase = BootPhase.DEGRADED
+            throw configurationError
+        }
+        try {
             phase = BootPhase.SECURITY_INIT
             // Security policy and permission boundary checks are a mandatory boot gate.
             phase = BootPhase.CORE_SERVICES
