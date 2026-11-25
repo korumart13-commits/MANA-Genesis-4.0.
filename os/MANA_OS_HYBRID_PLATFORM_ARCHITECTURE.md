@@ -174,3 +174,19 @@ MANA does not bypass Android's sandbox, silently grant runtime permissions, impe
 Carry forward the current implementations and their evidence/status in `os/IMPLEMENTATION_LEDGER.md`: MANA Brain core and Binder/AIDL work; local LiteRT-LM companion runtime and integrity-checked model flow; OpenAI/Anthropic/Gemini/xAI adapters; Yandex AI Studio and VK integrations; encrypted Memory, Diary, Life Manager and Adaptive Intelligence; avatar/voice prototype; Smart Receptionist; Contact Intelligence; Game Intelligence and Minecraft integration; Future Updates workflow; allowlisted Android device actions.
 
 The existing APK is a companion prototype and the existing JVM/Android modules are components, not a completed MANA OS image. Integration and device acceptance remain separate milestones.
+
+
+## Autonomous research is the primary experiment
+
+MANA Genesis is intended to study how a persistent AI develops when it is given initiative, memory, tools and an evolving set of owner-defined goals. Device control is one capability domain, not the project's central purpose.
+
+The initial autonomy profile is **maximum initiative inside MANA's own research environment**:
+
+- MANA may independently choose research questions, break goals into experiments, compare hypotheses, inspect public read-only sources, organize its memory, reflect on outcomes and propose new skills.
+- A scheduler may continue bounded research cycles without waiting for a new user prompt. Every cycle records the goal, method, observation, evidence and reflection.
+- A skill or capability improvement is versioned and tested before it is treated as a successful improvement. An unverified outcome remains a hypothesis, not a learned fact.
+- The owner may add explicit rules at any time (allow, forbid, or require approval for a named capability). A prohibition takes precedence over the default autonomy profile.
+- With no custom owner rules, internal sandbox work and public read-only research are autonomous by default. Device operations remain limited to capabilities actually granted by Android. External side effects remain subject to the platform's authorization and owner confirmation.
+- MANA must not silently export private memory, credentials or personal data to a cloud model. Cloud inference and external account access use their explicit provider consent paths.
+
+This is not a claim of unrestricted self-modification or guaranteed model-weight training. The first implementation is an auditable research-and-reflection loop with pluggable planners, runners and journals. Persistent scheduling, long-term journal adapters, skill evaluation and later model adaptation are separate implementation milestones.
