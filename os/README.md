@@ -67,4 +67,4 @@ The host-JVM core now contains testable MANA Security and MANA Storage policy se
 
 ## Full owner-requirements audit
 
-See [OWNER_FEATURE_AUDIT_2026-11-25.md](OWNER_FEATURE_AUDIT_2026-11-25.md) for the complete feature-by-feature status, duplicate launcher/assistant source finding, game integration boundaries, security gaps and required implementation order. The catalog now represents 26 modules, but this is architecture coverage rather than completed functionality.
+See [OWNER_FEATURE_AUDIT_2026-11-25.md](OWNER_FEATURE_AUDIT_2026-11-25.md) for the complete feature-by-feature status, duplicate launcher/assistant source finding, game integration boundaries, security gaps and required implementation order. The catalog now represents 27 modules, but this is architecture coverage rather than completed functionality.
