@@ -6,5 +6,6 @@ dependencyResolutionManagement {
     repositories { google(); mavenCentral() }
 }
 rootProject.name = "MANA-Launcher"
-include(":app", ":core")
+include(":app", ":core", ":brain")
+project(":brain").projectDir = file("../engine/mana-brain")
 project(":core").projectDir = file("../os/core")
