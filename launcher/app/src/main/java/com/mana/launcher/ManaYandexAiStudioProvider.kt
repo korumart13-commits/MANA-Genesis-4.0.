@@ -63,7 +63,7 @@ class ManaYandexAiStudioProvider(context: Context) : InferenceProvider {
             val body = JSONObject()
                 .put("modelUri", "gpt://${config.folderId}/${config.modelId}")
                 .put("completionOptions", JSONObject().put("stream", false).put("temperature", 0.6).put("maxTokens", "2048"))
-                .put("messages", org.json.JSONArray().put(JSONObject().put("role", "user").put("text", prompt)))
+                .put("messages", org.json.JSONArray()\n                    .put(JSONObject().put("role", "system").put("text", ManaPersona.SYSTEM_PROMPT))\n                    .put(JSONObject().put("role", "user").put("text", prompt)))
                 connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
             val code = connection.responseCode
             val response = readBounded(if (code in 200..299) connection.inputStream else connection.errorStream)
