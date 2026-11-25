@@ -25,5 +25,5 @@ android {
 dependencies {
     implementation(project(":core"))
     implementation("com.google.ai.edge.litertlm:litertlm-android:0.16.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")\n    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
