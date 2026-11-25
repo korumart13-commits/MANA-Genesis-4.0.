@@ -119,6 +119,36 @@ class ManaIntegrationSettingsActivity : ComponentActivity() {
         })
 
 
+
+        root.addView(text("Фоновое обучение выполняется раз в сутки только по Wi-Fi и только по темам, которые ты сам укажешь. Запросы могут тарифицироваться; личная память и переписки не отправляются.", 12, mutedArgb))
+        val learningTopics = EditText(this).apply {
+            hint = "Одна тема на строку (до 5 тем)"
+            setTextColor(foregroundArgb)
+            setHintTextColor(mutedArgb)
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            minLines = 3
+            maxLines = 5
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            setBackgroundColor(surfaceArgb)
+        }
+        root.addView(learningTopics, LinearLayout.LayoutParams(-1, dp(112)).apply { topMargin = dp(8) })
+        root.addView(button("Включить ежедневное обучение на Wi-Fi") {
+            if (!yandex.isAvailable()) { refreshStatus("Сначала настрой Yandex AI Studio."); return@button }
+            AlertDialog.Builder(this)
+                .setTitle("Разрешить фоновое обучение?")
+                .setMessage("MANA будет раз в сутки отправлять в Yandex только указанные темы, сохранять найденные заголовки и выдержки в зашифрованную локальную базу знаний и не отправлять личную память. Возможна плата за Search API. Продолжить?")
+                .setNegativeButton("Отмена", null)
+                .setPositiveButton("Разрешить") { _, _ ->
+                    try {
+                        ManaAdaptiveLearningScheduler.enable(this, learningTopics.text.toString().lines())
+                        refreshStatus("Ежедневное фоновое обучение включено. Работает только по Wi-Fi и при достаточном заряде.")
+                    } catch (error: Exception) { refreshStatus("Не удалось включить обучение: ${error.message}") }
+                }.show()
+        })
+        root.addView(button("Выключить фоновое обучение") {
+            ManaAdaptiveLearningScheduler.disable(this)
+            refreshStatus("Фоновое обучение выключено.")
+        })
         root.addView(section("VK — только чтение"))
         root.addView(text("Поддерживаются только users.get и wall.get. MANA не публикует записи, не ставит реакции и не отправляет сообщения.", 12, mutedArgb))
         val vkToken = field("VK access token", password = true)
