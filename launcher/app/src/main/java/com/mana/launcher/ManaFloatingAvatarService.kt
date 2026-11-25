@@ -31,6 +31,7 @@ import io.github.sceneview.SurfaceType
 import io.github.sceneview.rememberEngine
 import io.github.sceneview.rememberModelInstance
 import io.github.sceneview.rememberModelLoader
+import io.github.sceneview.node.ModelNode
 
 /**
  * Persistent, owner-enabled floating glTF avatar. The model is rendered by SceneView/Filament;
