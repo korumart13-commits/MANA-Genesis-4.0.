@@ -115,6 +115,7 @@ class EncryptedFileManaDiaryStore(
         } finally {
             if (temp.exists()) temp.delete()
         }
+        Unit
     }
 
     companion object {
