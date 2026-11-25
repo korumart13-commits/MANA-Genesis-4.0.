@@ -91,7 +91,7 @@ class ManaDocumentStorageActivity : Activity() {
             val found = linkedMapOf<String, DocumentFile>()
             val tree = DocumentFile.fromTreeUri(this, uri)
             if (tree != null) walk(tree, found, 0)
-            val alreadyQuarantined = synchronized(store) { store.readAll().filter { TAG in it.tags }.map { it.body.substringBefore("\\n") }.toSet() }
+            val alreadyQuarantined = synchronized(store) { store.readAll().filter { TAG in it.tags }.map { it.body.substringBefore("\n") }.toSet() }
             found.keys.removeAll(alreadyQuarantined)
             runOnUiThread {
                 if (root.childCount > 4) root.removeViews(4, root.childCount - 4)
@@ -161,7 +161,7 @@ class ManaDocumentStorageActivity : Activity() {
                     val entry = ManaDiaryEntry(
                         id = UUID.randomUUID().toString(),
                         title = originalName.take(200),
-                        body = source.uri.toString() + "\\n" + target.uri.toString(),
+                        body = source.uri.toString() + "\n" + target.uri.toString(),
                         tags = setOf(
                             TAG,
                             "quarantine-uri:${target.uri}",
@@ -193,7 +193,7 @@ class ManaDocumentStorageActivity : Activity() {
             return
         }
         entries.forEach { entry ->
-            val uri = entry.body.substringAfter("\\n", "")
+            val uri = entry.body.substringAfter("\n", "")
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(10), dp(9), dp(10), dp(9))
@@ -240,7 +240,7 @@ class ManaDocumentStorageActivity : Activity() {
             .setPositiveButton("Удалить оригинал") { _, _ ->
                 executor.execute {
                     try {
-                        val original = DocumentFile.fromSingleUri(this, Uri.parse(entry.body.substringBefore("\\n")))
+                        val original = DocumentFile.fromSingleUri(this, Uri.parse(entry.body.substringBefore("\n")))
                             ?: error("Исходный файл больше недоступен.")
                         val backup = DocumentFile.fromSingleUri(this, Uri.parse(quarantineUri))
                             ?: error("Копия карантина недоступна.")
