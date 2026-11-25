@@ -157,7 +157,7 @@ jobs:
           import subprocess
           excluded_dirs = {".git", ".gradle", "build", ".idea"}
           excluded_names = {"local.properties"}
-          files = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\\0")
+          files = subprocess.check_output(["git", "ls-files", "-z"]).decode().split(chr(0))
           with ZipFile("dist/MANA_Genesis_4.0_UNIFIED_SOURCE.zip", "w", ZIP_DEFLATED) as archive:
               for name in filter(None, files):
                   path = Path(name)
