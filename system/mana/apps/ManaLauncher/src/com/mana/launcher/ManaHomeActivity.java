@@ -138,9 +138,10 @@ public final class ManaHomeActivity extends Activity {
             brainService.submit(request, new IBrainCallback.Stub() {
                 @Override public void onResult(BrainResponse response) {
                     runOnUiThread(() -> {
-                        if (response == null) brainStatus.setText("MANA Brain returned no response.");
+                        if (response == null) brainStatus.setText("MANA Brain не вернул ответ.");
+                        else if (response.errorCode == 1002) forwardToCompanion(value);
                         else if (response.errorCode != 0) brainStatus.setText("MANA Brain: " + response.errorMessage + " (" + response.errorCode + ")");
-                        else brainStatus.setText((response.local ? "Local / " : "Cloud / ") + response.provider + "\n\n" + response.text);
+                        else brainStatus.setText((response.local ? "Локально · " : "Облако · ") + response.provider + "\n\n" + response.text);
                     });
                 }
             });
