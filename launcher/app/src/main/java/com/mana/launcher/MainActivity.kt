@@ -896,6 +896,17 @@ class MainActivity : Activity() {
             .show()
     }
 
+    private fun isLikelySensitive(prompt: String): Boolean {
+        val value = prompt.lowercase(Locale.ROOT)
+        val markers = listOf(
+            "пароль", "password", "паспорт", "номер карты", "cvv", "cvc",
+            "банковский счёт", "банковский счет", "bank account", "домашний адрес",
+            "адрес проживания", "медицин", "диагноз", "лекарств", "api key",
+            "секретный ключ", "private key", "social security"
+        )
+        return markers.any(value::contains)
+    }
+
     private fun sendToLocalModel() {
         val prompt = chatInput?.text?.toString()?.trim().orEmpty()
         if (prompt.isBlank()) return
@@ -907,8 +918,10 @@ class MainActivity : Activity() {
             "Локальный контекст памяти владельца (используй только если релевантно):\n$memoryContext\n\nЗапрос владельца:\n$prompt"
         }
 
+        val sensitive = remembered.isNotEmpty() || isLikelySensitive(prompt)
+
         fun submit(allowCloud: Boolean) {
-            manaBrain.respond(effectivePrompt, allowCloud = allowCloud, onChunk = { chunk ->
+            manaBrain.respond(effectivePrompt, allowCloud = allowCloud, sensitive = sensitive, onChunk = { chunk ->
                 generated.append(chunk)
                 runOnUiThread { chatOutput?.append(chunk) }
             }) { result ->
@@ -924,7 +937,7 @@ class MainActivity : Activity() {
             }
         }
 
-        val mayUseCloud = !localRuntime.isReady() && cloudGateway.isAvailable() && remembered.isEmpty()
+        val mayUseCloud = !localRuntime.isReady() && cloudGateway.isAvailable() && !sensitive
         if (mayUseCloud) {
             AlertDialog.Builder(this)
                 .setTitle("Разрешить облачный запрос?")
