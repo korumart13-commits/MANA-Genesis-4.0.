@@ -13,7 +13,10 @@
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <!-- Optional owner-authorized bridge to Termux; Termux has its own second opt-in gate. -->
+    <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
     <queries>
+        <package android:name="com.termux" />
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
@@ -98,12 +101,12 @@
         <activity android:name=".ManaIntegrationSettingsActivity" android:exported="false" />
         <activity android:name=".ManaDocumentStorageActivity" android:exported="false" />
         <activity android:name=".ManaDevicesActivity" android:exported="false" />
+        <activity android:name=".ManaFutureUpdatesActivity" android:exported="false" />
+        <activity android:name=".ManaAdaptiveLearningActivity" android:exported="false" />
         <activity
-            android:name=".ManaFutureUpdatesActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ManaAdaptiveLearningActivity"
-            android:exported="false" />
+            android:name=".ManaTermuxAgentActivity"
+            android:exported="false"
+            android:label="MANA Code Agent" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
