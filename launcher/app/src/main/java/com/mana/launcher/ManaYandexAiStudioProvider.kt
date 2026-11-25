@@ -64,6 +64,7 @@ class ManaYandexAiStudioProvider(context: Context) : InferenceProvider {
                 .put("model", "gpt://${config.folderId}/${config.modelId}")
                 .put("input", prompt)
                 .put("max_output_tokens", 2048)
+                .put("store", false)
             connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
             val code = connection.responseCode
             val response = readBounded(if (code in 200..299) connection.inputStream else connection.errorStream)
