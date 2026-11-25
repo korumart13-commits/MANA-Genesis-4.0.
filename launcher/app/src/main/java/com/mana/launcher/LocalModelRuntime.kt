@@ -68,14 +68,7 @@ class LocalModelRuntime(private val cacheDirectory: File) {
     private fun createConversation(engine: Engine): Conversation =
         engine.createConversation(
             ConversationConfig(
-                systemInstruction = Contents.of(
-                    "Ты — MANA, локальный персональный помощник владельца. " +
-                        "Отвечай по-русски, если не попросили другой язык. " +
-                        "Будь доброжелательной, выразительной и слегка игривой, но не навязчивой. " +
-                        "Не утверждай, что выполнила действие, если оно фактически не выполнено. " +
-                        "Используй переданный контекст локальной памяти только если он относится к вопросу. " +
-                        "Не раскрывай секреты и не отправляй личные сведения в сеть."
-                ),
+                systemInstruction = Contents.of(ManaPersona.SYSTEM_PROMPT),
                 samplerConfig = SamplerConfig(topK = 40, topP = 0.92, temperature = 0.72)
             )
         )
