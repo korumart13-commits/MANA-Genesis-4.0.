@@ -124,6 +124,13 @@ class ManaInCallService : InCallService() {
             currentCall?.disconnect()
         }
 
+        fun selectNextCall() {
+            val active = calls.filter { it.state != Call.STATE_DISCONNECTED }
+            if (active.size < 2) return
+            val index = active.indexOf(currentCall)
+            currentCall = active[(index + 1).mod(active.size)]
+            activeService?.broadcastCallChanged()
+        }
         fun holdCurrentCall() {
             currentCall?.let { call ->
                 if (call.state == Call.STATE_ACTIVE) call.hold()
