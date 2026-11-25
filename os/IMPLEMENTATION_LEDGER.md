@@ -91,3 +91,17 @@ A requirement is marked complete only after its implementation is integrated int
 
 
 | Android Brain Binder endpoint | Protected Assistant service registered; AIDL library linked; validates requests and fails closed with ENGINE_NOT_PACKAGED | Implemented transport boundary only; inference engine not packaged; Launcher client and instrumentation tests pending |
+
+## MANA Brain unified action orchestration — 2026-11-26
+
+| Component | Current implementation | Verified status |
+|---|---|---|
+| Capability registry | Typed capability descriptors, unique IDs, enabled/available checks and declared Android permission requirements in `engine/mana-brain/.../ManaActionOrchestrator.kt` | Source committed; CI/JVM tests pending |
+| Action planner contract | Ordered action plans with unique step IDs and request correlation | Source committed; CI/JVM tests pending |
+| Safe executor | Sequential execution; permission preflight; explicit owner approval for configured and HIGH/CRITICAL-risk actions; stop-on-first-failure | Source committed; CI/JVM tests pending |
+| Result verification | A capability is marked successful only when it returns both success and verified=true | Source committed; CI/JVM tests pending |
+| Audit trail | Per-step request/capability/status/message event interface | Source committed; durable Android audit-store integration pending |
+| Existing inference routing | Local-first LiteRT-LM provider discovery and explicit cloud fallback remain separate from action execution | Existing routing retained; provider packaging/device inference remain pending |
+
+This increment creates the shared safe action boundary for future integration of the existing phone-control, receptionist, contacts, avatar, Life Manager, Diary, adaptive learning and game/Minecraft modules. It does not yet wire every module to the registry, grant system privileges, or replace Android SystemUI. No arbitrary shell execution, permission bypass, silent cloud routing or self-granted privilege is introduced.
+
