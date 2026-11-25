@@ -48,7 +48,7 @@ public final class ManaSettingsActivity extends Activity {
         add(root, "Приложения и разрешения", Settings.ACTION_MANAGE_ALL_APPLICATIONS_SETTINGS);
         add(root, "Безопасность и конфиденциальность", Settings.ACTION_SECURITY_SETTINGS);
         add(root, "Разрешения MANA", Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                Uri.parse("package:" + getPackageName()));
+                Uri.parse("package:com.mana.launcher"));
         setContentView(scroll);
     }
 
