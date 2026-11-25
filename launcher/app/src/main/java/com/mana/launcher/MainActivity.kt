@@ -84,6 +84,8 @@ class MainActivity : Activity() {
     private var diaryService: ManaDiaryService? = null
     private var lifeManager: ManaLifeManagerService? = null
     private var memoryService: ManaMemoryService? = null
+    private var futureUpdateService: ManaFutureUpdateService? = null
+    private var voiceTarget: EditText? = null
     private var editingDiaryId: String? = null
     private var speechRecognizer: SpeechRecognizer? = null
     private val audioPermissionRequestCode = 4111
@@ -160,6 +162,16 @@ class MainActivity : Activity() {
             )
         } catch (error: Exception) {
             showMessage("Память MANA пока недоступна: ${error.message}")
+            null
+        }
+        futureUpdateService = try {
+            ManaFutureUpdateService(
+                EncryptedFileManaFutureUpdateStore(
+                    EncryptedFileManaDiaryStore(File(filesDir, "mana/future-updates.bin"), ManaAndroidKeyProvider(), "mana.future-updates.v1")
+                )
+            )
+        } catch (error: Exception) {
+            showMessage("Хранилище будущих обновлений недоступно: " + error.message)
             null
         }
         initializeVoice()
@@ -308,6 +320,7 @@ class MainActivity : Activity() {
             startActivity(Intent(this, ManaFutureUpdatesActivity::class.java))
         })
         card.addView(action("Открыть локальную память MANA") { showMemory() })
+        card.addView(action("Идеи и будущие обновления MANA") { showFutureUpdates() })
         card.addView(action("Настроить облачный резерв ИИ") { showCloudSettings() })
         card.addView(action("Скачать официальную локальную Gemma 4 E2B (2,59 ГБ)") { downloadOfficialModel() })
         card.addView(action("Открыть Smart Receptionist") { showReceptionist() })
@@ -558,6 +571,67 @@ class MainActivity : Activity() {
         })
     }
 
+    private fun showFutureUpdates() {
+        val service = futureUpdateService
+        if (service == null) { showMessage("Модуль будущих обновлений недоступен."); return }
+        showingDrawer = false
+        search.setText("")
+        content.removeAllViews()
+        content.addView(label("MANA FUTURE UPDATES", 22, textColor, true))
+        content.addView(label("Записывай идеи текстом или голосом. MANA ведёт этапы от идеи до тестирования, но не устанавливает собственный код без твоего подтверждения.", 12, muted, false))
+        val ideaInput = EditText(this).apply {
+            hint = "Опиши будущую функцию или улучшение"
+            setTextColor(textColor)
+            setHintTextColor(muted)
+            minLines = 2
+            gravity = Gravity.TOP
+            background = rounded(panelRaised, 12)
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+        }
+        content.addView(ideaInput, LinearLayout.LayoutParams(-1, dp(92)).apply { topMargin = dp(12) })
+        content.addView(action("Продиктовать идею голосом") { voiceTarget = ideaInput; startVoiceInput() })
+        content.addView(action("Сохранить идею") {
+            try {
+                service.capture(ideaInput.text.toString().trim())
+                ideaInput.setText("")
+                showFutureUpdates()
+                showMessage("Идея сохранена в зашифрованном локальном хранилище.")
+            } catch (error: Exception) { showMessage("Не удалось сохранить идею: " + error.message) }
+        })
+        content.addView(label("Сохранённые идеи", 17, textColor, true).apply { setPadding(0, dp(18), 0, dp(8)) })
+        service.list().sortedByDescending { it.updatedAt }.forEach { idea ->
+            val card = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(12), dp(10), dp(12), dp(10))
+                background = rounded(panelRaised, 12)
+            }
+            card.addView(label(idea.description, 14, textColor, true))
+            card.addView(label("Этап: " + idea.stage.name + " • " + idea.updatedAt, 10, muted, false))
+            card.addView(action("Управление этапом") {
+                val next = when (idea.stage) {
+                    ManaUpdateStage.IDEA -> ManaUpdateStage.PLANNED
+                    ManaUpdateStage.PLANNED -> ManaUpdateStage.BUILDING
+                    ManaUpdateStage.BUILDING -> ManaUpdateStage.TESTED
+                    ManaUpdateStage.TESTED -> ManaUpdateStage.OWNER_APPROVED
+                    ManaUpdateStage.OWNER_APPROVED -> ManaUpdateStage.INSTALLED
+                    else -> null
+                }
+                if (next == null) showMessage("Эта идея уже закрыта.") else {
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle("Перевести идею на следующий этап?")
+                        .setMessage("Новый этап: " + next.name + ". Переход к одобрению и установке требует отдельного подтверждения владельца.")
+                        .setNegativeButton("Отмена", null)
+                        .setPositiveButton("Подтвердить") { _, _ ->
+                            try {
+                                service.advance(idea.id, next, ownerApproved = next == ManaUpdateStage.OWNER_APPROVED || next == ManaUpdateStage.INSTALLED)
+                                showFutureUpdates()
+                            } catch (error: Exception) { showMessage("Переход не выполнен: " + error.message) }
+                        }.show()
+                }
+            })
+            content.addView(card, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        }
+    }
     private fun showMemory() {
         val memory = memoryService
         if (memory == null) {
@@ -1201,7 +1275,10 @@ class MainActivity : Activity() {
         }
         if (requestCode == voiceRequestCode && resultCode == RESULT_OK) {
             val spoken = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
-            if (!spoken.isNullOrBlank()) { chatInput?.setText(spoken); sendToLocalModel() }
+            val target = voiceTarget
+            voiceTarget = null
+            if (!spoken.isNullOrBlank() && target != null) target.setText(spoken)
+            else if (!spoken.isNullOrBlank()) { chatInput?.setText(spoken); sendToLocalModel() }
         }
         if (requestCode == callScreeningRoleRequestCode && Build.VERSION.SDK_INT >= 29) {
             val roleManager = getSystemService(RoleManager::class.java)
