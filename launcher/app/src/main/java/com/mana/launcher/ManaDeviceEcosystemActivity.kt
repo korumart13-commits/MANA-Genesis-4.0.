@@ -68,7 +68,7 @@ class ManaDeviceEcosystemActivity : Activity() {
 
     private fun renderDevices() {
         if (!::content.isInitialized) return
-        while (content.childCount > 5) content.removeViewAt(5)
+        while (content.childCount > 6) content.removeViewAt(6)
         val manager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
         val adapter = manager.adapter
         if (adapter == null) {
