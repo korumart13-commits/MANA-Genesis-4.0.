@@ -65,7 +65,7 @@ class ManaBrainBridge(
                         override val id: String get() = provider.id
                         override fun isAvailable(): Boolean = provider.isAvailable()
                         override suspend fun generate(prompt: String): String = provider.generate(
-                            ManaPersona.SYSTEM_PROMPT + "\\n\\nЗапрос владельца:\\n" + prompt
+                            ManaPersona.SYSTEM_PROMPT + "\n\nЗапрос владельца:\n" + prompt
                         )
                     }
                 }
