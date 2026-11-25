@@ -1,0 +1,37 @@
+name: MANA Minecraft Companion Pack
+
+on:
+  push:
+    paths:
+      - 'game/minecraft-bedrock/**'
+      - '.github/workflows/mana-minecraft-pack.yml'
+  pull_request:
+    paths:
+      - 'game/minecraft-bedrock/**'
+      - '.github/workflows/mana-minecraft-pack.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate pack manifest
+        run: node -e "JSON.parse(require('fs').readFileSync('game/minecraft-bedrock/MANA_Companion_BP/manifest.json','utf8'))"
+      - name: Check script syntax
+        run: node --check game/minecraft-bedrock/MANA_Companion_BP/scripts/main.js
+      - name: Package mcpack
+        run: |
+          cd game/minecraft-bedrock/MANA_Companion_BP
+          zip -r ../../../MANA_Companion_BP.mcpack manifest.json scripts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MANA_Companion_BP
+          path: MANA_Companion_BP.mcpack
+          if-no-files-found: error
