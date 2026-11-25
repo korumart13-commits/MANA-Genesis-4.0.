@@ -4,7 +4,7 @@ This document describes the next integration layer after the JVM-testable system
 
 ## Implemented in this stage
 
-- A typed catalog of 27 MANA/platform modules, including the previously omitted owner-requested capabilities: local memory, voice, adaptive intelligence, future updates, Yandex, VK, developer center, local node, device ecosystem, and recovery.
+- A typed catalog of 31 MANA/platform modules, including the previously omitted owner-requested capabilities: local memory, voice, adaptive intelligence, future updates, Yandex, VK, developer center, local node, device ecosystem, and recovery.
 - Explicit dependency edges and deterministic topological startup order.
 - Required versus optional module classification.
 - Failure policy: required services abort or enter degraded mode; optional features are disabled without taking down the core.
@@ -17,11 +17,15 @@ The catalog is architecture metadata consumed by tests and later integration wor
 1. `platform.hardware` → `platform.security` → `platform.storage`
 2. `mana.modelmanager` → `mana.brain`; optional `mana.cloudgateway` is available to Brain but must never block offline startup
 3. `mana.brain` → memory, voice, avatar, adaptive intelligence, future updates, diary, life manager, contacts, game intelligence, Yandex and VK
-4. `mana.systemui` → launcher, settings, control center
-5. contacts + brain → receptionist
-6. security + storage → updater → recovery
-7. security + storage → developer center and LAN-only local node
-8. security → Bluetooth/Wi-Fi device ecosystem
+4. `mana.avatar` → `mana.avatar3d` (glTF/Filament renderer, optional floating overlay)
+5. contacts + receptionist + security → `mana.calltelephony` (owner-granted Telecom role; screening response remains immediate)
+6. `mana.gameintelligence` + security → `mana.gamebridge` (official Minecraft Bedrock Script API and owner-controlled commands)
+7. `mana.brain` + security → `mana.integrationhub` (Yandex, VK, cloud and paired-device adapters)
+8. `mana.systemui` → launcher, settings, control center
+9. contacts + brain → receptionist
+10. security + storage → updater → recovery
+11. security + storage → developer center and LAN-only local node
+12. security → Bluetooth/Wi-Fi device ecosystem
 
 ## Security constraints
 
