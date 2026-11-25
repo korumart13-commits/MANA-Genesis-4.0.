@@ -4,7 +4,7 @@ import com.mana.brain.BrainRequest;
 import com.mana.brain.IBrainCallback;
 
 /**
- * Stable Binder boundary for MANA Assistant and future OS clients.
+ * Private Binder boundary for MANA Assistant and future OS clients. This interface is currently unstable and must be versioned before independent API delivery.
  * Implementations must enforce caller permissions and fail closed.
  */
 interface IBrainService {
