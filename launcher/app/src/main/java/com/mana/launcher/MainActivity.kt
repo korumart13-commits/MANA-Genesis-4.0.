@@ -276,7 +276,6 @@ class MainActivity : Activity() {
         card.addView(action("Открыть локальную память MANA") { showMemory() })
         card.addView(action("Настроить облачный резерв ИИ") { showCloudSettings() })
         card.addView(action("Открыть Smart Receptionist") { showReceptionist() })
-        card.addView(action("Настроить облачный резерв ИИ") { showCloudSettings() })
         card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Локальный ИИ: выбери .litertlm-модель в окне MANA.", 12, muted, false))
         val p = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(19) }
         content.addView(card, p)
