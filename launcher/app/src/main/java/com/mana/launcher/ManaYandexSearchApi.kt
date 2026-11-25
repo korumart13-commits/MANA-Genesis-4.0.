@@ -12,6 +12,27 @@ import java.net.URL
 
 data class ManaYandexSearchResult(val title: String, val url: String, val snippet: String)
 
+internal fun buildYandexSearchRequest(query: String, folderId: String, maxResults: Int): JSONObject {
+    require(query.isNotBlank() && query.length <= 400)
+    require(folderId.isNotBlank() && folderId.length <= 50)
+    require(maxResults in 1..10)
+    return JSONObject()
+        .put("query", JSONObject()
+            .put("searchType", "SEARCH_TYPE_COM")
+            .put("queryText", query)
+            .put("familyMode", "FAMILY_MODE_STRICT")
+            .put("page", "0")
+            .put("fixTypoMode", "FIX_TYPO_MODE_ON"))
+        .put("folderId", folderId)
+        .put("groupSpec", JSONObject()
+            .put("groupMode", "GROUP_MODE_DEEP")
+            .put("groupsOnPage", maxResults.toString())
+            .put("docsInGroup", "1"))
+        .put("maxPassages", "2")
+        .put("l10n", "LOCALIZATION_RU")
+        .put("responseFormat", "FORMAT_XML")
+}
+
 /** Explicit, owner-triggered Yandex Search API v2 client for MANA Adaptive Intelligence. */
 class ManaYandexSearchApi(private val credentials: ManaYandexAiStudioProvider) {
     suspend fun search(query: String, maxResults: Int = 5): List<ManaYandexSearchResult> = withContext(Dispatchers.IO) {
@@ -19,17 +40,7 @@ class ManaYandexSearchApi(private val credentials: ManaYandexAiStudioProvider) {
         require(maxResults in 1..10)
         val config = credentials.currentConfig() ?: error("Сначала настрой Yandex AI Studio.")
         require(config.enabled && config.apiKey.isNotBlank()) { "Yandex AI Studio выключен." }
-        val body = JSONObject()
-            .put("query", JSONObject()
-                .put("searchType", "SEARCH_TYPE_COM")
-                .put("queryText", query)
-                .put("familyMode", "FAMILY_MODE_STRICT")
-                .put("fixTypoMode", "FIX_TYPO_MODE_ON"))
-            .put("folderId", config.folderId)
-            .put("groupSpec", JSONObject().put("groupMode", "GROUP_MODE_DEEP").put("groupsOnPage", maxResults.toString()).put("docsInGroup", "1"))
-            .put("maxPassages", "2")
-            .put("l10n", "LOCALIZATION_RU")
-            .put("responseFormat", "FORMAT_XML")
+        val body = buildYandexSearchRequest(query, config.folderId, maxResults)
         val connection = URL(ENDPOINT).openConnection() as HttpURLConnection
         try {
             connection.requestMethod = "POST"
