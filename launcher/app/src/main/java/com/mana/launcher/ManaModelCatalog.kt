@@ -61,7 +61,7 @@ class ManaModelCatalog(context: Context) {
             // A previously verified file can be selected again in this process without
             // requiring a second DownloadManager record.
             val existing = File(directory, MODEL_FILE)
-            if (existing.isFile && existing.length() in MIN_SIZE..MAX_SIZE &&
+            if (existing.isFile && existing.length() == MODEL_SIZE &&
                 sha256(existing).equals(SHA256, ignoreCase = true)) {
                 prefs.edit().putString(KEY_ACTIVE_PATH, existing.absolutePath).apply()
                 return existing
