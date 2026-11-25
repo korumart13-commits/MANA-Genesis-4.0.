@@ -36,3 +36,15 @@ Candidate URL: https://github.com/realme-kernel-opensource/realme_C85_5G-Android
 - A safe stock restoration/recovery route.
 
 Until these are available, kernel changes remain blocked. The project can continue on AOSP userspace, MANA framework services, AI runtime integration and build infrastructure without fabricating a device kernel.
+
+## Additional SM6225 candidate rejected
+
+Repository: https://github.com/cd-Crypton/android_kernel_realme_sm6225/tree/android13-bengal
+
+This is a Qualcomm/bengal-labelled Realme kernel candidate, but its top-level Makefile declares Linux 4.19.157 and the repository was last updated in 2023. The RMX5566RU reports Linux 5.15.197. This tree is therefore not a compatible drop-in kernel source for the current firmware.
+
+The two public candidates checked so far fail for different reasons:
+- C85 5G/RMX5253 source candidate: MediaTek target and 5.15.180.
+- Older Realme SM6225/bengal source: Linux 4.19.157.
+
+Neither is approved for RMX5566RU kernel build or device flashing.
