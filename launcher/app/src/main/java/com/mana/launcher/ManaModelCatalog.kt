@@ -76,6 +76,7 @@ class ManaModelCatalog(context: Context) {
             if (existing.isFile && existing.length() == MODEL_SIZE &&
                 sha256(existing).equals(SHA256, ignoreCase = true)) {
                 prefs.edit().putString(KEY_ACTIVE_PATH, existing.absolutePath).apply()
+                saveVerifiedMetadata(existing)
                 return existing
             }
             return null
