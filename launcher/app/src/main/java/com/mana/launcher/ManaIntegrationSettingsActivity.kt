@@ -101,7 +101,7 @@ class ManaIntegrationSettingsActivity : ComponentActivity() {
                             if (results.isEmpty()) {
                                 refreshStatus("Yandex Search не вернул подходящих результатов.")
                             } else {
-                                val summary = results.joinToString("\\n\\n") { "${it.title}\\n${it.snippet}\\n${it.url}" }
+                                val summary = results.joinToString("\n\n") { "${it.title}\n${it.snippet}\n${it.url}" }
                                 AlertDialog.Builder(this@ManaIntegrationSettingsActivity)
                                     .setTitle("Результаты Yandex Search")
                                     .setMessage(summary)
