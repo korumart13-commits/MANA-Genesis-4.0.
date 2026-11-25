@@ -1,0 +1,25 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "MANA Genesis Bridge",
+    "description": "Owner-controlled telemetry and command handshake for MANA Game Intelligence",
+    "uuid": "e31e7a5e-8e9d-4b7a-9f5d-2b5d2f6a4c10",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 21, 0]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "language": "javascript",
+      "uuid": "c7e8f4d1-4b3e-4e67-a2d4-7f6b3a9c2d11",
+      "version": [1, 0, 0],
+      "entry": "scripts/mana_bridge.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.11.0"
+    }
+  ]
+}
