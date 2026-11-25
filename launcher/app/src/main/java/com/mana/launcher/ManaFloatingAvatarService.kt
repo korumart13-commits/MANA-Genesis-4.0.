@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.ViewTreeLifecycleOwner
 import io.github.sceneview.SceneView
+import io.github.sceneview.SurfaceType
 import io.github.sceneview.rememberEngine
 import io.github.sceneview.rememberModelInstance
 import io.github.sceneview.rememberModelLoader
@@ -92,8 +93,10 @@ class ManaFloatingAvatarService : LifecycleService() {
                 ) {
                     SceneView(
                         modifier = Modifier.fillMaxSize(),
+                        surfaceType = SurfaceType.TextureSurface,
                         engine = engine,
-                        modelLoader = modelLoader
+                        modelLoader = modelLoader,
+                        isOpaque = false
                     ) {
                         rememberModelInstance(modelLoader, "mana_avatar_genesis.gltf")?.let { instance ->
                             ModelNode(
