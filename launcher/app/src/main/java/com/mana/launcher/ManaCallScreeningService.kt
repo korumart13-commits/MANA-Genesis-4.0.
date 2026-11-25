@@ -19,13 +19,7 @@ import com.mana.os.core.ManaSmartReceptionistPolicy
  */
 class ManaCallScreeningService : CallScreeningService() {
     override fun onScreenCall(details: Call.Details) {
-        val number = details.handle?.takeIf { it.scheme == "tel" }?.schemeSpecificPart.orEmpty()
-        val known = runCatching {
-            ManaContactIntelligence(this).findByPhone(number) != null
-        }.getOrDefault(false)
-        val decision = ManaSmartReceptionistPolicy().onIncomingCall(numberKnown = known)
-
-        // Preserve the incoming call. The owner remains in control.
+        // Respond first: Android expects screening services to answer promptly.
         val response = CallResponse.Builder()
             .setDisallowCall(false)
             .setRejectCall(false)
@@ -35,6 +29,11 @@ class ManaCallScreeningService : CallScreeningService() {
             .build()
         respondToCall(details, response)
 
+        val number = details.handle?.takeIf { it.scheme == "tel" }?.schemeSpecificPart.orEmpty()
+        val known = runCatching {
+            ManaContactIntelligence(this).findByPhone(number) != null
+        }.getOrDefault(false)
+        val decision = ManaSmartReceptionistPolicy().onIncomingCall(numberKnown = known)
         if (decision.unknownCaller) notifyOwner(number)
     }
 
