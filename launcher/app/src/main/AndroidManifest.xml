@@ -43,6 +43,7 @@
         <activity
             android:name=".ManaAvatarPreviewActivity"
             android:exported="false" />
+        <activity android:name=".ManaIntegrationSettingsActivity" android:exported="false" />
         <activity
             android:name=".ManaFutureUpdatesActivity"
             android:exported="false" />
