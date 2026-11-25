@@ -15,6 +15,10 @@ and four named animation clips: `Idle`, `Speaking`, `Happy`, and `Playful`.
 The asset is original procedural geometry authored for MANA; it does not reuse
 MiSide character meshes, textures, or extracted game assets.
 
+Each of the six wardrobe/accessory combinations also has `_playful.gltf` and
+`_speaking.gltf` face-geometry variants, for 18 model assets total. The variants
+preserve all four animation clips.
+
 ## Android rendering
 
 - SceneView 4.18.0 uses Filament/glTF rendering on Android.
@@ -22,9 +26,9 @@ MiSide character meshes, textures, or extracted game assets.
 - `ManaFloatingAvatarService` hosts the model in a transparent, draggable,
   non-focusable overlay after the owner grants Android's display-over-other-apps permission.
 - The overlay snaps to the left or right edge and opens the MANA assistant when tapped.
-- The owner can change outfit/accessory in MANA settings; the service reloads the
-  selected asset. Expression state selects the named animation. TTS start/done/error
-  updates the shared speaking state to select the `Speaking` clip.
+- The launcher, preview and overlay share `ManaAvatarState`. Wardrobe/accessory
+  changes select the matching model asset; expression state selects `Idle`, `Playful`
+  or `Happy`; TTS start/done/error selects the open-mouth speaking asset and `Speaking` clip.
 
 ## Honest technical boundary
 
