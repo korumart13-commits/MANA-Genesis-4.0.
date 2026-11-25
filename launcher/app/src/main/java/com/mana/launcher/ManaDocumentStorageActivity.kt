@@ -129,7 +129,6 @@ class ManaDocumentStorageActivity : Activity() {
         val name = (file.name ?: "").lowercase()
         val extension = name.substringAfterLast('.', "")
         if (extension in PROTECTED_EXTENSIONS) return false
-        if (file.length() == 0L) return true
         val ageDays = if (file.lastModified() > 0L) (System.currentTimeMillis() - file.lastModified()) / DAY_MS else 0L
         return extension in TEMP_EXTENSIONS || (ageDays >= 365 && extension in OLD_LOG_EXTENSIONS)
     }
@@ -138,7 +137,6 @@ class ManaDocumentStorageActivity : Activity() {
         val name = (file.name ?: "").lowercase()
         val ext = name.substringAfterLast('.', "")
         return when {
-            file.length() == 0L -> "пустой файл"
             ext in TEMP_EXTENSIONS -> "временный/служебный файл"
             else -> "старый журнал, старше года"
         }
@@ -281,7 +279,7 @@ class ManaDocumentStorageActivity : Activity() {
     }
 
     private fun uniqueName(folder: DocumentFile, original: String): String {
-        val safe = original.replace(Regex("[/\\\\\\u0000-\\u001f]"), "_").take(120).ifBlank { "file.bin" }
+        val safe = original.map { ch -> if (ch == '/' || ch == '\\' || ch < ' ' || ch == '\u007f') '_' else ch }.joinToString("").take(120).ifBlank { "file.bin" }
         if (folder.findFile(safe) == null) return safe
         val base = safe.substringBeforeLast('.', safe)
         val ext = safe.substringAfterLast('.', "")
