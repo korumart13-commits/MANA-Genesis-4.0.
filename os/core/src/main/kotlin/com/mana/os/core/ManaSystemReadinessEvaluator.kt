@@ -33,13 +33,15 @@ object ManaSystemReadinessEvaluator {
             }
         }
 
+        val healthIds = health.map { it.id }
+        if (healthIds.size != healthIds.toSet().size) errors += "Duplicate module health records."
         val healthById = health.associateBy { it.id }
         val missing = catalog.map { it.id }.filter { it !in healthById }.sorted()
         val requiredFailures = mutableListOf<String>()
         val optionalFailures = mutableListOf<String>()
         catalog.forEach { descriptor ->
             val state = healthById[descriptor.id]?.state
-            if (state == null || state in setOf(ModuleState.FAILED, ModuleState.DEGRADED, ModuleState.STOPPED)) {
+            if (state != ModuleState.RUNNING) {
                 val detail = healthById[descriptor.id]?.detail
                 val reason = "${descriptor.id}: ${detail ?: state?.name ?: "no health record"}"
                 if (descriptor.criticality == ModuleCriticality.REQUIRED) requiredFailures += reason
