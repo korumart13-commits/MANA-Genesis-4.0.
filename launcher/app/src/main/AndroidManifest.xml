@@ -10,6 +10,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
@@ -48,6 +49,15 @@
                 <action android:name="android.service.voice.VoiceInteractionSessionService" />
             </intent-filter>
         </service>
+        <receiver
+            android:name=".ManaCallActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.mana.launcher.call.ANSWER" />
+                <action android:name="com.mana.launcher.call.REJECT" />
+                <action android:name="com.mana.launcher.call.END" />
+            </intent-filter>
+        </receiver>
         <service
             android:name=".ManaInCallService"
             android:permission="android.permission.BIND_INCALL_SERVICE"
