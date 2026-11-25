@@ -17,6 +17,9 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.net.Uri
+import java.io.File
+import java.io.FileOutputStream
 import android.widget.FrameLayout
 import android.widget.GridLayout
 import android.widget.ImageView
@@ -44,12 +47,18 @@ class MainActivity : Activity() {
     private var showingDrawer = false
     private var apps: List<ResolveInfo> = emptyList()
     private val voiceRequestCode = 4107
+    private val modelRequestCode = 4108
+    private lateinit var localRuntime: LocalModelRuntime
+    private var chatInput: EditText? = null
+    private var chatOutput: TextView? = null
+    private var modelStatus: TextView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = bg
         window.navigationBarColor = bg
         window.decorView.setBackgroundColor(bg)
+        localRuntime = LocalModelRuntime(File(cacheDir, "mana-litert-cache"))
         loadApps()
         buildShell()
         showHome()
@@ -90,7 +99,7 @@ class MainActivity : Activity() {
             setHintTextColor(muted)
             setTextColor(textColor)
             textSize = 15f
-            singleLine = true
+            isSingleLine = true
             setPadding(dp(17), 0, dp(17), 0)
             background = rounded(panelRaised, 19)
             addTextChangedListener(object : android.text.TextWatcher {
@@ -148,7 +157,7 @@ class MainActivity : Activity() {
         }
         card.addView(label("MANA ASSISTANT", 11, accentSoft, true))
         card.addView(label("Твой телефон. Твои правила.", 19, textColor, true))
-        card.addView(label("Локальный режим предусмотрен; подключение модели проверяется отдельно.", 12, muted, false))
+        card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Локальный ИИ: выбери .litertlm-модель в окне MANA.", 12, muted, false))
         val p = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(19) }
         content.addView(card, p)
 
@@ -249,14 +258,36 @@ class MainActivity : Activity() {
         })
         overlay.addView(top)
 
-        overlay.addView(label("Я здесь. Мой визуальный образ загружен из встроенного интерфейса.", 13, textColor, false).apply {
-            setPadding(0, dp(14), 0, dp(8))
+        overlay.addView(label("MANA • локальный интеллект", 13, textColor, true).apply {
+            setPadding(0, dp(12), 0, dp(5))
         })
-        overlay.addView(label("Состояние ИИ: локальная модель ещё не подключена. Я не буду имитировать ответ движка.", 11, muted, false))
+        modelStatus = label(if (localRuntime.isReady()) "Модель: ${localRuntime.modelName()}" else "Модель не выбрана • импортируй .litertlm", 11, muted, false)
+        overlay.addView(modelStatus)
+        overlay.addView(action("Выбрать локальную модель (.litertlm)") { chooseModelFile() }.apply {
+            setPadding(0, dp(10), 0, dp(10))
+        })
+        chatOutput = TextView(this).apply {
+            text = "Ответы будут генерироваться локально после загрузки модели."
+            textSize = 12f
+            setTextColor(textColor)
+            setPadding(dp(10), dp(9), dp(10), dp(9))
+            background = rounded(panelRaised, 12)
+        }
+        overlay.addView(chatOutput, LinearLayout.LayoutParams(-1, dp(100)))
+        chatInput = EditText(this).apply {
+            hint = "Напиши сообщение MANA"
+            setHintTextColor(muted)
+            setTextColor(textColor)
+            textSize = 14f
+            setPadding(dp(12), dp(5), dp(12), dp(5))
+            background = rounded(panelRaised, 12)
+        }
+        overlay.addView(chatInput, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
         val controls = LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(12), 0, 0)
+            setPadding(0, dp(8), 0, 0)
         }
+        controls.addView(action("Отправить") { sendToLocalModel() }, LinearLayout.LayoutParams(0, dp(42), 1f))
         controls.addView(action("Голос") { startVoiceInput() }, LinearLayout.LayoutParams(0, dp(42), 1f))
         controls.addView(action("Закрыть") {
             avatarPanel?.let(rootFrame::removeView)
@@ -266,12 +297,58 @@ class MainActivity : Activity() {
         val lp = FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM).apply {
             leftMargin = dp(14)
             rightMargin = dp(14)
-            bottomMargin = dp(151)
+            bottomMargin = dp(80)
         }
         rootFrame.addView(overlay, lp)
         avatarPanel = overlay
     }
 
+    private fun chooseModelFile() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = "*/*" }
+        startActivityForResult(intent, modelRequestCode)
+    }
+
+    private fun importModel(uri: Uri) {
+        showMessage("Импортирую файл модели…")
+        Thread {
+            try {
+                val directory = File(filesDir, "mana-models").apply { mkdirs() }
+                val target = File(directory, "selected-model.litertlm")
+                contentResolver.openInputStream(uri).use { input ->
+                    requireNotNull(input) { "Не удалось открыть файл." }
+                    FileOutputStream(target).use { output -> input.copyTo(output) }
+                }
+                runOnUiThread {
+                    modelStatus?.text = "Загружаю ${target.name}…"
+                    localRuntime.load(target) { result ->
+                        runOnUiThread {
+                            result.onSuccess { name ->
+                                modelStatus?.text = "Локальная модель готова: $name"
+                                chatOutput?.text = "MANA подключена к локальному движку LiteRT-LM. Можешь написать сообщение."
+                                showMessage("Локальная модель загружена.")
+                            }.onFailure { error ->
+                                modelStatus?.text = "Ошибка загрузки модели"
+                                chatOutput?.text = error.message ?: "Не удалось загрузить модель."
+                                showMessage("Не удалось запустить модель: ${error.message}")
+                            }
+                        }
+                    }
+                }
+            } catch (error: Throwable) { runOnUiThread { showMessage("Ошибка импорта: ${error.message}") } }
+        }.start()
+    }
+
+    private fun sendToLocalModel() {
+        val prompt = chatInput?.text?.toString()?.trim().orEmpty()
+        if (prompt.isBlank()) return
+        chatOutput?.text = "Ты: $prompt\n\nMANA думает…"
+        localRuntime.generate(prompt, { chunk -> runOnUiThread { chatOutput?.append(chunk) } }) { result ->
+            runOnUiThread {
+                result.onSuccess { chatInput?.setText("") }
+                    .onFailure { error -> chatOutput?.append("\n\nОшибка локального ИИ: ${error.message}") }
+            }
+        }
+    }
     private fun startVoiceInput() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -288,10 +365,18 @@ class MainActivity : Activity() {
     @Deprecated("Deprecated in Android")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == modelRequestCode && resultCode == RESULT_OK) {
+            data?.data?.let(::importModel)
+        }
         if (requestCode == voiceRequestCode && resultCode == RESULT_OK) {
             val spoken = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
-            if (!spoken.isNullOrBlank()) showMessage("Распознано: $spoken\nЛокальный ИИ пока не подключён, поэтому запрос ещё не обработан.")
+            if (!spoken.isNullOrBlank()) { chatInput?.setText(spoken); sendToLocalModel() }
         }
+    }
+
+    override fun onDestroy() {
+        if (::localRuntime.isInitialized) localRuntime.shutdown()
+        super.onDestroy()
     }
 
     private fun showMessage(message: String) {
