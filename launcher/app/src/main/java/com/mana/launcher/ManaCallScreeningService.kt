@@ -57,7 +57,7 @@ class ManaCallScreeningService : CallScreeningService() {
         val open = PendingIntent.getActivity(
             this,
             4114,
-            packageManager.getLaunchIntentForPackage(packageName),
+            Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val builder = if (Build.VERSION.SDK_INT >= 26) {
