@@ -1,0 +1,101 @@
+package com.mana.launcher
+
+import android.app.DownloadManager
+import android.content.Context
+import android.net.Uri
+import android.os.Environment
+import java.io.File
+import java.security.MessageDigest
+
+/**
+ * Official owner-initiated Gemma 4 E2B LiteRT-LM download.
+ * Uses DownloadManager for resumable background transfer, then verifies the
+ * publisher's SHA-256 before making the model selectable.
+ */
+class ManaModelCatalog(context: Context) {
+    private val app = context.applicationContext
+    private val manager = app.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+    private val prefs = app.getSharedPreferences("mana-model-catalog", Context.MODE_PRIVATE)
+    private val directory = app.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+        ?: error("Android app-specific downloads storage is unavailable.")
+
+    fun enqueueGemma4E2B(): Long {
+        val target = File(directory, MODEL_FILE)
+        if (target.isFile && target.length() in MIN_SIZE..MAX_SIZE && sha256(target) == SHA256) {
+            prefs.edit().putString(KEY_ACTIVE_PATH, target.absolutePath).apply()
+            return -1L
+        }
+        require(directory.usableSpace >= REQUIRED_FREE_BYTES) {
+            "Для модели Gemma 4 E2B требуется около 2,59 ГБ и дополнительный запас свободного места."
+        }
+        val request = DownloadManager.Request(Uri.parse(MODEL_URL))
+            .setTitle("MANA · Gemma 4 E2B")
+            .setDescription("Официальная модель LiteRT-LM, 2,59 ГБ. Загрузка только через Wi-Fi.")
+            .setMimeType("application/octet-stream")
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            .setAllowedOverMetered(false)
+            .setAllowedOverRoaming(false)
+            .setDestinationInExternalFilesDir(app, Environment.DIRECTORY_DOWNLOADS, MODEL_FILE)
+        val id = manager.enqueue(request)
+        prefs.edit().putLong(KEY_DOWNLOAD_ID, id).apply()
+        return id
+    }
+
+    fun savedModelPath(): String? = prefs.getString(KEY_ACTIVE_PATH, null)
+
+    /** Returns null while queued/running; throws for a failed or invalid completed download. */
+    fun verifyCompletedDownload(): File? {
+        val id = prefs.getLong(KEY_DOWNLOAD_ID, -1L)
+        if (id < 0L) return null
+        val cursor = manager.query(DownloadManager.Query().setFilterById(id))
+        val status: Int
+        val reason: Int
+        cursor.use {
+            if (!it.moveToFirst()) return null
+            status = it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+            reason = it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
+        }
+        if (status == DownloadManager.STATUS_PENDING || status == DownloadManager.STATUS_RUNNING ||
+            status == DownloadManager.STATUS_PAUSED) return null
+        if (status != DownloadManager.STATUS_SUCCESSFUL) {
+            prefs.edit().remove(KEY_DOWNLOAD_ID).apply()
+            throw IllegalStateException("Загрузка модели не завершилась (код $reason). Проверь Wi-Fi и свободное место.")
+        }
+        val file = File(directory, MODEL_FILE)
+        require(file.isFile && file.length() in MIN_SIZE..MAX_SIZE) {
+            "Размер загруженной модели не совпадает с ожидаемым диапазоном."
+        }
+        val actual = sha256(file)
+        if (!actual.equals(SHA256, ignoreCase = true)) {
+            file.delete()
+            prefs.edit().remove(KEY_DOWNLOAD_ID).apply()
+            throw SecurityException("SHA-256 модели не совпал с официальным значением. Файл удалён.")
+        }
+        prefs.edit().putString(KEY_ACTIVE_PATH, file.absolutePath).remove(KEY_DOWNLOAD_ID).apply()
+        return file
+    }
+
+    private fun sha256(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().buffered().use { input ->
+            val buffer = ByteArray(1024 * 1024)
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                digest.update(buffer, 0, count)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    companion object {
+        const val MODEL_URL = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm"
+        const val MODEL_FILE = "gemma-4-E2B-it.litertlm"
+        const val SHA256 = "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c"
+        private const val KEY_DOWNLOAD_ID = "gemma4_download_id"
+        private const val KEY_ACTIVE_PATH = "active_model_path"
+        private const val MIN_SIZE = 2_500_000_000L
+        private const val MAX_SIZE = 3_000_000_000L
+        private const val REQUIRED_FREE_BYTES = 3_300_000_000L
+    }
+}
