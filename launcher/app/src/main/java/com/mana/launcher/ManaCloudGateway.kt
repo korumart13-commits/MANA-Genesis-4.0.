@@ -82,11 +82,19 @@ class ManaCloudGateway(
         when (provider) {
             ManaCloudProvider.OPENAI, ManaCloudProvider.XAI -> {
                 endpoint = if (provider == ManaCloudProvider.OPENAI)
-                    "https://api.openai.com/v1/chat/completions"
-                else "https://api.x.ai/v1/chat/completions"
-                body = JSONObject().put("model", modelId)
-                    .put("messages", JSONArray().put(JSONObject().put("role", "user").put("content", prompt)))
-                    .put("max_tokens", 2048)
+                    "https://api.openai.com/v1/responses"
+                else "https://api.x.ai/v1/responses"
+                val input = JSONArray()
+                    .put(JSONObject().put("role", "system").put(
+                        "content",
+                        "You are MANA, a helpful and lightly playful assistant. Be truthful about actions; never claim an action succeeded unless it did."
+                    ))
+                    .put(JSONObject().put("role", "user").put("content", prompt))
+                body = JSONObject()
+                    .put("model", modelId)
+                    .put("input", input)
+                    .put("max_output_tokens", 2048)
+                    .put("store", false)
             }
             ManaCloudProvider.ANTHROPIC -> {
                 endpoint = "https://api.anthropic.com/v1/messages"
@@ -105,7 +113,7 @@ class ManaCloudGateway(
         try {
             connection.requestMethod = "POST"
             connection.connectTimeout = 15_000
-            connection.readTimeout = 90_000
+            connection.readTimeout = 180_000
             connection.doOutput = true
             connection.instanceFollowRedirects = false
             connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
@@ -137,8 +145,20 @@ class ManaCloudGateway(
             }
             val json = JSONObject(raw)
             val answer = when (provider) {
-                ManaCloudProvider.OPENAI, ManaCloudProvider.XAI ->
-                    json.getJSONArray("choices").getJSONObject(0).getJSONObject("message").optString("content")
+                ManaCloudProvider.OPENAI, ManaCloudProvider.XAI -> {
+                    val output = json.getJSONArray("output")
+                    buildString {
+                        for (i in 0 until output.length()) {
+                            val item = output.getJSONObject(i)
+                            if (item.optString("type") != "message") continue
+                            val blocks = item.optJSONArray("content") ?: continue
+                            for (j in 0 until blocks.length()) {
+                                val block = blocks.getJSONObject(j)
+                                if (block.optString("type") == "output_text") append(block.optString("text"))
+                            }
+                        }
+                    }
+                }
                 ManaCloudProvider.ANTHROPIC -> {
                     val blocks = json.getJSONArray("content")
                     (0 until blocks.length()).mapNotNull { i ->
