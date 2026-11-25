@@ -157,9 +157,13 @@ jobs:
           import subprocess
           excluded_dirs = {".git", ".gradle", "build", ".idea"}
           excluded_names = {"local.properties"}
-          files = subprocess.check_output(["git", "ls-files", "-z"]).decode().split(chr(0))
+          tracked = subprocess.check_output(["git", "ls-files", "-z"])
+          files = [name for name in tracked.decode("utf-8").split("\\0") if name]
+          if not files:
+              raise SystemExit("Refusing to publish an empty source archive: git ls-files returned no paths")
+          added = 0
           with ZipFile("dist/MANA_Genesis_4.0_UNIFIED_SOURCE.zip", "w", ZIP_DEFLATED) as archive:
-              for name in filter(None, files):
+              for name in files:
                   path = Path(name)
                   if any(part in excluded_dirs for part in path.parts):
                       continue
@@ -167,6 +171,14 @@ jobs:
                       continue
                   if path.is_file():
                       archive.write(path, name)
+                      added += 1
+          if added == 0:
+              raise SystemExit("Refusing to publish an empty source archive: no tracked files were packaged")
+          with ZipFile("dist/MANA_Genesis_4.0_UNIFIED_SOURCE.zip") as check:
+              bad = check.testzip()
+              if bad is not None or len(check.namelist()) != added:
+                  raise SystemExit(f"Source archive integrity/count check failed: bad={bad}, expected={added}, actual={len(check.namelist())}")
+          print(f"Packaged and verified {added} tracked source files.")
           PY
           cat > dist/ROM_STATUS.txt <<'EOF'
           MANA Genesis 4.0 source archive + Android companion bundle.
