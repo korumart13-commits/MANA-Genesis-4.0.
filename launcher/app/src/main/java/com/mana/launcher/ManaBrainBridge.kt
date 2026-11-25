@@ -28,6 +28,7 @@ class ManaBrainBridge(
         prompt: String,
         allowCloud: Boolean = false,
         sensitive: Boolean = false,
+        preferredCloudProvider: String? = null,
         onChunk: (String) -> Unit,
         callback: (Result<Unit>) -> Unit
     ) {
@@ -63,7 +64,8 @@ class ManaBrainBridge(
                     BrainRequest(
                         prompt = prompt,
                         allowCloud = allowCloud,
-                        sensitive = sensitive
+                        sensitive = sensitive,
+                        preferredCloudProvider = preferredCloudProvider
                     )
                 )
                 // Cloud provider currently returns a complete response, not a token stream.
