@@ -50,6 +50,7 @@ import com.mana.os.core.EncryptedFileManaLifeTaskStore
 import com.mana.os.core.ManaLifeManagerService
 import com.mana.os.core.EncryptedFileManaMemoryStore
 import com.mana.os.core.ManaMemoryService
+import com.mana.os.core.ManaSmartReceptionistPolicy
 
 class MainActivity : Activity() {
     private val bg = Color.rgb(4, 7, 14)
@@ -83,6 +84,8 @@ class MainActivity : Activity() {
     private var editingDiaryId: String? = null
     private var speechRecognizer: SpeechRecognizer? = null
     private val audioPermissionRequestCode = 4111
+    private val contactsPermissionRequestCode = 4112
+    private lateinit var contactIntelligence: ManaContactIntelligence
 
     private fun startFloatingAvatarService() {
         val intent = Intent(this, ManaFloatingAvatarService::class.java)
@@ -113,6 +116,7 @@ class MainActivity : Activity() {
         window.statusBarColor = bg
         window.navigationBarColor = bg
         window.decorView.setBackgroundColor(bg)
+        contactIntelligence = ManaContactIntelligence(this)
         localRuntime = LocalModelRuntime(File(cacheDir, "mana-litert-cache"))
         cloudGateway = ManaCloudGateway(this, ManaAndroidKeyProvider())\n        manaBrain = ManaBrainBridge(localRuntime, cloudGateway)
         diaryService = try { ManaDiaryService(EncryptedFileManaDiaryStore(File(filesDir, "mana/diary.bin"), ManaAndroidKeyProvider())) } catch (error: Exception) {
@@ -267,7 +271,8 @@ class MainActivity : Activity() {
         })
         card.addView(action("Открыть зашифрованный дневник MANA") { showDiary() })
         card.addView(action("Открыть MANA Life Manager") { showLifeManager() })
-        card.addView(action("Открыть локальную память MANA") { showMemory() })\n        card.addView(action("Настроить облачный резерв ИИ") { showCloudSettings() })
+        card.addView(action("Открыть локальную память MANA") { showMemory() })
+        card.addView(action("Открыть Smart Receptionist") { showReceptionist() })\n        card.addView(action("Настроить облачный резерв ИИ") { showCloudSettings() })
         card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Локальный ИИ: выбери .litertlm-модель в окне MANA.", 12, muted, false))
         val p = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(19) }
         content.addView(card, p)
@@ -450,6 +455,43 @@ class MainActivity : Activity() {
         }
         rootFrame.addView(overlay, lp)
         avatarPanel = overlay
+    }
+
+    private fun showReceptionist() {
+        showingDrawer = false
+        search.setText("")
+        content.removeAllViews()
+        content.addView(label("MANA SMART RECEPTIONIST", 22, textColor, true))
+        content.addView(label("Локальная проверка контакта. Профиль: playful • задержка 10 секунд • неизвестные номера • сводка разговора. Фактический автоответ и запись звонков пока не включены.", 12, muted, false))
+        val phone = EditText(this).apply {
+            hint = "Номер телефона"
+            setTextColor(textColor)
+            setHintTextColor(muted)
+            inputType = InputType.TYPE_CLASS_PHONE
+            background = rounded(panelRaised, 12)
+            setPadding(dp(12), 0, dp(12), 0)
+        }
+        content.addView(phone, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(14) })
+        content.addView(action("Проверить контакт локально") {
+            val number = phone.text.toString()
+            if (!contactIntelligence.hasPermission()) {
+                requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS), contactsPermissionRequestCode)
+            } else try {
+                val match = contactIntelligence.findByPhone(number)
+                val decision = ManaSmartReceptionistPolicy().onIncomingCall(numberKnown = match != null)
+                val identity = match?.displayName?.takeIf { it.isNotBlank() } ?: "Неизвестный номер"
+                showMessage(
+                    "$identity\nЗадержка решения: ${decision.delay.seconds} сек.\n" +
+                        "Сводка разговора: ${if (decision.offerSummary) "включена" else "выключена"}.\n" +
+                        "Требуется подтверждение владельца: да."
+                )
+            } catch (error: Exception) {
+                showMessage("Проверка контакта не удалась: ${error.message}")
+            }
+        }, LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(10) })
+        content.addView(label("Номер и контакты обрабатываются на устройстве. Для доступа требуется отдельное разрешение Android.", 11, muted, false).apply {
+            setPadding(0, dp(10), 0, 0)
+        })
     }
 
     private fun showMemory() {
@@ -933,6 +975,13 @@ class MainActivity : Activity() {
         if (requestCode == audioPermissionRequestCode) {
             if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) startVoiceInput()
             else showMessage("Доступ к микрофону не предоставлен.")
+        }
+        if (requestCode == contactsPermissionRequestCode) {
+            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+                showMessage("Доступ к контактам включён. Повтори проверку номера.")
+            } else {
+                showMessage("Доступ к контактам не предоставлен.")
+            }
         }
     }
 
