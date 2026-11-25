@@ -170,4 +170,36 @@ class ManaPersonalServicesTest {
         directory.deleteRecursively()
     }
 
+    @Test fun adaptiveKnowledgeIsEncryptedOwnerApprovedAndSourceBound() {
+        val directory = java.nio.file.Files.createTempDirectory("mana-knowledge").toFile()
+        val key = diaryKey()
+        val provider = ManaSecretKeyProvider { key }
+        val file = File(directory, "knowledge.bin")
+        val store = EncryptedFileManaAdaptiveKnowledgeStore(
+            EncryptedFileManaDiaryStore(file, provider, "mana.knowledge.test")
+        )
+        val knowledge = ManaAdaptiveKnowledgeService(store)
+        assertFailsWith<IllegalArgumentException> {
+            knowledge.save("MANA architecture", "https://example.org/mana", "Local-first design notes", ownerApproved = false)
+        }
+        val item = knowledge.save(
+            "MANA architecture", "https://example.org/mana", "Local-first offline design notes",
+            ownerApproved = true
+        )
+        assertFalse(String(file.readBytes(), Charsets.UTF_8).contains("Local-first offline"))
+        val reloaded = ManaAdaptiveKnowledgeService(
+            EncryptedFileManaAdaptiveKnowledgeStore(
+                EncryptedFileManaDiaryStore(file, provider, "mana.knowledge.test")
+            )
+        )
+        assertEquals(item.id, reloaded.search("offline design").single().id)
+        assertFailsWith<IllegalArgumentException> {
+            reloaded.save("Unsafe", "http://example.org", "not https", ownerApproved = true)
+        }
+        assertFailsWith<IllegalArgumentException> { reloaded.forget(item.id, ownerApproved = false) }
+        reloaded.forget(item.id, ownerApproved = true)
+        assertTrue(reloaded.list().isEmpty())
+        directory.deleteRecursively()
+    }
+
 }
