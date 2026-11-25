@@ -59,7 +59,11 @@ class ManaEncryptedCredentialStore(
         return cipher.doFinal(bytes.copyOfRange(magic.size + 12, bytes.size)).toString(Charsets.UTF_8)
     }
 
-    @Synchronized fun clear() { if (file.exists()) require(file.delete()) { "Could not remove encrypted credential file." } }
+    @Synchronized fun clear() {
+        if (file.exists()) require(file.delete()) { "Could not remove encrypted credential file." }
+        val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        if (store.containsAlias(alias)) store.deleteEntry(alias)
+    }
 
     private fun key(): SecretKey {
         val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
