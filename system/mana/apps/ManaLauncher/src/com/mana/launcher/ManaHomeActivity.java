@@ -123,6 +123,30 @@ public final class ManaHomeActivity extends Activity {
         }
     }
 
+    private void submitBrainPrompt() {
+        String value = brainPrompt == null ? "" : brainPrompt.getText().toString().trim();
+        if (value.isEmpty()) { brainStatus.setText("Enter a message first."); return; }
+        if (brainService == null) { brainStatus.setText("MANA Brain is not connected."); return; }
+        BrainRequest request = new BrainRequest();
+        request.requestId = UUID.randomUUID().toString();
+        request.prompt = value;
+        request.allowCloud = false;
+        request.sensitive = false;
+        request.preferredCloudProvider = null;
+        brainStatus.setText("MANA is processing the request...");
+        try {
+            brainService.submit(request, new IBrainCallback.Stub() {
+                @Override public void onResult(BrainResponse response) {
+                    runOnUiThread(() -> {
+                        if (response == null) brainStatus.setText("MANA Brain returned no response.");
+                        else if (response.errorCode != 0) brainStatus.setText("MANA Brain: " + response.errorMessage + " (" + response.errorCode + ")");
+                        else brainStatus.setText((response.local ? "Local / " : "Cloud / ") + response.provider + "\n\n" + response.text);
+                    });
+                }
+            });
+        } catch (RemoteException error) { brainStatus.setText("Could not send request to MANA Brain."); }
+    }
+
     private void collectApplications() {
         allApps.clear();
         Intent query = new Intent(Intent.ACTION_MAIN);
@@ -179,6 +203,28 @@ public final class ManaHomeActivity extends Activity {
         TextView welcome = text("Я рядом. Чем займёмся?", 20, TEXT, true);
         welcome.setPadding(0, dp(7), 0, dp(12));
         hero.addView(welcome);
+
+        brainStatus = text("MANA Brain: connecting...", 12, MUTED, false);
+        brainStatus.setPadding(0, 0, 0, dp(10));
+        hero.addView(brainStatus);
+
+        brainPrompt = new EditText(this);
+        brainPrompt.setSingleLine(false);
+        brainPrompt.setMinLines(2);
+        brainPrompt.setTextColor(TEXT);
+        brainPrompt.setHintTextColor(MUTED);
+        brainPrompt.setHint("Message for MANA");
+        brainPrompt.setPadding(dp(12), dp(10), dp(12), dp(10));
+        brainPrompt.setBackground(panelBackground(MUTED, 12));
+        hero.addView(brainPrompt, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        TextView askBrain = action("Send to MANA", true);
+        askBrain.setOnClickListener(v -> submitBrainPrompt());
+        LinearLayout.LayoutParams askParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        askParams.topMargin = dp(10);
+        hero.addView(askBrain, askParams);
 
         TextView talk = action("Открыть MANA  →", true);
         talk.setOnClickListener(v -> openAssistant());
