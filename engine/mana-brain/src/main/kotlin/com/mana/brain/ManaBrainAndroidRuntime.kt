@@ -23,7 +23,7 @@ class ManaBrainAndroidRuntime private constructor() {
         ServiceLoader.load(InferenceProvider::class.java).toList()
 
     private val localProvider: InferenceProvider =
-        providers.firstOrNull { it.id == "litert-lm" || it.id.startsWith("local-") }
+        providers.firstOrNull { it.id == "litert-lm" || it.id == "litertlm-local" || it.id.startsWith("local-") }
             ?: UnavailableLocalProvider
 
     private val cloudProviders: List<InferenceProvider> =
