@@ -140,6 +140,9 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ManaAvatarState.loadFromPreferences(this)
+        ManaAvatar3DView.outfitIndex = ManaAvatarState.outfitIndex
+        ManaAvatar3DView.accessoryEnabled = ManaAvatarState.accessoryEnabled
         window.statusBarColor = bg
         window.navigationBarColor = bg
         window.decorView.setBackgroundColor(bg)
