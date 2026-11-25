@@ -27,16 +27,7 @@ class ManaCallScreeningService : CallScreeningService() {
         respondToCall(details, response)
 
         val number = details.handle?.takeIf { it.scheme == "tel" }?.schemeSpecificPart.orEmpty()
-        // Telecom requires a screening response within five seconds. Allow first;
-        // local contact lookup and owner notification must never delay ringing.
-        val response = CallResponse.Builder()
-            .setDisallowCall(false)
-            .setRejectCall(false)
-            .setSkipCallLog(false)
-            .setSkipNotification(false)
-            .setSilenceCall(false)
-            .build()
-        respondToCall(details, response)
+        // Local contact lookup and owner notification must never delay ringing.
 
         Thread {
             val known = runCatching {
