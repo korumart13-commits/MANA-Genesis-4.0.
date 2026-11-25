@@ -29,6 +29,7 @@ dependencies {
     implementation("androidx.documentfile:documentfile:1.0.1")
     implementation("androidx.lifecycle:lifecycle-runtime-android:2.8.7")
     implementation(project(":core"))
+    implementation(project(":brain"))
     implementation("com.google.ai.edge.litertlm:litertlm-android:0.16.1")
     implementation("io.github.sceneview:sceneview:4.18.0")
     implementation("androidx.activity:activity-compose:1.10.1")
