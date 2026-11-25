@@ -45,7 +45,7 @@ class LocalModelRuntime(private val cacheDirectory: File) {
             try {
                 val active = conversation ?: error("Сначала загрузи файл модели .litertlm.")
                 require(prompt.isNotBlank()) { "Пустой запрос." }
-                runBlocking { active.sendMessageAsync(prompt).collect { message -> onChunk(message.text) } }
+                runBlocking { active.sendMessageAsync(prompt).collect { message -> onChunk(message.toString()) } }
                 callback(Result.success(Unit))
             } catch (error: Exception) {
                 callback(Result.failure(error))
