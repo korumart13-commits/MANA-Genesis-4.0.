@@ -32,6 +32,9 @@
                 android:value="User-enabled persistent floating MANA avatar overlay" />
         </service>
         <activity
+            android:name=".ManaAvatarPreviewActivity"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:screenOrientation="unspecified">
