@@ -68,3 +68,10 @@ These are source/CI milestones, not a full AOSP build or on-device certification
 6. Test on a spare or safely recoverable target device, including hardware, thermal, battery, security and rollback tests.
 
 See [implementation ledger](IMPLEMENTATION_LEDGER.md), [owner requirements audit](OWNER_FEATURE_AUDIT_2026-11-25.md), [security review](SECURITY_REVIEW_2026-11-25.md) and [device/kernel audit](DEVICE_KERNEL_SOURCE_AUDIT_2026-11-25.md).
+
+
+## MANA Brain Binder integration status
+
+A new AIDL contract and transport-neutral facade now define the intended boundary between the canonical `engine/mana-brain` engine and Android clients. The facade preserves request IDs and provider provenance and delegates to the existing local-first/cloud-opt-in policy. JVM tests cover local provenance, cloud denial by default, sensitive-request denial and request validation.
+
+The Android Binder Service implementation, signature permission and caller identity enforcement, generated-AIDL client wiring in ManaAssistant, cancellation/concurrency handling and Android instrumentation tests are **not yet implemented**. The AIDL contract must not be represented as a live service.
