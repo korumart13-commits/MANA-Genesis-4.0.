@@ -75,6 +75,8 @@ class MainActivity : Activity() {
     private lateinit var localRuntime: LocalModelRuntime
     private lateinit var manaBrain: ManaBrainBridge
     private lateinit var cloudGateway: ManaCloudGateway
+    private lateinit var yandexProvider: ManaYandexAiStudioProvider
+    private lateinit var vkConnector: ManaVkReadOnlyConnector
     private var modelCatalog: ManaModelCatalog? = null
     private var chatInput: EditText? = null
     private var chatOutput: TextView? = null
