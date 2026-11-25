@@ -186,8 +186,8 @@ class ManaTermuxAgentActivity : Activity() {
             putExtra("com.termux.RUN_COMMAND_WORKDIR", projectDir())
             putExtra("com.termux.RUN_COMMAND_BACKGROUND", false)
             putExtra("com.termux.RUN_COMMAND_SESSION_ACTION", "0")
-            putExtra("com.termux.RUN_COMMAND_LABEL", "MANA: ${task.title}")
-            putExtra("com.termux.RUN_COMMAND_DESCRIPTION", task.description)
+            putExtra("com.termux.RUN_COMMAND_COMMAND_LABEL", "MANA: ${task.title}")
+            putExtra("com.termux.RUN_COMMAND_COMMAND_DESCRIPTION", task.description)
         }
         try {
             startService(termux)
