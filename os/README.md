@@ -2,7 +2,7 @@
 
 ## Product direction
 
-MANA OS is an Android 16 AOSP-derived operating-system project targeting the exact runtime hardware identity **realme RMX5566RU / RE645F, Qualcomm SM6225 / bengal / qcom**. The owner reports the retail name as realme C85 5G, but public C85 variant specifications conflict; the runtime SoC and kernel fingerprints are the engineering source of truth. See [device/kernel audit](DEVICE_KERNEL_SOURCE_AUDIT_2026-11-25.md).
+MANA OS is an Android 16 AOSP-derived operating-system project targeting the exact runtime hardware identity **realme RMX5566RU / RE645F, Qualcomm SM6225 / bengal / qcom**. The runtime SoC and kernel fingerprints are the engineering source of truth; do not substitute C85 5G / RMX5253 / MediaTek resources.
 
 MANA is intended to be one local-first OS experience: MANA Brain, launcher, avatar, voice, memory, personal modules, games, settings, control center, update and recovery services. The current repository contains a source foundation and Android prototypes, **not a complete bootable ROM**.
 
@@ -17,6 +17,14 @@ MANA is intended to be one local-first OS experience: MANA Brain, launcher, avat
 
 The Gradle launcher and Soong product apps are still separate source generations. The launcher prototype's inference, avatar and personal modules are **not yet integrated into the Soong/AOSP product**. Successful JVM tests or Gradle/Soong compilation validate only those source targets; they do not prove device behavior.
 
+## Device bring-up foundation
+
+- [RE645F device-tree foundation](../device/realme/RE645F/README.md) — directory contract and evidence gates; intentionally not buildable yet.
+- [RE645F vendor integration](../vendor/realme/RE645F/README.md) — blob provenance, VINTF and HAL requirements; no proprietary blobs included.
+- [RE645F kernel integration](../kernel/RE645F_KERNEL_INTEGRATION.md) — exact 5.15.197 source requirements and rejected mismatched candidates.
+- [AOSP 16 build foundation](AOSP16_BUILD_FOUNDATION.md) — reproducible platform baseline and CI stages.
+- [Port gate matrix](PORT_GATE_MATRIX.md) — confirmed, partial, missing and blocked components.
+
 ## Device and platform blockers
 
 The repository does not yet contain:
@@ -26,7 +34,7 @@ The repository does not yet contain:
 - a tested AVB signing, SELinux, A/B OTA, recovery and stock-restore path;
 - a bootable MANA OS image tested on the target phone.
 
-A public realme C85 5G kernel repository was audited and rejected because it is a different MediaTek configuration and Linux 5.15.180. Do not build or flash it for the owner's Qualcomm device.
+A public realme C85 5G kernel repository was audited and rejected because it is a different MediaTek configuration and Linux 5.15.180. An older SM6225 candidate reports Linux 4.19.157. Neither is an approved replacement for the target's OEM kernel.
 
 ## Design and safety principles
 
