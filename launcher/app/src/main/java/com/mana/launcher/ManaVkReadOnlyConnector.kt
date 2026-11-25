@@ -64,13 +64,29 @@ class ManaVkReadOnlyConnector(context: Context) {
             }
             connection.outputStream.use { it.write(form.toByteArray(Charsets.UTF_8)) }
             val code = connection.responseCode
-            val body = (if (code in 200..299) connection.inputStream else connection.errorStream)
-                ?.bufferedReader()?.use { it.readText() }.orEmpty()
-            check(code in 200..299) { "VK API returned HTTP $code." }
+            val body = readBounded(if (code in 200..299) connection.inputStream else connection.errorStream)
+            check(code in 200..299) { "VK API returned HTTP $code. Check token, permissions and quota." }
             val json = JSONObject(body)
             require(!json.has("error")) { "VK API error: " + json.optJSONObject("error")?.optInt("error_code") }
             return json
         } finally { connection.disconnect() }
+    }
+
+    private fun readBounded(stream: java.io.InputStream?, limit: Int = 2 * 1024 * 1024): String {
+        if (stream == null) return ""
+        stream.use { input ->
+            val output = java.io.ByteArrayOutputStream()
+            val buffer = ByteArray(8192)
+            var total = 0
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                total += count
+                require(total <= limit) { "VK response exceeded the 2 MiB safety limit." }
+                output.write(buffer, 0, count)
+            }
+            return output.toString("UTF-8")
+        }
     }
 
     companion object {
