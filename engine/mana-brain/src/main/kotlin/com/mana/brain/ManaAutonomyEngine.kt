@@ -58,17 +58,21 @@ class ManaAutonomyPolicy(ownerRules: List<OwnerRule> = emptyList()) {
     }
 
     fun decide(capability: AutonomyCapability): AutonomyDecisionRecord {
-        val explicit = rules[capability.id].orEmpty().lastOrNull()
-        if (explicit != null) {
+        // Owner preferences cannot manufacture platform privileges.
+        if (capability.domain == AutonomyDomain.DEVICE_API && !capability.runtimePermissionGranted) {
             return AutonomyDecisionRecord(
                 capability.id,
-                when (explicit.effect) {
-                    OwnerRuleEffect.ALLOW -> AutonomyDecision.ALLOW
-                    OwnerRuleEffect.FORBID -> AutonomyDecision.FORBID
-                    OwnerRuleEffect.REQUIRE_APPROVAL -> AutonomyDecision.REQUIRE_APPROVAL
-                },
-                "Applied owner rule: ${explicit.id}"
+                AutonomyDecision.FORBID,
+                "Android runtime permission is not granted"
             )
+        }
+
+        val explicit = rules[capability.id].orEmpty().lastOrNull()
+        if (explicit?.effect == OwnerRuleEffect.FORBID) {
+            return AutonomyDecisionRecord(capability.id, AutonomyDecision.FORBID, "Applied owner rule: ${explicit.id}")
+        }
+        if (explicit?.effect == OwnerRuleEffect.REQUIRE_APPROVAL) {
+            return AutonomyDecisionRecord(capability.id, AutonomyDecision.REQUIRE_APPROVAL, "Applied owner rule: ${explicit.id}")
         }
 
         return when (capability.domain) {
@@ -77,13 +81,13 @@ class ManaAutonomyPolicy(ownerRules: List<OwnerRule> = emptyList()) {
             AutonomyDomain.PUBLIC_READ_ONLY ->
                 AutonomyDecisionRecord(capability.id, AutonomyDecision.ALLOW, "Public read-only research is enabled")
             AutonomyDomain.DEVICE_API ->
-                if (capability.runtimePermissionGranted) {
-                    AutonomyDecisionRecord(capability.id, AutonomyDecision.ALLOW, "Android granted the required runtime capability")
-                } else {
-                    AutonomyDecisionRecord(capability.id, AutonomyDecision.FORBID, "Android runtime permission is not granted")
-                }
+                AutonomyDecisionRecord(capability.id, AutonomyDecision.ALLOW, "Android granted the required runtime capability")
             AutonomyDomain.EXTERNAL_SIDE_EFFECT ->
-                AutonomyDecisionRecord(capability.id, AutonomyDecision.REQUIRE_APPROVAL, "External side effects require owner/OS authorization")
+                AutonomyDecisionRecord(
+                    capability.id,
+                    AutonomyDecision.REQUIRE_APPROVAL,
+                    "External side effects require owner/OS authorization"
+                )
         }
     }
 }
