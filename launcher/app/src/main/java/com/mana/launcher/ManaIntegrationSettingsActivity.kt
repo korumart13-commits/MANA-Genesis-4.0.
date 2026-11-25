@@ -142,8 +142,8 @@ class ManaIntegrationSettingsActivity : ComponentActivity() {
 
     private fun button(value: String, action: () -> Unit) = Button(this).apply {
         text = value
-        setTextColor(foregroundColor)
-        setBackgroundColor(surfaceColor)
+        setTextColor(this@ManaIntegrationSettingsActivity.foregroundColor)
+        setBackgroundColor(this@ManaIntegrationSettingsActivity.surfaceColor)
         gravity = Gravity.CENTER
         setOnClickListener { action() }
         layoutParams = LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(7) }
