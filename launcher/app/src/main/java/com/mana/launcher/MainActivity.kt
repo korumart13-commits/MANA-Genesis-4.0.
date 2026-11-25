@@ -836,6 +836,67 @@ class MainActivity : Activity() {
         }.start()
     }
 
+    private fun showCloudSettings() {
+        val providers = ManaCloudProvider.values()
+        var selected = cloudGateway.selectedProvider()
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(12), dp(20), dp(4))
+        }
+        layout.addView(label("Провайдер", 14, textColor, true))
+        val group = android.widget.RadioGroup(this).apply {
+            orientation = android.widget.RadioGroup.VERTICAL
+        }
+        val buttons = providers.map { provider ->
+            android.widget.RadioButton(this).apply {
+                text = provider.title
+                setTextColor(textColor)
+                isChecked = provider == selected
+                setOnClickListener { selected = provider }
+            }.also(group::addView)
+        }
+        layout.addView(group)
+        val model = EditText(this).apply {
+            hint = "Точный ID модели у провайдера"
+            setTextColor(textColor)
+            setHintTextColor(muted)
+            setSingleLine(true)
+            setText(cloudGateway.model())
+            background = rounded(panelRaised, 12)
+            setPadding(dp(12), 0, dp(12), 0)
+        }
+        layout.addView(model, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(10) })
+        val key = EditText(this).apply {
+            hint = "API-ключ (хранится зашифрованным)"
+            setTextColor(textColor)
+            setHintTextColor(muted)
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            setSingleLine(true)
+            background = rounded(panelRaised, 12)
+            setPadding(dp(12), 0, dp(12), 0)
+        }
+        layout.addView(key, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
+        layout.addView(label("Локальная модель всегда имеет приоритет. Облако вызывается только после отдельного подтверждения каждого запроса.", 11, muted, false))
+        AlertDialog.Builder(this)
+            .setTitle("Облачный резерв MANA")
+            .setView(layout)
+            .setNegativeButton("Выключить") { _, _ ->
+                cloudGateway.setEnabled(false)
+                showMessage("Облачный резерв выключен.")
+            }
+            .setNeutralButton("Отмена", null)
+            .setPositiveButton("Сохранить и включить") { _, _ ->
+                try {
+                    cloudGateway.configure(selected, model.text.toString().trim(), key.text.toString(), enabled = true)
+                    key.setText("")
+                    showMessage("Облачный резерв настроен. Перед каждым отправлением MANA запросит подтверждение.")
+                } catch (error: Exception) {
+                    showMessage("Не удалось настроить облачный резерв: ${error.message}")
+                }
+            }
+            .show()
+    }
+
     private fun sendToLocalModel() {
         val prompt = chatInput?.text?.toString()?.trim().orEmpty()
         if (prompt.isBlank()) return
@@ -846,87 +907,37 @@ class MainActivity : Activity() {
             val memoryContext = remembered.joinToString("\n") { "- [${it.category}] ${it.content}" }
             "Локальный контекст памяти владельца (используй только если релевантно):\n$memoryContext\n\nЗапрос владельца:\n$prompt"
         }
-        val cloudAllowed = cloudRequestAllowed && cloudGateway.isAvailable() && remembered.isEmpty()
-        cloudRequestAllowed = false
-        manaBrain.respond(effectivePrompt, allowCloud = cloudAllowed, sensitive = remembered.isNotEmpty(), onChunk = { chunk ->
-            generated.append(chunk)
-            runOnUiThread { chatOutput?.append(chunk) }
-        }, allowCloud = cloudAllowed, sensitive = remembered.isNotEmpty()) { result ->
-            runOnUiThread {
-                result.onSuccess {
-                    chatInput?.setText("")
-                    speakResponse(generated.toString())
-                }.onFailure { error ->
-                    ManaAvatar3DView.isSpeaking = false
-                    chatOutput?.append("\n\nОшибка локального ИИ: ${error.message}")
+
+        fun submit(allowCloud: Boolean) {
+            manaBrain.respond(effectivePrompt, allowCloud = allowCloud, onChunk = { chunk ->
+                generated.append(chunk)
+                runOnUiThread { chatOutput?.append(chunk) }
+            }) { result ->
+                runOnUiThread {
+                    result.onSuccess {
+                        chatInput?.setText("")
+                        speakResponse(generated.toString())
+                    }.onFailure { error ->
+                        ManaAvatar3DView.isSpeaking = false
+                        chatOutput?.append("\n\nОшибка локального ИИ: ${error.message}")
+                    }
                 }
             }
         }
+
+        val mayUseCloud = !localRuntime.isReady() && cloudGateway.isAvailable() && remembered.isEmpty()
+        if (mayUseCloud) {
+            AlertDialog.Builder(this)
+                .setTitle("Разрешить облачный запрос?")
+                .setMessage("Локальная модель сейчас недоступна. Отправить этот текст выбранному облачному провайдеру? Не отправляй пароли, ключи, платёжные данные или личную переписку. Без подтверждения запрос останется локальным.")
+                .setNegativeButton("Только локально") { _, _ -> submit(false) }
+                .setPositiveButton("Разрешить этот запрос") { _, _ -> submit(true) }
+                .show()
+        } else {
+            submit(false)
+        }
     }
-    private fun showCloudSettings() {
-        var selected = cloudGateway.selectedProvider()
-        val providerLabel = TextView(this).apply {
-            text = "Провайдер: " + selected.title + " (нажми, чтобы изменить)"
-            setTextColor(accentSoft)
-            textSize = 14f
-            setPadding(0, dp(8), 0, dp(12))
-            setOnClickListener {
-                val options = ManaCloudProvider.values().map { it.title }.toTypedArray()
-                AlertDialog.Builder(this@MainActivity)
-                    .setTitle("Выбери облачный сервис")
-                    .setSingleChoiceItems(options, ManaCloudProvider.values().indexOf(selected)) { dialog, which ->
-                        selected = ManaCloudProvider.values()[which]
-                        text = "Провайдер: " + selected.title + " (нажми, чтобы изменить)"
-                        dialog.dismiss()
-                    }.setNegativeButton("Отмена", null).show()
-            }
-        }
-        val model = EditText(this).apply {
-            hint = "ID модели провайдера"
-            setText(cloudGateway.model())
-            setTextColor(textColor)
-            setHintTextColor(muted)
-            isSingleLine = true
-            background = rounded(panelRaised, 12)
-            setPadding(dp(12), 0, dp(12), 0)
-        }
-        val key = EditText(this).apply {
-            hint = if (cloudGateway.hasKey(selected)) "API-ключ сохранён — оставь пустым или замени" else "Вставь API-ключ"
-            setTextColor(textColor)
-            setHintTextColor(muted)
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-            isSingleLine = true
-            background = rounded(panelRaised, 12)
-            setPadding(dp(12), 0, dp(12), 0)
-        }
-        val enabled = android.widget.CheckBox(this).apply {
-            text = "Разрешить облачный резерв, только если локальная модель недоступна"
-            setTextColor(textColor)
-            isChecked = cloudGateway.isEnabled()
-        }
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(8), dp(20), 0)
-            addView(providerLabel)
-            addView(model, LinearLayout.LayoutParams(-1, dp(48)).apply { bottomMargin = dp(8) })
-            addView(key, LinearLayout.LayoutParams(-1, dp(48)).apply { bottomMargin = dp(8) })
-            addView(enabled)
-            addView(label("Личные воспоминания не отправляются в облако. Локальная модель всегда имеет приоритет. API-ключ шифруется Android Keystore.", 11, muted, false))
-        }
-        AlertDialog.Builder(this)
-            .setTitle("Облачные модели MANA")
-            .setView(layout)
-            .setNegativeButton("Отмена", null)
-            .setPositiveButton("Сохранить") { _, _ ->
-                try {
-                    cloudGateway.configure(selected, model.text.toString().trim(), key.text.toString(), enabled.isChecked)
-                    showMessage("Настройки облачного резерва сохранены.")
-                } catch (error: Exception) {
-                    showMessage("Не удалось сохранить настройки: " + error.message)
-                }
-            }
-            .show()
-    }
+
     private fun initializeVoice() {
         textToSpeech = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
