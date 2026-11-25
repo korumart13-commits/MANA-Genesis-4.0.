@@ -54,4 +54,42 @@ class ManaSystemCoreTest {
         assertEquals(BootPhase.DEGRADED, core.phase)
         assertEquals(ModuleState.FAILED, status.single().state)
     }
+
+    @Test fun rollsBackStartedModulesWhenLaterModuleFails() {
+        val events = mutableListOf<String>()
+        val core = ManaSystemCore(device)
+        core.register(object : ManaSystemModule {
+            override val id = "base"
+            override fun start(context: ManaSystemContext) { events += "start-base" }
+            override fun stop(context: ManaSystemContext) { events += "stop-base" }
+        })
+        core.register(object : ManaSystemModule {
+            override val id = "mana.brain"
+            override val dependencies = setOf("base")
+            override fun start(context: ManaSystemContext) { error("brain failed") }
+        })
+        val result = core.boot()
+        assertEquals(BootPhase.DEGRADED, core.phase)
+        assertEquals(listOf("start-base", "stop-base"), events)
+        assertEquals(ModuleState.STOPPED, result.first { it.id == "base" }.state)
+        assertEquals(ModuleState.FAILED, result.first { it.id == "mana.brain" }.state)
+    }
+
+    @Test fun rejectsDependencyCyclesBeforeStartingModules() {
+        val events = mutableListOf<String>()
+        val core = ManaSystemCore(device)
+        core.register(object : ManaSystemModule {
+            override val id = "alpha"
+            override val dependencies = setOf("beta")
+            override fun start(context: ManaSystemContext) { events += "alpha" }
+        })
+        core.register(object : ManaSystemModule {
+            override val id = "beta"
+            override val dependencies = setOf("alpha")
+            override fun start(context: ManaSystemContext) { events += "beta" }
+        })
+        assertEquals(BootPhase.DEGRADED, core.boot().let { core.phase })
+        assertEquals(emptyList(), events)
+    }
+
 }
