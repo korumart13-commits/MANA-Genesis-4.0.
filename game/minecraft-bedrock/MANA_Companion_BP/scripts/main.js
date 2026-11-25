@@ -70,6 +70,28 @@ world.afterEvents.chatSend.subscribe((event) => {
     if (event.message.trim().toLowerCase().startsWith("!mana")) command(event.sender, event.message);
 });
 
+
+const OWNER_TAG = "mana_owner";
+system.afterEvents.scriptEventReceive.subscribe((event) => {
+    if (event.id !== "mana:command") return;
+    const owner = event.sourceEntity;
+    if (!owner || !owner.hasTag(OWNER_TAG)) {
+        try { owner?.sendMessage?.("MANA: команда доступна только владельцу мира."); } catch (_) {}
+        return;
+    }
+    try {
+        const request = JSON.parse(event.message);
+        const action = String(request.action || "help");
+        if (action === "ping") {
+            owner.sendMessage?.("MANA bridge online.");
+            return;
+        }
+        command(owner, "!mana " + action);
+    } catch (_) {
+        try { owner.sendMessage?.("MANA: команда должна быть JSON с полем action."); } catch (_) {}
+    }
+});
+
 system.runInterval(() => {
     for (const [ownerId, state] of companions.entries()) {
         if (!state.following || !valid(state.entity)) {
