@@ -224,6 +224,13 @@ class ManaDocumentStorageActivity : Activity() {
                 val source = DocumentFile.fromSingleUri(this, Uri.parse(quarantineUri)) ?: error("Копия недоступна.")
                 val expected = entry.tags.firstOrNull { it.startsWith("sha256:") }?.removePrefix("sha256:") ?: error("Нет контрольной суммы.")
                 require(sha256(source.uri) == expected) { "Копия карантина изменилась; восстановление остановлено." }
+                val existingOriginal = runCatching {
+                    DocumentFile.fromSingleUri(this, Uri.parse(entry.body.substringBefore("\n")))
+                }.getOrNull()
+                if (existingOriginal?.exists() == true && runCatching { sha256(existingOriginal.uri) == expected }.getOrDefault(false)) {
+                    runOnUiThread { showMessage("Исходный файл уже существует и прошёл SHA-256. Повторная копия не создавалась.") }
+                    return@execute
+                }
                 val tree = selectedTree?.let { DocumentFile.fromTreeUri(this, it) } ?: error("Папка недоступна.")
                 val name = uniqueName(tree, entry.title)
                 val target = tree.createFile("application/octet-stream", name) ?: error("Не удалось создать файл восстановления.")
