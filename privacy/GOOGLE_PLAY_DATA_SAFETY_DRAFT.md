@@ -12,7 +12,7 @@
 | App activity / usage | PACKAGE_USAGE_STATS (user-granted special access) | Detect foreground game sessions | Local package/session detection; verify exact fields read and no upload |
 | User-generated content | Diary, memory, future-update ideas | Local assistant features | App-private encrypted files; no cloud sync; user controls save/delete |
 | App info and performance | Local model runtime and device compatibility checks | Run local inference and diagnostics | No analytics SDK observed in Gradle dependencies; verify final transitive SDKs and logs |
-| Other user content | Prompt text sent to optional AI providers | Answer user request | Sent only after per-request consent when local model is unavailable; provider processing/retention varies |
+| Other user content and search queries | Prompt text for cloud inference; user-entered adaptive-learning topics | Answer requests and perform opt-in source discovery | Inference prompts require per-request confirmation; daily search topics are sent to Yandex only after adaptive-learning opt-in and on unmetered network; results are stored locally |
 | Device or other IDs | No collection implemented intentionally | None | Verify final network traffic and third-party SDKs |
 
 ## Permissions and user-facing disclosures
