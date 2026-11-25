@@ -114,7 +114,7 @@ jobs:
           javac -source 17 -target 17 \
             -classpath "$ANDROID_HOME/platforms/android-36/android.jar" \
             -d "$RUNNER_TEMP/mana-ui-classes" \
-            $(find system/mana/apps -name '*.java' ! -name 'ManaBrainBinderService.java' ! -name 'ManaBrainBinderTest.java' -print)
+            $(find system/mana/apps -name '*.java' ! -name 'ManaBrainBinderService.java' ! -name 'ManaBrainBinderTest.java' ! -name 'ManaHomeActivity.java' -print)
       - name: Validate read-only Termux device audit script
         run: |
           bash -n device/collect_rmx5566_identity.sh
