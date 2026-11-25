@@ -80,6 +80,7 @@ class MainActivity : Activity() {
     private lateinit var manaBrain: ManaBrainBridge
     private lateinit var cloudGateway: ManaCloudGateway
     private lateinit var yandexProvider: ManaYandexAiStudioProvider
+    private lateinit var yandexProvider: ManaYandexAiStudioProvider
     private lateinit var vkConnector: ManaVkReadOnlyConnector
     private var modelCatalog: ManaModelCatalog? = null
     private var chatInput: EditText? = null
@@ -145,7 +146,8 @@ class MainActivity : Activity() {
         modelCatalog = runCatching { ManaModelCatalog(this) }.getOrNull()
         localRuntime = LocalModelRuntime(File(cacheDir, "mana-litert-cache"))
         cloudGateway = ManaCloudGateway(this, ManaAndroidKeyProvider())
-        manaBrain = ManaBrainBridge(localRuntime, cloudGateway)
+        yandexProvider = ManaYandexAiStudioProvider(this)
+        manaBrain = ManaBrainBridge(localRuntime, listOf(cloudGateway, yandexProvider))
         diaryService = try { ManaDiaryService(EncryptedFileManaDiaryStore(File(filesDir, "mana/diary.bin"), ManaAndroidKeyProvider())) } catch (error: Exception) {
             showMessage("Дневник пока недоступен: ${error.message}")
             null
@@ -328,6 +330,7 @@ class MainActivity : Activity() {
         card.addView(action("Открыть локальную память MANA") { showMemory() })
         card.addView(action("Идеи и будущие обновления MANA") { showFutureUpdates() })
         card.addView(action("Настроить облачный резерв ИИ") { showCloudSettings() })
+        card.addView(action("Настроить Yandex AI Studio и VK") { startActivity(Intent(this, ManaIntegrationSettingsActivity::class.java)) })
         card.addView(action("Скачать официальную локальную Gemma 4 E2B (2,59 ГБ)") { downloadOfficialModel() })
         card.addView(action("Открыть Smart Receptionist") { showReceptionist() })
         card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Локальный ИИ: выбери .litertlm-модель в окне MANA.", 12, muted, false))
@@ -1237,7 +1240,7 @@ class MainActivity : Activity() {
             }
         }
 
-        val mayUseCloud = !localRuntime.isReady() && cloudGateway.isAvailable() && !sensitive
+        val mayUseCloud = !localRuntime.isReady() && (cloudGateway.isAvailable() || yandexProvider.isAvailable()) && !sensitive
         if (mayUseCloud) {
             AlertDialog.Builder(this)
                 .setTitle("Разрешить облачный запрос?")
