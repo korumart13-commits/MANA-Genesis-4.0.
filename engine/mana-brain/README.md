@@ -24,4 +24,4 @@ Run with Gradle 8.10+ and JDK 17:
 gradle test
 ```
 
-The tests use Kotlin coroutines' runBlocking test bridge; the coroutine test dependency is declared in the build file.
+The tests use kotlinx.coroutines.runBlocking from the core coroutines dependency; no coroutine-test library is currently required.
