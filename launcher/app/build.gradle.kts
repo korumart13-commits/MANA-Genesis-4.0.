@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 android {
     namespace = "com.mana.launcher"
@@ -19,12 +20,14 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-    buildFeatures { buildConfig = true }
+    buildFeatures { buildConfig = true; compose = true }
 }
 
 dependencies {
     implementation(project(":core"))
     implementation("com.google.ai.edge.litertlm:litertlm-android:0.16.1")
+    implementation("io.github.sceneview:sceneview:4.18.0")
+    implementation("androidx.activity:activity-compose:1.10.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
