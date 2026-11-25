@@ -74,6 +74,7 @@ class MainActivity : Activity() {
     private lateinit var localRuntime: LocalModelRuntime
     private lateinit var manaBrain: ManaBrainBridge
     private lateinit var cloudGateway: ManaCloudGateway
+    private var modelCatalog: ManaModelCatalog? = null
     private var chatInput: EditText? = null
     private var chatOutput: TextView? = null
     private var modelStatus: TextView? = null
@@ -118,6 +119,7 @@ class MainActivity : Activity() {
         window.navigationBarColor = bg
         window.decorView.setBackgroundColor(bg)
         contactIntelligence = ManaContactIntelligence(this)
+        modelCatalog = runCatching { ManaModelCatalog(this) }.getOrNull()
         localRuntime = LocalModelRuntime(File(cacheDir, "mana-litert-cache"))
         cloudGateway = ManaCloudGateway(this, ManaAndroidKeyProvider())
         manaBrain = ManaBrainBridge(localRuntime, cloudGateway)
@@ -149,7 +151,7 @@ class MainActivity : Activity() {
         loadApps()
         buildShell()
         showHome()
-        val savedModel = File(filesDir, "mana-models/selected-model.litertlm")
+        val savedModel = modelCatalog?.savedModelPath()?.let(::File) ?: File(filesDir, "mana-models/selected-model.litertlm")
         if (savedModel.isFile) {
             localRuntime.load(savedModel) { result ->
                 runOnUiThread {
@@ -169,6 +171,7 @@ class MainActivity : Activity() {
         if (avatarEnabled && (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(this))) {
             startFloatingAvatarService()
         }
+        activateCompletedModelDownload()
     }
 
     private fun loadApps() {
@@ -278,6 +281,7 @@ class MainActivity : Activity() {
         card.addView(action("Открыть MANA Life Manager") { showLifeManager() })
         card.addView(action("Открыть локальную память MANA") { showMemory() })
         card.addView(action("Настроить облачный резерв ИИ") { showCloudSettings() })
+        card.addView(action("Скачать официальную локальную Gemma 4 E2B (2,59 ГБ)") { downloadOfficialModel() })
         card.addView(action("Открыть Smart Receptionist") { showReceptionist() })
         card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Локальный ИИ: выбери .litertlm-модель в окне MANA.", 12, muted, false))
         val p = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(19) }
@@ -910,6 +914,43 @@ class MainActivity : Activity() {
         return markers.any(value::contains)
     }
 
+    private fun downloadOfficialModel() {
+        val catalog = modelCatalog
+        if (catalog == null) { showMessage("Хранилище загрузок Android недоступно."); return }
+        try {
+            val id = catalog.enqueueGemma4E2B()
+            if (id == -1L) {
+                activateCompletedModelDownload()
+                showMessage("Официальная модель уже загружена и проверена.")
+            } else {
+                showMessage("Загрузка Gemma 4 E2B началась через Android Download Manager. Загрузка разрешена только по Wi-Fi. После завершения вернись в MANA — файл будет проверен и подключён.")
+            }
+        } catch (error: Exception) {
+            showMessage("Не удалось начать загрузку: " + error.message)
+        }
+    }
+
+    private fun activateCompletedModelDownload() {
+        val catalog = modelCatalog ?: return
+        Thread {
+            try {
+                val file = catalog.verifyCompletedDownload() ?: return@Thread
+                localRuntime.load(file) { result ->
+                    runOnUiThread {
+                        result.onSuccess { name ->
+                            modelStatus?.text = "Официальная модель проверена и активна: " + name
+                            showMessage("Gemma 4 E2B прошла проверку SHA-256 и подключена к локальному MANA Brain.")
+                        }.onFailure { error ->
+                            modelStatus?.text = "Модель скачана, но не запустилась: " + error.message
+                            showMessage("LiteRT-LM не смог загрузить модель: " + error.message)
+                        }
+                    }
+                }
+            } catch (error: Exception) {
+                runOnUiThread { showMessage("Проверка загрузки модели не пройдена: " + error.message) }
+            }
+        }.start()
+    }
     private fun sendToLocalModel() {
         val prompt = chatInput?.text?.toString()?.trim().orEmpty()
         if (prompt.isBlank()) return
