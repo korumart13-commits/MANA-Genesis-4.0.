@@ -7,7 +7,7 @@ class ManaPersonaTest {
     @Test fun sharedPersonaDefinesIdentityLanguageToneAndActionTruthfulness() {
         val prompt = ManaPersona.SYSTEM_PROMPT
         assertTrue(prompt.contains("MANA"))
-        assertTrue(prompt.contains("Reply in Russian"))
+        assertTrue(prompt.contains("Отвечай на русском языке"))
         assertTrue(prompt.contains("playful"))
         assertTrue(prompt.contains("Never claim"))
         assertTrue(prompt.contains("Protect secrets"))
