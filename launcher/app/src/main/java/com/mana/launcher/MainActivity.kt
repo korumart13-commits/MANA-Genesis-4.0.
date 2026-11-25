@@ -304,6 +304,9 @@ class MainActivity : Activity() {
         })
         card.addView(action("Открыть зашифрованный дневник MANA") { showDiary() })
         card.addView(action("Открыть MANA Life Manager") { showLifeManager() })
+        card.addView(action("Открыть MANA Future Updates") {
+            startActivity(Intent(this, ManaFutureUpdatesActivity::class.java))
+        })
         card.addView(action("Открыть локальную память MANA") { showMemory() })
         card.addView(action("Настроить облачный резерв ИИ") { showCloudSettings() })
         card.addView(action("Скачать официальную локальную Gemma 4 E2B (2,59 ГБ)") { downloadOfficialModel() })
