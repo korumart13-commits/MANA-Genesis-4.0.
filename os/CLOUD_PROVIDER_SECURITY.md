@@ -27,7 +27,7 @@ An app on a user-controlled Android device cannot make a user-provided API key c
 - Anthropic: Messages API.
 - Google Gemini: generateContent API.
 - xAI: Responses API; request storage is disabled with `store=false`.
-- Yandex AI Studio: Responses API; request storage is disabled with `store=false`. Adaptive-learning topic searches are a separate opt-in WorkManager task.
+- Yandex AI Studio: Text Generation API (`foundationModels/v1/completion`). This endpoint has no `store=false` request flag; provider retention is governed by Yandex Cloud terms. Adaptive-learning topic searches use the separate Yandex Search API v2 and require a separate opt-in.
 
 The user must supply a valid model identifier and API key for the selected provider. No provider account, API credits, license, or entitlement is included with MANA.
 
