@@ -190,3 +190,15 @@ The initial autonomy profile is **maximum initiative inside MANA's own research 
 - MANA must not silently export private memory, credentials or personal data to a cloud model. Cloud inference and external account access use their explicit provider consent paths.
 
 This is not a claim of unrestricted self-modification or guaranteed model-weight training. The first implementation is an auditable research-and-reflection loop with pluggable planners, runners and journals. Persistent scheduling, long-term journal adapters, skill evaluation and later model adaptation are separate implementation milestones.
+
+
+## External implementation patterns reviewed (architecture only)
+
+The following public projects are reference material, not code copied into MANA. Their licenses and dependencies must be reviewed independently before any source reuse.
+
+- [Open-Ended Agent](https://github.com/samiralibabic/open-ended-agent): persistent inference cycles, inspectable traces, curated long-term memory and small reversible experiments. MANA adopts the experiment-loop concept, not its implementation.
+- [OpenETA](https://github.com/OpenMOSS/OpenETA): separate planner/tool/host authority, fresh observation after state-changing actions, and evidence-backed completion. MANA applies this separation to Android capabilities and research adapters.
+- [Open-Sable](https://github.com/IdeoaLabs/Open-Sable): multi-tier memory, reflection, skill fitness and proactive reasoning. MANA treats these as future integration targets, not proof of self-improving model weights.
+- [RSIAgent](https://github.com/AetherLabsAI/RSIAgent): broad-then-deep exploration and verifier-backed reusable experience. MANA can evaluate this pattern for its future research curriculum.
+
+MANA's distinctive experiment remains one persistent identity, one central Brain, one owner-controlled memory, and one auditable stream of autonomous research. No external repository is treated as a drop-in OS or as evidence that MANA has achieved general intelligence.
