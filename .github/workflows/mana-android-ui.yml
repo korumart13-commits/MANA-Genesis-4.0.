@@ -43,7 +43,7 @@ jobs:
           import xml.etree.ElementTree as ET
           android_ns = "{http://schemas.android.com/apk/res/android}"
           manifests = list(pathlib.Path("system/mana/apps").glob("*/AndroidManifest.xml"))
-          assert len(manifests) == 2, f"Expected 2 app manifests, found {len(manifests)}"
+          assert len(manifests) == 4, f"Expected 4 app manifests, found {len(manifests)}"
           for path in manifests:
               root = ET.parse(path).getroot()
               permissions = [node.attrib.get(android_ns + "name", "") for node in root.findall("uses-permission")]
@@ -54,5 +54,5 @@ jobs:
               assert 'certificate: "default"' in build, f"{bp} must not use platform signing"
               for activity in root.findall("./application/activity"):
                   assert activity.attrib.get(android_ns + "exported") == "true", f"{path}: activity exported must be explicit"
-          print("Validated 2 manifests: no runtime permissions requested; exported activities are explicit.")
+          print("Validated 4 manifests: no runtime permissions requested; exported activities are explicit.")
           PY
