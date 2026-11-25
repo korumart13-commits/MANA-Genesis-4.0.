@@ -5,7 +5,7 @@ This directory contains the first Android-framework-facing source modules for th
 ## Packages
 
 - **ManaLauncher** (com.mana.launcher): HOME activity, MANA branding, launches the MANA assistant and lists installed launchable apps.
-- **ManaAssistant** (com.mana.assistant): MANA-branded assistant shell. It truthfully reports that this Soong shell is not yet connected to MANA Brain; it does not fake inference or transmit prompts.
+- **ManaAssistant** (com.mana.assistant): MANA-branded assistant and signature-protected Binder host. It delegates requests to the canonical Kotlin Brain core and fails closed when no Soong inference provider is registered.
 - **ManaSettings** (com.mana.settings): MANA-branded settings hub that opens Android settings panels for network, Bluetooth, display, sound, battery, app permissions and MANA's own permissions.
 - **ManaControlCenter** (com.mana.controlcenter): MANA-branded quick-access hub for Android Wi-Fi, Bluetooth, mobile network, display, sound, battery, location and notification settings.
 
@@ -18,7 +18,7 @@ They remain non-privileged product apps: no platform certificate, root access, h
 ## Remaining integration gates
 
 - Exact AOSP checkout and verified RMX5566RU/RE645F product and device tree.
-- Binder connection from the Soong assistant shell to the already-tested MANA Brain engine.
+- Packaging a LiteRT-LM InferenceProvider and verified Gson/kotlinx-coroutines Soong dependencies so inference can run entirely inside the product image.
 - SystemUI/Quick Settings replacement with correct platform signing and SELinux policy; the current Control Center is a safe settings launcher, not a replacement for Android SystemUI.
 - Real Android product build and on-device validation.
 - OEM kernel source, matching DTS/DTBO, vendor modules, VINTF/HAL and verified recovery/rollback path before any flashable image is attempted.
@@ -27,9 +27,9 @@ These are integrated source modules intended for the future MANA product image. 
 
 ## MANA Brain Binder boundary (new)
 
-The product now declares the generated `mana.brain-java` AIDL library in `system/mana/mana_product.mk`. Its source contract is in `system/mana/brain/aidl`; the transport-neutral `ManaBrainFacade` delegates to the canonical JVM engine in `engine/mana-brain`.
+The product declares `mana.brain-java`; ManaAssistant statically links the generated AIDL and `mana-brain-core` libraries. The core Soong module compiles the existing Kotlin ManaBrain and ManaBrainFacade sources.
 
-This is **not yet a running Android Binder service**. The assistant application is not yet binding to it. A signature permission, caller UID/package/signature validation, Android Service adapter, cancellation/concurrency handling and instrumentation tests are still required. Do not describe the Assistant as Binder-connected until those pieces are implemented and tested.
+The Binder endpoint, signature-level permission, caller UID/package/signature validation, bounded inference executor, Launcher client and Android instrumentation test sources have now been added. The Soong runtime still has no packaged LiteRT-LM provider; when it reports inference unavailable, Launcher forwards the original prompt to the existing com.mana.genesis companion app, which contains the Gradle LiteRT-LM runtime. The Binder service is therefore a real transport over the canonical routing core, but Soong-local inference is not yet operational.
 
 
 ### Brain Binder integration boundary
