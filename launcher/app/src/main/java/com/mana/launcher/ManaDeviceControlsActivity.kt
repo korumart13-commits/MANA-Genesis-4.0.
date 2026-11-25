@@ -33,6 +33,7 @@ class ManaDeviceControlsActivity : Activity() {
     private var controller: ManaAutonomyController? = null
     private lateinit var status: TextView
     private var pendingCapability: String? = null
+    private val capabilitySwitches = mutableMapOf<String, Switch>()
     private val cameraRequest = 7201
 
     private val capabilities = listOf(
@@ -51,7 +52,7 @@ class ManaDeviceControlsActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        reconcilePendingCapability()
+        if (pendingCapability != "device.torch") reconcilePendingCapability()
         refreshController()
         if (::status.isInitialized) status.text = "Активные разрешения MANA: ${enabledResources().size} из ${capabilities.size}"
     }
@@ -95,6 +96,7 @@ class ManaDeviceControlsActivity : Activity() {
                     }
                 }
             }
+            capabilitySwitches[capability.resource] = toggle
             row.addView(toggle)
             row.addView(TextView(this).apply {
                 text = capability.description
@@ -203,6 +205,7 @@ class ManaDeviceControlsActivity : Activity() {
         if (granted) enablePendingCapability()
         else {
             prefs.edit().putBoolean(resource, false).apply()
+            capabilitySwitches[resource]?.isChecked = false
             pendingCapability = null
             refreshController()
             if (::status.isInitialized) status.text = "Системный доступ не предоставлен. Возможность осталась выключенной."
@@ -212,6 +215,7 @@ class ManaDeviceControlsActivity : Activity() {
     private fun enablePendingCapability() {
         val resource = pendingCapability ?: return
         prefs.edit().putBoolean(resource, true).apply()
+        capabilitySwitches[resource]?.isChecked = true
         pendingCapability = null
         refreshController()
         if (::status.isInitialized) status.text = "Разрешение включено. MANA может использовать только соответствующую функцию."
@@ -256,7 +260,19 @@ class ManaDeviceControlsActivity : Activity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == cameraRequest) reconcilePendingCapability()
+        if (requestCode == cameraRequest) {
+            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) enablePendingCapability()
+            else {
+                val resource = pendingCapability
+                if (resource != null) {
+                    prefs.edit().putBoolean(resource, false).apply()
+                    capabilitySwitches[resource]?.isChecked = false
+                }
+                pendingCapability = null
+                refreshController()
+                status.text = "Разрешение Камера не предоставлено. Управление фонариком отключено."
+            }
+        }
     }
 
     private data class Capability(val resource: String, val title: String, val description: String)
