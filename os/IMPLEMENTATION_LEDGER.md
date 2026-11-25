@@ -1,7 +1,7 @@
 # MANA Genesis 4.0 — implementation ledger
 
 Last reviewed: 2026-11-25  
-Target profile: realme C85 (4G) RMX5566RU / RE645F, Qualcomm SM6225/bengal, Android 16, arm64-v8a.
+Target profile: owner-reported realme C85 5G; exact runtime identity RMX5566RU / RE645F, Qualcomm SM6225/bengal/qcom, Android 16, arm64-v8a. Public C85 variant naming conflicts; runtime hardware is authoritative.
 
 This is the authoritative completion ledger. A module catalog entry, UI placeholder, documentation page, or successful compile is not proof of a complete feature. Status is based on the source and CI evidence available in this repository.
 
