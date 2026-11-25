@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.provider.ContactsContract
 import android.net.Uri
-import androidx.core.content.ContextCompat
 
 data class ManaContactMatch(
     val contactId: Long,
@@ -16,7 +15,7 @@ data class ManaContactMatch(
 /** Local-only contact lookup. No contact data is uploaded or sent to cloud providers. */
 class ManaContactIntelligence(private val context: Context) {
     fun hasPermission(): Boolean =
-        ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
+        context.checkSelfPermission(Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
 
     fun findByPhone(phone: String): ManaContactMatch? {
         if (!hasPermission()) throw SecurityException("READ_CONTACTS permission has not been granted")
