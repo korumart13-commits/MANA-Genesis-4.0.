@@ -40,7 +40,7 @@ object ManaSystemModuleCatalog {
             ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "model files and license metadata"),
         SystemModuleDescriptor("mana.cloudgateway", "com.mana.cloudgateway", setOf("platform.security"),
             ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "OpenAI, Anthropic, Google and xAI adapters; per-provider opt-in; secrets in secure storage"),
-        SystemModuleDescriptor("mana.brain", "com.mana.brain", setOf("platform.security", "platform.storage", "mana.modelmanager", "mana.cloudgateway"),
+        SystemModuleDescriptor("mana.brain", "com.mana.brain", setOf("platform.security", "platform.storage", "mana.modelmanager"),
             ModuleCriticality.REQUIRED, ModuleFailurePolicy.ENTER_DEGRADED, "local inference; cloud opt-in only"),
         SystemModuleDescriptor("mana.avatar", "com.mana.avatar", setOf("mana.brain"),
             ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "camera/microphone only by explicit permission"),
