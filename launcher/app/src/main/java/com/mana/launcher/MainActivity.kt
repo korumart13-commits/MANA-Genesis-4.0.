@@ -584,6 +584,9 @@ class MainActivity : Activity() {
         card.addView(action("Открыть MANA Adaptive Intelligence") {
             startActivity(Intent(this, ManaAdaptiveLearningActivity::class.java))
         })
+        card.addView(action("Открыть автономное исследование MANA") {
+            startActivity(Intent(this, ManaAutonomyActivity::class.java))
+        })
         card.addView(action("Открыть локальную память MANA") { showMemory() })
         card.addView(action("Управление файлами и карантин MANA") { startActivity(Intent(this, ManaDocumentStorageActivity::class.java)) })
         card.addView(action("Идеи и будущие обновления MANA") { showFutureUpdates() })
