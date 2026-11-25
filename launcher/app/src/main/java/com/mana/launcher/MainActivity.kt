@@ -96,6 +96,18 @@ class MainActivity : Activity() {
         if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent) else startService(intent)
     }
 
+    private fun refreshFloatingAvatarStyle() {
+        val preferences = getSharedPreferences("mana.settings", MODE_PRIVATE)
+        if (!preferences.getBoolean("floating_avatar_enabled", false)) return
+        stopService(Intent(this, ManaFloatingAvatarService::class.java))
+        android.os.Handler(mainLooper).postDelayed({
+            if (preferences.getBoolean("floating_avatar_enabled", false) &&
+                (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(this))) {
+                startFloatingAvatarService()
+            }
+        }, 400L)
+    }
+
     private fun requestFloatingAvatar() {
         val preferences = getSharedPreferences("mana.settings", MODE_PRIVATE)
         if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
@@ -268,15 +280,25 @@ class MainActivity : Activity() {
             startActivity(Intent(this, ManaAvatarPreviewActivity::class.java))
         })
         card.addView(action("Сменить наряд MANA") {
-            ManaAvatar3DView.outfitIndex = (ManaAvatar3DView.outfitIndex + 1) % 3
-            showMessage("Наряд аватара изменён. Внешность и голос остались прежними.")
+            val preferences = getSharedPreferences("mana.settings", MODE_PRIVATE)
+            val next = (preferences.getInt("avatar_outfit_index", 0) + 1) % 3
+            preferences.edit().putInt("avatar_outfit_index", next).apply()
+            ManaAvatar3DView.outfitIndex = next
+            refreshFloatingAvatarStyle()
+            showMessage("Наряд аватара изменён. Лицо и голос остались прежними.")
         })
         card.addView(action("Переключить аксессуар аватара") {
-            ManaAvatar3DView.accessoryEnabled = !ManaAvatar3DView.accessoryEnabled
-            showMessage(if (ManaAvatar3DView.accessoryEnabled) "Аксессуар включён." else "Аксессуар скрыт.")
+            val preferences = getSharedPreferences("mana.settings", MODE_PRIVATE)
+            val enabled = !preferences.getBoolean("avatar_accessory_enabled", true)
+            preferences.edit().putBoolean("avatar_accessory_enabled", enabled).apply()
+            ManaAvatar3DView.accessoryEnabled = enabled
+            refreshFloatingAvatarStyle()
+            showMessage(if (enabled) "Аксессуар включён." else "Аксессуар скрыт.")
         })
         card.addView(action("Сменить выражение лица MANA") {
-            ManaAvatar3DView.expressionIndex = (ManaAvatar3DView.expressionIndex + 1) % 3
+            val next = (ManaAvatarState.expressionIndex + 1) % 3
+            ManaAvatarState.expressionIndex = next
+            ManaAvatar3DView.expressionIndex = next
             showMessage("Выражение лица изменено.")
         })
         card.addView(action("Открыть зашифрованный дневник MANA") { showDiary() })
@@ -1006,6 +1028,7 @@ class MainActivity : Activity() {
                         speakResponse(generated.toString())
                     }.onFailure { error ->
                         ManaAvatar3DView.isSpeaking = false
+                        ManaAvatarState.isSpeaking = false
                         chatOutput?.append("\n\nОшибка локального ИИ: ${error.message}")
                     }
                 }
@@ -1043,6 +1066,7 @@ class MainActivity : Activity() {
                 engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) {
                         ManaAvatar3DView.isSpeaking = true
+                        ManaAvatarState.isSpeaking = true
                     }
                     override fun onDone(utteranceId: String?) {
                         ManaAvatar3DView.isSpeaking = false
@@ -1169,6 +1193,7 @@ class MainActivity : Activity() {
         if (::manaBrain.isInitialized) manaBrain.shutdown()
         if (::localRuntime.isInitialized) localRuntime.shutdown()
         ManaAvatar3DView.isSpeaking = false
+        ManaAvatarState.isSpeaking = false
         speechRecognizer?.destroy()
         speechRecognizer = null
         textToSpeech?.stop()
