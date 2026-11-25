@@ -115,6 +115,13 @@ jobs:
             -classpath "$ANDROID_HOME/platforms/android-36/android.jar" \
             -d "$RUNNER_TEMP/mana-ui-classes" \
             $(find system/mana/apps -name '*.java' -print)
+      - name: Validate read-only Termux device audit script
+        run: |
+          bash -n device/collect_rmx5566_identity.sh
+          if grep -En '(^|[[:space:]])(su|dd|fastboot|flash|erase|mkfs|parted)([[:space:]]|$)' device/collect_rmx5566_identity.sh; then
+            echo "Unexpected privileged or block-writing command in read-only audit script."
+            exit 1
+          fi
       - name: Validate product package declarations and manifests
         run: |
           python3 - <<'PY'
