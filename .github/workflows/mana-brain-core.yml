@@ -1,0 +1,36 @@
+name: MANA Brain Core
+
+on:
+  push:
+    branches:
+      - mana-genesis-4-system-launcher-and-port-gates
+  pull_request:
+    branches:
+      - mana-genesis-4-system-launcher-and-port-gates
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mana-brain-core-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  brain-tests:
+    name: MANA Brain JVM tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Test canonical Brain engine
+        run: gradle --no-daemon -p engine/mana-brain test
+      - name: Test OS Core
+        run: gradle --no-daemon -p os/core test
