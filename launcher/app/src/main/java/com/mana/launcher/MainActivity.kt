@@ -52,6 +52,9 @@ import com.mana.os.core.ManaLifeManagerService
 import com.mana.os.core.EncryptedFileManaMemoryStore
 import com.mana.os.core.ManaMemoryService
 import com.mana.os.core.ManaSmartReceptionistPolicy
+import com.mana.os.core.EncryptedFileManaFutureUpdateStore
+import com.mana.os.core.ManaFutureUpdateService
+import com.mana.os.core.ManaUpdateStage
 
 class MainActivity : Activity() {
     private val bg = Color.rgb(4, 7, 14)
