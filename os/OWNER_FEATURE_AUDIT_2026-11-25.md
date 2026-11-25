@@ -8,7 +8,7 @@ Target: realme RMX5566RU / RE645F / Qualcomm SM6225 / Android 16
 
 **Not complete. Do not install or flash.** The repository contains a useful source foundation, two different generations of launcher/assistant source, a host-JVM service core, security/storage policy models, and a LiteRT-LM integration prototype in the older Gradle launcher. It does not yet contain a complete AOSP operating system, device-matched kernel build, integrated system services, or a tested device image.
 
-The module catalog has been expanded to represent all owner-requested capabilities. Catalog entries and documentation are architecture coverage only; they are not proof of implementation.
+The module catalog has been expanded to represent all owner-requested capabilities, including an explicit multi-provider cloud gateway. Catalog entries and documentation are architecture coverage only; they are not proof of implementation.
 
 ## Important repository structure finding
 
