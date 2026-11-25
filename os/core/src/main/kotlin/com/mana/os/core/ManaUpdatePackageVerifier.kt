@@ -65,6 +65,7 @@ class ManaUpdatePackageVerifier(
             val payloadEntry = zip.getEntry(PAYLOAD_NAME) ?: error("Update payload is missing.")
             require(manifestEntry.size in 1..MAX_MANIFEST_BYTES) { "Update manifest size is invalid." }
             require(payloadEntry.size in 1..maxPayloadBytes) { "Update payload size is invalid or exceeds the limit." }
+            require(stagingDirectory.usableSpace >= payloadEntry.size + MIN_FREE_SPACE_RESERVE) { "Insufficient free space to stage the update safely." }
 
             val properties = Properties()
             zip.getInputStream(manifestEntry).use { input -> properties.load(input.reader(StandardCharsets.UTF_8)) }
@@ -146,6 +147,7 @@ class ManaUpdatePackageVerifier(
         private const val MAX_MANIFEST_BYTES = 64 * 1024L
         private const val MAX_RELEASE_NOTES_BYTES = 256 * 1024L
         private const val MAX_PACKAGE_OVERHEAD = 2 * 1024 * 1024L
+        private const val MIN_FREE_SPACE_RESERVE = 64 * 1024 * 1024L
         private const val MAX_SIGNATURE_CHARS = 4096
         private val ALLOWED_ENTRIES = setOf(MANIFEST_PATH, PAYLOAD_NAME, RELEASE_NOTES_NAME)
     }
