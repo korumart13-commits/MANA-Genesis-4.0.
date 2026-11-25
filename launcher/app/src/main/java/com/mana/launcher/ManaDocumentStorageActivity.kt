@@ -202,6 +202,7 @@ class ManaDocumentStorageActivity : Activity() {
             card.addView(text(entry.title, 14, 0xFFFFFFFF.toInt(), true))
             card.addView(text("Копия • ${entry.tags.firstOrNull { it.startsWith("bytes:") }?.removePrefix("bytes:") ?: "?"} байт", 11, 0xFF9CB6D4.toInt()))
             card.addView(button("Восстановить копию в выбранную папку") { restore(entry, uri) })
+            if ("original-deleted" !in entry.tags) card.addView(button("Удалить оригинал после проверки") { confirmDeleteOriginal(entry, uri) })
             if ("original-deleted" !in entry.tags) card.addView(button("Удалить оригинал после проверки и подтверждения") { confirmDeleteOriginal(entry, uri) })
             card.addView(button("Удалить только копию из карантина") { confirmDeleteCopy(entry, uri) })
             root.addView(card)
