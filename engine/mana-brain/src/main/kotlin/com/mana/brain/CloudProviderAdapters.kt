@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URI
 import java.nio.charset.StandardCharsets
 
 enum class CloudProviderKind(val id: String, val defaultBaseUrl: String) {
@@ -32,6 +33,7 @@ data class CloudProviderConfig(
         require(model.isNotBlank())
         require(secretAlias.isNotBlank())
         require(baseUrl.startsWith("https://")) { "Cloud provider endpoints must use HTTPS." }
+        require(URI(baseUrl).host == URI(kind.defaultBaseUrl).host) { "Cloud credentials may only be sent to the provider official API host." }
     }
 }
 
@@ -109,11 +111,21 @@ class CloudInferenceProvider(
         val headers = linkedMapOf<String, String>()
         val body = JsonObject()
         val url = when (config.kind) {
-            CloudProviderKind.OPENAI, CloudProviderKind.XAI -> {
+            CloudProviderKind.OPENAI -> {
                 headers["Authorization"] = "Bearer $key"
                 body.addProperty("model", config.model)
                 body.addProperty("input", prompt)
                 "${config.baseUrl.trimEnd('/')}/v1/responses"
+            }
+            CloudProviderKind.XAI -> {
+                headers["Authorization"] = "Bearer $key"
+                body.addProperty("model", config.model)
+                body.addProperty("max_tokens", 2048)
+                val messages = JsonArray().apply {
+                    add(JsonObject().apply { addProperty("role", "user"); addProperty("content", prompt) })
+                }
+                body.add("messages", messages)
+                "${config.baseUrl.trimEnd('/')}/v1/chat/completions"
             }
             CloudProviderKind.ANTHROPIC -> {
                 headers["x-api-key"] = key
@@ -146,7 +158,7 @@ class CloudInferenceProvider(
     private fun extractText(raw: String): String {
         val root = JsonParser.parseString(raw).asJsonObject
         return when (config.kind) {
-            CloudProviderKind.OPENAI, CloudProviderKind.XAI -> {
+            CloudProviderKind.OPENAI -> {
                 val output = root.getAsJsonArray("output") ?: return ""
                 output.flatMap { item ->
                     val obj = item.asJsonObject
@@ -157,6 +169,8 @@ class CloudInferenceProvider(
                     }
                 }.joinToString("")
             }
+            CloudProviderKind.XAI -> root.getAsJsonArray("choices")?.firstOrNull()
+                ?.asJsonObject?.getAsJsonObject("message")?.get("content")?.asString.orEmpty()
             CloudProviderKind.ANTHROPIC ->
                 (root.getAsJsonArray("content") ?: JsonArray()).mapNotNull { part ->
                     part.asJsonObject.get("text")?.asString
