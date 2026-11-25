@@ -21,8 +21,11 @@ class EncryptedFileManaAdaptiveKnowledgeStore(private val backing: ManaDiaryStor
     override fun readAll(): List<ManaKnowledgeItem> = backing.readAll()
         .filter { "mana.adaptive-knowledge" in it.tags }
         .map { entry ->
-            val url = entry.tags.firstOrNull { it.startsWith("source-url:") }?.removePrefix("source-url:").orEmpty()
-            ManaKnowledgeItem(entry.id, entry.title, url, entry.body, entry.updatedAt)
+            val separator = entry.body.indexOf('\n')
+            require(separator > 0) { "Adaptive knowledge entry is malformed." }
+            val url = entry.body.substring(0, separator)
+            val snippet = entry.body.substring(separator + 1)
+            ManaKnowledgeItem(entry.id, entry.title, url, snippet, entry.updatedAt)
         }
 
     override fun writeAll(items: List<ManaKnowledgeItem>) {
@@ -31,8 +34,8 @@ class EncryptedFileManaAdaptiveKnowledgeStore(private val backing: ManaDiaryStor
             ManaDiaryEntry(
                 id = item.id,
                 title = item.title,
-                body = item.snippet,
-                tags = setOf("mana.adaptive-knowledge", "source-url:${item.sourceUrl}"),
+                body = item.sourceUrl + "\n" + item.snippet,
+                tags = setOf("mana.adaptive-knowledge"),
                 createdAt = item.savedAt,
                 updatedAt = item.savedAt
             )
