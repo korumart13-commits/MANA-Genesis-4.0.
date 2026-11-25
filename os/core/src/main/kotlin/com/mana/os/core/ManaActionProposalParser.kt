@@ -42,7 +42,9 @@ object ManaActionProposalParser {
             "set_torch", "set_do_not_disturb" ->
                 parameters["enabled"] == "true" || parameters["enabled"] == "false"
             "set_brightness" -> (parameters["level"]?.toIntOrNull() ?: -1) in 0..255
-            "set_volume" -> parameters["stream"] in listOf("music", "ring", "alarm", "notification", "voice_call") &&
+            "set_volume" -> (parameters["stream"] == "music" || parameters["stream"] == "ring" ||
+                parameters["stream"] == "alarm" || parameters["stream"] == "notification" ||
+                parameters["stream"] == "voice_call") &&
                 (parameters["level"]?.toIntOrNull() ?: -1) in 0..100
             else -> false
         }
