@@ -44,6 +44,9 @@
             android:name=".ManaAvatarPreviewActivity"
             android:exported="false" />
         <activity
+            android:name=".ManaFutureUpdatesActivity"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:screenOrientation="unspecified">
