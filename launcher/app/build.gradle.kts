@@ -23,6 +23,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core"))
     implementation("com.google.ai.edge.litertlm:litertlm-android:0.16.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 }
