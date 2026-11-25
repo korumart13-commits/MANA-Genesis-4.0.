@@ -1,14 +1,14 @@
 # RMX5566RU device/kernel source compatibility audit
 
 Audit date: 2026-11-25  
-Owner-reported target: realme C85 5G, RMX5566RU / RE645F  
+Owner-reported retail name: realme C85 5G; runtime identity: realme C85 (4G), RMX5566RU / RE645F  
 Owner-provided runtime facts: Qualcomm SM6225, `ro.board.platform=bengal`, `ro.hardware=qcom`, arm64-v8a, Linux kernel `5.15.197-android13-8-o-01074-gdfa4acfa411e`, Android 16.
 
-## Result
+## Device-name correction\n\nThe user's diagnostics identify Qualcomm SM6225/bengal/qcom. realme's official specifications distinguish the standard **realme C85** (Snapdragon 685, 4G) from **realme C85 5G** (MediaTek Dimensity 6300). Therefore RMX5566RU / SM6225 should be treated as the standard realme C85 (4G), not the C85 5G. The retail name was easy to conflate, but the SoC and build properties determine the target.\n\n- Official realme C85 (Snapdragon 685): https://www.realme.com/global/realme-c85/specs\n- Official realme C85 5G (Dimensity 6300): https://www.realme.com/global/realme-c85-5g/specs\n- Independent RMX5566 / RE645F mapping: https://www.deviceinfo.app/devices/realme/c85/\n\n## Result
 
 **The exact OEM kernel/device package is still not verified. Do not build or flash a kernel from the repository below.**
 
-A repository with a similar retail model name was found:
+A repository with a similar retail model name was found for the **different C85 5G / MediaTek variant**:
 
 - [realme_C85_5G-AndroidV-kernel-source](https://github.com/realme-kernel-opensource/realme_C85_5G-AndroidV-kernel-source)
 - Audited upstream commit: `75b7dd046767b696a02a954e0c0a9b53e04d4bad`
