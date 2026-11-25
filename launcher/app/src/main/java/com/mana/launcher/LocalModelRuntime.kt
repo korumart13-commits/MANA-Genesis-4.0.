@@ -30,20 +30,7 @@ class LocalModelRuntime(private val cacheDirectory: File) {
                 require(modelFile.extension.equals("litertlm", ignoreCase = true)) { "Выбери файл с расширением .litertlm." }
                 closeLoaded()
                 cacheDirectory.mkdirs()
-                val (candidate, backendName) = createEngineWithFallback(modelFile)
-                val newConversation = candidate.createConversation(
-                    ConversationConfig(
-                        systemInstruction = Contents.of(
-                            "Ты — MANA, локальный персональный помощник владельца. " +
-                                "Отвечай по-русски, если не попросили другой язык. " +
-                                "Будь доброжелательной, выразительной и слегка игривой, но не навязчивой. " +
-                                "Не утверждай, что выполнила действие, если оно фактически не выполнено. " +
-                                "Используй переданный контекст локальной памяти только если он относится к вопросу. " +
-                                "Не раскрывай секреты и не отправляй личные сведения в сеть."
-                        ),
-                        samplerConfig = SamplerConfig(topK = 40, topP = 0.92, temperature = 0.72)
-                    )
-                )
+                val (candidate, newConversation, backendName) = createEngineWithFallback(modelFile)
                 engine = candidate
                 conversation = newConversation
                 loadedModel = modelFile
@@ -78,13 +65,29 @@ class LocalModelRuntime(private val cacheDirectory: File) {
         loadedBackend = null
     }
 
-    private fun createEngineWithFallback(modelFile: File): Pair<Engine, String> {
+    private fun createConversation(engine: Engine): Conversation =
+        engine.createConversation(
+            ConversationConfig(
+                systemInstruction = Contents.of(
+                    "Ты — MANA, локальный персональный помощник владельца. " +
+                        "Отвечай по-русски, если не попросили другой язык. " +
+                        "Будь доброжелательной, выразительной и слегка игривой, но не навязчивой. " +
+                        "Не утверждай, что выполнила действие, если оно фактически не выполнено. " +
+                        "Используй переданный контекст локальной памяти только если он относится к вопросу. " +
+                        "Не раскрывай секреты и не отправляй личные сведения в сеть."
+                ),
+                samplerConfig = SamplerConfig(topK = 40, topP = 0.92, temperature = 0.72)
+            )
+        )
+
+    private fun createEngineWithFallback(modelFile: File): Triple<Engine, Conversation, String> {
         var gpuFailure: Throwable? = null
         var gpuEngine: Engine? = null
         try {
             gpuEngine = Engine(EngineConfig(modelPath = modelFile.absolutePath, backend = Backend.GPU(), cacheDir = cacheDirectory.absolutePath))
             gpuEngine.initialize()
-            return gpuEngine to "GPU"
+            val conversation = createConversation(gpuEngine)
+            return Triple(gpuEngine, conversation, "GPU")
         } catch (error: Exception) {
             gpuFailure = error
             try { gpuEngine?.close() } catch (_: Exception) { }
@@ -92,13 +95,18 @@ class LocalModelRuntime(private val cacheDirectory: File) {
             gpuFailure = error
             try { gpuEngine?.close() } catch (_: Exception) { }
         }
+
         val cpuEngine = Engine(EngineConfig(modelPath = modelFile.absolutePath, backend = Backend.CPU(), cacheDir = cacheDirectory.absolutePath))
         try {
             cpuEngine.initialize()
-            return cpuEngine to "CPU"
+            val conversation = createConversation(cpuEngine)
+            return Triple(cpuEngine, conversation, "CPU")
         } catch (error: Exception) {
             try { cpuEngine.close() } catch (_: Exception) { }
-            throw IllegalStateException("GPU backend failed (${gpuFailure?.message}); CPU fallback failed (${error.message})", error)
+            throw IllegalStateException(
+                "GPU backend failed (${gpuFailure?.message}); CPU fallback failed (${error.message})",
+                error
+            )
         }
     }
 
