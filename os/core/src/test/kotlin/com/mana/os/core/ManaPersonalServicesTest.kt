@@ -182,8 +182,9 @@ class ManaPersonalServicesTest {
         assertFailsWith<IllegalArgumentException> {
             knowledge.save("MANA architecture", "https://example.org/mana", "Local-first design notes", ownerApproved = false)
         }
+        val longSourceUrl = "https://example.org/mana?ref=" + "x".repeat(400)
         val item = knowledge.save(
-            "MANA architecture", "https://example.org/mana", "Local-first offline design notes",
+            "MANA architecture", longSourceUrl, "Local-first offline design notes",
             ownerApproved = true
         )
         assertFalse(String(file.readBytes(), Charsets.UTF_8).contains("Local-first offline"))
@@ -193,6 +194,7 @@ class ManaPersonalServicesTest {
             )
         )
         assertEquals(item.id, reloaded.search("offline design").single().id)
+        assertEquals(longSourceUrl, reloaded.list().single().sourceUrl)
         assertFailsWith<IllegalArgumentException> {
             reloaded.save("Unsafe", "http://example.org", "not https", ownerApproved = true)
         }
