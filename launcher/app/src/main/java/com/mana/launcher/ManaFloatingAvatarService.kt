@@ -27,13 +27,13 @@ class ManaFloatingAvatarService : Service() {
         val type = if (Build.VERSION.SDK_INT >= 26) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
                    else WindowManager.LayoutParams.TYPE_PHONE
         params = WindowManager.LayoutParams(
-            dp(112), dp(156), type,
+            dp(124), dp(220), type,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             android.graphics.PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
             x = dp(12)
-            y = dp(150)
+            y = dp(120)
         }
         avatar = ManaAvatar3DView(
             this,
