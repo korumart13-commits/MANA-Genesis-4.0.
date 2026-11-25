@@ -48,9 +48,9 @@ class CloudProviderAdaptersTest {
             assertEquals("Bearer test-secret-123456", transport.request?.headers?.get("Authorization"))
             val requestBody = transport.request?.body.orEmpty()
             if (kind == CloudProviderKind.OPENAI) {
-                assertTrue(requestBody.contains("\\"input\\":\\"hello\\""))
+                assertTrue(requestBody.contains("\"input\":\"hello\""))
             } else {
-                assertTrue(requestBody.contains("\\"messages\\":[{\\"role\\":\\"user\\",\\"content\\":\\"hello\\"}]"))
+                assertTrue(requestBody.contains("\"messages\":[{\"role\":\"user\",\"content\":\"hello\"}]"))
             }
         }
     }
