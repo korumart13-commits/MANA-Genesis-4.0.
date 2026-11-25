@@ -40,3 +40,19 @@ The next integration task is to add an owner-facing capability screen, persist o
 ## Verification
 
 The Android source must be compiled by the repository's Android launcher workflow. JVM policy tests do not validate Android framework calls or OEM behavior. Physical-device validation is still required for every listed API.
+
+
+## Owner-facing controls screen
+
+The Android launcher now exposes **Управление функциями телефона** from its home screen. The screen is implemented by `ManaDeviceControlsActivity` and routes each operation through `ManaAutonomyController` and `ManaAndroidActionAdapter`.
+
+- All five capabilities start disabled and are stored as explicit owner choices.
+- Camera permission is requested only when torch control is enabled.
+- Modify-system-settings access is requested only when brightness control is enabled.
+- Notification Policy Access is requested only when DND control is enabled.
+- Launch-app and audio-volume controls require the owner to enable their capability switch first.
+- DND activation presents a separate confirmation dialog.
+- The activity rechecks Android grants when returning from system settings; revoked or absent access does not become an active MANA capability.
+- This remains an ordinary app-level integration. It does not grant root, shell, Device Owner, privileged Binder access, or firmware control.
+
+The UI currently executes explicit owner-button actions through the policy controller. It is not yet a natural-language-to-action pipeline from MANA Brain; that must be added as a typed proposal stage with independent owner confirmation where required.
