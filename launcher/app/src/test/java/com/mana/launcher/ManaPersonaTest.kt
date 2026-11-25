@@ -8,8 +8,8 @@ class ManaPersonaTest {
         val prompt = ManaPersona.SYSTEM_PROMPT
         assertTrue(prompt.contains("MANA"))
         assertTrue(prompt.contains("Отвечай на русском языке"))
-        assertTrue(prompt.contains("playful"))
-        assertTrue(prompt.contains("Never claim"))
-        assertTrue(prompt.contains("Protect secrets"))
+        assertTrue(prompt.contains("игривые"))
+        assertTrue(prompt.contains("Никогда не утверждай"))
+        assertTrue(prompt.contains("Защищай секреты"))
     }
 }
