@@ -28,4 +28,4 @@ Google's published Gemma 4 measurements are from other hardware (for example, S2
 6. Reject a model that causes memory pressure, thermal throttling or foreground-app instability.
 7. Keep a known-good previous model so rollback is possible.
 
-The app currently imports a user-selected `.litertlm` file. Automatic catalog download, cryptographic publisher verification and device benchmark gating are still future implementation tasks.
+The app currently imports a user-selected `.litertlm` file and now tries LiteRT-LM GPU initialization first, falling back to CPU if GPU initialization fails. The manifest declares optional `libvndksupport.so` and `libOpenCL.so` libraries. This is only a backend selection attempt: it does not prove that the target's Adreno driver supports the model or that GPU inference is stable. Automatic catalog download, cryptographic publisher verification and device benchmark gating are still future implementation tasks.
