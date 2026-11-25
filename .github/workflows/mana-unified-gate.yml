@@ -151,19 +151,44 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          zip -r dist/MANA_Genesis_4.0_UNIFIED_SOURCE.zip \
-            os engine launcher system game tools device kernel models privacy docs platform README.md \
-            -x '*/build/*' '*/.gradle/*' '*/.git/*' '*/local.properties' \
-               '*/secrets*' '*/.*keystore' '*/.env*' '*.zip'
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+          import subprocess
+          excluded_dirs = {".git", ".gradle", "build", ".idea"}
+          excluded_names = {"local.properties"}
+          files = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\\0")
+          with ZipFile("dist/MANA_Genesis_4.0_UNIFIED_SOURCE.zip", "w", ZIP_DEFLATED) as archive:
+              for name in filter(None, files):
+                  path = Path(name)
+                  if any(part in excluded_dirs for part in path.parts):
+                      continue
+                  if path.name in excluded_names or path.name.startswith("secrets") or path.name.startswith(".env") or path.suffix in {".keystore", ".jks", ".zip"}:
+                      continue
+                  if path.is_file():
+                      archive.write(path, name)
+          PY
           cat > dist/ROM_STATUS.txt <<'EOF'
-          MANA Genesis 4.0 source archive only.
-          NOT A FLASHABLE ROM. NOT AN OTA. NOT AN APK.
+          MANA Genesis 4.0 source archive + Android companion bundle.
+          NOT A FLASHABLE ROM. NOT AN OTA. The APK is a debug companion build.
+          The archive includes tracked project source and build workflows.
           No complete AOSP checkout, RMX5566RU-matched device tree/kernel/vendor set,
           AVB signing chain, partition metadata, tested recovery or device acceptance
-          evidence is present in this repository. Do not flash this archive.
+          evidence is present in this repository. Do not flash this bundle.
+          EOF
+          cat > dist/BUILD_STATUS.txt <<'EOF'
+          MANA Genesis 4.0 — release contents
+          - UNIFIED_SOURCE.zip: all tracked project source, docs and workflows (sensitive build-local files excluded).
+          - android-companion/app-debug.apk: debug Android companion; not a firmware installer.
+          - ROM_STATUS.txt: explicit device/ROM readiness limitation.
+          - SHA256SUMS.txt: checksums for the source archive and APK.
+          AOSP source modules and JVM/Android prototypes are not equivalent to a bootable device ROM.
+          Device-specific RMX5566RU validation is still required.
           EOF
           sha256sum dist/MANA_Genesis_4.0_UNIFIED_SOURCE.zip > dist/SHA256SUMS.txt
           sha256sum dist/android-companion/app-debug.apk >> dist/SHA256SUMS.txt
+          (cd dist && zip -q MANA_Genesis_4.0_COMPLETE_BUNDLE.zip MANA_Genesis_4.0_UNIFIED_SOURCE.zip ROM_STATUS.txt BUILD_STATUS.txt SHA256SUMS.txt android-companion/app-debug.apk)
+          sha256sum dist/MANA_Genesis_4.0_COMPLETE_BUNDLE.zip >> dist/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
           name: MANA-Genesis-4.0-unified-source
