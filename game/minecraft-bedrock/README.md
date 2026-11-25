@@ -7,11 +7,12 @@ This is an installable Minecraft Bedrock Behavior Pack source. It uses the offic
 - !mana help — list commands.
 - !mana come — spawn the MANA companion near the player.
 - !mana follow — make the companion follow the player.
-- !mana stay — stop following.
+- !mana stay — stop following and exploring.
+- !mana explore — wander within a small radius of the owner using safe teleport checks.
 - !mana status — report current state.
 - !mana hide — remove the companion.
 
-The companion follows its owner using the supported entity teleport API on a periodic tick. It does not modify inventory, automate combat, build structures, read private device data, or bypass anti-cheat.
+The companion follows its owner or performs bounded scripted wandering within roughly five blocks using the supported entity teleport API and collision checks. This is a simple scripted exploration behavior, not model-driven world understanding. It does not mine, modify inventory, automate combat, build structures, read private device data, or bypass anti-cheat.
 
 ## Install
 
