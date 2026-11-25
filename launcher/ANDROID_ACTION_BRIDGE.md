@@ -61,3 +61,10 @@ The UI currently executes explicit owner-button actions through the policy contr
 ## Direct owner command path
 
 The launcher also routes a deliberately small set of exact owner phrases through `ManaOwnerCommandParser` before sending other text to MANA Brain. Current supported forms are torch on/off, DND on/off, brightness 0–255, and app launch by explicit package ID. Unrecognized text is not treated as a device action. Parsed requests are passed to the non-exported controls activity, shown in a confirmation dialog, and still require the matching capability to have been enabled. Model-generated prose is not accepted as an executable action request.
+
+
+## Brain action proposals
+
+MANA Brain's response prompt now permits one structured `<mana_action .../>` proposal for a supported device operation when the owner explicitly asks. `ManaActionProposalParser` accepts exactly one well-formed tag, validates its action against `ManaDefaultActions`, validates parameter names and ranges, and always creates an unconfirmed request. Firmware, shell, root, messaging and call actions are excluded. The launcher strips the internal tag from the displayed/speech response and opens the owner confirmation screen. The Android controller still checks the saved capability grant and Android's live permission immediately before execution.
+
+This is a guarded proposal path, not unrestricted AI control. Model output cannot self-confirm or bypass the action allowlist.
