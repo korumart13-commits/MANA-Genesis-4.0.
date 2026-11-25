@@ -19,7 +19,9 @@ class ManaModelCatalog(context: Context) {
     private val directory = app.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
         ?: error("Android app-specific downloads storage is unavailable.")
 
-    fun enqueueGemma4E2B(): Long {
+    fun enqueueGemma4E2B(licenseAccepted: Boolean): Long {
+        require(licenseAccepted) { "Owner must review and accept the Gemma terms before downloading this model." }
+        prefs.edit().putBoolean(KEY_LICENSE_ACCEPTED, true).apply()
         val target = File(directory, MODEL_FILE)
         if (target.isFile && target.length() == MODEL_SIZE && sha256(target) == SHA256) {
             prefs.edit().putString(KEY_ACTIVE_PATH, target.absolutePath).apply()
@@ -42,9 +44,10 @@ class ManaModelCatalog(context: Context) {
         return id
     }
 
-    fun savedModelPath(): String? = prefs.getString(KEY_ACTIVE_PATH, null)
+    fun savedModelPath(): String? = if (prefs.getBoolean(KEY_LICENSE_ACCEPTED, false)) prefs.getString(KEY_ACTIVE_PATH, null) else null
 
     fun verifiedSavedModel(): File? {
+        if (!prefs.getBoolean(KEY_LICENSE_ACCEPTED, false)) return null
         val path = savedModelPath() ?: return null
         val file = File(path)
         if (!file.isFile || file.length() != MODEL_SIZE || !sha256(file).equals(SHA256, ignoreCase = true)) {
@@ -58,6 +61,7 @@ class ManaModelCatalog(context: Context) {
     fun verifyCompletedDownload(): File? {
         val id = prefs.getLong(KEY_DOWNLOAD_ID, -1L)
         if (id < 0L) {
+            if (!prefs.getBoolean(KEY_LICENSE_ACCEPTED, false)) return null
             // A previously verified file can be selected again in this process without
             // requiring a second DownloadManager record.
             val existing = File(directory, MODEL_FILE)
@@ -113,7 +117,7 @@ class ManaModelCatalog(context: Context) {
         const val MODEL_URL = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/21c646194210256750db12cfa1e4fdf22bd3ddf1/gemma-4-E2B-it.litertlm"
         const val MODEL_FILE = "gemma-4-E2B-it.litertlm"
         const val SHA256 = "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c"
-        private const val KEY_DOWNLOAD_ID = "gemma4_download_id"
+        private const val KEY_DOWNLOAD_ID = "gemma4_download_id"\n        private const val KEY_LICENSE_ACCEPTED = "gemma4_license_accepted"
         private const val KEY_ACTIVE_PATH = "active_model_path"
         const val MODEL_SIZE = 2_588_147_712L
         private const val REQUIRED_FREE_BYTES = 3_300_000_000L
