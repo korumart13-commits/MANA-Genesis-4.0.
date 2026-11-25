@@ -35,7 +35,10 @@ jobs:
         run: diff -u engine/mana-brain/src/main/kotlin/com/mana/brain/ManaBrain.kt launcher/app/src/main/java/com/mana/brain/ManaBrain.kt
       - name: Validate embedded full-body MANA glTF asset
         working-directory: .
-        run: python3 tools/validate_mana_gltf.py launcher/app/src/main/assets/mana_avatar_genesis.gltf
+        run: |
+          for model in launcher/app/src/main/assets/mana_avatar_genesis*.gltf; do
+            python3 tools/validate_mana_gltf.py "$model"
+          done
       - name: Compile launcher and LiteRT-LM prototype
         working-directory: launcher
         run: gradle --no-daemon :app:assembleDebug
