@@ -2,7 +2,15 @@
 
 This sequence targets a complete MANA-owned operating system with Android APK compatibility, not a launcher-only APK. The authoritative hybrid platform contract is [MANA_OS_HYBRID_PLATFORM_ARCHITECTURE.md](MANA_OS_HYBRID_PLATFORM_ARCHITECTURE.md), supported by [ANDROID16_PRODUCT_ARCHITECTURE.md](ANDROID16_PRODUCT_ARCHITECTURE.md).
 
-## Workstream A — Android platform and reproducible source
+## Workstream A — MANA Brain as the primary system orchestrator
+
+- Treat MANA Brain as the central intelligence and capability orchestrator; the OS is its secure execution and interaction platform.
+- Consolidate existing local inference, multi-provider routing, encrypted memory, avatar/voice, adaptive intelligence and device-action modules; preserve their implementation-ledger status.
+- Define a capability registry with declared permissions, risk levels, owner confirmations, audit records and availability checks.
+- Implement planner/executor verification: every action must check prerequisites, execute through supported system APIs and report the real outcome.
+- Add staged self-development: propose → isolated implementation → tests/security/license review → owner approval → signed update → rollback-capable deployment. No self-granted privileges or silent security-policy changes.
+
+## Workstream B — Android platform and reproducible source
 
 - Pin a supported Android 16 AOSP manifest and toolchain as the framework/API compatibility base; MANA owns the product identity and selected platform services.
 - Preserve ART, package manager, Binder, Android framework APIs and permission/security contracts needed by third-party APKs.
@@ -12,7 +20,7 @@ This sequence targets a complete MANA-owned operating system with Android APK co
 - Integrate MANA system services and apps as product modules, not as a standalone launcher APK.
 - Build system, system_ext, product and related images in CI only after a valid RE645F product target exists.
 
-## Workstream B — stock Android applications and device bring-up
+## Workstream C — stock Android applications and device bring-up
 
 - Prefer the matching Android 16/AOSP system applications for Camera, Dialer/Phone, Contacts, Messaging and basic utilities. Do not substitute mock MANA screens.
 - Verify the actual module names and availability against the pinned Android 16 source before adding PRODUCT_PACKAGES entries.
@@ -25,7 +33,7 @@ This sequence targets a complete MANA-owned operating system with Android APK co
 - Verify VINTF manifests/matrices, SELinux policy, init scripts, fstab and dynamic partition metadata.
 - Validate camera, audio, display, touch, radio, Wi-Fi, Bluetooth, GPS, sensors, charging and suspend/resume on the exact device.
 
-## Workstream C — kernel
+## Workstream D — kernel
 
 - Do not import a generic SM6225 kernel.
 - Obtain and verify the matching OEM 5.15.197 source/config/DTS.
@@ -33,7 +41,7 @@ This sequence targets a complete MANA-owned operating system with Android APK co
 - Add MANA kernel changes only when there is a concrete kernel-level requirement; most MANA features belong in Android userspace.
 - Build kernel artifacts in CI, but never flash them automatically.
 
-## Workstream D — MANA system experience
+## Workstream E — MANA system experience
 
 - MANA System Core and privileged service lifecycle.
 - Samsung One UI-inspired MANA Launcher: configurable home grid, dock, folders, widgets, app drawer, search, gestures and adaptive layouts; preserve Android app compatibility and accessibility.
@@ -46,14 +54,16 @@ This sequence targets a complete MANA-owned operating system with Android APK co
 - Diary, Life Manager, Contact Intelligence, receptionist and game integrations behind Android permission gates.
 - Update manager with signed-package verification and rollback safeguards.
 
-## Workstream E — Google services and app compatibility
+## Workstream F — Google services and app compatibility
 
 - Treat Google Mobile Services and Google Play as proprietary licensed software, not AOSP modules.
+- MANA may orchestrate supported Play Store flows but must leave Google account authentication and payment/security confirmations to official Google interfaces.
+- Do not promise App Store, Apple ID purchase/download flows or iOS app execution on Android; pursue only official Apple apps/APIs/interoperability options that exist.
 - Establish lawful Google distribution/licensing and device certification requirements before bundling GMS.
 - Validate Play Store, Play services, sign-in, push, location and Play Integrity separately; do not claim certification or universal compatibility before tests pass.
 - Audit retained realme apps for signatures, framework dependencies and platform permissions; retain only components compatible with the selected MANA platform and authorized for distribution.
 
-## Workstream F — security and release
+## Workstream G — security and release
 
 - SELinux enforcing; least-privilege service domains and explicit Binder service policy.
 - AVB and release signing designed around the device's actual boot chain.
