@@ -2,14 +2,16 @@
 
 ## Current source implementation
 
-- `ManaAvatar3DView.kt` renders a full-body stylized character using OpenGL ES 2.0 lit sphere meshes.
-- Character design: long dark hair, blue highlights/eyes, dark navy clothing, face, hands/arms, legs and boots.
-- Idle animation: body bob, head/hair sway, subtle articulated arm and leg swing, periodic blinking.
-- Appearance controls: three outfit palettes, accessory toggle and three facial expression states; body/face/hair identity remains fixed.
-- Speaking animation: mouth movement is toggled by the Android TextToSpeech utterance listener.
-- `ManaFloatingAvatarService.kt` hosts the renderer in a draggable overlay window. The owner must explicitly grant Android's special “display over other apps” permission. The launcher stores an explicit enable/disable preference, starts a foreground service with a persistent stop action, and resumes the GL surface when attached.
-- The overlay does not capture keyboard focus or inject touches into the foreground application.
-- The launcher has Russian speech recognition through Android's recognizer intent and Russian TextToSpeech output. It tries a Russian voice whose engine-provided name looks female; actual voice gender and offline availability depend on the installed TTS engine and installed voice data.
+- The floating avatar and full-screen preview use SceneView/Filament to render an original full-body animated glTF character.
+- Three wardrobe styles (base, casual and evening) are available, each with accessories enabled or removed.
+- Every wardrobe/accessory combination has neutral, playful and open-mouth speaking geometry variants. All variants preserve the four glTF clips: `Idle`, `Speaking`, `Happy` and `Playful`.
+- `ManaAvatarState` is Compose-observable and shared by the launcher, preview and floating service. The selected wardrobe and accessory are persisted in private app preferences.
+- The launcher cycles neutral, playful and happy expressions. TextToSpeech utterance callbacks switch the shared state to the open-mouth speaking variant and `Speaking` animation. This is not phoneme-level viseme lip-sync.
+- The floating overlay is draggable, non-focusable, user-enabled through Android's “display over other apps” permission, and runs with a visible stoppable foreground-service notification. Tapping it opens the MANA assistant.
+- The full-screen preview supports orbit gestures and follows the same appearance state.
+- Russian speech recognition uses Android's recognizer intent; Russian TextToSpeech uses an installed engine voice where available. Actual voice quality, gender presentation and offline availability depend on installed TTS voice data.
+- `ManaAvatar3DView.kt` remains as a legacy procedural OpenGL renderer; the current floating service uses the glTF/Filament renderer.
+- CI validates every embedded glTF asset and runs avatar selection unit tests before Android assembly. The overlay still requires GPU, frame-time, thermal, battery and touch testing on the owner's realme RMX5566RU.
 
 ## Important limitations
 
