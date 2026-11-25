@@ -64,7 +64,11 @@ All listed modules belong to one OS product and one MANA identity. They are not 
 
 ## Current implementation status
 
-- MANA Brain routing contract: source foundation exists; actual Android LiteRT-LM integration and a verified model-on-device test are still pending.
-- MANA System Core: JVM lifecycle coordinator and CI tests exist; not yet integrated into AOSP system_server or product packages.
-- Kernel/device support: blocked on the exact RMX5566RU 5.15.197 source/config/device tree/vendor data.
-- UI, avatar, receptionist, memory and other modules: requirements are captured; full OS-level integration remains future work.
+- Shared MANA Brain routing source is now compiled into the Android launcher prototype and routes requests to LiteRT-LM locally; no cloud adapter is enabled in this build. Target-device inference and model benchmarking remain pending.
+- MANA System Core has JVM lifecycle tests and is linked into the Gradle launcher prototype; it is not integrated into AOSP system_server or the Soong product.
+- Diary, memory and Life Manager have AES-GCM encrypted file stores, Android Keystore key access in the launcher, owner-controlled deletion and JVM tests. Memory retrieval is currently simple text matching.
+- The launcher prototype has a procedural OpenGL ES full-body avatar, Russian Android TTS, a draggable overlay with a visible stoppable foreground notification, game discovery and user-authorized foreground-game detection. This is not yet production System UI and is not device-tested.
+- Minecraft Bedrock has an official Script API behavior-pack starter and syntax CI; phone-to-world transport and owner-approved in-game actions remain unimplemented.
+- Smart Receptionist and game-action policies are tested, but telephony call screening/answering and actual in-game automation are not implemented.
+- Kernel/device support remains blocked on exact RMX5566RU 5.15.197 source/config/device tree/vendor data.
+- Production rigged avatar asset, Yandex/VK and multi-cloud adapters, full Android Binder/SELinux enforcement, device ecosystem integrations and complete AOSP product build remain outstanding.
