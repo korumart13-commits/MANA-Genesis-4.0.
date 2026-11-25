@@ -26,6 +26,15 @@ class ManaAutonomyPolicyTest {
     }
 
     @Test
+    fun ownerAllowCannotBypassMissingAndroidPermission() {
+        val policy = ManaAutonomyPolicy(listOf(OwnerRule("allow-camera", "camera.capture", OwnerRuleEffect.ALLOW)))
+        assertEquals(
+            AutonomyDecision.FORBID,
+            policy.decide(AutonomyCapability("camera.capture", AutonomyDomain.DEVICE_API, false)).decision
+        )
+    }
+
+    @Test
     fun externalSideEffectsRemainOwnerOrOsAuthorized() {
         assertEquals(
             AutonomyDecision.REQUIRE_APPROVAL,
