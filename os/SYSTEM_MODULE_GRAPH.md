@@ -15,7 +15,7 @@ The catalog is architecture metadata consumed by tests and later integration wor
 ## Service graph
 
 1. `platform.hardware` → `platform.security` → `platform.storage`
-2. `mana.modelmanager` + `mana.cloudgateway` → `mana.brain`
+2. `mana.modelmanager` → `mana.brain`; optional `mana.cloudgateway` is available to Brain but must never block offline startup
 3. `mana.brain` → memory, voice, avatar, adaptive intelligence, future updates, diary, life manager, contacts, game intelligence, Yandex and VK
 4. `mana.systemui` → launcher, settings, control center
 5. contacts + brain → receptionist
