@@ -2,6 +2,8 @@
 
 ## Current source implementation
 
+Updated 2026-11-25: the floating service now uses the animated glTF/Filament model rather than the legacy procedural OpenGL view.
+
 - `ManaAvatar3DView.kt` renders a full-body stylized character using OpenGL ES 2.0 lit sphere meshes.
 - Character design: long dark hair, blue highlights/eyes, dark navy clothing, face, hands/arms, legs and boots.
 - Idle animation: body bob, head/hair sway, subtle articulated arm and leg swing, periodic blinking.
