@@ -63,7 +63,7 @@ These are source/CI milestones, not a full AOSP build or on-device certification
 1. Obtain and verify the exact OEM kernel/device/vendor source package for RMX5566RU / RE645F.
 2. Pin and sync a reproducible Android 16 AOSP source tree.
 3. Unify the Gradle prototype features with the Soong product services and apps.
-4. Implement real Android Binder services, permissions, SELinux domains and product SystemUI integration.
+4. Complete remaining Android Binder services, Soong-local LiteRT-LM provider packaging, permissions, SELinux domains and product SystemUI integration.
 5. Build the complete AOSP product and verify AVB/partition/OTA metadata.
 6. Test on a spare or safely recoverable target device, including hardware, thermal, battery, security and rollback tests.
 
