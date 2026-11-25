@@ -618,7 +618,7 @@ class MainActivity : Activity() {
                 val identity = match?.displayName?.takeIf { it.isNotBlank() } ?: "Неизвестный номер"
                 showMessage(
                     "$identity\nЗадержка решения: ${decision.delay.seconds} сек.\n" +
-                        "Сводка разговора: ${if (decision.offerSummary) "включена" else "выключена"}.\n" +
+                        "Сводка метаданных вызова: ${if (decision.offerSummary) "включена" else "выключена"} (без записи и расшифровки аудио).\n" +
                         "Требуется подтверждение владельца: да."
                 )
             } catch (error: Exception) {
