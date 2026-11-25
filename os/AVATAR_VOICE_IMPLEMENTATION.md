@@ -21,7 +21,7 @@ The overlay lives in the legacy Gradle launcher prototype. It is not yet part of
 
 Workflow: [MANA Launcher — Gradle source verification](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/workflows/mana-launcher.yml)
 
-The integrated launcher, Brain source mirror, local memory, diary and Life Manager source compiled successfully in run 45686283259. The OpenGL renderer and TTS also compiled in earlier run 45686047287. Later outfit/accessory/expression changes have their own queued Gradle runs. A successful Gradle compile validates Kotlin/Android packaging only, not GPU rendering or device behavior.
+The integrated launcher, Brain source mirror, local memory, diary and Life Manager source compiled successfully in run 45686283259. The OpenGL renderer and TTS also compiled in earlier run 45686047287. Outfit, accessory and expression controls compiled successfully in run 45686560054. A successful Gradle compile validates Kotlin/Android packaging only, not GPU rendering or device behavior.
 
 ## Next acceptance gates
 
