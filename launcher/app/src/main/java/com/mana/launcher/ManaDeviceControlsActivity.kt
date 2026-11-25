@@ -32,6 +32,7 @@ class ManaDeviceControlsActivity : Activity() {
     private var pendingCapability: String? = null
     private val capabilitySwitches = mutableMapOf<String, Switch>()
     private val cameraRequest = 7201
+    private var incomingOwnerActionHandled = false
 
     private val capabilities = listOf(
         Capability("device.apps.launch", "Запуск приложений", "Разрешает MANA открывать выбранные приложения."),
@@ -53,6 +54,7 @@ class ManaDeviceControlsActivity : Activity() {
         reconcileRevokedCapabilities()
         refreshController()
         if (::status.isInitialized) status.text = "Активные разрешения MANA: ${enabledResources().size} из ${capabilities.size}"
+        handleIncomingOwnerAction()
     }
 
     private fun render() {
@@ -248,10 +250,36 @@ class ManaDeviceControlsActivity : Activity() {
         controller = runCatching { adapter.createController(enabledResources()) }.getOrNull()
     }
 
+    private fun handleIncomingOwnerAction() {
+        if (incomingOwnerActionHandled) return
+        val action = intent.getStringExtra("mana.owner.action") ?: return
+        incomingOwnerActionHandled = true
+        val requestId = intent.getStringExtra("mana.owner.request_id")
+        val parameters = mutableMapOf<String, String>()
+        listOf("package", "enabled", "level", "stream").forEach { key ->
+            intent.getStringExtra("mana.owner.param.$key")?.let { parameters[key] = it }
+        }
+        intent.removeExtra("mana.owner.action")
+        intent.removeExtra("mana.owner.request_id")
+        parameters.keys.forEach { intent.removeExtra("mana.owner.param.$it") }
+
+        AlertDialog.Builder(this)
+            .setTitle("Подтверди команду MANA")
+            .setMessage("MANA распознала действие «$action» с параметрами: $parameters. Выполнить его?")
+            .setNegativeButton("Отмена") { _, _ ->
+                status.text = "Команда отменена владельцем."
+            }
+            .setPositiveButton("Выполнить") { _, _ ->
+                dispatch(action, parameters, ownerConfirmed = true, requestId = requestId)
+            }
+            .show()
+    }
+
     private fun dispatch(
         action: String,
         parameters: Map<String, String>,
-        ownerConfirmed: Boolean = false
+        ownerConfirmed: Boolean = false,
+        requestId: String? = null
     ) {
         val current = controller ?: run {
             status.text = "Контроллер недоступен. Проверь включённые разрешения."
@@ -259,7 +287,7 @@ class ManaDeviceControlsActivity : Activity() {
         }
         val result = current.request(
             ManaActionRequest(
-                requestId = "owner-ui-${System.currentTimeMillis()}",
+                requestId = requestId ?: "owner-ui-${System.currentTimeMillis()}",
                 action = action,
                 parameters = parameters,
                 ownerConfirmed = ownerConfirmed
