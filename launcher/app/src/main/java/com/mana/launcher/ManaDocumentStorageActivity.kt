@@ -205,7 +205,6 @@ class ManaDocumentStorageActivity : Activity() {
             card.addView(text(entry.title, 14, 0xFFFFFFFF.toInt(), true))
             card.addView(text("Копия • ${entry.tags.firstOrNull { it.startsWith("bytes:") }?.removePrefix("bytes:") ?: "?"} байт", 11, 0xFF9CB6D4.toInt()))
             card.addView(button("Восстановить копию в выбранную папку") { restore(entry, uri) })
-            if ("original-deleted" !in entry.tags) card.addView(button("Удалить оригинал после проверки") { confirmDeleteOriginal(entry, uri) })
             if ("original-deleted" !in entry.tags) card.addView(button("Удалить оригинал после проверки и подтверждения") { confirmDeleteOriginal(entry, uri) })
             val onlyCopy = "original-deleted" in entry.tags
             card.addView(button(if (onlyCopy) "Удалить единственную оставшуюся копию" else "Удалить только копию из карантина") { confirmDeleteCopy(entry, uri) })
@@ -314,15 +313,18 @@ class ManaDocumentStorageActivity : Activity() {
 
     private fun sha256(uri: Uri): String {
         val digest = MessageDigest.getInstance("SHA-256")
+        var total = 0L
         (contentResolver.openInputStream(uri) ?: error("Не удалось проверить файл.")).use { input ->
             val buffer = ByteArray(256 * 1024)
             while (true) {
                 val count = input.read(buffer)
                 if (count < 0) break
+                total += count
+                require(total <= MAX_FILE_BYTES) { "Файл превышает безопасный лимит 2 ГБ." }
                 digest.update(buffer, 0, count)
             }
         }
-        return digest.digest().joinToString("") { "%02x".format(it) }
+        return digest.digest().joinToString("") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
     }
 
     private fun uniqueName(folder: DocumentFile, original: String): String {
