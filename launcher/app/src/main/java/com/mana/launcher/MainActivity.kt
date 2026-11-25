@@ -595,9 +595,10 @@ class MainActivity : Activity() {
         search.setText("")
         content.removeAllViews()
         content.addView(label("MANA SMART RECEPTIONIST", 22, textColor, true))
-        content.addView(label("Локальная проверка контакта. Профиль: playful • задержка 10 секунд • неизвестные номера • сводка разговора. Фактический автоответ и запись звонков пока не включены.", 12, muted, false))
+        content.addView(label("Локальная проверка контакта. Профиль: playful • задержка 10 секунд • неизвестные номера • сводка разговора. Автоответ после 10 секунд доступен только при добровольном назначении MANA приложением телефона.", 12, muted, false))
         content.addView(action("Включить системное распознавание неизвестных вызовов") { requestCallScreeningRole() }, LinearLayout.LayoutParams(-1, dp(44)).apply { topMargin = dp(10) })
-        content.addView(label("Ограничение Android: CallScreeningService не умеет автоматически принять звонок или выдержать 10-секундную задержку. MANA оставляет звонок активным и может показать уведомление.", 11, muted, false))
+        content.addView(action("Открыть MANA Phone для настройки автоответа") { startActivity(Intent(this, ManaDialerActivity::class.java)) })
+        content.addView(label("CallScreeningService распознаёт неизвестные номера и уведомляет владельца. Для автоответа через 10 секунд открой MANA Phone и отдельно назначь MANA приложением телефона; без этого системный номеронабиратель не меняется.", 11, muted, false))
         val phone = EditText(this).apply {
             hint = "Номер телефона"
             setTextColor(textColor)
