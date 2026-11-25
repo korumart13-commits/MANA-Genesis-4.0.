@@ -1200,6 +1200,14 @@ class MainActivity : Activity() {
             val spoken = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
             if (!spoken.isNullOrBlank()) { chatInput?.setText(spoken); sendToLocalModel() }
         }
+        if (requestCode == callScreeningRoleRequestCode && Build.VERSION.SDK_INT >= 29) {
+            val roleManager = getSystemService(RoleManager::class.java)
+            showMessage(if (roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)) {
+                "MANA включена для распознавания вызовов. Звонки остаются под твоим контролем."
+            } else {
+                "Роль распознавания вызовов не была предоставлена."
+            })
+        }
     }
 
     override fun onDestroy() {
