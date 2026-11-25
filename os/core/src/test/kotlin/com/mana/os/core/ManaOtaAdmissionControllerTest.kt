@@ -21,7 +21,7 @@ class ManaOtaAdmissionControllerTest {
 
     @Test fun admitsMatchingSignedPayloadAndRequiresExplicitStateProgression() {
         val controller = ManaOtaAdmissionController { _, _ -> true }
-        assertTrue(controller.inspect(manifest, device, digest).accepted)
+        assertTrue(controller.inspect(manifest, device, digest, 1024).accepted)
         assertEquals(OtaState.VERIFIED, controller.state)
         controller.markStaged()
         controller.markApplying()
@@ -31,7 +31,7 @@ class ManaOtaAdmissionControllerTest {
 
     @Test fun rejectsWrongDeviceEvenWhenSignatureIsValid() {
         val controller = ManaOtaAdmissionController { _, _ -> true }
-        val result = controller.inspect(manifest.copy(device = "WRONG"), device, digest)
+        val result = controller.inspect(manifest.copy(device = "WRONG"), device, digest, 1024)
         assertFalse(result.accepted)
         assertTrue(result.reasons.any { it.contains("Device mismatch") })
         assertEquals(OtaState.FAILED, controller.state)
@@ -39,7 +39,7 @@ class ManaOtaAdmissionControllerTest {
 
     @Test fun rejectsDigestMismatchAndBadSignature() {
         val controller = ManaOtaAdmissionController { _, _ -> false }
-        val result = controller.inspect(manifest, device, "b".repeat(64))
+        val result = controller.inspect(manifest, device, "b".repeat(64), 1024)
         assertFalse(result.accepted)
         assertTrue(result.reasons.any { it.contains("SHA-256 mismatch") })
         assertTrue(result.reasons.any { it.contains("signature") })
@@ -50,7 +50,8 @@ class ManaOtaAdmissionControllerTest {
         val result = controller.inspect(
             manifest,
             device.copy(batteryPercent = 10, charging = false, unmeteredNetwork = false),
-            digest
+            digest,
+            1024
         )
         assertFalse(result.accepted)
         assertEquals(2, result.reasons.size)
@@ -61,9 +62,23 @@ class ManaOtaAdmissionControllerTest {
         assertFailsWith<IllegalStateException> { controller.markApplying() }
     }
 
+    @Test fun rejectsPayloadLengthMismatchEvenWhenDigestAndSignaturePass() {
+        val controller = ManaOtaAdmissionController { _, _ -> true }
+        val result = controller.inspect(manifest, device, digest, 1023)
+        assertFalse(result.accepted)
+        assertTrue(result.reasons.any { it.contains("Payload size mismatch") })
+    }
+
+    @Test fun rejectsImpossibleBatteryReading() {
+        val controller = ManaOtaAdmissionController { _, _ -> true }
+        val result = controller.inspect(manifest, device.copy(batteryPercent = 140), digest, 1024)
+        assertFalse(result.accepted)
+        assertTrue(result.reasons.any { it.contains("Battery percentage") })
+    }
+
     @Test fun requiresNewerVersionAndSuccessfulBootToFinish() {
         val controller = ManaOtaAdmissionController { _, _ -> true }
-        assertFalse(controller.inspect(manifest.copy(version = 4), device, digest).accepted)
+        assertFalse(controller.inspect(manifest.copy(version = 4), device, digest, 1024).accepted)
         assertTrue(controller.lastFailure!!.contains("not newer"))
     }
 }
