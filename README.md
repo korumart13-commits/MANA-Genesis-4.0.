@@ -1,10 +1,12 @@
-# MANA Genesis 4.0 — Operating-system source project
+# MANA OS — operating-system source project
 
-MANA Genesis 4.0 is being developed as an Android 16 AOSP-derived operating system for the realme RMX5566RU (RE645F), not as a standalone launcher APK.
+MANA OS is being developed as a MANA-owned hybrid system platform for the realme RMX5566RU (RE645F). It retains Android framework/API and ART compatibility so Android APKs can run, while MANA replaces and extends the system experience. Exact realme kernel, firmware, vendor/ODM and authorized OEM apps are retained where required and verified.
 
 ## Current focus
 
-- Establish the Android platform source and product architecture.
+- Establish the Android 16 compatibility base and MANA hybrid platform architecture.
+- Retain Android APK compatibility and evaluate licensed Google Play/GMS integration separately.
+- Audit realme OEM applications, installer components and exact-device vendor dependencies before inclusion.
 - Verify the exact RMX5566RU device tree, vendor interface and Linux kernel source.
 - Build the MANA system layer into the OS: System UI, launcher, settings, avatar, local-first MANA Brain and system services.
 - Preserve the stock boot chain until device-specific sources, recovery and signing are verified.
@@ -15,6 +17,7 @@ This repository contains project documentation, the device profile, MANA Brain J
 
 Core references:
 - [Device profile](device/RMX5566RU_TARGET_PROFILE.md)
+- [MANA OS hybrid platform architecture](os/MANA_OS_HYBRID_PLATFORM_ARCHITECTURE.md)
 - [OS architecture](os/README.md)
 - [Build sequence](os/BUILD_SEQUENCE.md)
 - [AOSP 16 build foundation](os/AOSP16_BUILD_FOUNDATION.md)
