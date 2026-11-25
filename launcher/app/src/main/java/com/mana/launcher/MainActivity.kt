@@ -72,7 +72,8 @@ class MainActivity : Activity() {
     private val voiceRequestCode = 4107
     private val modelRequestCode = 4108
     private lateinit var localRuntime: LocalModelRuntime
-    private lateinit var manaBrain: ManaBrainBridge\n    private lateinit var cloudGateway: ManaCloudGateway
+    private lateinit var manaBrain: ManaBrainBridge
+    private lateinit var cloudGateway: ManaCloudGateway
     private var chatInput: EditText? = null
     private var chatOutput: TextView? = null
     private var modelStatus: TextView? = null
@@ -118,7 +119,8 @@ class MainActivity : Activity() {
         window.decorView.setBackgroundColor(bg)
         contactIntelligence = ManaContactIntelligence(this)
         localRuntime = LocalModelRuntime(File(cacheDir, "mana-litert-cache"))
-        cloudGateway = ManaCloudGateway(this, ManaAndroidKeyProvider())\n        manaBrain = ManaBrainBridge(localRuntime, cloudGateway)
+        cloudGateway = ManaCloudGateway(this, ManaAndroidKeyProvider())
+        manaBrain = ManaBrainBridge(localRuntime, cloudGateway)
         diaryService = try { ManaDiaryService(EncryptedFileManaDiaryStore(File(filesDir, "mana/diary.bin"), ManaAndroidKeyProvider())) } catch (error: Exception) {
             showMessage("Дневник пока недоступен: ${error.message}")
             null
@@ -272,7 +274,8 @@ class MainActivity : Activity() {
         card.addView(action("Открыть зашифрованный дневник MANA") { showDiary() })
         card.addView(action("Открыть MANA Life Manager") { showLifeManager() })
         card.addView(action("Открыть локальную память MANA") { showMemory() })
-        card.addView(action("Открыть Smart Receptionist") { showReceptionist() })\n        card.addView(action("Настроить облачный резерв ИИ") { showCloudSettings() })
+        card.addView(action("Открыть Smart Receptionist") { showReceptionist() })
+        card.addView(action("Настроить облачный резерв ИИ") { showCloudSettings() })
         card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Локальный ИИ: выбери .litertlm-модель в окне MANA.", 12, muted, false))
         val p = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(19) }
         content.addView(card, p)
@@ -842,7 +845,9 @@ class MainActivity : Activity() {
             val memoryContext = remembered.joinToString("\n") { "- [${it.category}] ${it.content}" }
             "Локальный контекст памяти владельца (используй только если релевантно):\n$memoryContext\n\nЗапрос владельца:\n$prompt"
         }
-        val cloudAllowed = cloudGateway.isAvailable() && remembered.isEmpty()\n        manaBrain.respond(effectivePrompt, { chunk ->
+        val cloudAllowed = cloudRequestAllowed && cloudGateway.isAvailable() && remembered.isEmpty()
+        cloudRequestAllowed = false
+        manaBrain.respond(effectivePrompt, allowCloud = cloudAllowed, sensitive = remembered.isNotEmpty(), onChunk = { chunk ->
             generated.append(chunk)
             runOnUiThread { chatOutput?.append(chunk) }
         }) { result ->
