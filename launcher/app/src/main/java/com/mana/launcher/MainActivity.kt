@@ -400,7 +400,7 @@ class MainActivity : Activity() {
             hint = "Поиск по дневнику"
             setTextColor(textColor)
             setHintTextColor(muted)
-            singleLine = true
+            isSingleLine = true
             background = rounded(panelRaised, 12)
             setPadding(dp(12), 0, dp(12), 0)
         }
