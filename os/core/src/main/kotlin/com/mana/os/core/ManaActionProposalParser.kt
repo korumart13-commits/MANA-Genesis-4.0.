@@ -39,9 +39,10 @@ object ManaActionProposalParser {
             "launch_app" -> parameters["package"]?.matches(
                 Regex("[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+)+")
             ) == true
-            "set_torch", "set_do_not_disturb" -> parameters["enabled"] in setOf("true", "false")
-            "set_brightness" -> parameters["level"]?.toIntOrNull() in 0..255
-            "set_volume" -> parameters["stream"] in setOf("music", "ring", "alarm", "notification", "voice_call") &&
+            "set_torch", "set_do_not_disturb" ->
+                parameters["enabled"] == "true" || parameters["enabled"] == "false"
+            "set_brightness" -> (parameters["level"]?.toIntOrNull() ?: -1) in 0..255
+            "set_volume" -> parameters["stream"] in listOf("music", "ring", "alarm", "notification", "voice_call") &&
                 (parameters["level"]?.toIntOrNull() ?: -1) in 0..100
             else -> false
         }
