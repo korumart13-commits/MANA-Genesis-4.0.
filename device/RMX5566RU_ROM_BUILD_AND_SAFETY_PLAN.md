@@ -47,11 +47,12 @@ The current `device/` and `kernel/` folders contain audit documents, not a compl
 
 ## 3. Kernel/vendor findings
 
-Two public kernel candidates have already been rejected:
-1. `realme_C85_5G-AndroidV-kernel-source`: targets RMX5253 / MediaTek, declares Linux 5.15.180, and does not match the RMX5566RU Qualcomm/bengal runtime.
-2. `android_kernel_realme_sm6225` (android13-bengal): declares Linux 4.19.157 and is too old for the reported 5.15.197 kernel.
+Public source audit status (updated 2026-11-26):
+1. `realme_C85_5G-AndroidV-kernel-source`: targets RMX5253 / MediaTek and is not applicable to this Qualcomm C85 4G.
+2. `android_kernel_realme_sm6225` (android13-bengal) and `android_kernel_tree_realme_sm6225`: both declare Linux 4.19.157 and are not compatible with the reported 5.15.197 target.
+3. New OEM C85-family candidate: `realme-kernel-opensource/realme_C85_C85pro-AndroidB-kernel-source` at commit `52ea05ec6849f7c3dd9a65864b5a52038deb9f9d` declares Linux 5.15.180 and `MSM_ARCH=bengal`. The companion OEM vendor/kernel-platform source at commit `2ab37fb9ceda42cd8679dec8585d4ff5209c4e90` contains Moscow Oplus overlays with project IDs 25665, 25666 and others, including SM6225-specific fragments. This is a promising OEM source candidate, not yet a verified RMX5566RU build input: the audited source commit identifies `RMX555525665_16.0.2.403(EX01)`, while this phone reports RMX5566RU and kernel 5.15.197. The phone's own Oplus project ID has not yet been captured and matched to the correct Moscow overlay.
 
-Neither may be used to build or flash the target. Required next evidence is the OEM GPL source release matching the exact fingerprint, plus matching defconfig, DTS/DTSI, DTBO, module ABI and vendor module set. Vendor blobs must come from the exact target firmware family and be checked against the Android 16 VINTF compatibility requirements.
+Do not build or flash from any candidate yet. The new OEM source audit is recorded in [RMX5566RU_OEM_SOURCE_AUDIT_2026-11-26.md](RMX5566RU_OEM_SOURCE_AUDIT_2026-11-26.md). Required next evidence is a verified target project ID, exact source mapping/version, matching defconfig, DTS/DTSI, DTBO, module ABI and vendor module set. The kernel-platform source tree is not proof that the complete Android proprietary vendor partition, HAL binaries or exact VINTF manifests are available.
 
 ## 4. Partition and boot-chain gate
 
