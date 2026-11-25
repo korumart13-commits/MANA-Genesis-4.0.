@@ -46,9 +46,13 @@ class ManaCloudGateway(
 
     fun configure(provider: ManaCloudProvider, model: String, apiKey: String, enabled: Boolean) {
         require(model.matches(Regex("[A-Za-z0-9._:-]{2,100}"))) { "Укажи корректный идентификатор модели." }
-        require(apiKey.length in 12..4096) { "Проверь API-ключ: его длина выглядит некорректной." }
-        val keys = readKeys().put(provider.name, apiKey)
-        writeKeys(keys)
+        if (apiKey.isNotBlank()) {
+            require(apiKey.length in 12..4096) { "Проверь API-ключ: его длина выглядит некорректной." }
+            val keys = readKeys().put(provider.name, apiKey)
+            writeKeys(keys)
+        } else {
+            require(hasKey(provider)) { "Для этого провайдера нужен API-ключ." }
+        }
         prefs.edit().putString(KEY_PROVIDER, provider.name).putString(KEY_MODEL, model)
             .putBoolean(KEY_ENABLED, enabled).apply()
     }
