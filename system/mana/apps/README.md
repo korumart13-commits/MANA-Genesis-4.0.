@@ -1,24 +1,26 @@
 # MANA Genesis 4.0 — Android application sources
 
-This directory contains the first Android-framework-facing source for the integrated MANA UI.
+This directory contains the first Android-framework-facing source modules for the MANA product image.
 
 ## Packages
 
-- ManaLauncher (com.mana.launcher): Android HOME activity, dark navy MANA identity, opens the MANA assistant and lists launchable user apps.
-- ManaAssistant (com.mana.assistant): MANA-branded assistant shell and message-entry UI. It explicitly reports that no inference runtime is connected; it does not fake AI responses or transmit prompts.
+- **ManaLauncher** (com.mana.launcher): HOME activity, MANA branding, launches the MANA assistant and lists installed launchable apps.
+- **ManaAssistant** (com.mana.assistant): MANA-branded assistant shell. It truthfully reports that this Soong shell is not yet connected to MANA Brain; it does not fake inference or transmit prompts.
+- **ManaSettings** (com.mana.settings): MANA-branded settings hub that opens Android settings panels for network, Bluetooth, display, sound, battery, app permissions and MANA's own permissions.
+- **ManaControlCenter** (com.mana.controlcenter): MANA-branded quick-access hub for Android Wi-Fi, Bluetooth, mobile network, display, sound, battery, location and notification settings.
 
 ## Build integration
 
-Both modules are Soong android_app modules. Include system/mana/mana_product.mk from the eventual verified Android 16 product makefile to add them to PRODUCT_PACKAGES.
+All four are Soong android_app product modules. Include system/mana/mana_product.mk from the eventual verified Android 16 product makefile to add them to PRODUCT_PACKAGES.
 
-They are product apps, not privileged apps: no privileged=true, special permissions, root access, overlay permission, accessibility service, contacts, microphone, camera, or network permission is requested. Development modules use the default build certificate, not the platform certificate. A production release must use the owner's controlled release-signing process; private signing keys must never be committed.
+They remain non-privileged product apps: no platform certificate, root access, hidden API, privileged permission or direct radio toggle is assumed. Settings and Control Center open Android's own protected settings panels; they do not pretend to be the privileged Quick Settings/SystemUI implementation.
 
-## Not yet present
+## Remaining integration gates
 
-- AOSP checkout and verified RMX5566RU product/device tree.
-- Binder connection from the assistant shell to MANA Brain.
-- LiteRT-LM runtime, model weights and model manager.
-- Avatar assets/runtime, voice service and persistent encrypted memory.
-- A real device build or installation.
+- Exact AOSP checkout and verified RMX5566RU/RE645F product and device tree.
+- Binder connection from the Soong assistant shell to the already-tested MANA Brain engine.
+- SystemUI/Quick Settings replacement with correct platform signing and SELinux policy; the current Control Center is a safe settings launcher, not a replacement for Android SystemUI.
+- Real Android product build and on-device validation.
+- OEM kernel source, matching DTS/DTBO, vendor modules, VINTF/HAL and verified recovery/rollback path before any flashable image is attempted.
 
-The launcher and assistant are source modules for the integrated OS. No standalone APK workflow is started.
+These are integrated source modules intended for the future MANA product image. No separate APK release or firmware flash is initiated by this workflow.
