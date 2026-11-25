@@ -48,6 +48,10 @@ jobs:
               root = ET.parse(path).getroot()
               permissions = [node.attrib.get(android_ns + "name", "") for node in root.findall("uses-permission")]
               assert not permissions, f"{path} unexpectedly requests permissions: {permissions}"
+              bp = path.parent / "Android.bp"
+              build = bp.read_text()
+              assert 'privileged: false' in build, f"{bp} must remain non-privileged"
+              assert 'certificate: "default"' in build, f"{bp} must not use platform signing"
               for activity in root.findall("./application/activity"):
                   assert activity.attrib.get(android_ns + "exported") == "true", f"{path}: activity exported must be explicit"
           print("Validated 2 manifests: no runtime permissions requested; exported activities are explicit.")
