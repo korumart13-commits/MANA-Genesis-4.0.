@@ -14,7 +14,8 @@ This matrix is the authoritative distinction between source work, placeholders a
 | Kernel source | BLOCKED | No exact 5.15.197 OEM source/defconfig/DTS approved |
 | AOSP 16 baseline | DOCUMENTED | Manifest tag pinned in build plan; source checkout not present |
 | MANA JVM core | EXISTING SOURCE | Validate against current implementation ledger and CI |
-| MANA Gradle prototype | EXISTING SOURCE | Not yet unified with Soong product modules |
+| MANA Gradle companion | EXISTING SOURCE / PARTIAL BRIDGE | Contains LiteRT-LM runtime and full companion features; Soong Launcher hands off prompts when its provider is unavailable; companion remains a separate APK |
+| MANA Brain AIDL/Binder | IMPLEMENTED SOURCE / NOT BUILT | Canonical Kotlin core has a Soong java_library; Assistant Binder service and Launcher client exist; instrumentation sources added; Soong and device tests not yet run |
 | MANA Soong shells | EXISTING SOURCE | Non-privileged shells; not a complete SystemUI replacement |
 | Full AOSP product build | NOT STARTED | Requires synced AOSP and valid product target |
 | Bootable RE645F image | NOT BUILT | Requires all device, vendor, kernel, AVB and recovery gates |
