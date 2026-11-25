@@ -10,7 +10,7 @@ class ManaOtaPayloadInspectorTest {
         val bytes = "MANA OTA test payload".toByteArray()
         val result = ManaOtaPayloadInspector.inspect(ByteArrayInputStream(bytes), 1024)
         assertEquals(bytes.size.toLong(), result.sizeBytes)
-        assertEquals("e6cfd3e9f7fcd4d6b9f8cce9f4a5b2e8e5e5d9e1a4f2f90e6f7c5b2d7a9c1a00", result.sha256)
+        assertEquals("c17ece6f41c1e07ff2b2ea4e03bb77b5c3eb87ba97decca553a9a00ac652e4e0", result.sha256)
     }
 
     @Test fun rejectsPayloadOverConfiguredLimit() {
