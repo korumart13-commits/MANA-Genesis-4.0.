@@ -91,7 +91,11 @@ class ManaDocumentStorageActivity : Activity() {
             val found = linkedMapOf<String, DocumentFile>()
             val tree = DocumentFile.fromTreeUri(this, uri)
             if (tree != null) walk(tree, found, 0, intArrayOf(0))
-            val alreadyQuarantined = synchronized(store) { store.readAll().filter { TAG in it.tags }.map { it.body.substringBefore("\n") }.toSet() }
+            val savedEntries = runCatching { synchronized(store) { store.readAll() } }.getOrElse { error ->
+                runOnUiThread { showMessage("Журнал карантина недоступен; исходники не изменены: " + error.message) }
+                emptyList()
+            }
+            val alreadyQuarantined = savedEntries.filter { TAG in it.tags }.map { it.body.substringBefore("\n") }.toSet()
             found.keys.removeAll(alreadyQuarantined)
             runOnUiThread {
                 if (root.childCount > 4) root.removeViews(4, root.childCount - 4)
@@ -196,7 +200,11 @@ class ManaDocumentStorageActivity : Activity() {
     }
 
     private fun renderQuarantine() {
-        val entries = synchronized(store) { store.readAll().filter { TAG in it.tags }.sortedByDescending { it.createdAt } }
+        val entries = runCatching { synchronized(store) { store.readAll().filter { TAG in it.tags }.sortedByDescending { it.createdAt } } }
+            .getOrElse { error ->
+                showMessage("Журнал карантина повреждён или недоступен. Ничего не удалено: " + error.message)
+                emptyList()
+            }
         if (entries.isEmpty()) {
             root.addView(text("Карантин пуст.", 12, 0xFF9CB6D4.toInt()))
             return
@@ -264,6 +272,7 @@ class ManaDocumentStorageActivity : Activity() {
             .setNegativeButton("Отмена", null)
             .setPositiveButton("Удалить оригинал") { _, _ ->
                 executor.execute {
+                    var sourceDeleted = false
                     try {
                         val original = DocumentFile.fromSingleUri(this, Uri.parse(entry.body.substringBefore("\n")))
                             ?: error("Исходный файл больше недоступен.")
@@ -274,6 +283,7 @@ class ManaDocumentStorageActivity : Activity() {
                         require(sha256(original.uri) == expected) { "Исходный файл изменился после карантина; удаление отменено." }
                         require(sha256(backup.uri) == expected) { "Копия карантина не прошла проверку; удаление отменено." }
                         require(original.delete()) { "Android не разрешил удалить исходный файл." }
+                        sourceDeleted = true
                         synchronized(store) {
                             store.writeAll(store.readAll().map {
                                 if (it.id == entry.id) it.copy(tags = it.tags + "original-deleted", updatedAt = Instant.now()) else it
@@ -281,7 +291,9 @@ class ManaDocumentStorageActivity : Activity() {
                         }
                         runOnUiThread { showMessage("Исходный файл удалён. Проверенная копия сохранена в MANA_Review.") ; scan() }
                     } catch (error: Exception) {
-                        runOnUiThread { showMessage("Удаление отменено: ${error.message}") }
+                        runOnUiThread {
+                            showMessage(if (sourceDeleted) "Исходник уже удалён, но журнал не обновился. Проверенная копия остаётся в MANA_Review — не удаляй её, пока журнал не восстановлен." else "Удаление отменено: ${error.message}")
+                        }
                     }
                 }
             }.show()
