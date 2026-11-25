@@ -210,7 +210,7 @@ class ManaDocumentStorageActivity : Activity() {
             return
         }
         entries.forEach { entry ->
-            val uri = entry.body.substringAfter("\n", "")
+            val uri = entry.body.substringAfter("\n", "").ifBlank { entry.tags.firstOrNull { it.startsWith("quarantine-uri:") }?.removePrefix("quarantine-uri:").orEmpty() }
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(10), dp(9), dp(10), dp(9))
