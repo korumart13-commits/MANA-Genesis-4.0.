@@ -39,6 +39,8 @@ class ManaUpdatePackageVerifierTest {
         val manifest = ByteArrayOutputStream().also { properties.store(it, null) }.toByteArray()
         val archive = File(directory, "update.zip")
         ZipOutputStream(archive.outputStream()).use { zip ->
+            zip.putNextEntry(ZipEntry("META-INF/"))
+            zip.closeEntry()
             zip.putNextEntry(ZipEntry(ManaUpdatePackageVerifier.MANIFEST_PATH))
             zip.write(manifest)
             zip.closeEntry()
