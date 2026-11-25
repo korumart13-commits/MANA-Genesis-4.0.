@@ -227,7 +227,7 @@ class ManaDocumentStorageActivity : Activity() {
                     synchronized(store) {
                         store.writeAll(store.readAll().map {
                             if (it.id == entry.id) it.copy(
-                                body = target.uri.toString() + "\\n" + quarantineUri,
+                                body = target.uri.toString() + "\n" + quarantineUri,
                                 tags = it.tags - "original-deleted",
                                 updatedAt = Instant.now()
                             ) else it
