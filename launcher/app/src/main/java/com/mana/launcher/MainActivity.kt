@@ -16,6 +16,7 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Build
 import android.provider.Settings
+import android.app.role.RoleManager
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.RecognitionListener
@@ -87,6 +88,7 @@ class MainActivity : Activity() {
     private var speechRecognizer: SpeechRecognizer? = null
     private val audioPermissionRequestCode = 4111
     private val contactsPermissionRequestCode = 4112
+    private val callScreeningRoleRequestCode = 4113
     private lateinit var contactIntelligence: ManaContactIntelligence
 
     private fun startFloatingAvatarService() {
@@ -470,12 +472,31 @@ class MainActivity : Activity() {
         avatarPanel = overlay
     }
 
+    private fun requestCallScreeningRole() {
+        if (Build.VERSION.SDK_INT < 29) {
+            showMessage("Системная роль Call Screening доступна начиная с Android 10.")
+            return
+        }
+        val roleManager = getSystemService(RoleManager::class.java)
+        if (!roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
+            showMessage("На этой прошивке роль Call Screening недоступна.")
+            return
+        }
+        if (roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)) {
+            showMessage("MANA уже назначена приложением распознавания вызовов.")
+            return
+        }
+        startActivityForResult(roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING), callScreeningRoleRequestCode)
+    }
+
     private fun showReceptionist() {
         showingDrawer = false
         search.setText("")
         content.removeAllViews()
         content.addView(label("MANA SMART RECEPTIONIST", 22, textColor, true))
         content.addView(label("Локальная проверка контакта. Профиль: playful • задержка 10 секунд • неизвестные номера • сводка разговора. Фактический автоответ и запись звонков пока не включены.", 12, muted, false))
+        content.addView(action("Включить системное распознавание неизвестных вызовов") { requestCallScreeningRole() }, LinearLayout.LayoutParams(-1, dp(44)).apply { topMargin = dp(10) })
+        content.addView(label("Ограничение Android: CallScreeningService не умеет автоматически принять звонок или выдержать 10-секундную задержку. MANA оставляет звонок активным и может показать уведомление.", 11, muted, false))
         val phone = EditText(this).apply {
             hint = "Номер телефона"
             setTextColor(textColor)
