@@ -10,7 +10,7 @@
         </intent>
     </queries>
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:label="MANA Genesis"
         android:theme="@android:style/Theme.Material.NoActionBar"
         android:usesCleartextTraffic="false">
