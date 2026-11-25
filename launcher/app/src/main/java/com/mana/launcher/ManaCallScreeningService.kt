@@ -3,13 +3,10 @@ package com.mana.launcher
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.net.Uri
 import android.os.Build
 import android.telecom.Call
 import android.telecom.CallScreeningService
 import android.content.Context
-import android.content.pm.PackageManager
-import android.Manifest
 import com.mana.os.core.ManaSmartReceptionistPolicy
 
 /**
@@ -30,11 +27,24 @@ class ManaCallScreeningService : CallScreeningService() {
         respondToCall(details, response)
 
         val number = details.handle?.takeIf { it.scheme == "tel" }?.schemeSpecificPart.orEmpty()
-        val known = runCatching {
-            ManaContactIntelligence(this).findByPhone(number) != null
-        }.getOrDefault(false)
-        val decision = ManaSmartReceptionistPolicy().onIncomingCall(numberKnown = known)
-        if (decision.unknownCaller) notifyOwner(number)
+        // Telecom requires a screening response within five seconds. Allow first;
+        // local contact lookup and owner notification must never delay ringing.
+        val response = CallResponse.Builder()
+            .setDisallowCall(false)
+            .setRejectCall(false)
+            .setSkipCallLog(false)
+            .setSkipNotification(false)
+            .setSilenceCall(false)
+            .build()
+        respondToCall(details, response)
+
+        Thread {
+            val known = runCatching {
+                ManaContactIntelligence(this).findByPhone(number) != null
+            }.getOrDefault(false)
+            val decision = ManaSmartReceptionistPolicy().onIncomingCall(numberKnown = known)
+            if (decision.unknownCaller) notifyOwner(number)
+        }.start()
     }
 
     private fun notifyOwner(number: String) {
