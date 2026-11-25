@@ -25,6 +25,7 @@ import android.speech.tts.UtteranceProgressListener
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
+import kotlinx.coroutines.runBlocking
 import android.view.ViewGroup
 import android.widget.EditText
 import android.text.InputType
@@ -973,6 +974,110 @@ class MainActivity : Activity() {
                 }
             } catch (error: Exception) { runOnUiThread { showMessage("Ошибка импорта: ${error.message}") } }
         }.start()
+    }
+
+    private fun showYandexSettings() {
+        showingDrawer = false
+        search.setText("")
+        content.removeAllViews()
+        val current = yandexProvider.currentConfig()
+        content.addView(label("YANDEX AI STUDIO", 22, textColor, true))
+        content.addView(label("Необязательный облачный резерв. Локальная модель MANA имеет приоритет; Yandex вызывается только после отдельного подтверждения запроса.", 12, muted, false))
+        val key = EditText(this).apply {
+            hint = if (current?.apiKey.isNullOrBlank()) "Yandex API key" else "Ключ сохранён — оставь поле пустым"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            setTextColor(textColor); setHintTextColor(muted); background = rounded(panelRaised, 12); setPadding(dp(12), 0, dp(12), 0)
+        }
+        val folder = EditText(this).apply {
+            hint = "Folder ID"
+            setText(current?.folderId.orEmpty())
+            setTextColor(textColor); setHintTextColor(muted); background = rounded(panelRaised, 12); setPadding(dp(12), 0, dp(12), 0)
+        }
+        val model = EditText(this).apply {
+            hint = "Model ID"
+            setText(current?.modelId ?: "yandexgpt/latest")
+            setTextColor(textColor); setHintTextColor(muted); background = rounded(panelRaised, 12); setPadding(dp(12), 0, dp(12), 0)
+        }
+        content.addView(key, LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(12) })
+        content.addView(folder, LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(8) })
+        content.addView(model, LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(8) })
+        content.addView(action("Сохранить и включить Yandex") {
+            try {
+                yandexProvider.configure(key.text.toString(), folder.text.toString().trim(), model.text.toString().trim(), true)
+                key.setText("")
+                showMessage("Yandex AI Studio сохранён в зашифрованном хранилище и включён как резервный провайдер.")
+            } catch (error: Exception) {
+                showMessage("Не удалось настроить Yandex: ${error.message}")
+            }
+        }, LinearLayout.LayoutParams(-1, dp(44)).apply { topMargin = dp(10) })
+        content.addView(action("Выключить Yandex") {
+            yandexProvider.disable()
+            showMessage("Yandex выключен. Локальный MANA Brain продолжает работать.")
+        })
+        content.addView(action("Удалить ключ и настройки Yandex") {
+            AlertDialog.Builder(this).setTitle("Удалить данные Yandex?")
+                .setMessage("API-ключ и настройки будут удалены из зашифрованного хранилища.")
+                .setNegativeButton("Отмена", null)
+                .setPositiveButton("Удалить") { _, _ ->
+                    yandexProvider.removeCredentials()
+                    showMessage("Данные Yandex удалены.")
+                }.show()
+        })
+    }
+
+    private fun showVkSettings() {
+        showingDrawer = false
+        search.setText("")
+        content.removeAllViews()
+        content.addView(label("VK • READ ONLY", 22, textColor, true))
+        content.addView(label("Подключение VK только для чтения профиля и собственной стены. MANA не публикует записи, не отправляет сообщения и не изменяет аккаунт.", 12, muted, false))
+        val token = EditText(this).apply {
+            hint = if (vkConnector.isConfigured()) "Токен сохранён — введи новый для замены" else "VK access token"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            setTextColor(textColor); setHintTextColor(muted); background = rounded(panelRaised, 12); setPadding(dp(12), 0, dp(12), 0)
+        }
+        content.addView(token, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(12) })
+        content.addView(action("Сохранить VK токен") {
+            try {
+                vkConnector.configureAccessToken(token.text.toString().trim())
+                token.setText("")
+                showMessage("VK токен сохранён в зашифрованном Android-хранилище.")
+            } catch (error: Exception) {
+                showMessage("Не удалось сохранить VK токен: ${error.message}")
+            }
+        }, LinearLayout.LayoutParams(-1, dp(44)).apply { topMargin = dp(8) })
+        content.addView(action("Прочитать мой профиль и последние записи") {
+            if (!vkConnector.isConfigured()) {
+                showMessage("Сначала добавь VK access token.")
+            } else {
+                Thread {
+                    try {
+                        val result = runBlocking {
+                            val profile = vkConnector.readProfile()
+                            val posts = vkConnector.readOwnWall(5)
+                            profile to posts
+                        }
+                        runOnUiThread {
+                            val summary = result.second.joinToString("\n\n") { post ->
+                                post.text.take(220).ifBlank { "(запись без текста)" }
+                            }
+                            showMessage("VK: ${result.first.firstName} ${result.first.lastName}\nПоследние записи:\n${summary.ifBlank { "Записей нет." }}")
+                        }
+                    } catch (error: Exception) {
+                        runOnUiThread { showMessage("VK чтение не удалось: ${error.message}") }
+                    }
+                }.start()
+            }
+        }, LinearLayout.LayoutParams(-1, dp(44)).apply { topMargin = dp(8) })
+        content.addView(action("Удалить VK токен") {
+            AlertDialog.Builder(this).setTitle("Отключить VK?")
+                .setMessage("Зашифрованный токен будет удалён.")
+                .setNegativeButton("Отмена", null)
+                .setPositiveButton("Отключить") { _, _ ->
+                    vkConnector.removeCredentials()
+                    showMessage("VK отключён.")
+                }.show()
+        })
     }
 
     private fun showCloudSettings() {
