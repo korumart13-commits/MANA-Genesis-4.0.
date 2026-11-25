@@ -92,6 +92,9 @@ def main(path):
 
     animations = document.get("animations", [])
     require(bool(animations), "avatar must include at least one animation")
+    animation_names = {animation.get("name") for animation in animations}
+    required_animations = {"Idle", "Speaking", "Happy", "Playful"}
+    require(required_animations.issubset(animation_names), f"avatar is missing animation clips: {sorted(required_animations - animation_names)}")
     for animation_index, animation in enumerate(animations):
         samplers = animation.get("samplers", [])
         channels = animation.get("channels", [])
