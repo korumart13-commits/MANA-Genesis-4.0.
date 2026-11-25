@@ -89,6 +89,7 @@ class MainActivity : Activity() {
     private val audioPermissionRequestCode = 4111
     private val contactsPermissionRequestCode = 4112
     private val callScreeningRoleRequestCode = 4113
+    private val notificationPermissionRequestCode = 4114
     private lateinit var contactIntelligence: ManaContactIntelligence
 
     private fun startFloatingAvatarService() {
@@ -495,6 +496,10 @@ class MainActivity : Activity() {
     }
 
     private fun requestCallScreeningRole() {
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), notificationPermissionRequestCode)
+            return
+        }
         if (Build.VERSION.SDK_INT < 29) {
             showMessage("Системная роль Call Screening доступна начиная с Android 10.")
             return
@@ -1178,6 +1183,10 @@ class MainActivity : Activity() {
             } else {
                 showMessage("Доступ к контактам не предоставлен.")
             }
+        }
+        if (requestCode == notificationPermissionRequestCode) {
+            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) requestCallScreeningRole()
+            else showMessage("Уведомления выключены; MANA не сможет сообщать об неизвестных вызовах.")
         }
     }
 
