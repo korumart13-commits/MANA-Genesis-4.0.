@@ -25,7 +25,7 @@ class ManaInCallService : InCallService() {
 
     override fun onCallAdded(call: Call) {
         super.onCallAdded(call)
-        calls.addIfAbsent(call)
+        synchronized(calls) { if (!calls.contains(call)) calls.add(call) }
         currentCall = call
         val callback = object : Call.Callback() {
             override fun onStateChanged(call: Call, state: Int) {
