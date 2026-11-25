@@ -18,3 +18,10 @@ It runs `clean`, `test`, and `:app:assembleDebug`, and publishes the APK only af
 **Important:** no APK is included or claimed to be built by this package. The APK is ready only after GitHub Actions reports success and the artifact is present. This is an Android app/launcher project, not a flashable firmware image.
 
 If GitHub writes fail through the connected app, reconnect the GitHub integration and grant repository **Contents: Read and write** and **Actions: Read and write** permissions, then retry.
+
+
+## MANA Owner / Primary Node architecture
+
+The approved owner role is **Главный разработчик и владелец**. The realme RMX5566 is designated as the **MANA Primary Node**. Other devices must be paired only by an explicit owner action. The server is local-network-only and off by default. See [docs/MANA_OWNER_AND_LOCAL_SERVER_ARCHITECTURE.md](docs/MANA_OWNER_AND_LOCAL_SERVER_ARCHITECTURE.md).
+
+This is an architecture specification for the next implementation step; it is not yet integrated into the APK.
