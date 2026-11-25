@@ -48,3 +48,8 @@ The current repository is the project coordination and source-foundation reposit
 5. Perform device bring-up, recovery validation and hardware/security tests before any owner-controlled installation plan.
 
 A source foundation, a successful JVM test, a successful AOSP image build and a bootable device image are separate milestones.
+
+
+## Security and storage service milestone
+
+The host-JVM core now contains testable MANA Security and MANA Storage policy services. Security uses default-deny capability grants with audit events. Storage only evaluates registered metadata and supports user-approved reversible archive/quarantine plus restore; permanent deletion and real filesystem mutation are not implemented. Android Binder, runtime permission, SELinux, encryption, and device integration remain future work. See [service contract and integration gates](SECURITY_AND_STORAGE_SERVICES.md).
