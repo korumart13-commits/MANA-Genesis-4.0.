@@ -22,19 +22,24 @@ class ManaAdaptiveLearningActivity : Activity() {
     private lateinit var knowledge: ManaAdaptiveKnowledgeService
     private lateinit var provider: ManaYandexAiStudioProvider
     private lateinit var status: TextView
+    private var initializationError: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         provider = ManaYandexAiStudioProvider(this)
-        knowledge = ManaAdaptiveKnowledgeService(
-            EncryptedFileManaAdaptiveKnowledgeStore(
-                EncryptedFileManaDiaryStore(
-                    File(filesDir, "mana/knowledge.bin"),
-                    ManaAndroidKeyProvider(),
-                    "mana.knowledge.v1"
+        try {
+            knowledge = ManaAdaptiveKnowledgeService(
+                EncryptedFileManaAdaptiveKnowledgeStore(
+                    EncryptedFileManaDiaryStore(
+                        File(filesDir, "mana/knowledge.bin"),
+                        ManaAndroidKeyProvider(),
+                        "mana.knowledge.v1"
+                    )
                 )
             )
-        )
+        } catch (error: Exception) {
+            initializationError = error.message
+        }
 
         val scroll = ScrollView(this).apply { setBackgroundColor(0xFF071426.toInt()) }
         val root = LinearLayout(this).apply {
@@ -49,6 +54,11 @@ class ManaAdaptiveLearningActivity : Activity() {
         ))
         status = text("", 12, 0xFF69C6FF.toInt())
         root.addView(status)
+        if (initializationError != null) {
+            root.addView(text("Зашифрованная база знаний недоступна: $initializationError", 13, 0xFFFFA6A6.toInt()))
+            setContentView(scroll)
+            return
+        }
         topics = EditText(this).apply {
             hint = "Темы для поиска — одна тема на строку, максимум 5"
             setTextColor(0xFFFFFFFF.toInt())
