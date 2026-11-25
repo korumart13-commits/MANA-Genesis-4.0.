@@ -59,4 +59,4 @@ These are source/CI milestones, not a full AOSP build or on-device certification
 5. Build the complete AOSP product and verify AVB/partition/OTA metadata.
 6. Test on a spare or safely recoverable target device, including hardware, thermal, battery, security and rollback tests.
 
-See [implementation ledger](IMPLEMENTATION_LEDGER.md), [owner requirements audit](OWNER_FEATURE_AUDIT_2026-11-25.md), [security review](SECURITY_REVIEW_2026-11-25.md) and [device/kernel audit](DEVICE_KERNEL_SOURCE_AUDIT_2026-11-25.md).
+See [implementation ledger](IMPLEMENTATION_LEDGER.md), [latest implementation addendum](IMPLEMENTATION_PROGRESS_ADDENDUM_2026-11-25.md), [owner requirements audit](OWNER_FEATURE_AUDIT_2026-11-25.md), [security review](SECURITY_REVIEW_2026-11-25.md) and [device/kernel audit](DEVICE_KERNEL_SOURCE_AUDIT_2026-11-25.md).
