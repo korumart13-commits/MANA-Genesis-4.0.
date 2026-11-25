@@ -23,7 +23,7 @@ class ManaYandexAiStudioProvider(context: Context) : InferenceProvider {
         val key = apiKey.ifBlank { previous?.apiKey.orEmpty() }
         require(key.length >= 12) { "Yandex API key is required." }
         require(folderId.matches(Regex("[A-Za-z0-9_-]{10,64}"))) { "Yandex folder ID is invalid." }
-        require(modelId.matches(Regex("[A-Za-z0-9._-]{2,100}"))) { "Yandex model ID is invalid." }
+        require(modelId.matches(Regex("[A-Za-z0-9._/-]{2,100}")) && !modelId.contains("..") && !modelId.startsWith("/") && !modelId.endsWith("/")) { "Yandex model ID is invalid." }
         val value = JSONObject().put("apiKey", key).put("folderId", folderId)
             .put("modelId", modelId).put("enabled", enabled)
         vault.write(value.toString())
