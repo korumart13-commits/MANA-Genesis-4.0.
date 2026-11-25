@@ -1,23 +1,35 @@
-# MANA Genesis — Minecraft Bedrock bridge starter
+# MANA Genesis — Minecraft Bedrock companion
 
-This is a Behavior Pack source for Minecraft Bedrock using the official stable `@minecraft/server` Script API dependency `2.11.0`.
+This is an installable Minecraft Bedrock Behavior Pack source. It uses the official @minecraft/server Script API 2.11.0. The companion entity is a local world-side Allay with the MANA name tag; it is not a remote phone bot.
 
-## What it does
+## Supported in-world commands
 
-- Emits visible in-world telemetry for player spawn/leave, block placement/breaking and dimension changes.
-- Accepts a restricted `/scriptevent mana:command {"action":"ping"}` or `status` handshake only from an entity carrying the `mana_owner` tag.
-- Does not transmit data over the network, modify inventory, move the player, build structures, automate combat, or bypass anti-cheat.
+- !mana help — list commands.
+- !mana come — spawn the MANA companion near the player.
+- !mana follow — make the companion follow the player.
+- !mana stay — stop following.
+- !mana status — report current state.
+- !mana hide — remove the companion.
 
-## Owner setup
+The companion follows its owner using the supported entity teleport API on a periodic tick. It does not modify inventory, automate combat, build structures, read private device data, or bypass anti-cheat.
 
-1. Import the Behavior Pack into a test Bedrock world.
-2. Enable the pack and any Script API experiment required by the installed Bedrock release.
-3. In the test world, tag the owner's player: `/tag @s add mana_owner`.
-4. Run `/scriptevent mana:command {"action":"ping"}` to test the owner-only command handshake.
-5. Observe visible `[MANA]` telemetry in world chat.
+## Install
+
+1. Download the MANA_Companion_BP.mcpack artifact from the GitHub Actions run named MANA Minecraft Companion Pack.
+2. Open the .mcpack file on the Android phone and import it into Minecraft Bedrock.
+3. Enable the Behavior Pack in a test world.
+4. If the installed Bedrock release requires it, enable the Script API / Beta APIs experiment. The chatSend event used for !mana commands is pre-release in some API versions.
+5. Enter the world and type !mana come.
+
+## Owner-only Script Event interface
+
+The pack also accepts /scriptevent mana:command {"action":"ping"} from an entity tagged mana_owner. This is a restricted owner-tag handshake for a future paired bridge. It is not a phone-to-world network transport.
 
 ## Integration boundary
 
-This is an official-API world-side adapter starter, not yet a phone-to-world transport. The Android side still needs a paired, authenticated local bridge/server transport and a user-approved command queue. Do not expose an unauthenticated port to the internet. The app must not claim to control Minecraft until that transport is implemented and tested against the user's exact Bedrock version and world permissions.
+The Android app does not yet connect to this Behavior Pack. A future phone bridge must be paired, authenticated, limited to a private/local network, and require explicit approval for game actions. Do not expose an unauthenticated server port to the internet. The current companion is a working world-side prototype, not a fully autonomous Minecraft agent.
 
-API version is pinned to 2.11.0 as documented in the official Microsoft module reference. Verify compatibility with the installed Bedrock release before enabling the pack.
+## CI
+
+- Source validation and packaging: .github/workflows/mana-minecraft-pack.yml
+- The pack is syntax-checked and uploaded as a .mcpack artifact; this does not replace testing inside the exact Bedrock version installed on the owner's phone.
