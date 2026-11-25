@@ -198,6 +198,7 @@ class ManaAvatar3DView(
             draw(0.47f, 0.47f + bob, 0.02f, 0.075f, 0.16f, 0.10f, 0f, skin)
             // Hair cap and swept fringe.
             draw(0f, 0.92f + bob, -0.01f, 0.49f, 0.32f, 0.42f, sway, hair)
+            if (accessoryEnabled) draw(0.36f, 0.96f + bob, 0.36f, 0.075f, 0.14f, 0.045f, 18f, accent)
             draw(-0.22f, 0.78f + bob, 0.29f, 0.23f, 0.25f, 0.13f, -22f + sway, hair)
             draw(0.10f, 0.83f + bob, 0.31f, 0.27f, 0.20f, 0.13f, 13f + sway, hair)
             draw(0.33f, 0.70f + bob, 0.27f, 0.13f, 0.28f, 0.12f, 28f + sway, hair)
@@ -316,7 +317,14 @@ class ManaAvatar3DView(
         private val skinShadow = floatArrayOf(0.77f, 0.48f, 0.44f, 1f)
         private val hair = floatArrayOf(0.045f, 0.065f, 0.11f, 1f)
         private val hairHighlight = floatArrayOf(0.12f, 0.24f, 0.38f, 1f)
-        private val coat = floatArrayOf(0.025f, 0.055f, 0.105f, 1f)
+        @Volatile var outfitIndex = 0
+        @Volatile var accessoryEnabled = true
+        private val coat: FloatArray
+            get() = when (outfitIndex % 3) {
+                1 -> floatArrayOf(0.012f, 0.020f, 0.045f, 1f)
+                2 -> floatArrayOf(0.075f, 0.105f, 0.16f, 1f)
+                else -> floatArrayOf(0.025f, 0.055f, 0.105f, 1f)
+            }
         private val stockings = floatArrayOf(0.055f, 0.10f, 0.18f, 1f)
         private val boots = floatArrayOf(0.012f, 0.025f, 0.052f, 1f)
         private val mouth = floatArrayOf(0.18f, 0.035f, 0.07f, 1f)
