@@ -174,7 +174,13 @@ class ManaDocumentStorageActivity : Activity() {
                         createdAt = Instant.now(),
                         updatedAt = Instant.now()
                     )
-                    synchronized(store) { store.writeAll((store.readAll() + entry).takeLast(MAX_CANDIDATES)) }
+                    synchronized(store) {
+                        val existing = store.readAll()
+                        require(existing.count { TAG in it.tags } < MAX_CANDIDATES) {
+                            "Карантин достиг лимита записей. Удали или восстанови старые записи вручную; MANA не будет забывать их автоматически."
+                        }
+                        store.writeAll(existing + entry)
+                    }
                     runOnUiThread {
                         showMessage("Копия проверена и помещена в карантин. Оригинал оставлен на месте.")
                         scan()
