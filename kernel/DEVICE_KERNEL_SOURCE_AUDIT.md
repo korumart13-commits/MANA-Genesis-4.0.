@@ -16,7 +16,11 @@ Status: source discovery started; no candidate has been approved for building or
 
 Repository: https://github.com/realme-kernel-opensource/realme_C85_5G-AndroidV-kernel-source
 
-The repository name matches the separate C85 5G product, not this RMX5566RU hardware. realme's official C85 specification lists Snapdragon 685, while the official C85 5G specification lists MediaTek Dimensity 6300. The owner's hardware audit reports Qualcomm SM6225 / `bengal` / `qcom` / Adreno 610, matching the C85 4G platform. Public device references distinguish RMX5566/RE645F from the RMX5253 C85 5G platform. The candidate source's latest commit explicitly targets RMX5253/MTK.\n\nOfficial comparison: https://www.realme.com/my/realme-c85/specs (Snapdragon 685) and https://www.realme.com/my/realme-c85-5g/specs (Dimensity 6300).\n\nTechnical mismatch details:
+The repository name matches the separate C85 5G product, not this RMX5566RU hardware. realme's official C85 specification lists Snapdragon 685, while the official C85 5G specification lists MediaTek Dimensity 6300. The owner's hardware audit reports Qualcomm SM6225 / `bengal` / `qcom` / Adreno 610, matching the C85 4G platform. Public device references distinguish RMX5566/RE645F from the RMX5253 C85 5G platform. The candidate source's latest commit explicitly targets RMX5253/MTK.
+
+Official comparison: https://www.realme.com/my/realme-c85/specs (Snapdragon 685) and https://www.realme.com/my/realme-c85-5g/specs (Dimensity 6300).
+
+Technical mismatch details:
 - Its top-level kernel Makefile declares Linux 5.15.180, not the device's reported 5.15.197.
 - Its latest commit message says it synchronized code for RMX5253 and references an MTK release tag.
 - The inspected ARM64 defconfig list did not expose a bengal/SM6225 target configuration.
