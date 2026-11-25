@@ -113,3 +113,64 @@ Every module keeps its current implementation status from `os/IMPLEMENTATION_LED
 ## Current reality
 
 The repository is not yet a complete Android 16 source checkout or a validated RE645F device port. No bootable MANA OS image, GMS-certified image or flashable OTA is produced by this architecture change. The separate companion APK remains an application prototype, not the operating system.
+
+
+## MANA-first intelligence architecture — primary product principle
+
+MANA is the product's primary intelligence and orchestration layer. The operating system is the trusted execution environment, device abstraction and human interface through which MANA helps its owner. The relationship is not "Android assistant app"; it is "MANA intelligence operating a MANA system built on a compatible platform".
+
+### MANA Brain as the central orchestrator
+
+- One identity and policy engine: MANA Brain routes tasks to the best available capability and presents one coherent assistant, memory and avatar.
+- Multi-provider reasoning: local LiteRT-LM inference first when available; optional OpenAI, Anthropic, Google Gemini, xAI, Yandex and other explicitly configured providers. Provider choice, data sharing and cloud use are visible and consent-based.
+- Capability registry: every callable system, app, device, network, productivity, accessibility and automation capability declares its permission, scope, risk, availability and audit behavior.
+- Planner/executor: break user goals into steps, check prerequisites, execute permitted actions, verify results and report failures honestly.
+- Persistent owner-controlled memory: encrypted local storage, inspectable records, retention controls, export and deletion; no hidden collection.
+- Learning and improvement: opt-in retrieval/knowledge updates, evaluated prompt and workflow improvements, local personalization, test-driven code proposals and versioned model/provider updates. This is not unlimited self-training of model weights or guaranteed autonomous capability growth.
+- Model independence: no single model vendor is the system identity. Providers can be changed without changing MANA's identity or core policy.
+
+### MANA authority and system control
+
+MANA should be able to control every function that the platform and hardware legitimately expose through documented APIs, system roles and privileged services, including:
+
+- Launching and coordinating apps; managing permitted files and documents.
+- Calling, messaging and contacts only with the required roles, permissions and user intent.
+- Camera, microphone, media, screen brightness, volume, connectivity, location and other device controls where Android/realme APIs allow them.
+- Notifications, alarms, reminders, routines, accessibility workflows and supported automation.
+- App installation/update orchestration through the platform Package Installer and Play Store user-authorized flows.
+- Device diagnostics, battery/thermal-aware scheduling, model management and update planning.
+
+MANA does not bypass Android's sandbox, silently grant runtime permissions, impersonate the owner, defeat account security, hide activity, or obtain arbitrary root/kernel access by assertion. Sensitive operations (payments, account changes, app installs from unknown sources, calls/messages, deletion, firmware/OTA, security settings) require explicit owner authorization or the OS's normal confirmation UI. Emergency stop, audit history and revocation remain available.
+
+"Full control" is implemented as the broadest legitimate, testable set of owner-authorized capabilities—not an unsafe unrestricted shell or an impossible promise that every API/hardware function is accessible.
+
+### Continuous self-development without uncontrolled self-modification
+
+- MANA can observe its own health and capability registry, identify missing features, research documented APIs and propose implementation plans.
+- It can generate code changes in an isolated development workspace, run unit/static/security tests and build reproducible artifacts in CI.
+- New capabilities enter a staged lifecycle: proposal → implementation → tests → security/license review → owner approval → signed update → rollback-capable deployment.
+- Security-critical components, boot chain, kernel, SELinux policy, signing keys and firmware cannot be silently rewritten by the running assistant.
+- No self-granting permissions, no silent policy weakening, no unreviewed code execution on the host OS and no self-issued signing authority.
+- The owner can pause learning, disable providers/capabilities, inspect changes and roll back updates.
+
+### Human-facing experience
+
+- A persistent MANA assistant entry point with the original 3D avatar and expressive animation, plus accessible non-overlay controls.
+- One coherent UI combining Android's flexibility and app ecosystem with iOS-inspired clarity, consistency, animation quality, privacy controls and continuity concepts.
+- One MANA design system: deep navy/blue palette, adaptive home screen, widgets, app drawer, dock, quick controls, notification center, lock screen, settings and search.
+- Samsung One UI-inspired home-screen organization can be retained as a design reference; iOS is a second design reference, not a source of proprietary binaries or code.
+- Keep real Android app behavior and accessibility; do not make the avatar the only way to operate the phone.
+
+### Android, Google and Apple ecosystem boundaries
+
+- Android APK support and Google Play require the Android framework/API, ART, package manager, Binder and compatible GMS interfaces. Keep these as compatibility foundations while MANA owns the primary assistant and UX.
+- Google Play remains a user-facing app/service. MANA can help search, open, organize and initiate owner-approved Play Store actions through supported interfaces. Google account authentication remains Google's secure sign-in flow; MANA does not collect Google passwords or bypass account security.
+- Google Mobile Services are proprietary and require appropriate licensing, distribution rights and device certification. Play Integrity and individual app compatibility must be tested; never claim certification without evidence.
+- Apple ID/App Store access is not equivalent to Android app compatibility. Apple account sign-in, App Store purchase/download flows and iOS app execution are not promised on MANA OS. Apple services may be used only through official apps, web interfaces, APIs or interoperability programs that Apple actually makes available for Android and the target region/device.
+- Cross-device continuity with Apple devices is a future integration project limited to official, documented protocols and available apps/APIs. No copying of iOS frameworks, private APIs, App Store client, Apple binaries or proprietary system components.
+
+### Existing modules — retain and integrate, do not replace with empty mockups
+
+Carry forward the current implementations and their evidence/status in `os/IMPLEMENTATION_LEDGER.md`: MANA Brain core and Binder/AIDL work; local LiteRT-LM companion runtime and integrity-checked model flow; OpenAI/Anthropic/Gemini/xAI adapters; Yandex AI Studio and VK integrations; encrypted Memory, Diary, Life Manager and Adaptive Intelligence; avatar/voice prototype; Smart Receptionist; Contact Intelligence; Game Intelligence and Minecraft integration; Future Updates workflow; allowlisted Android device actions.
+
+The existing APK is a companion prototype and the existing JVM/Android modules are components, not a completed MANA OS image. Integration and device acceptance remain separate milestones.
