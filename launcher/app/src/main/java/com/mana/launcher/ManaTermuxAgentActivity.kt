@@ -141,7 +141,7 @@ class ManaTermuxAgentActivity : Activity() {
                 "1. Установи и открой Termux.\n" +
                 "2. В Termux выполни: mkdir -p ~/.termux && printf '\\nallow-external-apps=true\\n' >> ~/.termux/termux.properties && termux-reload-settings\n" +
                 "3. В настройках Android открой MANA → Разрешения → дополнительные разрешения → Run commands in Termux environment и разреши доступ.\n" +
-                "4. Склонируй репозиторий в $HOME/MANA-Genesis-4.0 и настрой Gradle/Java в Termux.\n" +
+                "4. Склонируй репозиторий в \$HOME/MANA-Genesis-4.0 и настрой Gradle/Java в Termux.\n" +
                 "5. Вернись сюда и сначала запусти проверку проекта.\n\n" +
                 "MANA не получает root. Termux-команды выполняются с обычными правами Termux."
             )
