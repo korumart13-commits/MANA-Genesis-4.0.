@@ -46,6 +46,26 @@ class ManaPersonalServicesTest {
 
 
 
+    @Test fun expiredMemoryIsExcludedFromRecallButRemainsAReviewCandidate() {
+        val directory = java.nio.file.Files.createTempDirectory("mana-memory-expiry").toFile()
+        val key = diaryKey()
+        val provider = ManaSecretKeyProvider { key }
+        val file = File(directory, "memory.bin")
+        val now = Instant.parse("2026-11-25T12:00:00Z")
+        val service = ManaMemoryService(
+            EncryptedFileManaMemoryStore(EncryptedFileManaDiaryStore(file, provider, "mana.memory.expiry"))
+        )
+        val expired = service.remember(
+            "temporary",
+            "expired note",
+            expiresAt = now.minusSeconds(1),
+            now = now.minusSeconds(60)
+        )
+        assertTrue(service.recall("expired", now).isEmpty())
+        assertEquals(expired.id, service.expiredCandidates(now).single().id)
+        directory.deleteRecursively()
+    }
+
     @Test fun memoryIsEncryptedPersistentAndOwnerControlled() {
         val directory = java.nio.file.Files.createTempDirectory("mana-memory").toFile()
         val key = diaryKey()
