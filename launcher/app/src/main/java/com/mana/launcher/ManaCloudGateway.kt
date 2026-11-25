@@ -87,7 +87,7 @@ class ManaCloudGateway(
                 val input = JSONArray()
                     .put(JSONObject().put("role", "system").put(
                         "content",
-                        "You are MANA, a helpful and lightly playful assistant. Be truthful about actions; never claim an action succeeded unless it did."
+                        ManaPersona.SYSTEM_PROMPT
                     ))
                     .put(JSONObject().put("role", "user").put("content", prompt))
                 body = JSONObject()
@@ -99,12 +99,15 @@ class ManaCloudGateway(
             ManaCloudProvider.ANTHROPIC -> {
                 endpoint = "https://api.anthropic.com/v1/messages"
                 body = JSONObject().put("model", modelId).put("max_tokens", 2048)
+                    .put("system", ManaPersona.SYSTEM_PROMPT)
                     .put("messages", JSONArray().put(JSONObject().put("role", "user").put("content", prompt)))
             }
             ManaCloudProvider.GEMINI -> {
                 endpoint = "https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent"
-                body = JSONObject().put("contents", JSONArray().put(JSONObject()
-                    .put("role", "user").put("parts", JSONArray().put(JSONObject().put("text", prompt)))))
+                body = JSONObject()
+                    .put("systemInstruction", JSONObject().put("parts", JSONArray().put(JSONObject().put("text", ManaPersona.SYSTEM_PROMPT))))
+                    .put("contents", JSONArray().put(JSONObject()
+                        .put("role", "user").put("parts", JSONArray().put(JSONObject().put("text", prompt)))))
                     .put("generationConfig", JSONObject().put("maxOutputTokens", 2048))
             }
         }
