@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'MANA_Genesis_4_0_MIRROR_READY_SOURCE.zip'
+      - 'MANA_Genesis_4_0_MIRROR_READY_SOURCE*.zip'
       - '.github/workflows/android-build.yml'
 permissions:
   contents: read
@@ -33,8 +33,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -s MANA_Genesis_4_0_MIRROR_READY_SOURCE.zip
-          unzip -q MANA_Genesis_4_0_MIRROR_READY_SOURCE.zip -d source
+          ARCHIVE="$(find . -maxdepth 1 -type f -name 'MANA_Genesis_4_0_MIRROR_READY_SOURCE*.zip' -print -quit)"
+          test -n "$ARCHIVE"
+          test -s "$ARCHIVE"
+          unzip -t "$ARCHIVE"
+          unzip -q "$ARCHIVE" -d source
           echo "PROJECT_DIR=source/MANA_Genesis_4_0_COMPLETE/MANA_Genesis_4.0_Unified/existing_aosp/MANA_OS_3_0_Android_Project" >> "$GITHUB_ENV"
       - name: Validate Android project and wrapper
         run: |
