@@ -1,6 +1,8 @@
 package com.mana.launcher
 
 import android.app.Activity
+import android.Manifest
+import android.content.pm.PackageManager
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -15,6 +17,8 @@ import android.os.Bundle
 import android.os.Build
 import android.provider.Settings
 import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import android.speech.RecognitionListener
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.view.Gravity
@@ -77,6 +81,8 @@ class MainActivity : Activity() {
     private var lifeManager: ManaLifeManagerService? = null
     private var memoryService: ManaMemoryService? = null
     private var editingDiaryId: String? = null
+    private var speechRecognizer: SpeechRecognizer? = null
+    private val audioPermissionRequestCode = 4111
 
     private fun requestFloatingAvatar() {
         if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
@@ -835,15 +841,81 @@ class MainActivity : Activity() {
     }
 
     private fun startVoiceInput() {
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ru-RU")
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Скажите что-нибудь для MANA")
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), audioPermissionRequestCode)
+            return
         }
+        if (Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(this)) {
+            startOnDeviceVoiceInput()
+        } else {
+            AlertDialog.Builder(this)
+                .setTitle("Офлайн-распознавание")
+                .setMessage("На устройстве сейчас не обнаружен офлайн-движок русского распознавания. Системный распознаватель может использовать сеть. Продолжить?")
+                .setNegativeButton("Отмена", null)
+                .setPositiveButton("Продолжить") { _, _ -> startSystemVoiceInput() }
+                .show()
+        }
+    }
+
+    private fun voiceIntent() = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ru-RU")
+        putExtra(RecognizerIntent.EXTRA_PROMPT, "Скажите что-нибудь для MANA")
+        putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+        putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+    }
+
+    private fun startSystemVoiceInput() {
         try {
-            startActivityForResult(intent, voiceRequestCode)
+            startActivityForResult(voiceIntent(), voiceRequestCode)
         } catch (_: ActivityNotFoundException) {
             showMessage("На устройстве не найден сервис распознавания речи.")
+        }
+    }
+
+    private fun startOnDeviceVoiceInput() {
+        try {
+            speechRecognizer?.destroy()
+            val recognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
+            speechRecognizer = recognizer
+            recognizer.setRecognitionListener(object : RecognitionListener {
+                override fun onReadyForSpeech(params: Bundle?) { runOnUiThread { showMessage("MANA слушает…") } }
+                override fun onBeginningOfSpeech() {}
+                override fun onRmsChanged(rmsdB: Float) {}
+                override fun onBufferReceived(buffer: ByteArray?) {}
+                override fun onEndOfSpeech() {}
+                override fun onError(error: Int) {
+                    runOnUiThread { showMessage("Офлайн-распознавание завершилось с ошибкой: $error") }
+                    speechRecognizer?.destroy()
+                    speechRecognizer = null
+                }
+                override fun onResults(results: Bundle?) {
+                    val spoken = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+                    runOnUiThread {
+                        if (!spoken.isNullOrBlank()) {
+                            chatInput?.setText(spoken)
+                            sendToLocalModel()
+                        }
+                    }
+                    speechRecognizer?.destroy()
+                    speechRecognizer = null
+                }
+                override fun onPartialResults(partialResults: Bundle?) {}
+                override fun onEvent(eventType: Int, params: Bundle?) {}
+            })
+            recognizer.startListening(voiceIntent())
+        } catch (error: Exception) {
+            speechRecognizer?.destroy()
+            speechRecognizer = null
+            showMessage("Не удалось запустить офлайн-распознавание: ${error.message}")
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == audioPermissionRequestCode) {
+            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) startVoiceInput()
+            else showMessage("Доступ к микрофону не предоставлен.")
         }
     }
 
@@ -863,6 +935,8 @@ class MainActivity : Activity() {
         if (::manaBrain.isInitialized) manaBrain.shutdown()
         if (::localRuntime.isInitialized) localRuntime.shutdown()
         ManaAvatar3DView.isSpeaking = false
+        speechRecognizer?.destroy()
+        speechRecognizer = null
         textToSpeech?.stop()
         textToSpeech?.shutdown()
         super.onDestroy()
