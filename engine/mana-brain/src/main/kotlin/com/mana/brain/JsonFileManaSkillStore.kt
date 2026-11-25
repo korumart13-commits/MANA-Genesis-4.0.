@@ -33,6 +33,7 @@ class JsonFileManaSkillStore(
                 temporary,
                 gson.toJson(skill),
                 StandardCharsets.UTF_8,
+                StandardOpenOption.WRITE,
                 StandardOpenOption.TRUNCATE_EXISTING
             )
             try {
