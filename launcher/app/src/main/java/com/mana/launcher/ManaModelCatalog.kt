@@ -134,6 +134,8 @@ class ManaModelCatalog(context: Context) {
         private val KEY_DOWNLOAD_ID = "gemma4_download_id"
         private val KEY_LICENSE_ACCEPTED = "gemma4_license_accepted"
         private val KEY_ACTIVE_PATH = "active_model_path"
+        private const val KEY_VERIFIED_LENGTH = "verified_model_length"
+        private const val KEY_VERIFIED_MTIME = "verified_model_mtime"
         const val MODEL_SIZE = 2_588_147_712L
         private val REQUIRED_FREE_BYTES = 3_300_000_000L
     }
