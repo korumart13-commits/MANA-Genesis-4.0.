@@ -217,7 +217,8 @@ class MainActivity : Activity() {
         card.addView(label("MANA ASSISTANT", 11, accentSoft, true))
         card.addView(label("Твой телефон. Твои правила.", 19, textColor, true))
         card.addView(action("Включить плавающий аватар поверх приложений") { requestFloatingAvatar() })
-        card.addView(action("Открыть зашифрованный дневник MANA") { showDiary() })\n        card.addView(action("Открыть MANA Life Manager") { showLifeManager() })
+        card.addView(action("Открыть зашифрованный дневник MANA") { showDiary() })
+        card.addView(action("Открыть MANA Life Manager") { showLifeManager() })
         card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Локальный ИИ: выбери .litertlm-модель в окне MANA.", 12, muted, false))
         val p = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(19) }
         content.addView(card, p)
