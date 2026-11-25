@@ -3,7 +3,7 @@
 Status: device profile recorded from the owner's previously supplied Termux audit. This file is a build/compatibility target, not proof of a bootable ROM.
 
 ## Confirmed device data
-- Product/model: realme RMX5566RU (realme C85; 5G retail naming must be verified separately)
+- Product/model: realme RMX5566RU / RE645F — realme C85 4G variant (Qualcomm Snapdragon 685), not the C85 5G / Dimensity 6300 variant
 - Device: RE645F
 - SoC/platform: Qualcomm SM6225, board/platform bengal, hardware qcom
 - Android: 16 / API 36
@@ -48,4 +48,4 @@ Status: device profile recorded from the owner's previously supplied Termux audi
 
 
 ## Model-code clarification
-Independent device listings identify RMX5566/RE645F as the Qualcomm SM6225-based realme C85, while RMX5253 is listed as the C85 5G/MediaTek variant. The device codename and SoC audit take precedence over a marketing label. Do not select RMX5253 firmware or kernel sources for RMX5566RU.
+The owner's runtime hardware audit reports RMX5566RU / RE645F, Qualcomm SM6225, `bengal`, `qcom`, and Adreno 610. Public device listings map this to the realme C85 (Snapdragon 685 / 4G variant). realme's official C85 specification lists Snapdragon 685; its separate official C85 5G specification lists MediaTek Dimensity 6300. Therefore, despite the earlier “C85 5G” name used in conversation, the recorded hardware is the C85 4G platform. The model code, runtime fingerprint and SoC take precedence over the marketing label. Do not select C85 5G / RMX5253 firmware or kernel sources for RMX5566RU.
