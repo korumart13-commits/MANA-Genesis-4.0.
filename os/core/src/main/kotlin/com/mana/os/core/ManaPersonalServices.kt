@@ -396,13 +396,46 @@ class ManaGameIntelligenceService(private val adapters: List<ManaGameAdapter>) {
 enum class ManaUpdateStage { IDEA, PLANNED, BUILDING, TESTED, OWNER_APPROVED, INSTALLED, REJECTED }
 data class ManaUpdateIdea(val id: String, val description: String, val stage: ManaUpdateStage, val updatedAt: Instant)
 
-class ManaFutureUpdateService {
+interface ManaFutureUpdateStore {
+    fun readAll(): List<ManaUpdateIdea>
+    fun writeAll(ideas: List<ManaUpdateIdea>)
+}
+
+/** Stores future-update ideas in a dedicated encrypted diary-format file. */
+class EncryptedFileManaFutureUpdateStore(private val backing: ManaDiaryStore) : ManaFutureUpdateStore {
+    override fun readAll(): List<ManaUpdateIdea> = backing.readAll()
+        .filter { "mana.future-update" in it.tags }
+        .map { entry ->
+            val stageName = entry.tags.firstOrNull { it.startsWith("stage:") }?.removePrefix("stage:")
+                ?: ManaUpdateStage.IDEA.name
+            ManaUpdateIdea(entry.id, entry.body, ManaUpdateStage.valueOf(stageName), entry.updatedAt)
+        }
+
+    override fun writeAll(ideas: List<ManaUpdateIdea>) {
+        backing.writeAll(ideas.map { idea ->
+            ManaDiaryEntry(
+                id = idea.id,
+                title = "MANA Future Update",
+                body = idea.description,
+                tags = setOf("mana.future-update", "stage:${idea.stage.name}"),
+                createdAt = idea.updatedAt,
+                updatedAt = idea.updatedAt
+            )
+        })
+    }
+}
+
+class ManaFutureUpdateService(private val store: ManaFutureUpdateStore? = null) {
     private val ideas = linkedMapOf<String, ManaUpdateIdea>()
+
+    init { store?.readAll()?.forEach { ideas[it.id] = it } }
+
+    private fun persist() { store?.writeAll(ideas.values.toList()) }
 
     @Synchronized fun capture(description: String, now: Instant = Instant.now()): ManaUpdateIdea {
         require(description.isNotBlank())
         return ManaUpdateIdea(java.util.UUID.randomUUID().toString(), description, ManaUpdateStage.IDEA, now)
-            .also { ideas[it.id] = it }
+            .also { ideas[it.id] = it; persist() }
     }
 
     @Synchronized fun advance(id: String, target: ManaUpdateStage, ownerApproved: Boolean = false, now: Instant = Instant.now()): ManaUpdateIdea {
@@ -419,7 +452,13 @@ class ManaFutureUpdateService {
         if (target == ManaUpdateStage.OWNER_APPROVED || target == ManaUpdateStage.INSTALLED || target == ManaUpdateStage.REJECTED) {
             require(ownerApproved) { "Explicit owner approval is required for this transition" }
         }
-        return idea.copy(stage = target, updatedAt = now).also { ideas[id] = it }
+        return idea.copy(stage = target, updatedAt = now).also { ideas[id] = it; persist() }
+    }
+
+    @Synchronized fun delete(id: String, ownerApproved: Boolean = false) {
+        require(ownerApproved) { "Explicit owner approval is required to delete an update idea" }
+        require(ideas.remove(id) != null) { "Update idea not found" }
+        persist()
     }
 
     @Synchronized fun list(): List<ManaUpdateIdea> = ideas.values.toList()
