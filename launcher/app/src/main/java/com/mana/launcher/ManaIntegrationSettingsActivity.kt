@@ -25,12 +25,20 @@ class ManaIntegrationSettingsActivity : ComponentActivity() {
     private val mutedArgb = Color.rgb(150, 174, 198)
     private lateinit var yandex: ManaYandexAiStudioProvider
     private lateinit var vk: ManaVkReadOnlyConnector
+    private lateinit var adaptiveKnowledge: com.mana.os.core.ManaAdaptiveKnowledgeService
     private lateinit var status: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         yandex = ManaYandexAiStudioProvider(this)
         vk = ManaVkReadOnlyConnector(this)
+        adaptiveKnowledge = com.mana.os.core.ManaAdaptiveKnowledgeService(
+            com.mana.os.core.EncryptedFileManaAdaptiveKnowledgeStore(
+                com.mana.os.core.EncryptedFileManaDiaryStore(
+                    java.io.File(filesDir, "mana/knowledge.bin"), ManaAndroidKeyProvider(), "mana.knowledge.v1"
+                )
+            )
+        )
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(18), dp(18), dp(18), dp(18))
@@ -76,6 +84,40 @@ class ManaIntegrationSettingsActivity : ComponentActivity() {
         root.addView(button("Официальная документация Yandex") {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://yandex.cloud/en/docs/ai-studio/api-ref/authentication")))
         })
+        root.addView(section("MANA Adaptive Intelligence"))
+        root.addView(text("Поиск выполняется только по твоему запросу. Результаты не сохраняются в память без отдельного подтверждения.", 12, mutedArgb))
+        val searchQuery = field("Поисковый запрос Yandex", initial = "MANA OS Android")
+        root.addView(searchQuery)
+        root.addView(button("Искать в интернете") {
+            if (!yandex.isAvailable()) { refreshStatus("Сначала настрой Yandex AI Studio."); return@button }
+            AlertDialog.Builder(this)
+                .setTitle("Выполнить поиск?")
+                .setMessage("Yandex Search API может тарифицироваться. MANA отправит только поисковую фразу, не личную память.")
+                .setNegativeButton("Отмена", null)
+                .setPositiveButton("Искать") { _, _ ->
+                    lifecycleScope.launch {
+                        try {
+                            val results = ManaYandexSearchApi(yandex).search(searchQuery.text.toString(), 5)
+                            if (results.isEmpty()) {
+                                refreshStatus("Yandex Search не вернул подходящих результатов.")
+                            } else {
+                                val summary = results.joinToString("\\n\\n") { "${it.title}\\n${it.snippet}\\n${it.url}" }
+                                AlertDialog.Builder(this@ManaIntegrationSettingsActivity)
+                                    .setTitle("Результаты Yandex Search")
+                                    .setMessage(summary)
+                                    .setNegativeButton("Не сохранять", null)
+                                    .setPositiveButton("Сохранить в локальную память") { _, _ ->
+                                        try {
+                                            results.forEach { adaptiveKnowledge.save(it.title, it.url, it.snippet.ifBlank { it.title }, ownerApproved = true) }
+                                            refreshStatus("Сохранено ${results.size} источников в зашифрованную локальную базу знаний.")
+                                        } catch (error: Exception) { refreshStatus("Не удалось сохранить источники: ${error.message}") }
+                                    }.show()
+                            }
+                        } catch (error: Exception) { refreshStatus("Ошибка Yandex Search: ${error.message}") }
+                    }
+                }.show()
+        })
+
 
         root.addView(section("VK — только чтение"))
         root.addView(text("Поддерживаются только users.get и wall.get. MANA не публикует записи, не ставит реакции и не отправляет сообщения.", 12, mutedArgb))
