@@ -26,8 +26,8 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
-      - name: Install Android 16 SDK platform
-        run: sdkmanager "platforms;android-36"
+        with:
+          packages: 'platforms;android-36'
       - name: Compile MANA UI Java sources against Android 16 API
         shell: bash
         run: |
