@@ -355,7 +355,6 @@ class MainActivity : Activity() {
                     return true
                 }
                 MotionEvent.ACTION_UP -> {
-                    if (!dragged) toggleAvatarPanel()
                     view.performClick()
                     return true
                 }
