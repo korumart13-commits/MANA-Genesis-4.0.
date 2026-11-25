@@ -25,7 +25,8 @@ import kotlin.math.sin
 class ManaAvatar3DView(
     context: Context,
     private val onDrag: (Float, Float) -> Unit,
-    private val onTap: () -> Unit
+    private val onTap: () -> Unit,
+    private val onDragEnd: () -> Unit
 ) : GLSurfaceView(context) {
     private val frameHandler = Handler(Looper.getMainLooper())
     private val frameTick = object : Runnable {
@@ -78,7 +79,7 @@ class ManaAvatar3DView(
                 return true
             }
             MotionEvent.ACTION_UP -> {
-                if (!moved) onTap()
+                if (!moved) onTap() else onDragEnd()
                 performClick()
                 return true
             }
