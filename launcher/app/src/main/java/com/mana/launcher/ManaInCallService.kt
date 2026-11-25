@@ -40,15 +40,13 @@ class ManaInCallService : InCallService() {
                 if (currentCall === call && state == Call.STATE_DISCONNECTED) {
                     currentCall = calls.lastOrNull { it !== call && it.state != Call.STATE_DISCONNECTED }
                 }
-                if (state == Call.STATE_RINGING) postIncomingCallNotification(call)
-                else if (state == Call.STATE_DISCONNECTED) cancelCallNotification()
-                else postOngoingCallNotification(call)
+                refreshCallNotification()
                 broadcastCallChanged()
             }
         }
         callbacks[call] = callback
         call.registerCallback(callback)
-        if (call.state == Call.STATE_RINGING) postIncomingCallNotification(call) else postOngoingCallNotification(call)
+        refreshCallNotification()
         scheduleAutoAnswerIfEnabled(call)
         broadcastCallChanged()
     }
@@ -58,7 +56,7 @@ class ManaInCallService : InCallService() {
         callbacks.remove(call)?.let { runCatching { call.unregisterCallback(it) } }
         calls.remove(call)
         if (currentCall === call) currentCall = calls.lastOrNull { it.state != Call.STATE_DISCONNECTED }
-        if (currentCall == null) cancelCallNotification() else postOngoingCallNotification(currentCall!!)
+        refreshCallNotification()
         broadcastCallChanged()
         super.onCallRemoved(call)
     }
@@ -68,6 +66,15 @@ class ManaInCallService : InCallService() {
         launchInCallUi(showDialpad)
     }
 
+    private fun refreshCallNotification() {
+        val ringing = calls.lastOrNull { it.state == Call.STATE_RINGING }
+        if (ringing != null) {
+            postIncomingCallNotification(ringing)
+            return
+        }
+        val ongoing = currentCall?.takeIf { it.state != Call.STATE_DISCONNECTED }
+        if (ongoing != null) postOngoingCallNotification(ongoing) else cancelCallNotification()
+    }
     private fun ensureCallNotificationChannel() {
         if (Build.VERSION.SDK_INT >= 26) {
             val manager = getSystemService(NotificationManager::class.java)
