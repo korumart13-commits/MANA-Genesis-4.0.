@@ -59,6 +59,13 @@ class ManaCloudGateway(
 
     fun setEnabled(enabled: Boolean) { prefs.edit().putBoolean(KEY_ENABLED, enabled).apply() }
 
+    fun removeKey(provider: ManaCloudProvider = selectedProvider()) {
+        val keys = readKeys()
+        keys.remove(provider.name)
+        writeKeys(keys)
+        if (provider == selectedProvider()) setEnabled(false)
+    }
+
     override fun isAvailable(): Boolean = isEnabled() && model().isNotBlank() && hasKey()
 
     override suspend fun generate(prompt: String): String = withContext(Dispatchers.IO) {
@@ -100,6 +107,7 @@ class ManaCloudGateway(
             connection.connectTimeout = 15_000
             connection.readTimeout = 90_000
             connection.doOutput = true
+            connection.instanceFollowRedirects = false
             connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
             when (provider) {
                 ManaCloudProvider.OPENAI, ManaCloudProvider.XAI ->
@@ -125,8 +133,7 @@ class ManaCloudGateway(
                 out.toString()
             }.orEmpty()
             if (status !in 200..299) {
-                val message = runCatching { JSONObject(raw).optJSONObject("error")?.optString("message") }.getOrNull()
-                throw IllegalStateException("$provider вернул HTTP $status: ${message ?: "ошибка запроса"}")
+                throw IllegalStateException("$provider вернул HTTP $status. Проверь ключ, идентификатор модели, квоту и настройки провайдера.")
             }
             val json = JSONObject(raw)
             val answer = when (provider) {
