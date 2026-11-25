@@ -230,6 +230,14 @@ class MainActivity : Activity() {
         card.addView(label("MANA ASSISTANT", 11, accentSoft, true))
         card.addView(label("Твой телефон. Твои правила.", 19, textColor, true))
         card.addView(action("Включить плавающий аватар поверх приложений") { requestFloatingAvatar() })
+        card.addView(action("Сменить наряд MANA") {
+            ManaAvatar3DView.outfitIndex = (ManaAvatar3DView.outfitIndex + 1) % 3
+            showMessage("Наряд аватара изменён. Внешность и голос остались прежними.")
+        })
+        card.addView(action("Переключить аксессуар аватара") {
+            ManaAvatar3DView.accessoryEnabled = !ManaAvatar3DView.accessoryEnabled
+            showMessage(if (ManaAvatar3DView.accessoryEnabled) "Аксессуар включён." else "Аксессуар скрыт.")
+        })
         card.addView(action("Открыть зашифрованный дневник MANA") { showDiary() })
         card.addView(action("Открыть MANA Life Manager") { showLifeManager() })
         card.addView(action("Открыть локальную память MANA") { showMemory() })
