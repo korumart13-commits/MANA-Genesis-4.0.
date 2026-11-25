@@ -914,7 +914,14 @@ class MainActivity : Activity() {
                 cloudGateway.setEnabled(false)
                 showMessage("Облачный резерв выключен.")
             }
-            .setNeutralButton("Отмена", null)
+            .setNeutralButton("Удалить ключ") { _, _ ->
+                try {
+                    cloudGateway.removeKey(selected)
+                    showMessage("Сохранённый ключ " + selected.title + " удалён.")
+                } catch (error: Exception) {
+                    showMessage("Не удалось удалить ключ: ${error.message}")
+                }
+            }
             .setPositiveButton("Сохранить и включить") { _, _ ->
                 try {
                     cloudGateway.configure(selected, model.text.toString().trim(), key.text.toString(), enabled = true)
