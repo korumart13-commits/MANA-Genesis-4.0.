@@ -50,7 +50,7 @@ class ManaIntegrationSettingsActivity : ComponentActivity() {
         root.addView(status)
 
         root.addView(section("Yandex AI Studio"))
-        root.addView(text("Официальный Yandex AI Studio Text Generation API. Создай сервисный API-ключ со scope yc.ai.languageModels.execute; для поиска дополнительно нужен yc.search-api.execute. Запросы могут тарифицироваться.", 12, mutedArgb))
+        root.addView(text("Официальный Yandex AI Studio Text Generation API. Создай сервисный аккаунт с ролью ai.languageModels.user; для поиска добавь роль search-api.webSearch.user. Для API-ключа выбери только scope yc.ai.languageModels.execute и yc.search-api.execute, задай срок действия. Запросы могут тарифицироваться.", 12, mutedArgb))
         val yandexKey = field("API-ключ Yandex Cloud (нужные scope указаны выше)", password = true)
         val folder = field("ID каталога Yandex Cloud")
         val model = field("Model ID (пример: yandexgpt/latest)", initial = "yandexgpt/latest")
