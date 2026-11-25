@@ -23,9 +23,20 @@ class CloudProviderAdaptersTest {
     }
 
     @Test
-    fun openAiAndXaiUseResponsesApiWithBearerAuthentication() = runBlocking {
-        val response = """{"output":[{"type":"message","content":[{"type":"output_text","text":"hello from cloud"}]}]}"""
-        for (kind in listOf(CloudProviderKind.OPENAI, CloudProviderKind.XAI)) {
+    fun openAiUsesResponsesAndXaiUsesOfficialChatCompletionsEndpoint() = runBlocking {
+        val cases = listOf(
+            Triple(
+                CloudProviderKind.OPENAI,
+                """{"output":[{"type":"message","content":[{"type":"output_text","text":"hello from cloud"}]}]}""",
+                "https://api.openai.com/v1/responses"
+            ),
+            Triple(
+                CloudProviderKind.XAI,
+                """{"choices":[{"message":{"role":"assistant","content":"hello from cloud"}}]}""",
+                "https://api.x.ai/v1/chat/completions"
+            )
+        )
+        for ((kind, response, expectedUrl) in cases) {
             val transport = RecordingTransport(CloudHttpResponse(200, response))
             val provider = CloudInferenceProvider(
                 CloudProviderConfig(kind, "model-test", "secret", enabled = true),
@@ -33,9 +44,14 @@ class CloudProviderAdaptersTest {
                 transport
             )
             assertEquals("hello from cloud", provider.generate("hello"))
-            assertEquals("https://${if (kind == CloudProviderKind.OPENAI) "api.openai.com" else "api.x.ai"}/v1/responses", transport.request?.url)
+            assertEquals(expectedUrl, transport.request?.url)
             assertEquals("Bearer test-secret-123456", transport.request?.headers?.get("Authorization"))
-            assertTrue(transport.request?.body?.contains("\"input\":\"hello\"") == true)
+            val requestBody = transport.request?.body.orEmpty()
+            if (kind == CloudProviderKind.OPENAI) {
+                assertTrue(requestBody.contains("\\"input\\":\\"hello\\""))
+            } else {
+                assertTrue(requestBody.contains("\\"messages\\":[{\\"role\\":\\"user\\",\\"content\\":\\"hello\\"}]"))
+            }
         }
     }
 
