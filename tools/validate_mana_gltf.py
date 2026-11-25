@@ -76,8 +76,34 @@ def main(path):
         for node in scene.get("nodes", []):
             require(0 <= node < len(nodes), "scene references invalid node")
 
+    # The character must have a connected articulated hierarchy, not only loose meshes.
+    named_nodes = {node.get("name"): index for index, node in enumerate(nodes) if node.get("name")}
+    joint_names = {
+        "MANA_Shoulder_L", "MANA_Elbow_L", "MANA_Wrist_L",
+        "MANA_Shoulder_R", "MANA_Elbow_R", "MANA_Wrist_R",
+        "MANA_Hip_L", "MANA_Knee_L", "MANA_Ankle_L",
+        "MANA_Hip_R", "MANA_Knee_R", "MANA_Ankle_R",
+    }
+    require(joint_names.issubset(named_nodes), "12 articulated joint nodes are required")
+    root_index = named_nodes.get("MANA_Articulated_Root")
+    require(root_index is not None, "articulated root node is missing")
+    parents = {}
+    for parent_index, node in enumerate(nodes):
+        for child_index in node.get("children", []):
+            require(child_index not in parents, f"node {child_index} has more than one parent")
+            parents[child_index] = parent_index
+    reachable = set()
+    pending = [root_index]
+    while pending:
+        node_index = pending.pop()
+        require(node_index not in reachable, "articulated hierarchy contains a cycle or duplicate child")
+        reachable.add(node_index)
+        pending.extend(nodes[node_index].get("children", []))
+    require(len(reachable) == len(nodes), "all avatar parts must be reachable from the articulated root")
+
     animations = document.get("animations", [])
     require(bool(animations), "avatar must include at least one animation")
+    animated_joint_names = set()
     for animation_index, animation in enumerate(animations):
         samplers = animation.get("samplers", [])
         channels = animation.get("channels", [])
@@ -91,6 +117,10 @@ def main(path):
             require(0 <= target.get("node", -1) < len(nodes), "animation channel has invalid target node")
             require(target.get("path") in {"translation", "rotation", "scale", "weights"},
                     "animation channel has invalid target path")
+            if target.get("node") in {named_nodes[name] for name in joint_names} and target.get("path") == "rotation":
+                animated_joint_names.add(nodes[target["node"]].get("name"))
+
+    require(len(animated_joint_names) >= 8, "idle animation must articulate at least eight arm/leg joints")
 
     print(
         f"glTF OK: {len(nodes)} nodes, {len(meshes)} meshes, {len(materials)} materials, "
