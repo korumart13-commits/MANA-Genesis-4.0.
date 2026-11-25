@@ -74,7 +74,8 @@ class ManaSystemCore(private val device: DeviceFacts) {
         }
         try {
             phase = BootPhase.SECURITY_INIT
-            // Security policy and permission boundary checks are a mandatory boot gate.
+            // Reserved integration phase. Production wiring must register and verify the
+            // platform.security module; this host-JVM supervisor does not enforce OS policy.
             phase = BootPhase.CORE_SERVICES
             for (id in startupOrder) {
                 val module = modules.getValue(id)
@@ -100,6 +101,7 @@ class ManaSystemCore(private val device: DeviceFacts) {
             }
             startedOrder.clear()
             phase = BootPhase.DEGRADED
+            if (error !is Exception) throw error
         }
         health.values.toList()
     }
