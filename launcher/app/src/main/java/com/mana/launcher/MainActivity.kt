@@ -615,6 +615,18 @@ class MainActivity : Activity() {
         content.addView(label("MANA GAME INTELLIGENCE", 18, textColor, true).apply {
             setPadding(0, dp(23), 0, dp(7))
         })
+        val realmeGameSpace = ManaRealmeGameSpaceBridge(this)
+        val installedGameSpace = realmeGameSpace.findInstalled()
+        content.addView(label(
+            installedGameSpace?.let { "Мастер игр найден: ${it.label} (${it.packageName})" }
+                ?: "Мастер игр Realme не найден среди поддерживаемых системных пакетов.",
+            12, if (installedGameSpace != null) accentSoft else muted, false
+        ))
+        content.addView(action("Открыть Мастер игр Realme") {
+            if (!realmeGameSpace.open()) {
+                showMessage("Мастер игр не найден или его запуск запрещён системой. Проверь, что приложение Realme «Мастер игр» установлено.")
+            }
+        }, LinearLayout.LayoutParams(-1, dp(42)))
         val games = apps.filter { it.activityInfo.applicationInfo.category == android.content.pm.ApplicationInfo.CATEGORY_GAME }
         if (games.isEmpty()) {
             content.addView(label("Игры появятся здесь после установки. MANA сможет работать с ними через поддерживаемые игровые адаптеры.", 12, muted, false))
