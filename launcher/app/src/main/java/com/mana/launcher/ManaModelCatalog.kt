@@ -47,7 +47,17 @@ class ManaModelCatalog(context: Context) {
     /** Returns null while queued/running; throws for a failed or invalid completed download. */
     fun verifyCompletedDownload(): File? {
         val id = prefs.getLong(KEY_DOWNLOAD_ID, -1L)
-        if (id < 0L) return null
+        if (id < 0L) {
+            // A previously verified file can be selected again in this process without
+            // requiring a second DownloadManager record.
+            val existing = File(directory, MODEL_FILE)
+            if (existing.isFile && existing.length() in MIN_SIZE..MAX_SIZE &&
+                sha256(existing).equals(SHA256, ignoreCase = true)) {
+                prefs.edit().putString(KEY_ACTIVE_PATH, existing.absolutePath).apply()
+                return existing
+            }
+            return null
+        }
         val cursor = manager.query(DownloadManager.Query().setFilterById(id))
         val status: Int
         val reason: Int
