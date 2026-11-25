@@ -37,7 +37,7 @@ The current repository is the project coordination and source-foundation reposit
 - A JVM-testable MANA system supervisor exists in `os/core`.
 - A typed 16-module system catalog now defines dependencies, required/optional criticality, failure behavior and permission boundaries. See `os/SYSTEM_MODULE_GRAPH.md`.
 - MANA Brain routing contract exists and prefers local inference, but a working LiteRT-LM runtime and model weights have not yet been integrated.
-- Separate launcher APK workflows are intentionally paused; launcher and System UI are planned as integrated OS components.
+- MANA Launcher and MANA Assistant now exist as Android/Soong product-source modules under system/mana/apps; they are not standalone APKs and have not yet been built against AOSP.
 
 ## Build sequence
 
@@ -49,6 +49,16 @@ The current repository is the project coordination and source-foundation reposit
 
 A source foundation, a successful JVM test, a successful AOSP image build and a bootable device image are separate milestones.
 
+
+## Integrated UI source milestone
+
+- MANA Launcher HOME activity and MANA Assistant UI shell are present as Soong source modules; product inclusion is described in system/mana/mana_product.mk.
+- The assistant clearly reports that inference is not connected and does not fake responses or transmit prompts.
+- These Android sources have not yet been compiled against AOSP or tested on the RMX5566RU.
+
+## Security review
+
+See [source-level security review](SECURITY_REVIEW_2026-11-25.md). The review is not a penetration test or device certification.
 
 ## Security and storage service milestone
 
