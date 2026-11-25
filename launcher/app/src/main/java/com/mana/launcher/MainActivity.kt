@@ -1463,9 +1463,6 @@ class MainActivity : Activity() {
                 showMessage("Доступ к контактам не предоставлен.")
             }
         }
-        if (requestCode == assistantRoleRequestCode) {
-            showMessage(if (resultCode == RESULT_OK) "MANA назначена системным ассистентом." else "Назначение системного ассистента отменено.")
-        }
         if (requestCode == notificationPermissionRequestCode) {
             if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) requestCallScreeningRole()
             else showMessage("Уведомления выключены; MANA не сможет сообщать об неизвестных вызовах.")
