@@ -84,11 +84,17 @@ class MainActivity : Activity() {
     private var speechRecognizer: SpeechRecognizer? = null
     private val audioPermissionRequestCode = 4111
 
+    private fun startFloatingAvatarService() {
+        val intent = Intent(this, ManaFloatingAvatarService::class.java)
+        if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent) else startService(intent)
+    }
+
     private fun requestFloatingAvatar() {
+        getSharedPreferences("mana.settings", MODE_PRIVATE).edit().putBoolean("floating_avatar_enabled", true).apply()
         if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
             startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
         } else {
-            startService(Intent(this, ManaFloatingAvatarService::class.java))
+            startFloatingAvatarService()
             showMessage("Плавающая MANA включена.")
         }
     }
@@ -143,8 +149,10 @@ class MainActivity : Activity() {
         super.onResume()
         loadApps()
         if (::content.isInitialized && !showingDrawer) showHome()
-        if (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(this)) {
-            startService(Intent(this, ManaFloatingAvatarService::class.java))
+        val avatarEnabled = getSharedPreferences("mana.settings", MODE_PRIVATE)
+            .getBoolean("floating_avatar_enabled", false)
+        if (avatarEnabled && (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(this))) {
+            startFloatingAvatarService()
         }
     }
 
