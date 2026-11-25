@@ -9,8 +9,8 @@ android {
         applicationId = "com.mana.launcher"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "4.0.1"
+        versionCode = 3
+        versionName = "4.0.2"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -20,4 +20,9 @@ android {
         jvmTarget = "17"
     }
     buildFeatures { buildConfig = true }
+}
+
+dependencies {
+    implementation("com.google.ai.edge.litertlm:litertlm-android:0.16.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 }
