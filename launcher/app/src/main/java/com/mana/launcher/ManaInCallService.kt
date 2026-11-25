@@ -1,6 +1,12 @@
 package com.mana.launcher
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Person
 import android.content.Intent
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.telecom.Call
@@ -21,6 +27,7 @@ class ManaInCallService : InCallService() {
     override fun onCreate() {
         super.onCreate()
         activeService = this
+        ensureCallNotificationChannel()
     }
 
     override fun onCallAdded(call: Call) {
@@ -33,12 +40,15 @@ class ManaInCallService : InCallService() {
                 if (currentCall === call && state == Call.STATE_DISCONNECTED) {
                     currentCall = calls.lastOrNull { it !== call && it.state != Call.STATE_DISCONNECTED }
                 }
+                if (state == Call.STATE_RINGING) postIncomingCallNotification(call)
+                else if (state == Call.STATE_DISCONNECTED) cancelCallNotification()
+                else postOngoingCallNotification(call)
                 broadcastCallChanged()
             }
         }
         callbacks[call] = callback
         call.registerCallback(callback)
-        launchInCallUi()
+        if (call.state == Call.STATE_RINGING) postIncomingCallNotification(call) else postOngoingCallNotification(call)
         scheduleAutoAnswerIfEnabled(call)
         broadcastCallChanged()
     }
@@ -48,6 +58,7 @@ class ManaInCallService : InCallService() {
         callbacks.remove(call)?.let { runCatching { call.unregisterCallback(it) } }
         calls.remove(call)
         if (currentCall === call) currentCall = calls.lastOrNull { it.state != Call.STATE_DISCONNECTED }
+        if (currentCall == null) cancelCallNotification() else postOngoingCallNotification(currentCall!!)
         broadcastCallChanged()
         super.onCallRemoved(call)
     }
@@ -57,6 +68,80 @@ class ManaInCallService : InCallService() {
         launchInCallUi(showDialpad)
     }
 
+    private fun ensureCallNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= 26) {
+            val manager = getSystemService(NotificationManager::class.java)
+            if (manager.getNotificationChannel(CALL_CHANNEL_ID) == null) {
+                val channel = NotificationChannel(CALL_CHANNEL_ID, "MANA Calls", NotificationManager.IMPORTANCE_HIGH).apply {
+                    description = "Incoming and ongoing phone calls handled by MANA"
+                    lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                    setSound(null, null) // Telecom/system supplies the ringtone.
+                }
+                manager.createNotificationChannel(channel)
+            }
+        }
+    }
+
+    private fun callActionPendingIntent(action: String, requestCode: Int): PendingIntent {
+        val intent = Intent(this, ManaCallActionReceiver::class.java).setAction(action)
+        return PendingIntent.getBroadcast(this, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    }
+
+    private fun fullScreenCallPendingIntent(): PendingIntent {
+        val intent = Intent(this, ManaDialerActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            .putExtra(ManaDialerActivity.EXTRA_INCOMING_CALL, true)
+        return PendingIntent.getActivity(this, 7101, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    }
+
+    private fun personFor(call: Call): Person {
+        val number = call.details.handle?.schemeSpecificPart ?: "Неизвестный номер"
+        return Person.Builder().setName(number).setImportant(true).build()
+    }
+
+    private fun postIncomingCallNotification(call: Call) {
+        val person = personFor(call)
+        val answer = callActionPendingIntent(ManaCallActionReceiver.ACTION_ANSWER, 7102)
+        val decline = callActionPendingIntent(ManaCallActionReceiver.ACTION_REJECT, 7103)
+        val fullScreen = fullScreenCallPendingIntent()
+        val builder = Notification.Builder(this, CALL_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.sym_call_incoming)
+            .setContentTitle("Входящий вызов")
+            .setContentText(person.name)
+            .setCategory(Notification.CATEGORY_CALL)
+            .setVisibility(Notification.VISIBILITY_PUBLIC)
+            .setOngoing(true)
+            .setContentIntent(fullScreen)
+            .setFullScreenIntent(fullScreen, true)
+        if (Build.VERSION.SDK_INT >= 31) {
+            builder.setStyle(Notification.CallStyle.forIncomingCall(person, decline, answer))
+        } else {
+            builder.addAction(android.R.drawable.sym_action_call, "Ответить", answer)
+                .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Отклонить", decline)
+        }
+        getSystemService(NotificationManager::class.java).notify(CALL_NOTIFICATION_ID, builder.build())
+    }
+
+    private fun postOngoingCallNotification(call: Call) {
+        if (call.state == Call.STATE_DISCONNECTED) { cancelCallNotification(); return }
+        val person = personFor(call)
+        val end = callActionPendingIntent(ManaCallActionReceiver.ACTION_END, 7104)
+        val builder = Notification.Builder(this, CALL_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.sym_call_outgoing)
+            .setContentTitle("Звонок MANA")
+            .setContentText(person.name)
+            .setCategory(Notification.CATEGORY_CALL)
+            .setVisibility(Notification.VISIBILITY_PUBLIC)
+            .setOngoing(true)
+            .setContentIntent(fullScreenCallPendingIntent())
+        if (Build.VERSION.SDK_INT >= 31) builder.setStyle(Notification.CallStyle.forOngoingCall(person, end))
+        else builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "Завершить", end)
+        getSystemService(NotificationManager::class.java).notify(CALL_NOTIFICATION_ID, builder.build())
+    }
+
+    private fun cancelCallNotification() {
+        getSystemService(NotificationManager::class.java).cancel(CALL_NOTIFICATION_ID)
+    }
     private fun launchInCallUi(showDialpad: Boolean = false) {
         val launch = Intent(this, ManaDialerActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -93,6 +178,7 @@ class ManaInCallService : InCallService() {
         callbacks.forEach { (call, callback) -> runCatching { call.unregisterCallback(callback) } }
         callbacks.clear()
         calls.clear()
+        cancelCallNotification()
         currentCall = null
         activeService = null
         super.onDestroy()
@@ -103,6 +189,8 @@ class ManaInCallService : InCallService() {
         const val KEY_AUTO_ANSWER = "auto_answer_enabled"
         const val ACTION_CALL_STATE_CHANGED = "com.mana.launcher.CALL_STATE_CHANGED"
         const val AUTO_ANSWER_DELAY_MS = 10_000L
+        private const val CALL_CHANNEL_ID = "mana_calls"
+        private const val CALL_NOTIFICATION_ID = 7100
 
         private val calls = CopyOnWriteArrayList<Call>()
 
