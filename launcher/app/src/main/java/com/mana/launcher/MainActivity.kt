@@ -49,6 +49,7 @@ class MainActivity : Activity() {
     private val voiceRequestCode = 4107
     private val modelRequestCode = 4108
     private lateinit var localRuntime: LocalModelRuntime
+    private lateinit var manaBrain: ManaBrainBridge
     private var chatInput: EditText? = null
     private var chatOutput: TextView? = null
     private var modelStatus: TextView? = null
@@ -59,6 +60,7 @@ class MainActivity : Activity() {
         window.navigationBarColor = bg
         window.decorView.setBackgroundColor(bg)
         localRuntime = LocalModelRuntime(File(cacheDir, "mana-litert-cache"))
+        manaBrain = ManaBrainBridge(localRuntime)
         loadApps()
         buildShell()
         showHome()
@@ -351,7 +353,7 @@ class MainActivity : Activity() {
         val prompt = chatInput?.text?.toString()?.trim().orEmpty()
         if (prompt.isBlank()) return
         chatOutput?.text = "Ты: $prompt\n\nMANA думает…"
-        localRuntime.generate(prompt, { chunk -> runOnUiThread { chatOutput?.append(chunk) } }) { result ->
+        manaBrain.respond(prompt, { chunk -> runOnUiThread { chatOutput?.append(chunk) } }) { result ->
             runOnUiThread {
                 result.onSuccess { chatInput?.setText("") }
                     .onFailure { error -> chatOutput?.append("\n\nОшибка локального ИИ: ${error.message}") }
