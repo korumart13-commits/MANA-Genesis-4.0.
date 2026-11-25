@@ -4,7 +4,7 @@ Status: source discovery started; no candidate has been approved for building or
 
 ## Target facts
 
-- Product: realme RMX5566RU / realme C85 5G
+- Product: realme RMX5566RU / realme C85 4G variant (Snapdragon 685; not C85 5G)
 - Device codename: RE645F
 - SoC: Qualcomm SM6225
 - Board/platform: bengal
@@ -12,11 +12,11 @@ Status: source discovery started; no candidate has been approved for building or
 - Firmware fingerprint: `realme/RMX5566RU/RE645F:16/BP2A.250605.015/V.2f025ac-8895bb-9a8318:user/release-keys`
 - Bootloader: locked; Verified Boot: green
 
-## Candidate rejected pending clarification
+## C85 5G candidate rejected for this target
 
 Repository: https://github.com/realme-kernel-opensource/realme_C85_5G-AndroidV-kernel-source
 
-The repository name appears to match the C85 5G, but the checked source is not a match for this Qualcomm target. Public device references distinguish RMX5566 (C85, Qualcomm SM6225) from RMX5253 (C85 5G, MediaTek). The candidate source's latest commit explicitly targets RMX5253/MTK. Device naming must follow the model code, not the marketing name supplied in a filename. Additional public device listings support this distinction.\n\nTechnical mismatch details:
+The repository name matches the separate C85 5G product, not this RMX5566RU hardware. realme's official C85 specification lists Snapdragon 685, while the official C85 5G specification lists MediaTek Dimensity 6300. The owner's hardware audit reports Qualcomm SM6225 / `bengal` / `qcom` / Adreno 610, matching the C85 4G platform. Public device references distinguish RMX5566/RE645F from the RMX5253 C85 5G platform. The candidate source's latest commit explicitly targets RMX5253/MTK.\n\nOfficial comparison: https://www.realme.com/my/realme-c85/specs (Snapdragon 685) and https://www.realme.com/my/realme-c85-5g/specs (Dimensity 6300).\n\nTechnical mismatch details:
 - Its top-level kernel Makefile declares Linux 5.15.180, not the device's reported 5.15.197.
 - Its latest commit message says it synchronized code for RMX5253 and references an MTK release tag.
 - The inspected ARM64 defconfig list did not expose a bengal/SM6225 target configuration.
