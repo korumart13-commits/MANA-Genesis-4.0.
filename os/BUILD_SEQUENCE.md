@@ -7,8 +7,8 @@ This sequence replaces the separate launcher-APK-first workflow.
 - Pin a supported Android 16 AOSP manifest and toolchain.
 - Establish reproducible repo sync and source integrity checks.
 - Create the MANA product configuration and system package list only after the AOSP tree is present.
-- Integrate MANA system services and privileged apps as product modules, not as a standalone launcher APK.
-- Build system, system_ext, product and related images in CI.
+- Integrate MANA system services and apps as product modules, not as a standalone launcher APK. The Brain Binder/Launcher source path exists; remaining services and product-level permissions/SELinux still need integration.
+- Build system, system_ext, product and related images in CI after a valid RE645F product target exists.
 
 ## Workstream B — device bring-up
 
@@ -29,7 +29,7 @@ This sequence replaces the separate launcher-APK-first workflow.
 
 - MANA System Core and privileged service lifecycle.
 - MANA System UI, launcher, settings and control center.
-- MANA Brain with local LiteRT-LM as first provider.
+- MANA Brain routing core is now wired through Soong AIDL/Binder; package the LiteRT-LM provider in Soong and validate local-first inference.
 - Model manager with explicit model selection, license acknowledgement, storage/RAM checks and offline operation.
 - Avatar renderer and animation assets integrated into System UI.
 - Diary, Life Manager, Contact Intelligence, receptionist and game integrations behind Android permission gates.
