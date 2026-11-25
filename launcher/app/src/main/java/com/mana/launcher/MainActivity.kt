@@ -355,7 +355,7 @@ class MainActivity : Activity() {
                     return true
                 }
                 MotionEvent.ACTION_UP -> {
-                    view.performClick()
+                    if (!dragged) view.performClick()
                     return true
                 }
             }
