@@ -1,4 +1,5 @@
 name: MANA Genesis 4.0 — source bundle
+# Reproducible source snapshot; this does not claim to be a flashable ROM.
 
 on:
   workflow_dispatch:
