@@ -62,7 +62,27 @@ object ManaSystemModuleCatalog {
             ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "per-game user consent"),
         SystemModuleDescriptor("mana.updater", "com.mana.updater", setOf("platform.security", "platform.storage"),
             ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "signed updates and rollback metadata")
-    )
+,
+        SystemModuleDescriptor("mana.memory", "com.mana.memory", setOf("platform.storage", "platform.security"),
+            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "encrypted local memory; user controls export and deletion"),
+        SystemModuleDescriptor("mana.voice", "com.mana.voice", setOf("mana.brain", "platform.security"),
+            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "microphone and speech APIs only after explicit consent"),
+        SystemModuleDescriptor("mana.adaptiveintelligence", "com.mana.adaptiveintelligence", setOf("mana.brain", "mana.memory"),
+            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "source validation; network learning opt-in; audited proposals"),
+        SystemModuleDescriptor("mana.futureupdates", "com.mana.futureupdates", setOf("mana.brain", "mana.updater", "platform.security"),
+            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "voice/text ideas; owner approval required for code and updates"),
+        SystemModuleDescriptor("mana.yandex", "com.mana.yandex", setOf("mana.brain", "platform.security"),
+            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "official APIs only; provider consent and credentials"),
+        SystemModuleDescriptor("mana.vk", "com.mana.vk", setOf("mana.brain", "platform.security"),
+            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "official APIs only; provider consent and credentials"),
+        SystemModuleDescriptor("mana.developercenter", "com.mana.developercenter", setOf("mana.brain", "platform.security", "platform.storage"),
+            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "owner diagnostics; no implicit root or Device Owner"),
+        SystemModuleDescriptor("mana.localnode", "com.mana.localnode", setOf("platform.security", "platform.storage"),
+            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "LAN-only server off by default; paired devices and revocable keys"),
+        SystemModuleDescriptor("mana.deviceecosystem", "com.mana.deviceecosystem", setOf("platform.security"),
+            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "explicit Bluetooth/Wi-Fi pairing and scoped device permissions"),
+        SystemModuleDescriptor("mana.recovery", "com.mana.recovery", setOf("platform.security", "platform.storage", "mana.updater"),
+            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "verified recovery and rollback; device-specific boot chain only")    )
 
     fun validate(): List<String> {
         val errors = mutableListOf<String>()
