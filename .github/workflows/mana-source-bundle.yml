@@ -1,0 +1,48 @@
+name: MANA Genesis 4.0 — source bundle
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "os/**"
+      - "engine/**"
+      - "launcher/**"
+      - "system/**"
+      - "game/**"
+      - "tools/**"
+      - ".github/workflows/mana-source-bundle.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Install archive tools
+        run: sudo apt-get update && sudo apt-get install -y zip
+      - name: Create source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          zip -r dist/MANA_Genesis_4.0_Source.zip \
+            os engine launcher system game tools .github/workflows \
+            README.md 2>/dev/null \
+            -x '*/build/*' '*/.gradle/*' '*/.git/*' '*/local.properties' \
+               '*/secrets*' '*/.*keystore' '*/.env*'
+          if [ -d game/minecraft-bedrock/MANA_Companion_BP ]; then
+            (cd game/minecraft-bedrock && zip -r ../../dist/MANA_Genesis_4.0_Minecraft.mcpack MANA_Companion_BP)
+          fi
+          sha256sum dist/* > dist/SHA256SUMS.txt
+          du -h dist/*
+      - name: Upload source bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Genesis-4.0-source
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
