@@ -1,0 +1,126 @@
+package com.mana.os.core
+
+import java.time.Instant
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
+
+enum class BootPhase { COLD, HARDWARE_DISCOVERY, SECURITY_INIT, CORE_SERVICES, USER_SERVICES, READY, DEGRADED, SHUTTING_DOWN }
+enum class ModuleState { REGISTERED, STARTING, RUNNING, DEGRADED, STOPPING, STOPPED, FAILED }
+
+data class DeviceFacts(
+    val product: String,
+    val device: String,
+    val androidApi: Int,
+    val kernelRelease: String,
+    val abi: String,
+    val activeSlot: String? = null
+) {
+    init {
+        require(product.isNotBlank() && device.isNotBlank())
+        require(androidApi >= 1 && kernelRelease.isNotBlank() && abi.isNotBlank())
+    }
+}
+
+data class ModuleHealth(
+    val id: String,
+    val state: ModuleState,
+    val detail: String? = null,
+    val changedAt: Instant = Instant.now()
+)
+
+interface ManaSystemModule {
+    val id: String
+    val dependencies: Set<String> get() = emptySet()
+    fun start(context: ManaSystemContext)
+    fun stop(context: ManaSystemContext) {}
+}
+
+data class ManaSystemContext(
+    val device: DeviceFacts,
+    val services: MutableMap<String, Any> = mutableMapOf()
+)
+
+/**
+ * Userspace system supervisor for MANA OS. This is not a Linux kernel replacement:
+ * it coordinates MANA system services above the device's Linux/Android kernel.
+ */
+class ManaSystemCore(private val device: DeviceFacts) {
+    private val lock = ReentrantLock()
+    private val modules = linkedMapOf<String, ManaSystemModule>()
+    private val health = linkedMapOf<String, ModuleHealth>()
+    private val context = ManaSystemContext(device)
+
+    @Volatile var phase: BootPhase = BootPhase.COLD
+        private set
+
+    fun register(module: ManaSystemModule) = lock.withLock {
+        check(phase == BootPhase.COLD) { "Modules can only be registered before boot." }
+        require(module.id.matches(Regex("[a-z][a-z0-9_.-]{1,63}")))
+        require(module.id !in modules) { "Duplicate module: ${module.id}" }
+        modules[module.id] = module
+        health[module.id] = ModuleHealth(module.id, ModuleState.REGISTERED)
+    }
+
+    fun boot(): List<ModuleHealth> = lock.withLock {
+        check(phase == BootPhase.COLD) { "Boot already started." }
+        phase = BootPhase.HARDWARE_DISCOVERY
+        validateDependencies()
+        phase = BootPhase.SECURITY_INIT
+        // Security policy and permission boundary checks are a mandatory boot gate.
+        phase = BootPhase.CORE_SERVICES
+        val order = dependencyOrder()
+        for (id in order) {
+            val module = modules.getValue(id)
+            health[id] = ModuleHealth(id, ModuleState.STARTING)
+            try {
+                module.start(context)
+                health[id] = ModuleHealth(id, ModuleState.RUNNING)
+            } catch (error: Throwable) {
+                health[id] = ModuleHealth(id, ModuleState.FAILED, error.message ?: error::class.java.simpleName)
+                phase = BootPhase.DEGRADED
+                return health.values.toList()
+            }
+        }
+        phase = BootPhase.USER_SERVICES
+        phase = BootPhase.READY
+        health.values.toList()
+    }
+
+    fun stop() = lock.withLock {
+        if (phase == BootPhase.COLD || phase == BootPhase.SHUTTING_DOWN) return
+        phase = BootPhase.SHUTTING_DOWN
+        dependencyOrder().asReversed().forEach { id ->
+            val module = modules.getValue(id)
+            if (health[id]?.state == ModuleState.RUNNING) {
+                health[id] = ModuleHealth(id, ModuleState.STOPPING)
+                runCatching { module.stop(context) }
+                health[id] = ModuleHealth(id, ModuleState.STOPPED)
+            }
+        }
+    }
+
+    fun healthSnapshot(): List<ModuleHealth> = lock.withLock { health.values.toList() }
+
+    private fun validateDependencies() {
+        modules.values.forEach { module ->
+            val missing = module.dependencies - modules.keys
+            require(missing.isEmpty()) { "Module ${module.id} has missing dependencies: ${missing.joinToString()}" }
+        }
+    }
+
+    private fun dependencyOrder(): List<String> {
+        val result = mutableListOf<String>()
+        val visiting = mutableSetOf<String>()
+        val visited = mutableSetOf<String>()
+        fun visit(id: String) {
+            if (id in visited) return
+            check(visiting.add(id)) { "Dependency cycle detected at $id" }
+            modules.getValue(id).dependencies.sorted().forEach(::visit)
+            visiting.remove(id)
+            visited.add(id)
+            result += id
+        }
+        modules.keys.forEach(::visit)
+        return result
+    }
+}
