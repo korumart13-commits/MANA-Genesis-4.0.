@@ -203,16 +203,17 @@ class ManaAvatar3DView(
             draw(0.10f, 0.83f + bob, 0.31f, 0.27f, 0.20f, 0.13f, 13f + sway, hair)
             draw(0.33f, 0.70f + bob, 0.27f, 0.13f, 0.28f, 0.12f, 28f + sway, hair)
             // Eyes, irises, highlights, nose and mouth.
-            draw(-0.17f, 0.52f + bob, 0.398f, 0.085f, 0.085f * blink, 0.035f, 0f, eyeWhite)
-            draw(0.17f, 0.52f + bob, 0.398f, 0.085f, 0.085f * blink, 0.035f, 0f, eyeWhite)
-            draw(-0.17f, 0.52f + bob, 0.427f, 0.046f, 0.058f * blink, 0.022f, 0f, iris)
-            draw(0.17f, 0.52f + bob, 0.427f, 0.046f, 0.058f * blink, 0.022f, 0f, iris)
+            val eyeExpression = if (expressionIndex == 2) 1.22f else 1f
+            draw(-0.17f, 0.52f + bob, 0.398f, 0.085f, 0.085f * blink * eyeExpression, 0.035f, 0f, eyeWhite)
+            draw(0.17f, 0.52f + bob, 0.398f, 0.085f, 0.085f * blink * eyeExpression, 0.035f, 0f, eyeWhite)
+            draw(-0.17f, 0.52f + bob, 0.427f, 0.046f, 0.058f * blink * eyeExpression, 0.022f, 0f, iris)
+            draw(0.17f, 0.52f + bob, 0.427f, 0.046f, 0.058f * blink * eyeExpression, 0.022f, 0f, iris)
             draw(-0.185f, 0.545f + bob, 0.447f, 0.016f, 0.020f, 0.012f, 0f, eyeWhite)
             draw(0.155f, 0.545f + bob, 0.447f, 0.016f, 0.020f, 0.012f, 0f, eyeWhite)
             draw(0f, 0.34f + bob, 0.415f, 0.035f, 0.050f, 0.035f, 0f, skinShadow)
-            val mouthOpen = if (isSpeaking) 0.060f + (sin(t * 18f).coerceAtLeast(0f) * 0.035f) else 0.012f
+            val mouthOpen = if (isSpeaking) 0.060f + (sin(t * 18f).coerceAtLeast(0f) * 0.035f) else if (expressionIndex == 2) 0.055f else 0.012f
             draw(0f, 0.20f + bob, 0.400f, 0.078f, mouthOpen, 0.025f, 0f, mouth)
-            draw(0f, 0.205f + bob, 0.425f, 0.070f, if (isSpeaking) 0.024f else 0.012f, 0.018f, 0f, lips)
+            draw(0f, 0.205f + bob, 0.425f, 0.070f, if (isSpeaking) 0.024f else if (expressionIndex == 1) 0.025f else 0.012f, 0.018f, 0f, lips)
             draw(-0.30f, 0.31f + bob, 0.31f, 0.09f, 0.045f, 0.02f, 0f, blush)
             draw(0.30f, 0.31f + bob, 0.31f, 0.09f, 0.045f, 0.02f, 0f, blush)
 
@@ -319,6 +320,7 @@ class ManaAvatar3DView(
         private val hairHighlight = floatArrayOf(0.12f, 0.24f, 0.38f, 1f)
         @Volatile var outfitIndex = 0
         @Volatile var accessoryEnabled = true
+        @Volatile var expressionIndex = 0
         private val coat: FloatArray
             get() = when (outfitIndex % 3) {
                 1 -> floatArrayOf(0.012f, 0.020f, 0.045f, 1f)
