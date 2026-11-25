@@ -49,6 +49,7 @@ class ManaSystemCore(private val device: DeviceFacts) {
     private val modules = linkedMapOf<String, ManaSystemModule>()
     private val health = linkedMapOf<String, ModuleHealth>()
     private val context = ManaSystemContext(device)
+    private val startedOrder = mutableListOf<String>()
 
     @Volatile var phase: BootPhase = BootPhase.COLD
         private set
@@ -63,40 +64,50 @@ class ManaSystemCore(private val device: DeviceFacts) {
 
     fun boot(): List<ModuleHealth> = lock.withLock {
         check(phase == BootPhase.COLD) { "Boot already started." }
-        phase = BootPhase.HARDWARE_DISCOVERY
-        validateDependencies()
-        phase = BootPhase.SECURITY_INIT
-        // Security policy and permission boundary checks are a mandatory boot gate.
-        phase = BootPhase.CORE_SERVICES
-        val order = dependencyOrder()
-        for (id in order) {
-            val module = modules.getValue(id)
-            health[id] = ModuleHealth(id, ModuleState.STARTING)
-            try {
-                module.start(context)
-                health[id] = ModuleHealth(id, ModuleState.RUNNING)
-            } catch (error: Throwable) {
-                health[id] = ModuleHealth(id, ModuleState.FAILED, error.message ?: error::class.java.simpleName)
-                phase = BootPhase.DEGRADED
-                return health.values.toList()
+        try {
+            phase = BootPhase.HARDWARE_DISCOVERY
+            validateDependencies()
+            phase = BootPhase.SECURITY_INIT
+            // Security policy and permission boundary checks are a mandatory boot gate.
+            phase = BootPhase.CORE_SERVICES
+            for (id in dependencyOrder()) {
+                val module = modules.getValue(id)
+                health[id] = ModuleHealth(id, ModuleState.STARTING)
+                try {
+                    module.start(context)
+                    health[id] = ModuleHealth(id, ModuleState.RUNNING)
+                    startedOrder += id
+                } catch (error: Throwable) {
+                    health[id] = ModuleHealth(id, ModuleState.FAILED, error.message ?: error::class.java.simpleName)
+                    throw error
+                }
             }
+            phase = BootPhase.USER_SERVICES
+            phase = BootPhase.READY
+        } catch (error: Throwable) {
+            // Roll back only modules that actually started, in reverse dependency order.
+            startedOrder.asReversed().forEach { id ->
+                val module = modules.getValue(id)
+                health[id] = ModuleHealth(id, ModuleState.STOPPING)
+                runCatching { module.stop(context) }
+                health[id] = ModuleHealth(id, ModuleState.STOPPED)
+            }
+            startedOrder.clear()
+            phase = BootPhase.DEGRADED
         }
-        phase = BootPhase.USER_SERVICES
-        phase = BootPhase.READY
         health.values.toList()
     }
 
     fun stop() = lock.withLock {
         if (phase == BootPhase.COLD || phase == BootPhase.SHUTTING_DOWN) return
         phase = BootPhase.SHUTTING_DOWN
-        dependencyOrder().asReversed().forEach { id ->
+        startedOrder.asReversed().forEach { id ->
             val module = modules.getValue(id)
-            if (health[id]?.state == ModuleState.RUNNING) {
-                health[id] = ModuleHealth(id, ModuleState.STOPPING)
-                runCatching { module.stop(context) }
-                health[id] = ModuleHealth(id, ModuleState.STOPPED)
-            }
+            health[id] = ModuleHealth(id, ModuleState.STOPPING)
+            runCatching { module.stop(context) }
+            health[id] = ModuleHealth(id, ModuleState.STOPPED)
         }
+        startedOrder.clear()
     }
 
     fun healthSnapshot(): List<ModuleHealth> = lock.withLock { health.values.toList() }
@@ -105,6 +116,7 @@ class ManaSystemCore(private val device: DeviceFacts) {
         modules.values.forEach { module ->
             val missing = module.dependencies - modules.keys
             require(missing.isEmpty()) { "Module ${module.id} has missing dependencies: ${missing.joinToString()}" }
+            require(module.id !in module.dependencies) { "Module ${module.id} cannot depend on itself." }
         }
     }
 
