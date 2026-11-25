@@ -70,8 +70,8 @@ class ManaSecurityService {
         val denial = when {
             capability in explicitDenials -> "Explicitly denied by policy"
             dataSensitivity == DataSensitivity.SECRET &&
-                capability.action in setOf(SecurityAction.SHARE, SecurityAction.NETWORK) ->
-                "Secret data cannot be shared or sent to a network by this policy"
+                capability.action in setOf(SecurityAction.SHARE, SecurityAction.NETWORK, SecurityAction.DELETE) ->
+                "Secret data cannot be shared, sent to a network, or deleted by this policy"
             else -> null
         }
         val grant = grants[capability]
