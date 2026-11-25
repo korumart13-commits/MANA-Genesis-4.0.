@@ -1,5 +1,6 @@
 package com.mana.os.core
 
+import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -54,6 +55,60 @@ class ManaAutonomyControllerTest {
         val result = controller(calls).request(ManaActionRequest("5", action = "set_torch",
             parameters = mapOf("enabled" to "true", "shell" to "rm -rf /")))
         assertEquals(ManaActionOutcome.DENIED, result.outcome)
+        assertTrue(calls.isEmpty())
+    }
+
+    @Test fun `wrong principal is denied before device adapter`() {
+        val calls = mutableListOf<ManaActionRequest>()
+        val result = controller(calls).request(ManaActionRequest(
+            "6", principal = "untrusted.model", action = "set_torch", parameters = mapOf("enabled" to "true")
+        ))
+        assertEquals(ManaActionOutcome.DENIED, result.outcome)
+        assertTrue(calls.isEmpty())
+    }
+
+    @Test fun `expired capability is denied and recorded by security policy`() {
+        val calls = mutableListOf<ManaActionRequest>()
+        val security = ManaSecurityService().apply {
+            grant(SecurityGrant(capability, expiresAt = Instant.parse("2025-01-01T00:00:00Z")))
+        }
+        val c = ManaAutonomyController(security, ManaDeviceActionExecutor { calls += it; "unexpected" })
+            .apply { register(ManaDefaultActions.specs.first { it.id == "set_torch" }) }
+        val result = c.request(ManaActionRequest("7", action = "set_torch", parameters = mapOf("enabled" to "true")))
+        assertEquals(ManaActionOutcome.DENIED, result.outcome)
+        assertTrue(calls.isEmpty())
+        assertEquals("Grant expired", security.auditSnapshot().last().reason)
+    }
+
+    @Test fun `explicit denial overrides a previously granted capability`() {
+        val calls = mutableListOf<ManaActionRequest>()
+        val security = ManaSecurityService().apply {
+            grant(SecurityGrant(capability))
+            deny(capability)
+        }
+        val c = ManaAutonomyController(security, ManaDeviceActionExecutor { calls += it; "unexpected" })
+            .apply { register(ManaDefaultActions.specs.first { it.id == "set_torch" }) }
+        val result = c.request(ManaActionRequest("8", action = "set_torch", parameters = mapOf("enabled" to "true")))
+        assertEquals(ManaActionOutcome.DENIED, result.outcome)
+        assertTrue(calls.isEmpty())
+    }
+
+    @Test fun `executor exception becomes a failed audited result`() {
+        val security = ManaSecurityService().apply { grant(SecurityGrant(capability)) }
+        val c = ManaAutonomyController(security, ManaDeviceActionExecutor { error("platform unavailable") })
+            .apply { register(ManaDefaultActions.specs.first { it.id == "set_torch" }) }
+        val result = c.request(ManaActionRequest("9", action = "set_torch", parameters = mapOf("enabled" to "true")))
+        assertEquals(ManaActionOutcome.FAILED, result.outcome)
+        assertEquals("platform unavailable", result.message)
+        assertEquals(result, c.auditSnapshot().last())
+    }
+
+    @Test fun `every rejected request is present in controller audit`() {
+        val calls = mutableListOf<ManaActionRequest>()
+        val c = controller(calls)
+        val result = c.request(ManaActionRequest("10", action = "unknown"))
+        assertEquals(ManaActionOutcome.DENIED, result.outcome)
+        assertEquals(result, c.auditSnapshot().single())
         assertTrue(calls.isEmpty())
     }
 }
