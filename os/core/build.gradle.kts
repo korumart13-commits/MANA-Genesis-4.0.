@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "2.2.21"
+    kotlin("jvm")
 }
 group = "com.mana.os"
 version = "4.0.0"
