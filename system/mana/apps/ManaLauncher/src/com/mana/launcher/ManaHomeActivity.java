@@ -2,12 +2,17 @@ package com.mana.launcher;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Gravity;
@@ -26,6 +31,11 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
+import com.mana.brain.BrainRequest;
+import com.mana.brain.BrainResponse;
+import com.mana.brain.IBrainCallback;
+import com.mana.brain.IBrainService;
 
 /**
  * MANA HOME — Android HOME role implementation.
@@ -47,6 +57,10 @@ public final class ManaHomeActivity extends Activity {
     private TextView clock;
     private TextView date;
     private TextView emptyState;
+    private TextView brainStatus;
+    private EditText brainPrompt;
+    private IBrainService brainService;
+    private boolean brainBound;
 
     private static final class AppEntry {
         final String label;
