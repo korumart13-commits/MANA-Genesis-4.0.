@@ -15,7 +15,7 @@ MANA is intended to be one local-first OS experience: MANA Brain, launcher, avat
 - system/mana/apps: Soong source modules for MANA Launcher, Assistant, Settings and Control Center, plus a user-addable Quick Settings tile. These are non-privileged product shells, not a replacement for AOSP SystemUI.
 - os/IMPLEMENTATION_LEDGER.md: authoritative feature-by-feature status and acceptance gates.
 
-The Gradle launcher and Soong product apps are still separate source generations. The launcher prototype's inference, avatar and personal modules are **not yet integrated into the Soong/AOSP product**. Successful JVM tests or Gradle/Soong compilation validate only those source targets; they do not prove device behavior.
+The Gradle companion and Soong product apps remain separate source generations. The Soong Assistant now links the canonical Brain routing core through AIDL/Binder; the Soong Launcher can hand off prompts to the Gradle companion, which owns the actual LiteRT-LM runtime. LiteRT-LM is not yet embedded into the Soong product image. Successful JVM tests or Gradle/Soong compilation validate only those source targets; they do not prove device behavior.
 
 ## Device bring-up foundation
 
@@ -74,4 +74,4 @@ See [implementation ledger](IMPLEMENTATION_LEDGER.md), [owner requirements audit
 
 A new AIDL contract and transport-neutral facade now define the intended boundary between the canonical `engine/mana-brain` engine and Android clients. The facade preserves request IDs and provider provenance and delegates to the existing local-first/cloud-opt-in policy. JVM tests cover local provenance, cloud denial by default, sensitive-request denial and request validation.
 
-The Android Binder Service implementation, signature permission and caller identity enforcement, generated-AIDL client wiring in ManaAssistant, cancellation/concurrency handling and Android instrumentation tests are **not yet implemented**. The AIDL contract must not be represented as a live service.
+The protected Android Binder Service, signature/caller checks, Soong Brain library, Launcher AIDL client and Android instrumentation test sources are now present. They have not yet been built by Soong or executed on a device. The Soong runtime does not yet include LiteRT-LM; the Launcher hands off to the existing Gradle companion when no Soong provider is available.
