@@ -179,6 +179,95 @@ class ManaDiaryService(private val store: ManaDiaryStore) {
     private fun persist() = store.writeAll(entries.values.toList())
 }
 
+data class ManaMemoryItem(
+    val id: String,
+    val category: String,
+    val content: String,
+    val sensitivity: DataSensitivity,
+    val createdAt: Instant,
+    val expiresAt: Instant? = null,
+    val pinned: Boolean = false
+)
+
+interface ManaMemoryStore {
+    fun readAll(): List<ManaMemoryItem>
+    fun writeAll(items: List<ManaMemoryItem>)
+}
+
+/** Encrypted file-backed memory store using the same authenticated AES-GCM envelope. */
+class EncryptedFileManaMemoryStore(private val diaryStore: ManaDiaryStore) : ManaMemoryStore {
+    override fun readAll(): List<ManaMemoryItem> = diaryStore.readAll().filter { "mana:memory" in it.tags }.map { entry ->
+        val tags = entry.tags
+        val sensitivity = tags.firstOrNull { it.startsWith("sensitivity:") }
+            ?.removePrefix("sensitivity:")?.let { runCatching { DataSensitivity.valueOf(it) }.getOrNull() }
+            ?: DataSensitivity.PERSONAL
+        val expiry = tags.firstOrNull { it.startsWith("expires:") }?.removePrefix("expires:")?.toLongOrNull()
+        ManaMemoryItem(
+            id = entry.id,
+            category = entry.title,
+            content = entry.body,
+            sensitivity = sensitivity,
+            createdAt = entry.createdAt,
+            expiresAt = expiry?.let(Instant::ofEpochMilli),
+            pinned = "pinned:true" in tags
+        )
+    }
+
+    override fun writeAll(items: List<ManaMemoryItem>) {
+        diaryStore.writeAll(items.map { item ->
+            ManaDiaryEntry(
+                id = item.id,
+                title = item.category,
+                body = item.content,
+                tags = setOf(
+                    "mana:memory",
+                    "sensitivity:${item.sensitivity.name}",
+                    "pinned:${item.pinned}",
+                    "expires:${item.expiresAt?.toEpochMilli() ?: "none"}"
+                ),
+                createdAt = item.createdAt,
+                updatedAt = item.createdAt
+            )
+        })
+    }
+}
+
+class ManaMemoryService(private val store: ManaMemoryStore) {
+    private val items = store.readAll().associateByTo(linkedMapOf()) { it.id }
+
+    @Synchronized fun remember(
+        category: String,
+        content: String,
+        sensitivity: DataSensitivity = DataSensitivity.PERSONAL,
+        expiresAt: Instant? = null,
+        pinned: Boolean = false,
+        now: Instant = Instant.now()
+    ): ManaMemoryItem {
+        require(category.isNotBlank() && content.isNotBlank())
+        val item = ManaMemoryItem(java.util.UUID.randomUUID().toString(), category, content, sensitivity, now, expiresAt, pinned)
+        items[item.id] = item
+        persist()
+        return item
+    }
+
+    @Synchronized fun recall(query: String = ""): List<ManaMemoryItem> {
+        val term = query.trim()
+        return items.values.filter { term.isEmpty() || it.category.contains(term, true) || it.content.contains(term, true) }
+            .sortedByDescending { it.createdAt }
+    }
+
+    @Synchronized fun expiredCandidates(now: Instant = Instant.now()): List<ManaMemoryItem> =
+        items.values.filter { !it.pinned && it.expiresAt != null && !now.isBefore(it.expiresAt) }
+
+    @Synchronized fun forget(id: String, approvedByUser: Boolean) {
+        require(approvedByUser) { "Explicit owner approval is required to forget a memory" }
+        require(items.remove(id) != null) { "Memory item not found" }
+        persist()
+    }
+
+    private fun persist() = store.writeAll(items.values.toList())
+}
+
 data class ManaLifeTask(
     val id: String,
     val title: String,
