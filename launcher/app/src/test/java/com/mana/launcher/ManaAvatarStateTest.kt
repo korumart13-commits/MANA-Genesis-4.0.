@@ -47,4 +47,10 @@ class ManaAvatarStateTest {
         ManaAvatarState.outfitIndex = 99
         assertEquals("mana_avatar_genesis.gltf", ManaAvatarState.assetName())
     }
+
+    @Test fun invalidOutfitKeepsAccessoryChoiceOnBaseIdentity() {
+        ManaAvatarState.outfitIndex = -1
+        ManaAvatarState.accessoryEnabled = false
+        assertEquals("mana_avatar_genesis_no_accessory.gltf", ManaAvatarState.assetName())
+    }
 }
