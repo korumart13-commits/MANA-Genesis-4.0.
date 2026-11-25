@@ -94,6 +94,7 @@ class MainActivity : Activity() {
     private var futureUpdateService: ManaFutureUpdateService? = null
     private var voiceTarget: EditText? = null
     private var editingDiaryId: String? = null
+    private var useCloudForNextPrompt = false
     private var speechRecognizer: SpeechRecognizer? = null
     private val audioPermissionRequestCode = 4111
     private val contactsPermissionRequestCode = 4112
@@ -1282,7 +1283,9 @@ class MainActivity : Activity() {
             append("Запрос владельца:\n").append(prompt)
         }
 
-        val sensitive = remembered.isNotEmpty() || knowledge.isNotEmpty() || isLikelySensitive(prompt)
+        val sensitive = remembered.isNotEmpty() || isLikelySensitive(prompt)
+        val explicitlyRequestedCloud = useCloudForNextPrompt
+        useCloudForNextPrompt = false
 
         fun submit(allowCloud: Boolean, preferredProvider: String? = null) {
             manaBrain.respond(
@@ -1311,8 +1314,11 @@ class MainActivity : Activity() {
             if (cloudGateway.isAvailable()) add(cloudGateway.id to cloudGateway.selectedProvider().title)
             if (yandexProvider.isAvailable()) add(yandexProvider.id to "Yandex AI Studio")
         }
-        val mayUseCloud = !localRuntime.isReady() && providers.isNotEmpty() && !sensitive
-        if (mayUseCloud && providers.size > 1) {
+        val mayUseCloud = providers.isNotEmpty() && !sensitive && (explicitlyRequestedCloud || !localRuntime.isReady())
+        if (explicitlyRequestedCloud && sensitive) {
+            showMessage("Этот запрос содержит локальную память или похож на чувствительные данные. Облачная отправка заблокирована.")
+            submit(false)
+        } else if (mayUseCloud && providers.size > 1) {
             AlertDialog.Builder(this)
                 .setTitle("Выбери облачного провайдера")
                 .setMessage("Выбор отправит текст запроса выбранному сервису. Не отправляй пароли, ключи, платёжные данные, личную переписку или сведения из памяти.")
