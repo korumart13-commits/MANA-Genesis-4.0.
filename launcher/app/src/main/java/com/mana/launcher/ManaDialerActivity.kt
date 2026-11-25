@@ -31,6 +31,7 @@ class ManaDialerActivity : Activity() {
     private lateinit var callStatus: TextView
     private var pendingNumber: String? = null
     private var receiverRegistered = false
+    private var muted = false
 
     private val callReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) { refreshCallControls() }
@@ -116,8 +117,9 @@ class ManaDialerActivity : Activity() {
         root.addView(button("Громкая связь") { ManaInCallService.setSpeaker(true) })
         root.addView(button("Динамик телефона") { ManaInCallService.setSpeaker(false) })
         root.addView(button("Выключить / включить микрофон") {
-            val service = ManaInCallService.activeService
-            service?.setMuted(true)
+            muted = !muted
+            ManaInCallService.setMuted(muted)
+            showMessage(if (muted) "Микрофон выключен." else "Микрофон включён.")
         })
         root.addView(button("Обновить состояние звонка") { refreshCallControls() })
         setContentView(ScrollView(this).apply { addView(root) })
