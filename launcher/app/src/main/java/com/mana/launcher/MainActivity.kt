@@ -379,8 +379,7 @@ class MainActivity : Activity() {
                     require(copied > 0L) { "Файл модели пуст." }
                     val hash = digest.digest().joinToString("") { "%02x".format(it) }
                     Files.move(temp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
-                    File(directory, "selected-model.sha256").writeText("$hash  selected-model.litertlm\
-")
+                    File(directory, "selected-model.sha256").writeText("$hash  selected-model.litertlm\n")
                 } finally {
                     if (temp.exists()) temp.delete()
                 }
