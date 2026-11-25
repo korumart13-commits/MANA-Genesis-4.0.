@@ -44,9 +44,12 @@ class ManaSystemModuleCatalogTest {
         assertTrue(ids.containsAll(required), "Missing owner-requested modules: ${required - ids}")
     }
 
-    @Test fun extendedModuleDependenciesRemainAcyclic() {
+    @Test fun extendedModuleDependenciesRemainAcyclicAndCloudIsOptional() {
         val order = ManaSystemModuleCatalog.dependencyOrder()
-        assertTrue(order.indexOf("mana.cloudgateway") < order.indexOf("mana.brain"))
+        val cloud = ManaSystemModuleCatalog.modules.single { it.id == "mana.cloudgateway" }
+        val brain = ManaSystemModuleCatalog.modules.single { it.id == "mana.brain" }
+        assertEquals(ModuleCriticality.OPTIONAL, cloud.criticality)
+        assertTrue("mana.cloudgateway" !in brain.dependencies)
         assertTrue(order.indexOf("mana.brain") < order.indexOf("mana.voice"))
         assertTrue(order.indexOf("mana.brain") < order.indexOf("mana.adaptiveintelligence"))
         assertTrue(order.indexOf("mana.updater") < order.indexOf("mana.recovery"))
