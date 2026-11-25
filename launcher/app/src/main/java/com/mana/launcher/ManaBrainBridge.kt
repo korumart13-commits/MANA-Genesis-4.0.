@@ -18,8 +18,10 @@ import kotlin.coroutines.resumeWithException
  */
 class ManaBrainBridge(
     private val localRuntime: LocalModelRuntime,
-    private val cloudProvider: InferenceProvider? = null
+    private val cloudProviders: List<InferenceProvider> = emptyList()
 ) {
+    constructor(localRuntime: LocalModelRuntime, cloudProvider: InferenceProvider?) :
+        this(localRuntime, listOfNotNull(cloudProvider))
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun respond(
@@ -57,7 +59,7 @@ class ManaBrainBridge(
                             )
                         }
                 }
-                val response = ManaBrain(localProvider, cloudProvider).respond(
+                val response = ManaBrain(localProvider, cloudProviders).respond(
                     BrainRequest(
                         prompt = prompt,
                         allowCloud = allowCloud,
