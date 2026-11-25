@@ -4,4 +4,6 @@ PRODUCT_PACKAGES += \
     ManaLauncher \
     ManaAssistant \
     ManaSettings \
+    ManaControlCenter \
+    ManaSettings \
     ManaControlCenter
