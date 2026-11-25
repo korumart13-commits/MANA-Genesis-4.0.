@@ -839,8 +839,8 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
-        if (::localRuntime.isInitialized) localRuntime.shutdown()
         if (::manaBrain.isInitialized) manaBrain.shutdown()
+        if (::localRuntime.isInitialized) localRuntime.shutdown()
         ManaAvatar3DView.isSpeaking = false
         textToSpeech?.stop()
         textToSpeech?.shutdown()
