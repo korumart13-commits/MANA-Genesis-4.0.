@@ -24,3 +24,9 @@ They remain non-privileged product apps: no platform certificate, root access, h
 - OEM kernel source, matching DTS/DTBO, vendor modules, VINTF/HAL and verified recovery/rollback path before any flashable image is attempted.
 
 These are integrated source modules intended for the future MANA product image. No separate APK release or firmware flash is initiated by this workflow.
+
+## MANA Brain Binder boundary (new)
+
+The product now declares the generated `mana.brain-java` AIDL library in `system/mana/mana_product.mk`. Its source contract is in `system/mana/brain/aidl`; the transport-neutral `ManaBrainFacade` delegates to the canonical JVM engine in `engine/mana-brain`.
+
+This is **not yet a running Android Binder service**. The assistant application is not yet binding to it. A signature permission, caller UID/package/signature validation, Android Service adapter, cancellation/concurrency handling and instrumentation tests are still required. Do not describe the Assistant as Binder-connected until those pieces are implemented and tested.
