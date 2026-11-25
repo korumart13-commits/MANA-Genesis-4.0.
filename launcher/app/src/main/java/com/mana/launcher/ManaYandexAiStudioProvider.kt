@@ -60,10 +60,11 @@ class ManaYandexAiStudioProvider(context: Context) : InferenceProvider {
             connection.setRequestProperty("Authorization", "Api-Key ${config.apiKey}")
             connection.setRequestProperty("Content-Type", "application/json")
             connection.setRequestProperty("Accept", "application/json")
+            connection.setRequestProperty("x-folder-id", config.folderId)
             val body = JSONObject()
-                .put("model", "gpt://${config.folderId}/${config.modelId}")
-                .put("input", prompt)
-                .put("max_output_tokens", 2048)
+                .put("modelUri", "gpt://${config.folderId}/${config.modelId}")
+                .put("completionOptions", JSONObject().put("stream", false).put("temperature", 0.6).put("maxTokens", "2048"))
+                .put("messages", org.json.JSONArray().put(JSONObject().put("role", "user").put("text", prompt)))
                 .put("store", false)
             connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
             val code = connection.responseCode
@@ -91,17 +92,10 @@ class ManaYandexAiStudioProvider(context: Context) : InferenceProvider {
     }
 
     private fun extractText(root: JSONObject): String {
-        val output = root.optJSONArray("output") ?: JSONArray()
-        val parts = mutableListOf<String>()
-        for (i in 0 until output.length()) {
-            val content = output.optJSONObject(i)?.optJSONArray("content") ?: continue
-            for (j in 0 until content.length()) {
-                val text = content.optJSONObject(j)?.optString("text").orEmpty()
-                if (text.isNotBlank()) parts += text
-            }
-        }
-        return parts.joinToString("\n").ifBlank { error("Yandex AI Studio returned no text content.") }
+        val alternatives = root.optJSONObject("result")?.optJSONArray("alternatives") ?: JSONArray()
+        val text = alternatives.optJSONObject(0)?.optJSONObject("message")?.optString("text").orEmpty()
+        return text.ifBlank { error("Yandex AI Studio returned no text content.") }
     }
 
-    companion object { private const val ENDPOINT = "https://ai.api.cloud.yandex.net/v1/responses" }
+    companion object { private const val ENDPOINT = "https://ai.api.cloud.yandex.net/foundationModels/v1/completion" }
 }
