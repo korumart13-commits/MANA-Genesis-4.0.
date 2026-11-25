@@ -39,6 +39,25 @@ jobs:
           unzip -t "$ARCHIVE"
           unzip -q "$ARCHIVE" -d source
           echo "PROJECT_DIR=source/MANA_Genesis_4_0_COMPLETE/MANA_Genesis_4.0_Unified/existing_aosp/MANA_OS_3_0_Android_Project" >> "$GITHUB_ENV"
+      - name: Repair broken multiline Kotlin welcome string
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("${PROJECT_DIR}/app/src/main/java/com/mana/os/app/MainActivity.kt")
+          s = p.read_text(encoding="utf-8")
+          broken = 'base("MANA", "Первоначальная настройка\nЯ стану твоим главным интерфейсом, сохраняя Android в качестве системной основы.")'
+          fixed = 'base("MANA", "Первоначальная настройка\\nЯ стану твоим главным интерфейсом, сохраняя Android в качестве системной основы.")'
+          if broken in s:
+              s = s.replace(broken, fixed, 1)
+              p.write_text(s, encoding="utf-8")
+              print("Fixed MainActivity.kt welcome string")
+          elif fixed in s:
+              print("Welcome string already fixed")
+          else:
+              raise SystemExit("Expected welcome string not found; refusing an unsafe patch")
+          PY
       - name: Validate Android project and wrapper
         run: |
           test -f "$PROJECT_DIR/settings.gradle.kts"
