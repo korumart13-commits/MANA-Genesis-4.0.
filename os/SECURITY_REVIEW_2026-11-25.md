@@ -11,7 +11,7 @@ Review of the repository's current JVM core, MANA Brain routing contract, device
 3. ManaBrain remains a routing contract. It prefers a local provider and only permits cloud fallback when explicitly enabled and the request is not sensitive. No real provider is wired in this repository.
 4. The core's SECURITY_INIT phase is currently a lifecycle marker only; the actual security module is not yet wired into production boot. Security and storage services remain host-JVM policy models. They do not enforce Android permissions, SELinux, filesystem access controls or encryption.
 5. The assistant UI does not claim to be an operational AI. Until Binder and LiteRT-LM are integrated, submitted text is not sent to a model or network.
-6. Android modules request no runtime-dangerous permissions and are not marked privileged. The product make fragment must only be included after the exact AOSP product is verified.
+6. Android Soong modules request no runtime-dangerous permissions and are not marked privileged. The product make fragment must only be included after the exact AOSP product is verified.\n7. The legacy launcher now disables Android backup, uses a bounded streaming model import with a temporary file, free-space reserve, SHA-256 sidecar and atomic replacement, and catches ordinary exceptions rather than swallowing fatal JVM errors. These are source-level mitigations; the Gradle compile workflow is being added and must pass before this prototype is treated as build-verified.\n8. A user-enabled overlay service has been added with a non-focusable draggable 2D avatar placeholder. It requires explicit overlay permission and is not the final 3D avatar or an OS-integrated System UI service.
 
 ## Residual risks / release blockers
 
