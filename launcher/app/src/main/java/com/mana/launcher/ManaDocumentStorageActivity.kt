@@ -90,7 +90,7 @@ class ManaDocumentStorageActivity : Activity() {
         executor.execute {
             val found = linkedMapOf<String, DocumentFile>()
             val tree = DocumentFile.fromTreeUri(this, uri)
-            if (tree != null) walk(tree, found, 0)
+            if (tree != null) walk(tree, found, 0, intArrayOf(0))
             val alreadyQuarantined = synchronized(store) { store.readAll().filter { TAG in it.tags }.map { it.body.substringBefore("\n") }.toSet() }
             found.keys.removeAll(alreadyQuarantined)
             runOnUiThread {
@@ -115,13 +115,14 @@ class ManaDocumentStorageActivity : Activity() {
         }
     }
 
-    private fun walk(folder: DocumentFile, found: MutableMap<String, DocumentFile>, depth: Int) {
-        if (depth > 5 || found.size >= MAX_CANDIDATES) return
-        val children = try { folder.listFiles() } catch (_: SecurityException) { return }
-        children.forEach { child ->
-            if (found.size >= MAX_CANDIDATES) return
+    private fun walk(folder: DocumentFile, found: MutableMap<String, DocumentFile>, depth: Int, visited: IntArray) {
+        if (depth > 5 || found.size >= MAX_CANDIDATES || visited[0] >= MAX_SCANNED_FILES) return
+        val children = try { folder.listFiles() } catch (_: Exception) { return }
+        for (child in children) {
+            if (found.size >= MAX_CANDIDATES || visited[0] >= MAX_SCANNED_FILES) break
+            visited[0]++
             if (child.isDirectory) {
-                if (child.name != QUARANTINE_DIR) walk(child, found, depth + 1)
+                if (child.name != QUARANTINE_DIR) walk(child, found, depth + 1, visited)
             } else if (child.isFile && isCandidate(child)) {
                 found[child.uri.toString()] = child
             }
@@ -381,6 +382,7 @@ class ManaDocumentStorageActivity : Activity() {
         private const val QUARANTINE_DIR = "MANA_Review"
         private const val TAG = "mana.storage.quarantine"
         private const val MAX_CANDIDATES = 500
+        private const val MAX_SCANNED_FILES = 10_000
         private const val MAX_FILE_BYTES = 2L * 1024L * 1024L * 1024L
         private const val DAY_MS = 86_400_000L
         private val TEMP_EXTENSIONS = setOf("tmp", "temp", "log", "old", "bak", "cache", "part", "crdownload")
