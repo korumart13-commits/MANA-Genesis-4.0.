@@ -1,0 +1,9 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.mana.assistant.tests">
+    <uses-permission android:name="com.mana.permission.BIND_BRAIN" />
+    <application android:label="MANA Brain Tests" android:allowBackup="false" />
+    <instrumentation
+        android:name="android.test.InstrumentationTestRunner"
+        android:targetPackage="com.mana.assistant"
+        android:label="MANA Brain Binder instrumentation tests" />
+</manifest>
