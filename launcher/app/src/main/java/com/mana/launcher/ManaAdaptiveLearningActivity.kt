@@ -3,6 +3,7 @@ package com.mana.launcher
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
@@ -129,6 +130,10 @@ class ManaAdaptiveLearningActivity : Activity() {
             card.addView(text(item.title, 14, 0xFFFFFFFF.toInt(), true))
             card.addView(text(item.sourceUrl, 11, 0xFF69C6FF.toInt()))
             card.addView(text(item.snippet, 12, 0xFFB7CBE2.toInt()))
+            card.addView(button("Открыть первоисточник") {
+                runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.sourceUrl))) }
+                    .onFailure { showMessage("Не удалось открыть источник: ${it.message}") }
+            })
             card.addView(button("Удалить этот источник") { confirmForget(item) })
             entries.addView(card, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
         }
