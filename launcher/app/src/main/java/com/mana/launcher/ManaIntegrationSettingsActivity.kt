@@ -156,7 +156,7 @@ class ManaIntegrationSettingsActivity : ComponentActivity() {
             } else {
                 AlertDialog.Builder(this)
                     .setTitle("Сохранённые источники: ${items.size}")
-                    .setItems(items.map { it.title + "\\n" + it.sourceUrl }.toTypedArray()) { _, which ->
+                    .setItems(items.map { it.title + "\n" + it.sourceUrl }.toTypedArray()) { _, which ->
                         val item = items[which]
                         confirmRemove("Забыть источник «${item.title}»?") {
                             adaptiveKnowledge.forget(item.id, ownerApproved = true)
