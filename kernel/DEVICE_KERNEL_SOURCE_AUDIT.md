@@ -4,7 +4,7 @@ Status: source discovery started; no candidate has been approved for building or
 
 ## Target facts
 
-- Product: realme RMX5566RU / realme C85 4G variant (Snapdragon 685; not C85 5G)
+- Product identifier: realme RMX5566RU / RE645F (owner describes it as realme C85 5G; exact marketing variant remains under verification)
 - Device codename: RE645F
 - SoC: Qualcomm SM6225
 - Board/platform: bengal
@@ -16,9 +16,9 @@ Status: source discovery started; no candidate has been approved for building or
 
 Repository: https://github.com/realme-kernel-opensource/realme_C85_5G-AndroidV-kernel-source
 
-The repository name matches the separate C85 5G product, not this RMX5566RU hardware. realme's official C85 specification lists Snapdragon 685, while the official C85 5G specification lists MediaTek Dimensity 6300. The owner's hardware audit reports Qualcomm SM6225 / `bengal` / `qcom` / Adreno 610, matching the C85 4G platform. Public device references distinguish RMX5566/RE645F from the RMX5253 C85 5G platform. The candidate source's latest commit explicitly targets RMX5253/MTK.
+The repository name matches a separate C85 5G software target, but its latest source commit explicitly targets RMX5253 and a MediaTek release. The owner's device diagnostics instead report RMX5566RU / RE645F, Qualcomm SM6225, `bengal`, `qcom` and Adreno 610. realme's public product pages currently list Snapdragon 685 for C85 and Dimensity 6300 for C85 5G, so the owner-reported marketing name and public model mapping are not fully consistent. The exact runtime SoC/platform values from the phone must take precedence for kernel matching; do not treat the RMX5253/MediaTek source as compatible.
 
-Official comparison: https://www.realme.com/my/realme-c85/specs (Snapdragon 685) and https://www.realme.com/my/realme-c85-5g/specs (Dimensity 6300).
+Official comparison: https://www.realme.com/my/realme-c85/specs (Snapdragon 685) and https://www.realme.com/my/realme-c85-5g/specs (Dimensity 6300). These public specifications demonstrate why the runtime hardware audit is required rather than relying on the retail name alone.
 
 Technical mismatch details:
 - Its top-level kernel Makefile declares Linux 5.15.180, not the device's reported 5.15.197.
