@@ -11,7 +11,7 @@ import java.net.URL
 
 data class ManaYandexConfig(val apiKey: String, val folderId: String, val modelId: String, val enabled: Boolean)
 
-/** Official Yandex AI Studio Responses API adapter. Never enabled until configured by the owner. */
+/** Official Yandex AI Studio Text Generation API adapter. Never enabled until configured by the owner. */
 class ManaYandexAiStudioProvider(context: Context) : InferenceProvider {
     private val vault = ManaEncryptedCredentialStore(context, "yandex-ai-studio.bin", "mana.yandex.credentials.v1")
     override val id: String = "yandex-ai-studio"
