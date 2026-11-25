@@ -25,10 +25,10 @@ Status: device profile recorded from the owner's previously supplied Termux audi
 - Previously reported /data: approximately 218 GB total, 101 GB used, 117 GB free
 
 ## Build constraints
-1. Treat this as an Android 16 / API 36 ARM64 application target first.
+1. Treat this as an Android 16 / API 36 ARM64 integrated-OS target; the launcher and assistant are source modules inside the OS project.
 2. Keep the stock boot chain, AVB, vendor image, modem, and partition layout untouched.
 3. Do not produce or flash boot.img, vendor_boot.img, dtbo.img, vbmeta.img, recovery, super, or OTA firmware until exact device-specific sources, partition metadata, signing requirements, and an unlock/restore path are verified.
-4. Build and test the MANA Android application/launcher as an ordinary APK first. An APK is not a replacement for the operating system or kernel.
+4. Do not start a separate APK workflow. Integrate MANA Launcher and MANA Assistant as Android product modules in the eventual AOSP build. They are not a replacement for the operating system or kernel.
 5. Preserve Android permission boundaries. No root, system privileges, Device Owner status, or AVB bypass may be assumed.
 6. Local LiteRT-LM inference is the preferred AI path; cloud model providers are optional online extensions. Model selection must respect available RAM, storage, thermal limits, and licensing.
 7. The active slot _a is an observation only; never hard-code it for installation or updates.
@@ -41,9 +41,9 @@ Status: device profile recorded from the owner's previously supplied Termux audi
 - AVB key/chain details and the device's exact OTA payload format
 
 ## Required build stages
-- Stage 1: compile, unit-test, and package the Android APK using the repository's Android 16 workflow.
-- Stage 2: install and validate the APK without modifying system partitions.
-- Stage 3: gather/verify OEM device sources and compatibility metadata before any ROM/device-tree work.
+- Stage 1: validate JVM system services and compile/test MANA Android product modules against a pinned Android 16 AOSP tree.
+- Stage 2: integrate the modules into the verified RMX5566RU product configuration without modifying the stock phone.
+- Stage 3: gather/verify OEM device sources and compatibility metadata before device-specific ROM work.
 - Stage 4: only after source and recovery prerequisites are proven, evaluate a device-specific ROM build. No universal flash package is acceptable.
 
 
