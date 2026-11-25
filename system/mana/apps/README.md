@@ -23,7 +23,7 @@ They remain non-privileged product apps: no platform certificate, root access, h
 - Real Android product build and on-device validation.
 - OEM kernel source, matching DTS/DTBO, vendor modules, VINTF/HAL and verified recovery/rollback path before any flashable image is attempted.
 
-These are integrated source modules intended for the future MANA product image. No separate APK release or firmware flash is initiated by this workflow.
+These are integrated source modules intended for the future MANA product image. No firmware flash is initiated by this workflow.
 
 ## MANA Brain Binder boundary (new)
 
@@ -35,8 +35,7 @@ The Binder endpoint, signature-level permission, caller UID/package/signature va
 ### Brain Binder integration boundary
 
 `ManaAssistant` now hosts a signature-protected Binder service and links
-`mana.brain-java`. The service is intentionally fail-closed: until the canonical
-Kotlin/JVM engine is packaged for Soong, requests receive an explicit
-`ENGINE_NOT_PACKAGED` error and readiness is false. No placeholder AI output
-is generated. Launcher binding, engine packaging, and Android instrumentation
-tests are still outstanding.
+`mana.brain-java`. The service delegates to the canonical Kotlin/JVM engine compiled as the
+Soong mana-brain-core library. It fails closed when no inference provider is
+registered. The Launcher submits through AIDL and forwards unavailable requests
+to the existing com.mana.genesis companion, which contains the LiteRT-LM runtime.
