@@ -4,6 +4,9 @@ import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.Conversation
+import com.google.ai.edge.litertlm.ConversationConfig
+import com.google.ai.edge.litertlm.Contents
+import com.google.ai.edge.litertlm.SamplerConfig
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.collect
 import java.io.File
@@ -28,7 +31,19 @@ class LocalModelRuntime(private val cacheDirectory: File) {
                 closeLoaded()
                 cacheDirectory.mkdirs()
                 val (candidate, backendName) = createEngineWithFallback(modelFile)
-                val newConversation = candidate.createConversation()
+                val newConversation = candidate.createConversation(
+                    ConversationConfig(
+                        systemInstruction = Contents.of(
+                            "Ты — MANA, локальный персональный помощник владельца. " +
+                                "Отвечай по-русски, если не попросили другой язык. " +
+                                "Будь доброжелательной, выразительной и слегка игривой, но не навязчивой. " +
+                                "Не утверждай, что выполнила действие, если оно фактически не выполнено. " +
+                                "Используй переданный контекст локальной памяти только если он относится к вопросу. " +
+                                "Не раскрывай секреты и не отправляй личные сведения в сеть."
+                        ),
+                        samplerConfig = SamplerConfig(topK = 40, topP = 0.92, temperature = 0.72)
+                    )
+                )
                 engine = candidate
                 conversation = newConversation
                 loadedModel = modelFile
