@@ -20,10 +20,10 @@ This ledger is authoritative for distinguishing implemented code from plans and 
 | Cloud gateway dependency | Implemented + tested | Optional; not a dependency of MANA Brain |
 | Core boot lifecycle | Implemented + tested | JVM lifecycle and dependency ordering only; not Android init or kernel boot |
 | Android UI shell | Prototype, compiled in separate workflow | Java launcher/assistant shells; not a complete System UI |
-| Legacy launcher | Prototype | Gradle/Kotlin launcher with app drawer, model import, chat shell and in-app avatar icon; not included in the Soong product |
-| Floating avatar overlay | Prototype | User-enabled, draggable Android overlay service; requires the user to grant “display over other apps”; current rendering is a 2D placeholder, not the final 3D character |
+| Legacy launcher | Prototype; Gradle compile passed before 3D/TTS additions | Gradle/Kotlin launcher with app drawer, local model import, chat shell, optional overlay entry and local inference bridge; not included in the Soong product |
+| Floating avatar overlay | Prototype; source implementation added, CI/device verification pending | User-enabled draggable overlay now hosts a procedural OpenGL ES 2.0 full-body stylized 3D character with idle/blink animation; it is still a mesh-primitive character, not a production rigged/high-detail character asset, and has not yet been tested on the RMX5566RU display/GPU |
 | Local model import | Hardened prototype | Streaming import, 16 GiB cap, free-space reserve, SHA-256 sidecar, temporary file and atomic replacement; no trusted publisher signature/model-license verification |
-| Local model runtime | Prototype | LiteRT-LM API calls exist; no bundled weights, device benchmark, model compatibility matrix or production brain adapter |
+| Local model runtime | Prototype; Gradle compile passed | LiteRT-LM Android 0.16.1 API is compiled and callable in the legacy launcher; no bundled weights, device benchmark, model compatibility matrix or production Brain service adapter |
 | Backup exposure | Corrected in launcher manifest | Android app backup disabled for model/user files |
 | JVM error handling | Corrected in LiteRT runtime | Ordinary exceptions handled; fatal JVM errors are not swallowed |
 | Core security policy | Implemented + tested as JVM policy | Not Android permission enforcement, SELinux, Binder authorization or filesystem sandbox |
@@ -48,11 +48,11 @@ This ledger is authoritative for distinguishing implemented code from plans and 
 - [ ] Adaptive learning limited to user-approved sources, provenance tracking, retrieval evaluation and safe resource scheduling.
 
 ### Avatar, voice and interaction
-- [ ] Original, fully rigged 3D character asset (not a 2D icon): mesh, materials, hair, clothing, skeleton, facial blendshapes and licensed asset record.
-- [ ] Real-time 3D renderer integrated into the app and a system-level floating-window host.
+- [ ] Production-quality original, fully rigged 3D character asset: current procedural primitive-mesh character is an initial 3D prototype, not a skinned mesh/skeleton/blendshape asset; outfit/accessory system and asset provenance remain.
+- [ ] Real-time procedural OpenGL ES 2.0 3D renderer and user-granted Android overlay host have been added to the launcher prototype; verify CI and target-device rendering. Integrate the renderer into the Soong MANA system product.
 - [ ] Drag, snap-to-edge, resize, hide/show, touch/gesture, lifecycle and accessibility tests for floating avatar.
 - [ ] Stable character identity/voice; outfit/accessory customization without changing body/face identity.
-- [ ] Speech-to-text, local text-to-speech voice, interruption, wake/gesture invocation and expressive animation synchronized to speech.
+- [ ] Speech-to-text is wired through Android recognizer intent in the launcher. Russian Android TextToSpeech output and avatar mouth animation have been added in source; verify build, installed Russian voice availability, true female voice selection, interruption and on-device behavior. Wake/gesture invocation remains incomplete.
 - [ ] Power-button/gesture invocation only through APIs supported by the target OS; no privileged interception assumption.
 
 ### Personal modules
