@@ -46,6 +46,7 @@ class ManaFloatingAvatarService : LifecycleService() {
     override fun onCreate() {
         super.onCreate()
         startPersistentNotification()
+        ManaAvatarState.loadFromPreferences(this)
         if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
             stopSelf()
             return
@@ -62,16 +63,16 @@ class ManaFloatingAvatarService : LifecycleService() {
             x = dp(12)
             y = dp(120)
         }
-        val avatarAsset = ManaAvatarAssetSelector.assetName(this)
         val compose = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@ManaFloatingAvatarService)
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 val engine = rememberEngine()
                 val modelLoader = rememberModelLoader(engine)
+                val avatarAsset = ManaAvatarState.assetName()
                 val isSpeaking = ManaAvatarState.isSpeaking
                 val expression = ManaAvatarState.expressionIndex
-                val animationName = when { isSpeaking -> "Speaking"; expression == 1 -> "Happy"; expression == 2 -> "Playful"; else -> "Idle" }
+                val animationName = when { isSpeaking -> "Speaking"; expression == 1 -> "Playful"; expression == 2 -> "Happy"; else -> "Idle" }
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
