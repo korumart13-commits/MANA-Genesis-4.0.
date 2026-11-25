@@ -14,6 +14,8 @@ import android.os.Bundle
 import android.os.Build
 import android.provider.Settings
 import android.speech.RecognizerIntent
+import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -61,6 +63,8 @@ class MainActivity : Activity() {
     private var chatInput: EditText? = null
     private var chatOutput: TextView? = null
     private var modelStatus: TextView? = null
+    private var textToSpeech: TextToSpeech? = null
+    @Volatile private var voiceReady = false
 
     private fun requestFloatingAvatar() {
         if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
@@ -78,6 +82,7 @@ class MainActivity : Activity() {
         window.decorView.setBackgroundColor(bg)
         localRuntime = LocalModelRuntime(File(cacheDir, "mana-litert-cache"))
         manaBrain = ManaBrainBridge(localRuntime)
+        initializeVoice()
         loadApps()
         buildShell()
         showHome()
@@ -403,15 +408,64 @@ class MainActivity : Activity() {
         val prompt = chatInput?.text?.toString()?.trim().orEmpty()
         if (prompt.isBlank()) return
         chatOutput?.text = "Ты: $prompt\n\nMANA думает…"
-        ManaAvatar3DView.isSpeaking = true
-        manaBrain.respond(prompt, { chunk -> runOnUiThread { chatOutput?.append(chunk) } }) { result ->
+        val generated = StringBuilder()
+        manaBrain.respond(prompt, { chunk ->
+            generated.append(chunk)
+            runOnUiThread { chatOutput?.append(chunk) }
+        }) { result ->
             runOnUiThread {
-                ManaAvatar3DView.isSpeaking = false
-                result.onSuccess { chatInput?.setText("") }
-                    .onFailure { error -> chatOutput?.append("\n\nОшибка локального ИИ: ${error.message}") }
+                result.onSuccess {
+                    chatInput?.setText("")
+                    speakResponse(generated.toString())
+                }.onFailure { error ->
+                    ManaAvatar3DView.isSpeaking = false
+                    chatOutput?.append("\n\nОшибка локального ИИ: ${error.message}")
+                }
             }
         }
     }
+    private fun initializeVoice() {
+        textToSpeech = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                val engine = textToSpeech ?: return@TextToSpeech
+                val russian = Locale("ru", "RU")
+                val languageResult = engine.setLanguage(russian)
+                engine.setSpeechRate(0.92f)
+                engine.setPitch(1.06f)
+                val preferred = engine.voices?.firstOrNull { voice ->
+                    voice.locale.language == "ru" &&
+                        listOf("female", "woman", "жен", "alena", "irina").any { voice.name.contains(it, true) }
+                }
+                if (preferred != null) engine.voice = preferred
+                voiceReady = languageResult != TextToSpeech.LANG_MISSING_DATA &&
+                    languageResult != TextToSpeech.LANG_NOT_SUPPORTED
+                engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(utteranceId: String?) {
+                        ManaAvatar3DView.isSpeaking = true
+                    }
+                    override fun onDone(utteranceId: String?) {
+                        ManaAvatar3DView.isSpeaking = false
+                    }
+                    @Deprecated("Deprecated in Android")
+                    override fun onError(utteranceId: String?) {
+                        ManaAvatar3DView.isSpeaking = false
+                    }
+                    override fun onError(utteranceId: String?, errorCode: Int) {
+                        ManaAvatar3DView.isSpeaking = false
+                    }
+                })
+            }
+        }
+    }
+
+    private fun speakResponse(text: String) {
+        val clean = text.trim()
+        if (!voiceReady || clean.isEmpty()) return
+        ManaAvatar3DView.isSpeaking = true
+        val result = textToSpeech?.speak(clean, TextToSpeech.QUEUE_FLUSH, null, "mana-response-${System.nanoTime()}")
+        if (result == TextToSpeech.ERROR) ManaAvatar3DView.isSpeaking = false
+    }
+
     private fun startVoiceInput() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -439,6 +493,9 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         if (::localRuntime.isInitialized) localRuntime.shutdown()
+        ManaAvatar3DView.isSpeaking = false
+        textToSpeech?.stop()
+        textToSpeech?.shutdown()
         super.onDestroy()
     }
 
