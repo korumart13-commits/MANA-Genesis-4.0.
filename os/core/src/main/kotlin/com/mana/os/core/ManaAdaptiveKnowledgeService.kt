@@ -55,7 +55,7 @@ class ManaAdaptiveKnowledgeService(private val store: ManaAdaptiveKnowledgeStore
     @Synchronized fun save(title: String, sourceUrl: String, snippet: String, ownerApproved: Boolean, now: Instant = Instant.now()): ManaKnowledgeItem {
         require(ownerApproved) { "Explicit owner approval is required to save web knowledge." }
         require(title.isNotBlank() && title.length <= 240)
-        require(snippet.isNotBlank() && snippet.length <= 700)
+        require(snippet.isNotBlank() && snippet.length <= 4000)
         require(sourceUrl.length <= 2048) { "Source URL exceeds the storage limit." }
         val uri = URI(sourceUrl)
         require(uri.scheme == "https" && !uri.host.isNullOrBlank() && uri.userInfo == null) { "Only HTTPS source URLs without embedded credentials can be saved." }
