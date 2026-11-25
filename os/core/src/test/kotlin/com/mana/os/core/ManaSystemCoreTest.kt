@@ -56,6 +56,18 @@ class ManaSystemCoreTest {
         assertEquals(ModuleState.FAILED, status.single().state)
     }
 
+    @Test fun shutdownEndsInStoppedPhase() {
+        val core = ManaSystemCore(device)
+        core.register(object : ManaSystemModule {
+            override val id = "base"
+            override fun start(context: ManaSystemContext) = Unit
+        })
+        core.boot()
+        core.stop()
+        assertEquals(BootPhase.STOPPED, core.phase)
+        assertEquals(ModuleState.STOPPED, core.healthSnapshot().single().state)
+    }
+
     @Test fun rollsBackStartedModulesWhenLaterModuleFails() {
         val events = mutableListOf<String>()
         val core = ManaSystemCore(device)
