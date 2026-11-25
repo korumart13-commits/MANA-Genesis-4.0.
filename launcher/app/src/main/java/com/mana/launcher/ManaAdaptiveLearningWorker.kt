@@ -21,9 +21,15 @@ class ManaAdaptiveLearningWorker(context: Context, params: WorkerParameters) : C
         if (!prefs.getBoolean(KEY_ENABLED, false)) return Result.success()
         val topics = prefs.getString(KEY_TOPICS, "").orEmpty()
             .lineSequence().map { it.trim() }.filter { it.length in 2..512 }.distinct().take(5).toList()
-        if (topics.isEmpty()) return Result.success()
+        if (topics.isEmpty()) {
+            saveStatus(prefs, "Добавь хотя бы одну тему для поиска.", 0)
+            return Result.success()
+        }
         val provider = ManaYandexAiStudioProvider(applicationContext)
-        if (!provider.isAvailable()) return Result.failure()
+        if (!provider.isAvailable()) {
+            saveStatus(prefs, "Yandex AI Studio не настроена или отключена.", 0)
+            return Result.failure()
+        }
         val search = ManaYandexSearchApi(provider)
         val knowledge = ManaAdaptiveKnowledgeService(
             EncryptedFileManaAdaptiveKnowledgeStore(
@@ -35,23 +41,44 @@ class ManaAdaptiveLearningWorker(context: Context, params: WorkerParameters) : C
             )
         )
         return try {
+            var saved = 0
             for (topic in topics) {
                 val results = search.search(topic, 3)
                 results.forEach { result ->
                     knowledge.save(result.title, result.url, result.snippet.ifBlank { result.title }, ownerApproved = true)
+                    saved++
                 }
             }
+            saveStatus(prefs, "Поиск завершён. Сохранено результатов: $saved.", saved)
             Result.success()
         } catch (error: Exception) {
             val message = error.message.orEmpty()
-            if (message.contains("HTTP 401") || message.contains("HTTP 403")) Result.failure() else Result.retry()
+            val accessDenied = message.contains("HTTP 401") || message.contains("HTTP 403")
+            saveStatus(
+                prefs,
+                if (accessDenied) "Yandex отказал в доступе. Проверь API-ключ, каталог и роль search-api.webSearch.user."
+                else "Ошибка сети или Yandex Search API. Повторная попытка будет выполнена автоматически.",
+                0
+            )
+            if (accessDenied) Result.failure() else Result.retry()
         }
+    }
+
+    private fun saveStatus(prefs: android.content.SharedPreferences, status: String, saved: Int) {
+        prefs.edit()
+            .putString(KEY_LAST_STATUS, status)
+            .putLong(KEY_LAST_RUN, System.currentTimeMillis())
+            .putInt(KEY_LAST_SAVED, saved)
+            .apply()
     }
 
     companion object {
         const val PREFS = "mana.adaptive.learning"
         const val KEY_ENABLED = "enabled"
         const val KEY_TOPICS = "topics"
+        const val KEY_LAST_STATUS = "last_status"
+        const val KEY_LAST_RUN = "last_run"
+        const val KEY_LAST_SAVED = "last_saved"
     }
 }
 
