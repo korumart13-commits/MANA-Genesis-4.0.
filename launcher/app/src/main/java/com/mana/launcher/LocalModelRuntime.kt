@@ -33,7 +33,7 @@ class LocalModelRuntime(private val cacheDirectory: File) {
                 conversation = newConversation
                 loadedModel = modelFile
                 callback(Result.success(modelFile.name))
-            } catch (error: Throwable) {
+            } catch (error: Exception) {
                 closeLoaded()
                 callback(Result.failure(error))
             }
@@ -47,16 +47,16 @@ class LocalModelRuntime(private val cacheDirectory: File) {
                 require(prompt.isNotBlank()) { "Пустой запрос." }
                 runBlocking { active.sendMessageAsync(prompt).collect { message -> onChunk(message.text) } }
                 callback(Result.success(Unit))
-            } catch (error: Throwable) {
+            } catch (error: Exception) {
                 callback(Result.failure(error))
             }
         }
     }
 
     private fun closeLoaded() {
-        try { conversation?.close() } catch (_: Throwable) { }
+        try { conversation?.close() } catch (_: Exception) { }
         conversation = null
-        try { engine?.close() } catch (_: Throwable) { }
+        try { engine?.close() } catch (_: Exception) { }
         engine = null
         loadedModel = null
     }
