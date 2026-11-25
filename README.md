@@ -1,27 +1,22 @@
-# MANA Genesis 4.0 — GitHub Actions build
+# MANA Genesis 4.0 — Operating-system source project
 
-## Files to upload to the repository root
-- `MANA_Genesis_4_0_MIRROR_READY_SOURCE.zip`
-- `.github/workflows/android-build.yml`
+MANA Genesis 4.0 is being developed as an Android 16 AOSP-derived operating system for the realme RMX5566RU (RE645F), not as a standalone launcher APK.
 
-## Run
-1. Open the repository's **Actions** tab.
-2. Select **MANA Genesis 4.0 — Android 16 build**.
-3. Choose **Run workflow** (or let a push of either listed file trigger it).
-4. Wait for a green successful run.
-5. Download **MANA-Genesis-4.0-debug-APK** from that run's Artifacts section.
+## Current focus
 
-The workflow extracts the archive and builds the Android project at
-`MANA_Genesis_4_0_COMPLETE/MANA_Genesis_4.0_Unified/existing_aosp/MANA_OS_3_0_Android_Project`.
-It runs `clean`, `test`, and `:app:assembleDebug`, and publishes the APK only after all steps succeed.
+- Establish the Android platform source and product architecture.
+- Verify the exact RMX5566RU device tree, vendor interface and Linux kernel source.
+- Build the MANA system layer into the OS: System UI, launcher, settings, avatar, local-first MANA Brain and system services.
+- Preserve the stock boot chain until device-specific sources, recovery and signing are verified.
 
-**Important:** no APK is included or claimed to be built by this package. The APK is ready only after GitHub Actions reports success and the artifact is present. This is an Android app/launcher project, not a flashable firmware image.
+## Project status
 
-If GitHub writes fail through the connected app, reconnect the GitHub integration and grant repository **Contents: Read and write** and **Actions: Read and write** permissions, then retry.
+This repository currently contains the project documentation, device profile, MANA Brain JVM foundation and previous application prototypes. It does **not** yet contain a complete AOSP source checkout or a validated bootable RMX5566RU ROM/kernel build.
 
+The device profile is in [device/RMX5566RU_TARGET_PROFILE.md](device/RMX5566RU_TARGET_PROFILE.md). The OS architecture and stages are in [os/README.md](os/README.md) and [os/BUILD_SEQUENCE.md](os/BUILD_SEQUENCE.md). Kernel source findings are in [kernel/DEVICE_KERNEL_SOURCE_AUDIT.md](kernel/DEVICE_KERNEL_SOURCE_AUDIT.md).
 
-## MANA Owner / Primary Node architecture
+## Safety and accuracy
 
-The approved owner role is **Главный разработчик и владелец**. The realme RMX5566 is designated as the **MANA Primary Node**. Other devices must be paired only by an explicit owner action. The server is local-network-only and off by default. See [docs/MANA_OWNER_AND_LOCAL_SERVER_ARCHITECTURE.md](docs/MANA_OWNER_AND_LOCAL_SERVER_ARCHITECTURE.md).
+The target device reports Linux 5.15.197, Qualcomm SM6225/bengal, a locked bootloader and green Verified Boot. Do not flash experimental boot, vendor_boot, dtbo, vbmeta, recovery, super or OTA images. Do not use another phone's SM6225 kernel as a drop-in kernel.
 
-This is an architecture specification for the next implementation step; it is not yet integrated into the APK.
+A source project, a successful CI build, and a bootable image are separate milestones. The project will report them separately. No APK build is part of the current milestone.
