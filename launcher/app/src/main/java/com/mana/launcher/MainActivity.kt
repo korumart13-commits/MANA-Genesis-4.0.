@@ -1007,7 +1007,7 @@ class MainActivity : Activity() {
                         }
                     }
                     require(copied > 0L) { "Файл модели пуст." }
-                    val hash = digest.digest().joinToString("") { "%02x".format(it) }
+                    val hash = digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
                     Files.move(temp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
                     File(directory, "selected-model.sha256").writeText("$hash  selected-model.litertlm\n")
                 } finally {
