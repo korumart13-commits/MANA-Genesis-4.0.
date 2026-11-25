@@ -1,26 +1,46 @@
 package com.mana.launcher
 
-import android.app.Service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
-import android.content.pm.ServiceInfo
 import android.provider.Settings
 import android.view.Gravity
 import android.view.WindowManager
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.consume
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.ViewTreeLifecycleOwner
+import io.github.sceneview.SceneView
+import io.github.sceneview.rememberEngine
+import io.github.sceneview.rememberModelInstance
+import io.github.sceneview.rememberModelLoader
 
 /**
- * Owner-enabled floating 3D avatar. Android still requires the user to grant
- * the special "display over other apps" permission in Settings.
+ * Persistent, owner-enabled floating glTF avatar. The model is rendered by SceneView/Filament;
+ * the overlay never captures keyboard focus or injects input into the foreground app.
  */
-class ManaFloatingAvatarService : Service() {
+class ManaFloatingAvatarService : LifecycleService() {
     private lateinit var windowManager: WindowManager
-    private var avatar: ManaAvatar3DView? = null
+    private var avatarView: ComposeView? = null
     private lateinit var params: WindowManager.LayoutParams
+    private var dragged = false
 
     override fun onCreate() {
         super.onCreate()
@@ -33,7 +53,7 @@ class ManaFloatingAvatarService : Service() {
         val type = if (Build.VERSION.SDK_INT >= 26) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
                    else WindowManager.LayoutParams.TYPE_PHONE
         params = WindowManager.LayoutParams(
-            dp(124), dp(220), type,
+            dp(132), dp(236), type,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             android.graphics.PixelFormat.TRANSLUCENT
         ).apply {
@@ -41,33 +61,75 @@ class ManaFloatingAvatarService : Service() {
             x = dp(12)
             y = dp(120)
         }
-        avatar = ManaAvatar3DView(
-            this,
-            onDrag = { dx, dy ->
-                params.x = (params.x + dx.toInt()).coerceAtLeast(0)
-                params.y = (params.y + dy.toInt()).coerceAtLeast(0)
-                try { avatar?.let { windowManager.updateViewLayout(it, params) } } catch (_: IllegalArgumentException) { }
-            },
-            onTap = {
-                startActivity(Intent(this, MainActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP))
-            },
-            onDragEnd = {
-                val metrics = resources.displayMetrics
-                val maxX = (metrics.widthPixels - params.width).coerceAtLeast(0)
-                val maxY = (metrics.heightPixels - params.height).coerceAtLeast(0)
-                params.x = if (params.x + params.width / 2 < metrics.widthPixels / 2) 0 else maxX
-                params.y = params.y.coerceIn(0, maxY)
-                try { avatar?.let { windowManager.updateViewLayout(it, params) } } catch (_: IllegalArgumentException) { }
-            }
-        ).also { view ->
-            try {
-                windowManager.addView(view, params)
-                view.onResume()
-            } catch (_: SecurityException) {
-                stopSelf()
+        val compose = ComposeView(this).apply {
+            setViewTreeLifecycleOwner(this@ManaFloatingAvatarService)
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                val engine = rememberEngine()
+                val modelLoader = rememberModelLoader(engine)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(26.dp))
+                        .background(Color.Transparent)
+                        .pointerInput(Unit) {
+                            detectDragGestures(
+                                onDragStart = { dragged = false },
+                                onDragEnd = { if (dragged) snapToEdge() },
+                                onDragCancel = { if (dragged) snapToEdge() },
+                                onDrag = { change, amount ->
+                                    dragged = true
+                                    change.consume()
+                                    params.x = (params.x + amount.x.toInt()).coerceAtLeast(0)
+                                    params.y = (params.y + amount.y.toInt()).coerceAtLeast(0)
+                                    try { avatarView?.let { windowManager.updateViewLayout(it, params) } }
+                                    catch (_: IllegalArgumentException) { }
+                                }
+                            )
+                        }
+                        .pointerInput(Unit) {
+                            detectTapGestures(onTap = { openAssistant() })
+                        }
+                ) {
+                    SceneView(
+                        modifier = Modifier.fillMaxSize(),
+                        engine = engine,
+                        modelLoader = modelLoader
+                    ) {
+                        rememberModelInstance(modelLoader, "mana_avatar_genesis.gltf")?.let { instance ->
+                            ModelNode(
+                                modelInstance = instance,
+                                scaleToUnits = 2.25f,
+                                autoAnimate = true,
+                                animationLoop = true
+                            )
+                        }
+                    }
+                }
             }
         }
+        avatarView = compose
+        try {
+            windowManager.addView(compose, params)
+        } catch (_: SecurityException) {
+            avatarView = null
+            stopSelf()
+        }
+    }
+
+    private fun snapToEdge() {
+        val metrics = resources.displayMetrics
+        val maxX = (metrics.widthPixels - params.width).coerceAtLeast(0)
+        val maxY = (metrics.heightPixels - params.height).coerceAtLeast(0)
+        params.x = if (params.x + params.width / 2 < metrics.widthPixels / 2) 0 else maxX
+        params.y = params.y.coerceIn(0, maxY)
+        try { avatarView?.let { windowManager.updateViewLayout(it, params) } }
+        catch (_: IllegalArgumentException) { }
+    }
+
+    private fun openAssistant() {
+        startActivity(Intent(this, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP))
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -97,35 +159,30 @@ class ManaFloatingAvatarService : Service() {
             Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val builder = if (Build.VERSION.SDK_INT >= 26) {
-            Notification.Builder(this, CHANNEL_ID)
-        } else {
-            @Suppress("DEPRECATION") Notification.Builder(this)
-        }
+        val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, CHANNEL_ID)
+            else @Suppress("DEPRECATION") Notification.Builder(this)
         val notification = builder.setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("MANA is active")
-            .setContentText("Плавающий 3D-аватар работает поверх приложений")
+            .setContentText("Плавающий анимированный 3D-аватар MANA")
             .setContentIntent(openPending)
             .setOngoing(true)
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Остановить", stopPending)
             .build()
         if (Build.VERSION.SDK_INT >= 34) {
             startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
-        }
+        } else startForeground(NOTIFICATION_ID, notification)
     }
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    override fun onBind(intent: Intent?): IBinder? = super.onBind(intent)
 
     override fun onDestroy() {
-        avatar?.let {
+        avatarView?.let {
             try {
-                it.onPause()
                 windowManager.removeView(it)
+                it.disposeComposition()
             } catch (_: IllegalArgumentException) { }
         }
-        avatar = null
+        avatarView = null
         super.onDestroy()
     }
 
