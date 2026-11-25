@@ -324,6 +324,9 @@ class MainActivity : Activity() {
                 )
             }
         }, LinearLayout.LayoutParams(-1, dp(42)))
+        content.addView(action("Открыть MANA Companion для Minecraft Bedrock") {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/workflows/mana-minecraft-pack.yml")))
+        }, LinearLayout.LayoutParams(-1, dp(42)))
         content.addView(label("Полный список приложений — во вкладке «Приложения».", 12, muted, false).apply {
             setPadding(0, dp(17), 0, 0)
         })
