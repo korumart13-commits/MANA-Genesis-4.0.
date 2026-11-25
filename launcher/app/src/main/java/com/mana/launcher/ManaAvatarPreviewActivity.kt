@@ -17,13 +17,14 @@ class ManaAvatarPreviewActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         window.statusBarColor = android.graphics.Color.rgb(4, 7, 14)
         window.navigationBarColor = android.graphics.Color.rgb(4, 7, 14)
-        val avatarAsset = ManaAvatarAssetSelector.assetName(this)
+        ManaAvatarState.loadFromPreferences(this)
         setContent {
             val engine = rememberEngine()
             val modelLoader = rememberModelLoader(engine)
+            val avatarAsset = ManaAvatarState.assetName()
             val isSpeaking = ManaAvatarState.isSpeaking
             val expression = ManaAvatarState.expressionIndex
-            val animationName = when { isSpeaking -> "Speaking"; expression == 1 -> "Happy"; expression == 2 -> "Playful"; else -> "Idle" }
+            val animationName = when { isSpeaking -> "Speaking"; expression == 1 -> "Playful"; expression == 2 -> "Happy"; else -> "Idle" }
             SceneView(
                 modifier = Modifier.fillMaxSize(),
                 engine = engine,
