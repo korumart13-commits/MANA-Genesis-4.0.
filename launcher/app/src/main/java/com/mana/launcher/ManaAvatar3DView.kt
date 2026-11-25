@@ -156,7 +156,7 @@ class ManaAvatar3DView(
             heightPx = height.coerceAtLeast(1)
             GLES20.glViewport(0, 0, widthPx, heightPx)
             Matrix.perspectiveM(projection, 0, 33f, widthPx.toFloat() / heightPx, 0.1f, 30f)
-            Matrix.setLookAtM(view, 0, 0f, 0.0f, 5.7f, 0f, 0.05f, 0f, 0f, 1f, 0f)
+            Matrix.setLookAtM(view, 0, 0f, -0.55f, 7.1f, 0f, -0.65f, 0f, 0f, 1f, 0f)
         }
 
         override fun onDrawFrame(gl: GL10?) {
@@ -175,8 +175,15 @@ class ManaAvatar3DView(
             draw(-0.53f, -0.83f + bob, -0.10f, 0.13f, 0.42f, 0.16f, -14f + sway, hairHighlight)
             draw(0.52f, -0.80f + bob, -0.10f, 0.13f, 0.43f, 0.16f, 14f + sway, hairHighlight)
 
-            // Torso, collar, shoulders and articulated arms.
+            // Torso, waist, skirt, legs, boots, shoulders and articulated arms.
             draw(0f, -0.94f + bob, 0f, 0.57f, 0.70f, 0.31f, 0f, coat)
+            draw(0f, -1.48f + bob, 0.01f, 0.37f, 0.22f, 0.25f, 0f, collar)
+            draw(0f, -1.72f + bob, 0.01f, 0.48f, 0.32f, 0.34f, 0f, coat)
+            draw(-0.19f, -2.12f + bob, 0.02f, 0.145f, 0.48f, 0.17f, -2f + sway, stockings)
+            draw(0.19f, -2.12f + bob, 0.02f, 0.145f, 0.48f, 0.17f, 2f + sway, stockings)
+            draw(-0.19f, -2.56f + bob, 0.08f, 0.18f, 0.22f, 0.25f, -2f, boots)
+            draw(0.19f, -2.56f + bob, 0.08f, 0.18f, 0.22f, 0.25f, 2f, boots)
+            draw(0f, -1.68f + bob, 0.355f, 0.045f, 0.045f, 0.025f, 0f, glow)
             draw(-0.47f, -0.60f + bob, 0f, 0.22f, 0.34f, 0.25f, -20f + sway, coat)
             draw(0.47f, -0.60f + bob, 0f, 0.22f, 0.34f, 0.25f, 20f + sway, coat)
             draw(-0.60f, -0.98f + bob, 0.02f, 0.16f, 0.48f, 0.17f, -8f, coat)
@@ -201,7 +208,9 @@ class ManaAvatar3DView(
             draw(-0.185f, 0.545f + bob, 0.447f, 0.016f, 0.020f, 0.012f, 0f, eyeWhite)
             draw(0.155f, 0.545f + bob, 0.447f, 0.016f, 0.020f, 0.012f, 0f, eyeWhite)
             draw(0f, 0.34f + bob, 0.415f, 0.035f, 0.050f, 0.035f, 0f, skinShadow)
-            draw(0f, 0.20f + bob, 0.402f, 0.075f, 0.022f, 0.022f, 0f, lips)
+            val mouthOpen = if (isSpeaking) 0.060f + (sin(t * 18f).coerceAtLeast(0f) * 0.035f) else 0.012f
+            draw(0f, 0.20f + bob, 0.400f, 0.078f, mouthOpen, 0.025f, 0f, mouth)
+            draw(0f, 0.205f + bob, 0.425f, 0.070f, if (isSpeaking) 0.024f else 0.012f, 0.018f, 0f, lips)
             draw(-0.30f, 0.31f + bob, 0.31f, 0.09f, 0.045f, 0.02f, 0f, blush)
             draw(0.30f, 0.31f + bob, 0.31f, 0.09f, 0.045f, 0.02f, 0f, blush)
 
@@ -307,10 +316,14 @@ class ManaAvatar3DView(
         private val hair = floatArrayOf(0.045f, 0.065f, 0.11f, 1f)
         private val hairHighlight = floatArrayOf(0.12f, 0.24f, 0.38f, 1f)
         private val coat = floatArrayOf(0.025f, 0.055f, 0.105f, 1f)
+        private val stockings = floatArrayOf(0.055f, 0.10f, 0.18f, 1f)
+        private val boots = floatArrayOf(0.012f, 0.025f, 0.052f, 1f)
+        private val mouth = floatArrayOf(0.18f, 0.035f, 0.07f, 1f)
         private val collar = floatArrayOf(0.10f, 0.19f, 0.31f, 1f)
         private val eyeWhite = floatArrayOf(0.93f, 0.96f, 1f, 1f)
         private val iris = floatArrayOf(0.08f, 0.52f, 0.86f, 1f)
         private val lips = floatArrayOf(0.66f, 0.22f, 0.32f, 1f)
+        @Volatile var isSpeaking = false
         private val blush = floatArrayOf(0.95f, 0.38f, 0.43f, 0.48f)
         private val accent = floatArrayOf(0.05f, 0.43f, 0.78f, 1f)
         private val glow = floatArrayOf(0.32f, 0.78f, 1f, 1f)
