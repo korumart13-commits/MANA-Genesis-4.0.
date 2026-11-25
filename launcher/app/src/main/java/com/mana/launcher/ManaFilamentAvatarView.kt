@@ -2,13 +2,13 @@ package com.mana.launcher
 
 import android.content.Context
 import android.graphics.PixelFormat
-import android.opengl.Matrix
 import android.util.Base64
 import android.view.Choreographer
 import android.view.MotionEvent
 import android.view.SurfaceView
 import com.google.android.filament.View as FilamentView
 import com.google.android.filament.Renderer
+import com.google.android.filament.android.UiHelper
 import com.google.android.filament.utils.ModelViewer
 import com.google.android.filament.utils.Utils
 import java.nio.ByteBuffer
@@ -41,11 +41,12 @@ class ManaFilamentAvatarView(
 
     private fun createViewer() {
         if (viewer != null) return
-        val modelViewer = ModelViewer(this)
+        val modelViewer = ModelViewer(this, uiHelper = UiHelper(UiHelper.ContextErrorPolicy.DONT_CHECK).apply { isOpaque = false })
         modelViewer.autoPlayAnimations = true
         modelViewer.view.blendMode = FilamentView.BlendMode.TRANSLUCENT
-        modelViewer.renderer.clearOptions = Renderer.ClearOptions().apply {
-            clear = Renderer.ClearOptions.Clear.COLOR or Renderer.ClearOptions.Clear.DEPTH
+        modelViewer.scene.skybox = null
+        modelViewer.renderer.clearOptions = modelViewer.renderer.clearOptions.apply {
+            clear = true
             clearColor = floatArrayOf(0f, 0f, 0f, 0f)
         }
         viewer = modelViewer
