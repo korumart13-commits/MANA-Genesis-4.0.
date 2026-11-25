@@ -45,8 +45,11 @@ class ManaAdaptiveLearningWorker(context: Context, params: WorkerParameters) : C
         return try {
             var saved = 0
             for (topic in topics) {
+                if (isStopped || !prefs.getBoolean(KEY_ENABLED, false)) return Result.success()
                 val results = search.search(topic, 3)
+                if (isStopped || !prefs.getBoolean(KEY_ENABLED, false)) return Result.success()
                 results.forEach { result ->
+                    if (isStopped || !prefs.getBoolean(KEY_ENABLED, false)) return Result.success()
                     knowledge.save(result.title, result.url, result.snippet.ifBlank { result.title }, ownerApproved = true)
                     saved++
                 }
