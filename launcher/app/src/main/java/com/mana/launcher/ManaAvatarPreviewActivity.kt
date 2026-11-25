@@ -1,0 +1,40 @@
+package com.mana.launcher
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
+import io.github.sceneview.SceneView
+import io.github.sceneview.rememberCameraManipulator
+import io.github.sceneview.rememberEngine
+import io.github.sceneview.rememberModelInstance
+import io.github.sceneview.rememberModelLoader
+
+/** Full-body animated glTF preview; touch gestures orbit the character. */
+class ManaAvatarPreviewActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        window.statusBarColor = android.graphics.Color.rgb(4, 7, 14)
+        window.navigationBarColor = android.graphics.Color.rgb(4, 7, 14)
+        setContent {
+            val engine = rememberEngine()
+            val modelLoader = rememberModelLoader(engine)
+            SceneView(
+                modifier = Modifier.fillMaxSize(),
+                engine = engine,
+                modelLoader = modelLoader,
+                cameraManipulator = rememberCameraManipulator()
+            ) {
+                rememberModelInstance(modelLoader, "mana_avatar_genesis.gltf")?.let { instance ->
+                    ModelNode(
+                        modelInstance = instance,
+                        scaleToUnits = 2.25f,
+                        autoAnimate = true,
+                        animationLoop = true
+                    )
+                }
+            }
+        }
+    }
+}
