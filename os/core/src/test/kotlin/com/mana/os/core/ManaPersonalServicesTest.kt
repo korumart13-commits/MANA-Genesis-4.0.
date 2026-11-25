@@ -125,4 +125,29 @@ class ManaPersonalServicesTest {
         updates.advance(idea.id, ManaUpdateStage.INSTALLED, ownerApproved = true)
         assertEquals(ManaUpdateStage.INSTALLED, updates.list().single().stage)
     }
+    @Test fun futureUpdateIdeasPersistEncryptedAcrossReloadAndDeletionNeedsApproval() {
+        val directory = java.nio.file.Files.createTempDirectory("mana-future-updates").toFile()
+        val key = diaryKey()
+        val provider = ManaSecretKeyProvider { key }
+        val file = File(directory, "future.bin")
+        val first = ManaFutureUpdateService(
+            EncryptedFileManaFutureUpdateStore(
+                EncryptedFileManaDiaryStore(file, provider, "mana.future.test")
+            )
+        )
+        val idea = first.capture("Add owner-approved safe MANA update pipeline")
+        first.advance(idea.id, ManaUpdateStage.PLANNED)
+        assertFalse(String(file.readBytes(), Charsets.UTF_8).contains("owner-approved safe"))
+        val reloaded = ManaFutureUpdateService(
+            EncryptedFileManaFutureUpdateStore(
+                EncryptedFileManaDiaryStore(file, provider, "mana.future.test")
+            )
+        )
+        assertEquals(ManaUpdateStage.PLANNED, reloaded.list().single().stage)
+        assertFailsWith<IllegalArgumentException> { reloaded.delete(idea.id, ownerApproved = false) }
+        reloaded.delete(idea.id, ownerApproved = true)
+        assertTrue(reloaded.list().isEmpty())
+        directory.deleteRecursively()
+    }
+
 }
