@@ -319,20 +319,22 @@ class ManaDocumentStorageActivity : Activity() {
     private fun copyAndHash(source: Uri, target: Uri): String {
         val digest = MessageDigest.getInstance("SHA-256")
         val input = contentResolver.openInputStream(source) ?: error("Не удалось прочитать источник.")
-        val output = contentResolver.openOutputStream(target, "w") ?: error("Не удалось записать копию.")
-        input.use { src -> output.use { dst ->
-            val buffer = ByteArray(256 * 1024)
-            var total = 0L
-            while (true) {
-                val count = src.read(buffer)
-                if (count < 0) break
-                total += count
-                require(total <= MAX_FILE_BYTES) { "Файл превышает безопасный лимит 2 ГБ." }
-                digest.update(buffer, 0, count)
-                dst.write(buffer, 0, count)
+        input.use { src ->
+            val output = contentResolver.openOutputStream(target, "w") ?: error("Не удалось записать копию.")
+            output.use { dst ->
+                val buffer = ByteArray(256 * 1024)
+                var total = 0L
+                while (true) {
+                    val count = src.read(buffer)
+                    if (count < 0) break
+                    total += count
+                    require(total <= MAX_FILE_BYTES) { "Файл превышает безопасный лимит 2 ГБ." }
+                    digest.update(buffer, 0, count)
+                    dst.write(buffer, 0, count)
+                }
+                dst.flush()
             }
-            dst.flush()
-        } }
+        }
         return digest.digest().joinToString("") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
     }
 
