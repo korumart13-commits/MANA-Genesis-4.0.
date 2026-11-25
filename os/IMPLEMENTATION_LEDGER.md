@@ -88,3 +88,6 @@ This is the authoritative completion ledger. A module catalog entry, UI placehol
 ## Completion rule
 
 A requirement is marked complete only after its implementation is integrated into the MANA OS product, automated tests pass, and device-dependent behavior is verified on the target hardware. A source file, model preview, adapter test, Gradle compile, Minecraft pack artifact or module descriptor alone does not satisfy that rule.
+
+
+| Android Brain Binder endpoint | Protected Assistant service registered; AIDL library linked; validates requests and fails closed with ENGINE_NOT_PACKAGED | Implemented transport boundary only; inference engine not packaged; Launcher client and instrumentation tests pending |
