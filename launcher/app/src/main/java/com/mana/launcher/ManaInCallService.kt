@@ -69,7 +69,8 @@ class ManaInCallService : InCallService() {
         val enabled = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(KEY_AUTO_ANSWER, false)
         if (!enabled || call.state != Call.STATE_RINGING) return
         val task = Runnable {
-            if (calls.contains(call) && call.state == Call.STATE_RINGING) {
+            val anotherCallIsActive = calls.any { it !== call && it.state == Call.STATE_ACTIVE }
+            if (calls.contains(call) && call.state == Call.STATE_RINGING && !anotherCallIsActive) {
                 runCatching { call.answer(VideoProfile.STATE_AUDIO_ONLY) }
             }
             answerTasks.remove(call)
