@@ -15,7 +15,7 @@ data class ManaYandexSearchResult(val title: String, val url: String, val snippe
 /** Explicit, owner-triggered Yandex Search API v2 client for MANA Adaptive Intelligence. */
 class ManaYandexSearchApi(private val credentials: ManaYandexAiStudioProvider) {
     suspend fun search(query: String, maxResults: Int = 5): List<ManaYandexSearchResult> = withContext(Dispatchers.IO) {
-        require(query.isNotBlank() && query.length <= 512)
+        require(query.isNotBlank() && query.length <= 400)
         require(maxResults in 1..10)
         val config = credentials.currentConfig() ?: error("Сначала настрой Yandex AI Studio.")
         require(config.enabled && config.apiKey.isNotBlank()) { "Yandex AI Studio выключен." }
@@ -23,10 +23,10 @@ class ManaYandexSearchApi(private val credentials: ManaYandexAiStudioProvider) {
             .put("query", JSONObject()
                 .put("searchType", "SEARCH_TYPE_COM")
                 .put("queryText", query)
-                .put("familyMode", "strict")
-                .put("fixTypoMode", "AUTO"))
+                .put("familyMode", "FAMILY_MODE_STRICT")
+                .put("fixTypoMode", "FIX_TYPO_MODE_ON"))
             .put("folderId", config.folderId)
-            .put("groupSpec", JSONObject().put("groupsOnPage", maxResults.toString()).put("docsInGroup", "1"))
+            .put("groupSpec", JSONObject().put("groupMode", "GROUP_MODE_DEEP").put("groupsOnPage", maxResults.toString()).put("docsInGroup", "1"))
             .put("maxPassages", "2")
             .put("l10n", "LOCALIZATION_RU")
             .put("responseFormat", "FORMAT_XML")
