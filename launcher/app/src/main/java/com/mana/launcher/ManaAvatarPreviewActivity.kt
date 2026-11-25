@@ -17,20 +17,25 @@ class ManaAvatarPreviewActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         window.statusBarColor = android.graphics.Color.rgb(4, 7, 14)
         window.navigationBarColor = android.graphics.Color.rgb(4, 7, 14)
+        val avatarAsset = ManaAvatarAssetSelector.assetName(this)
         setContent {
             val engine = rememberEngine()
             val modelLoader = rememberModelLoader(engine)
+            val isSpeaking = ManaAvatarState.isSpeaking
+            val expression = ManaAvatarState.expressionIndex
+            val animationName = when { isSpeaking -> "Speaking"; expression == 1 -> "Happy"; expression == 2 -> "Playful"; else -> "Idle" }
             SceneView(
                 modifier = Modifier.fillMaxSize(),
                 engine = engine,
                 modelLoader = modelLoader,
                 cameraManipulator = rememberCameraManipulator()
             ) {
-                rememberModelInstance(modelLoader, "mana_avatar_genesis.gltf")?.let { instance ->
+                rememberModelInstance(modelLoader, avatarAsset)?.let { instance ->
                     ModelNode(
                         modelInstance = instance,
                         scaleToUnits = 2.25f,
-                        autoAnimate = true,
+                        autoAnimate = false,
+                        animationName = animationName,
                         animationLoop = true
                     )
                 }
