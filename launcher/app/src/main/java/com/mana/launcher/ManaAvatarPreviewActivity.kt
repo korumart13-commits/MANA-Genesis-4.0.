@@ -10,6 +10,7 @@ import io.github.sceneview.rememberCameraManipulator
 import io.github.sceneview.rememberEngine
 import io.github.sceneview.rememberModelInstance
 import io.github.sceneview.rememberModelLoader
+import io.github.sceneview.node.ModelNode
 
 /** Full-body animated glTF preview; touch gestures orbit the character. */
 class ManaAvatarPreviewActivity : ComponentActivity() {
