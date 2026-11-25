@@ -36,6 +36,16 @@ jobs:
             -classpath "$ANDROID_HOME/platforms/android-36/android.jar" \
             -d "$RUNNER_TEMP/mana-ui-classes" \
             $(find system/mana/apps -name '*.java' -print)
+      - name: Validate MANA product package integration
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          product = Path('system/mana/mana_product.mk').read_text()
+          expected = ['ManaLauncher', 'ManaAssistant', 'ManaSettings', 'ManaControlCenter']
+          missing = [name for name in expected if name not in product]
+          assert not missing, f'Missing MANA product packages: {missing}'
+          print('All four non-privileged MANA apps are declared in the product package list.')
+          PY
       - name: Validate manifests and permission surface
         run: |
           python3 - <<'PY'
