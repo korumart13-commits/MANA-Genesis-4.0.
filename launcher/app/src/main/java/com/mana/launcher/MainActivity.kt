@@ -97,7 +97,7 @@ class MainActivity : Activity() {
     private val audioPermissionRequestCode = 4111
     private val contactsPermissionRequestCode = 4112
     private val callScreeningRoleRequestCode = 4113
-    private val assistantRoleRequestCode = 4114
+    private val assistantRoleRequestCode = 4115
     private val notificationPermissionRequestCode = 4114
     private lateinit var contactIntelligence: ManaContactIntelligence
 
@@ -187,7 +187,7 @@ class MainActivity : Activity() {
         buildShell()
         showHome()
         openAvatarIfRequested(intent)
-        val savedModel = modelCatalog?.savedModelPath()?.let(::File) ?: File(filesDir, "mana-models/selected-model.litertlm")
+        val savedModel = modelCatalog?.verifiedSavedModel() ?: File(filesDir, "mana-models/selected-model.litertlm")
         if (savedModel.isFile) {
             localRuntime.load(savedModel) { result ->
                 runOnUiThread {
@@ -1466,6 +1466,14 @@ class MainActivity : Activity() {
                 "MANA включена для распознавания вызовов. Звонки остаются под твоим контролем."
             } else {
                 "Роль распознавания вызовов не была предоставлена."
+            })
+        }
+        if (requestCode == assistantRoleRequestCode && Build.VERSION.SDK_INT >= 29) {
+            val roleManager = getSystemService(RoleManager::class.java)
+            showMessage(if (roleManager.isRoleHeld(RoleManager.ROLE_ASSISTANT)) {
+                "MANA выбрана системным ассистентом. Долгое нажатие питания зависит от поддержки жеста прошивкой realme."
+            } else {
+                "Роль системного ассистента не была предоставлена."
             })
         }
     }
