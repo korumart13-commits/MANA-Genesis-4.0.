@@ -62,6 +62,15 @@ class MainActivity : Activity() {
         loadApps()
         buildShell()
         showHome()
+        val savedModel = File(filesDir, "mana-models/selected-model.litertlm")
+        if (savedModel.isFile) {
+            localRuntime.load(savedModel) { result ->
+                runOnUiThread {
+                    result.onSuccess { name -> modelStatus?.text = "Локальная модель готова: $name" }
+                        .onFailure { error -> modelStatus?.text = "Модель сохранена, но не загрузилась: ${error.message}" }
+                }
+            }
+        }
     }
 
     override fun onResume() {
