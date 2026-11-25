@@ -120,12 +120,8 @@ class CloudInferenceProvider(
             CloudProviderKind.XAI -> {
                 headers["Authorization"] = "Bearer $key"
                 body.addProperty("model", config.model)
-                body.addProperty("max_tokens", 2048)
-                val messages = JsonArray().apply {
-                    add(JsonObject().apply { addProperty("role", "user"); addProperty("content", prompt) })
-                }
-                body.add("messages", messages)
-                "${config.baseUrl.trimEnd('/')}/v1/chat/completions"
+                body.addProperty("input", prompt)
+                "${config.baseUrl.trimEnd('/')}/v1/responses"
             }
             CloudProviderKind.ANTHROPIC -> {
                 headers["x-api-key"] = key
@@ -169,8 +165,17 @@ class CloudInferenceProvider(
                     }
                 }.joinToString("")
             }
-            CloudProviderKind.XAI -> root.getAsJsonArray("choices")?.firstOrNull()
-                ?.asJsonObject?.getAsJsonObject("message")?.get("content")?.asString.orEmpty()
+            CloudProviderKind.XAI -> {
+                val output = root.getAsJsonArray("output") ?: return ""
+                output.flatMap { item ->
+                    val obj = item.asJsonObject
+                    if (obj.get("type")?.asString != "message") emptyList()
+                    else (obj.getAsJsonArray("content") ?: JsonArray()).mapNotNull { part ->
+                        val content = part.asJsonObject
+                        if (content.get("type")?.asString == "output_text") content.get("text")?.asString else null
+                    }
+                }.joinToString("")
+            }
             CloudProviderKind.ANTHROPIC ->
                 (root.getAsJsonArray("content") ?: JsonArray()).mapNotNull { part ->
                     part.asJsonObject.get("text")?.asString
