@@ -21,7 +21,7 @@ class ManaModelCatalog(context: Context) {
 
     fun enqueueGemma4E2B(): Long {
         val target = File(directory, MODEL_FILE)
-        if (target.isFile && target.length() in MIN_SIZE..MAX_SIZE && sha256(target) == SHA256) {
+        if (target.isFile && target.length() == MODEL_SIZE && sha256(target) == SHA256) {
             prefs.edit().putString(KEY_ACTIVE_PATH, target.absolutePath).apply()
             return -1L
         }
@@ -43,6 +43,16 @@ class ManaModelCatalog(context: Context) {
     }
 
     fun savedModelPath(): String? = prefs.getString(KEY_ACTIVE_PATH, null)
+
+    fun verifiedSavedModel(): File? {
+        val path = savedModelPath() ?: return null
+        val file = File(path)
+        if (!file.isFile || file.length() != MODEL_SIZE || !sha256(file).equals(SHA256, ignoreCase = true)) {
+            prefs.edit().remove(KEY_ACTIVE_PATH).apply()
+            return null
+        }
+        return file
+    }
 
     /** Returns null while queued/running; throws for a failed or invalid completed download. */
     fun verifyCompletedDownload(): File? {
@@ -73,7 +83,7 @@ class ManaModelCatalog(context: Context) {
             throw IllegalStateException("Загрузка модели не завершилась (код $reason). Проверь Wi-Fi и свободное место.")
         }
         val file = File(directory, MODEL_FILE)
-        require(file.isFile && file.length() in MIN_SIZE..MAX_SIZE) {
+        require(file.isFile && file.length() == MODEL_SIZE) {
             "Размер загруженной модели не совпадает с ожидаемым диапазоном."
         }
         val actual = sha256(file)
@@ -100,13 +110,12 @@ class ManaModelCatalog(context: Context) {
     }
 
     companion object {
-        const val MODEL_URL = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm"
+        const val MODEL_URL = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/21c646194210256750db12cfa1e4fdf22bd3ddf1/gemma-4-E2B-it.litertlm"
         const val MODEL_FILE = "gemma-4-E2B-it.litertlm"
         const val SHA256 = "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c"
         private const val KEY_DOWNLOAD_ID = "gemma4_download_id"
         private const val KEY_ACTIVE_PATH = "active_model_path"
-        private const val MIN_SIZE = 2_500_000_000L
-        private const val MAX_SIZE = 3_000_000_000L
+        const val MODEL_SIZE = 2_588_147_712L
         private const val REQUIRED_FREE_BYTES = 3_300_000_000L
     }
 }
