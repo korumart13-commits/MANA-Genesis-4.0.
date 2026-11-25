@@ -203,6 +203,7 @@ class MainActivity : Activity() {
         buildShell()
         showHome()
         openAvatarIfRequested(intent)
+        openAssistantRequest(intent)
         val savedModel = modelCatalog?.verifiedSavedModel() ?: File(filesDir, "mana-models/selected-model.litertlm")
         if (savedModel.isFile) {
             localRuntime.load(savedModel) { result ->
@@ -218,6 +219,22 @@ class MainActivity : Activity() {
         super.onNewIntent(intent)
         setIntent(intent)
         openAvatarIfRequested(intent)
+        openAssistantRequest(intent)
+    }
+
+    private fun openAssistantRequest(intent: Intent?) {
+        val initialPrompt = intent?.getStringExtra(EXTRA_INITIAL_PROMPT)?.trim().orEmpty()
+        val shouldOpen = intent?.getBooleanExtra(EXTRA_OPEN_ASSISTANT, false) == true || initialPrompt.isNotEmpty()
+        if (!shouldOpen || !::avatarButton.isInitialized) return
+        intent?.removeExtra(EXTRA_OPEN_ASSISTANT)
+        intent?.removeExtra(EXTRA_INITIAL_PROMPT)
+        avatarButton.post {
+            if (avatarPanel == null) avatarButton.performClick()
+            if (initialPrompt.isNotEmpty()) {
+                chatInput?.setText(initialPrompt)
+                chatInput?.setSelection(initialPrompt.length)
+            }
+        }
     }
 
     private fun openAvatarIfRequested(intent: Intent?) {
@@ -1640,5 +1657,7 @@ class MainActivity : Activity() {
 
     companion object {
         const val EXTRA_OPEN_AVATAR = "com.mana.launcher.OPEN_AVATAR_FROM_SYSTEM_ASSISTANT"
+        const val EXTRA_OPEN_ASSISTANT = "com.mana.genesis.OPEN_ASSISTANT_PANEL"
+        const val EXTRA_INITIAL_PROMPT = "com.mana.genesis.INITIAL_PROMPT"
     }
 }
