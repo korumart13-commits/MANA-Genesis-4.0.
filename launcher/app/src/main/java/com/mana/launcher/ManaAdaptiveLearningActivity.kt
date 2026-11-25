@@ -14,6 +14,8 @@ import com.mana.os.core.EncryptedFileManaDiaryStore
 import com.mana.os.core.ManaAdaptiveKnowledgeService
 import com.mana.os.core.ManaKnowledgeItem
 import java.io.File
+import java.text.DateFormat
+import java.util.Date
 
 /** Owner-controlled daily source discovery and review of the encrypted local knowledge cache. */
 class ManaAdaptiveLearningActivity : Activity() {
@@ -100,7 +102,12 @@ class ManaAdaptiveLearningActivity : Activity() {
 
     private fun updateStatus() {
         val enabled = ManaAdaptiveLearningScheduler.isEnabled(this)
-        status.text = if (enabled) "Статус: включено • темы сохраняются локально" else "Статус: выключено"
+        val prefs = getSharedPreferences(ManaAdaptiveLearningWorker.PREFS, MODE_PRIVATE)
+        val lastStatus = prefs.getString(ManaAdaptiveLearningWorker.KEY_LAST_STATUS, "Поиск ещё не запускался.").orEmpty()
+        val lastRun = prefs.getLong(ManaAdaptiveLearningWorker.KEY_LAST_RUN, 0L)
+        val lastRunText = if (lastRun > 0L) DateFormat.getDateTimeInstance().format(Date(lastRun)) else "нет"
+        status.text = (if (enabled) "Статус: включено" else "Статус: выключено") +
+            "\\nПоследний запуск: $lastRunText\\n$lastStatus"
     }
 
     private fun refreshKnowledge() {
