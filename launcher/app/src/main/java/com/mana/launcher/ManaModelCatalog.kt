@@ -25,6 +25,7 @@ class ManaModelCatalog(context: Context) {
         val target = File(directory, MODEL_FILE)
         if (target.isFile && target.length() == MODEL_SIZE && sha256(target) == SHA256) {
             prefs.edit().putString(KEY_ACTIVE_PATH, target.absolutePath).apply()
+            saveVerifiedMetadata(target)
             return -1L
         }
         if (target.exists()) require(target.delete()) { "Не удалось удалить повреждённый предыдущий файл модели." }
@@ -50,10 +51,17 @@ class ManaModelCatalog(context: Context) {
         if (!prefs.getBoolean(KEY_LICENSE_ACCEPTED, false)) return null
         val path = savedModelPath() ?: return null
         val file = File(path)
-        if (!file.isFile || file.length() != MODEL_SIZE || !sha256(file).equals(SHA256, ignoreCase = true)) {
-            prefs.edit().remove(KEY_ACTIVE_PATH).apply()
+        if (!file.isFile || file.length() != MODEL_SIZE) {
+            prefs.edit().remove(KEY_ACTIVE_PATH).remove(KEY_VERIFIED_LENGTH).remove(KEY_VERIFIED_MTIME).apply()
             return null
         }
+        val cached = prefs.getLong(KEY_VERIFIED_LENGTH, -1L) == file.length() &&
+            prefs.getLong(KEY_VERIFIED_MTIME, -1L) == file.lastModified()
+        if (!cached && !sha256(file).equals(SHA256, ignoreCase = true)) {
+            prefs.edit().remove(KEY_ACTIVE_PATH).remove(KEY_VERIFIED_LENGTH).remove(KEY_VERIFIED_MTIME).apply()
+            return null
+        }
+        if (!cached) saveVerifiedMetadata(file)
         return file
     }
 
@@ -97,9 +105,14 @@ class ManaModelCatalog(context: Context) {
             throw SecurityException("SHA-256 модели не совпал с официальным значением. Файл удалён.")
         }
         prefs.edit().putString(KEY_ACTIVE_PATH, file.absolutePath).remove(KEY_DOWNLOAD_ID).apply()
+        saveVerifiedMetadata(file)
         return file
     }
 
+    private fun saveVerifiedMetadata(file: File) {
+        prefs.edit().putLong(KEY_VERIFIED_LENGTH, file.length())
+            .putLong(KEY_VERIFIED_MTIME, file.lastModified()).apply()
+    }
     private fun sha256(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")
         file.inputStream().buffered().use { input ->
