@@ -25,6 +25,7 @@ class ManaModelCatalog(context: Context) {
             prefs.edit().putString(KEY_ACTIVE_PATH, target.absolutePath).apply()
             return -1L
         }
+        if (target.exists()) require(target.delete()) { "Не удалось удалить повреждённый предыдущий файл модели." }
         require(directory.usableSpace >= REQUIRED_FREE_BYTES) {
             "Для модели Gemma 4 E2B требуется около 2,59 ГБ и дополнительный запас свободного места."
         }
