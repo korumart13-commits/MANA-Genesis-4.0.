@@ -28,7 +28,7 @@ This file supplements IMPLEMENTATION_LEDGER.md with the latest source changes. S
 
 ## Device and ROM gate
 
-The target diagnostics identify RMX5566RU / RE645F / Qualcomm SM6225 / bengal / qcom / kernel 5.15.197. Public realme pages list different chipsets for the retail C85 and C85 5G pages, so the runtime identifiers must be reconciled before any device tree or kernel is selected. The public realme_C85_5G-AndroidV-kernel-source candidate's latest commit explicitly targets RMX5253 and a MediaTek release; it is rejected for the owner's Qualcomm runtime target.
+The target diagnostics identify RMX5566RU / RE645F / Qualcomm SM6225 / bengal / qcom / kernel 5.15.197. Model mapping identifies this as realme C85 (4G); C85 5G is the separate RMX5253/RE644C MediaTek device. The public realme_C85_5G-AndroidV-kernel-source candidate targets RMX5253 and is rejected for this phone. Exact OEM Qualcomm kernel source and matching device tree are still missing.
 
 No full AOSP checkout, exact RMX5566RU device tree, matching OEM kernel source, vendor blobs/modules, VINTF manifest, partition metadata, AVB signing chain or tested recovery image is present. Therefore there is still no bootable MANA OS image and no safe firmware-flash candidate.
 
