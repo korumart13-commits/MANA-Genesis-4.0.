@@ -13,7 +13,7 @@ object ManaAvatarAssetSelector {
     }
 
     fun assetName(outfitIndex: Int, accessoryEnabled: Boolean): String {
-        val base = when (outfitIndex.coerceIn(0, 2)) {
+        val base = when (if (outfitIndex in 0..2) outfitIndex else 0) {
             1 -> "mana_avatar_genesis_casual.gltf"
             2 -> "mana_avatar_genesis_evening.gltf"
             else -> "mana_avatar_genesis.gltf"
