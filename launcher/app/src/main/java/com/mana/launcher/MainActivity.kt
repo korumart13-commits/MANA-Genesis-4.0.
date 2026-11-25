@@ -407,15 +407,11 @@ class MainActivity : Activity() {
     private fun sendToLocalModel() {
         val prompt = chatInput?.text?.toString()?.trim().orEmpty()
         if (prompt.isBlank()) return
-        chatOutput?.text = "Ты: $prompt
-
-MANA думает…"
+        chatOutput?.text = "Ты: $prompt\n\nMANA думает…"
         manaBrain.respond(prompt, { chunk -> runOnUiThread { chatOutput?.append(chunk) } }) { result ->
             runOnUiThread {
                 result.onSuccess { chatInput?.setText("") }
-                    .onFailure { error -> chatOutput?.append("
-
-Ошибка локального ИИ: ${error.message}") }
+                    .onFailure { error -> chatOutput?.append("\n\nОшибка локального ИИ: ${error.message}") }
             }
         }
     }
