@@ -16,6 +16,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    sourceSets { getByName("main").java.srcDir("../engine/mana-brain/src/main/kotlin") }
     kotlinOptions {
         jvmTarget = "17"
     }
@@ -24,7 +25,6 @@ android {
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":brain"))
     implementation("com.google.ai.edge.litertlm:litertlm-android:0.16.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 }
