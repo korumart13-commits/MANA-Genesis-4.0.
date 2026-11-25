@@ -33,7 +33,7 @@ class ManaSystemModuleCatalogTest {
     @Test fun ownerRequestedModulesAreRepresentedInCatalog() {
         val ids = ManaSystemModuleCatalog.modules.map { it.id }.toSet()
         val required = setOf(
-            "mana.brain", "mana.modelmanager", "mana.memory", "mana.voice",
+            "mana.brain", "mana.modelmanager", "mana.cloudgateway", "mana.memory", "mana.voice",
             "mana.avatar", "mana.adaptiveintelligence", "mana.futureupdates",
             "mana.yandex", "mana.vk", "mana.diary", "mana.lifemanager",
             "mana.contacts", "mana.receptionist", "mana.gameintelligence",
@@ -46,6 +46,7 @@ class ManaSystemModuleCatalogTest {
 
     @Test fun extendedModuleDependenciesRemainAcyclic() {
         val order = ManaSystemModuleCatalog.dependencyOrder()
+        assertTrue(order.indexOf("mana.cloudgateway") < order.indexOf("mana.brain"))
         assertTrue(order.indexOf("mana.brain") < order.indexOf("mana.voice"))
         assertTrue(order.indexOf("mana.brain") < order.indexOf("mana.adaptiveintelligence"))
         assertTrue(order.indexOf("mana.updater") < order.indexOf("mana.recovery"))
