@@ -22,6 +22,47 @@ class FakeProvider(
     fun setAvailable(value: Boolean) {
         available = value
     }
+    @Test
+    fun preferredCloudProviderIsSelectedFromRegistry() {
+        val local = FakeProvider("litert-local", false, "")
+        val openAi = FakeProvider("openai", true, "openai answer")
+        val gemini = FakeProvider("google", true, "gemini answer")
+
+        val result = kotlinx.coroutines.runBlocking {
+            ManaBrain(local, listOf(openAi, gemini)).respond(
+                BrainRequest("hello", allowCloud = true, preferredCloudProvider = "google")
+            )
+        }
+
+        assertEquals("google", result.provider)
+        assertEquals("gemini answer", result.text)
+        assertEquals(0, openAi.calls)
+        assertEquals(1, gemini.calls)
+    }
+
+    @Test
+    fun unknownPreferredProviderFailsClosedInsteadOfSilentlySwitching() {
+        val local = FakeProvider("litert-local", false, "")
+        val openAi = FakeProvider("openai", true, "openai answer")
+
+        assertFailsWith<InferenceUnavailableException> {
+            kotlinx.coroutines.runBlocking {
+                ManaBrain(local, listOf(openAi)).respond(
+                    BrainRequest("hello", allowCloud = true, preferredCloudProvider = "unknown")
+                )
+            }
+        }
+        assertEquals(0, openAi.calls)
+    }
+
+    @Test
+    fun duplicateCloudProviderIdsAreRejected() {
+        val local = FakeProvider("litert-local", false, "")
+        val first = FakeProvider("openai", true, "one")
+        val second = FakeProvider("openai", true, "two")
+        assertFailsWith<IllegalArgumentException> { ManaBrain(local, listOf(first, second)) }
+    }
+
 }
 
 class ManaBrainTest {
