@@ -40,7 +40,7 @@ This is the authoritative completion ledger. A module catalog entry, UI placehol
 | Yandex / VK apps and services | Partial | Read-only API adapter work is under review. Official OAuth app registration, owner credentials, complete Yandex/VK service workflows and Android integration remain. |
 | Device ecosystem | Designed only / partial | Bluetooth and device discovery concepts exist; watch, earbuds, car and multi-device local-node control are not complete. |
 | Recovery / updater | Designed only | No verified device recovery image, signed OTA, rollback test or stock restore package. |
-| AOSP / kernel / ROM | Blocked | No complete AOSP product build for exact RMX5566RU/RE645F. Exact OEM 5.15.197 kernel, matching DTS/DTBO, vendor modules/blobs, VINTF, AVB signing and recovery path are not verified. No bootable MANA OS image exists. |
+| AOSP / kernel / ROM | Blocked | No complete AOSP product build for exact RMX5566RU/RE645F. An official C85 5G source candidate was audited and rejected: it is MediaTek 5.15.180, while the owner's device reports Qualcomm SM6225/bengal/qcom and kernel 5.15.197. Exact matching Qualcomm source, DTS/DTBO, vendor modules, VINTF, AVB signing and recovery path remain unverified. No bootable MANA OS image exists. See [device kernel source audit](DEVICE_KERNEL_SOURCE_AUDIT_2026-11-25.md). |
 
 ## Required completion gates
 
