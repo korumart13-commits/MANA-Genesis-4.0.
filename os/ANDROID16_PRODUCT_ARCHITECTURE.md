@@ -1,12 +1,12 @@
-# MANA Genesis 4.0 — Android 16 product architecture
+# MANA OS — Android 16 product architecture
+
+> Product decision: use the hybrid MANA-owned platform defined in [MANA_OS_HYBRID_PLATFORM_ARCHITECTURE.md](MANA_OS_HYBRID_PLATFORM_ARCHITECTURE.md). Retain Android Runtime/API compatibility for APKs and Google services; retain only exact, verified realme device/vendor components and lawful OEM apps. Do not interpret “replace Android” as deleting ART/framework compatibility.
 
 Status: architecture baseline / implementation plan. This document is not evidence of a bootable ROM.
 
 ## Product definition
 
-MANA Genesis 4.0 is intended to be a complete Android 16-based operating system for the exact realme RMX5566RU / RE645F hardware target. It is not a launcher-only APK and not a replacement set of mock applications.
-
-The Android platform remains the compatibility and hardware foundation. MANA supplies the branded user experience, system-level assistant integration, and additional services.
+MANA OS is intended to be a complete MANA-owned system experience for the exact realme RMX5566RU / RE645F hardware target. It is not a launcher-only APK and not a replacement set of mock applications. MANA replaces and extends selected platform and UX layers while retaining the Android framework/API and ART compatibility contracts required for APKs and potential GMS integration. Exact realme kernel, vendor/ODM, firmware and HAL components are retained only after compatibility and provenance validation.
 
 ## User experience
 
@@ -62,7 +62,7 @@ Do not replace these with MANA demo screens. Do not assume an AOSP app alone mak
 Existing repository work includes a tested JVM MANA core, a separate Android companion APK with a local LiteRT-LM runtime, initial Soong Brain/AIDL/Binder integration sources, and partial MANA launcher/settings/control-center sources. The companion APK is not a ROM; the Soong system Brain still lacks a packaged LiteRT-LM provider or authenticated IPC connection to the companion.
 
 Next milestones, in order:
-1. Establish and pin a reproducible Android 16 AOSP source manifest in CI.
+1. Establish and pin a reproducible Android 16 AOSP source manifest in CI, as the compatibility base for the MANA platform fork.
 2. Audit the existing launcher and platform UI sources against the One UI-inspired home experience; implement missing launcher behavior without changing stock Android apps.
 3. Add the exact Android 16/AOSP core app modules to the verified product configuration after source sync confirms their module names and availability.
 4. Complete the authenticated cross-process local inference bridge or package the provider into the platform build.
@@ -71,5 +71,7 @@ Next milestones, in order:
 7. Build and test the complete Android 16 product images in CI; only then begin device acceptance.
 
 ## Current status
+
+The hybrid product definition is authoritative in [MANA_OS_HYBRID_PLATFORM_ARCHITECTURE.md](MANA_OS_HYBRID_PLATFORM_ARCHITECTURE.md), including Realme component retention, Android APK compatibility, Google Play/GMS licensing and certification gates.
 
 This is an architecture and release-gate document. It does not claim that AOSP has been synced, a RE645F lunch target exists, Android 16 stock apps are already included in a product image, or a firmware image has been built.
