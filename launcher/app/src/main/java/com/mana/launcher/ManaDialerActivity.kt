@@ -18,6 +18,7 @@ import android.view.Gravity
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.GridLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -110,6 +111,25 @@ class ManaDialerActivity : Activity() {
             setPadding(dp(12), dp(8), dp(12), dp(8))
         }
         root.addView(numberInput, LinearLayout.LayoutParams(-1, dp(50)))
+        val keypad = GridLayout(this).apply { columnCount = 3 }
+        listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#").forEach { digit ->
+            val key = Button(this).apply {
+                text = digit
+                textSize = 20f
+                setOnClickListener {
+                    val at = numberInput.selectionStart.coerceAtLeast(0)
+                    numberInput.text.insert(at, digit)
+                }
+            }
+            val params = GridLayout.LayoutParams().apply {
+                width = 0
+                height = dp(48)
+                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                setMargins(dp(3), dp(3), dp(3), dp(3))
+            }
+            keypad.addView(key, params)
+        }
+        root.addView(keypad, LinearLayout.LayoutParams(-1, -2))
         root.addView(button("Позвонить") { placeCall() })
         root.addView(button("Показать историю вызовов") { showCallHistory() })
 
@@ -118,6 +138,7 @@ class ManaDialerActivity : Activity() {
         root.addView(button("Ответить") { ManaInCallService.answerCurrentCall(); refreshCallControls() })
         root.addView(button("Отклонить входящий") { ManaInCallService.rejectCurrentCall(); refreshCallControls() })
         root.addView(button("Завершить звонок") { ManaInCallService.endCurrentCall(); refreshCallControls() })
+        root.addView(button("Удержать / продолжить звонок") { ManaInCallService.holdCurrentCall(); refreshCallControls() })
         root.addView(button("Громкая связь") { ManaInCallService.setSpeaker(true) })
         root.addView(button("Динамик телефона") { ManaInCallService.setSpeaker(false) })
         root.addView(button("Выключить / включить микрофон") {
@@ -196,13 +217,18 @@ class ManaDialerActivity : Activity() {
     }
 
     private fun refreshCallControls() {
-        val call = ManaInCallService.currentCall
-        callStatus.text = when (call?.state) {
-            android.telecom.Call.STATE_RINGING -> "Входящий вызов: " + (call.details.handle?.schemeSpecificPart ?: "номер скрыт")
-            android.telecom.Call.STATE_DIALING -> "Набор номера…"
-            android.telecom.Call.STATE_ACTIVE -> "Разговор активен"
-            android.telecom.Call.STATE_HOLDING -> "Звонок удерживается"
-            else -> "Нет активного звонка."
+        val calls = ManaInCallService.activeCalls()
+        callStatus.text = if (calls.isEmpty()) "Нет активного звонка." else calls.joinToString("\n") { call ->
+            val number = call.details.handle?.schemeSpecificPart ?: "номер скрыт"
+            val state = when (call.state) {
+                android.telecom.Call.STATE_RINGING -> "Входящий"
+                android.telecom.Call.STATE_DIALING -> "Набор"
+                android.telecom.Call.STATE_ACTIVE -> "Активен"
+                android.telecom.Call.STATE_HOLDING -> "Удерживается"
+                android.telecom.Call.STATE_DISCONNECTED -> "Завершён"
+                else -> "Вызов"
+            }
+            "$state: $number"
         }
     }
 
@@ -243,6 +269,7 @@ class ManaDialerActivity : Activity() {
 
     companion object {
         const val EXTRA_INCOMING_CALL = "mana.incoming.call"
+        const val EXTRA_SHOW_DIALPAD = "mana.show.dialpad"
         private const val REQUEST_DIALER_ROLE = 7401
         private const val REQUEST_CALL_PHONE = 7402
         private const val REQUEST_CALL_LOG = 7403
