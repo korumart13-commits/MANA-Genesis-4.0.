@@ -2,6 +2,18 @@
 
 ## Current source implementation
 
+- The character is an original full-body glTF model with dark long hair, facial details, navy clothing and boots.
+- The floating overlay and full-screen preview use SceneView/Filament and the same observable `ManaAvatarState`.
+- Three wardrobe styles (base, casual and evening) are available, each with accessories enabled or removed.
+- Every wardrobe/accessory combination has neutral, playful and open-mouth speaking geometry variants. The variants preserve the four glTF animation clips: `Idle`, `Speaking`, `Happy` and `Playful`.
+- The launcher cycles neutral, playful and happy expressions. TextToSpeech utterance callbacks update the speaking state; the model switches to its open-mouth speaking variant and `Speaking` animation. This is not phoneme-level viseme lip-sync.
+- The floating overlay is draggable, non-focusable, user-enabled through Android's “display over other apps” permission, and runs with a visible stoppable foreground-service notification. Tapping it opens the MANA assistant.
+- The full-screen preview supports orbit gestures and follows the same appearance state.
+- Russian speech recognition uses Android's recognizer intent; Russian TextToSpeech uses an installed engine voice where available. Actual voice quality, gender presentation and offline availability depend on the installed TTS engine and voice data.
+- `ManaAvatar3DView.kt` remains as a legacy procedural OpenGL renderer; the current floating service uses the glTF/Filament renderer.
+- Automated glTF validation and launcher compilation are in CI. The overlay still requires GPU, frame-time, thermal, battery and touch testing on the owner's realme RMX5566RU.
+
+
 - `ManaAvatar3DView.kt` renders a full-body stylized character using OpenGL ES 2.0 lit sphere meshes.
 - Character design: long dark hair, blue highlights/eyes, dark navy clothing, face, hands/arms, legs and boots.
 - Idle animation: body bob, head/hair sway, subtle articulated arm and leg swing, periodic blinking.
