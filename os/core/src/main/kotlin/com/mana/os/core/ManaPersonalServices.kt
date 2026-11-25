@@ -39,7 +39,8 @@ fun interface ManaSecretKeyProvider {
  */
 class EncryptedFileManaDiaryStore(
     private val file: File,
-    private val keys: ManaSecretKeyProvider
+    private val keys: ManaSecretKeyProvider,
+    private val keyAlias: String = KEY_ALIAS
 ) : ManaDiaryStore {
     private val lock = Any()
     private val random = SecureRandom()
@@ -53,7 +54,7 @@ class EncryptedFileManaDiaryStore(
         val nonce = payload.copyOfRange(magic.size, magic.size + 12)
         val encrypted = payload.copyOfRange(magic.size + 12, payload.size)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE, keys.getOrCreate(KEY_ALIAS), GCMParameterSpec(128, nonce))
+        cipher.init(Cipher.DECRYPT_MODE, keys.getOrCreate(keyAlias), GCMParameterSpec(128, nonce))
         cipher.updateAAD(magic)
         val clear = cipher.doFinal(encrypted)
         DataInputStream(ByteArrayInputStream(clear)).use { input ->
@@ -94,7 +95,7 @@ class EncryptedFileManaDiaryStore(
         }
         val nonce = ByteArray(12).also(random::nextBytes)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.ENCRYPT_MODE, keys.getOrCreate(KEY_ALIAS), GCMParameterSpec(128, nonce))
+        cipher.init(Cipher.ENCRYPT_MODE, keys.getOrCreate(keyAlias), GCMParameterSpec(128, nonce))
         cipher.updateAAD(magic)
         val encrypted = cipher.doFinal(clearBytes)
         val parent = file.absoluteFile.parentFile ?: error("Diary path has no parent")
