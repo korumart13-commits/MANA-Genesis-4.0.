@@ -1167,7 +1167,7 @@ class MainActivity : Activity() {
         if (catalog == null) { showMessage("Хранилище загрузок Android недоступно."); return }
         AlertDialog.Builder(this)
             .setTitle("Условия модели Gemma 4 E2B")
-            .setMessage("Перед загрузкой ознакомься с лицензией упаковки Apache 2.0 и дополнительными условиями Google Gemma Terms of Use и Prohibited Use Policy. Модель занимает 2,59 ГБ. Загрузка идёт только по Wi-Fi; после неё MANA проверит точный размер и SHA-256. Продолжая, ты подтверждаешь, что прочитал и принимаешь условия использования модели.")
+            .setMessage("Gemma 4 E2B распространяется под Apache 2.0. Перед загрузкой ознакомься с лицензией и официальной карточкой модели. Модель занимает 2,59 ГБ. Загрузка идёт только по Wi-Fi; после неё MANA проверит точный размер и SHA-256. Продолжая, ты подтверждаешь, что прочитал лицензию Apache 2.0.")
             .setNegativeButton("Отмена", null)
             .setNeutralButton("Открыть условия Gemma") { _, _ ->
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://ai.google.dev/gemma/terms")))
