@@ -202,6 +202,7 @@ class ManaDocumentStorageActivity : Activity() {
             card.addView(text(entry.title, 14, 0xFFFFFFFF.toInt(), true))
             card.addView(text("Копия • ${entry.tags.firstOrNull { it.startsWith("bytes:") }?.removePrefix("bytes:") ?: "?"} байт", 11, 0xFF9CB6D4.toInt()))
             card.addView(button("Восстановить копию в выбранную папку") { restore(entry, uri) })
+            if ("original-deleted" !in entry.tags) card.addView(button("Удалить оригинал после проверки и подтверждения") { confirmDeleteOriginal(entry, uri) })
             card.addView(button("Удалить только копию из карантина") { confirmDeleteCopy(entry, uri) })
             root.addView(card)
         }
@@ -228,6 +229,36 @@ class ManaDocumentStorageActivity : Activity() {
                 runOnUiThread { showMessage("Восстановление не выполнено: ${error.message}") }
             }
         }
+    }
+
+    private fun confirmDeleteOriginal(entry: ManaDiaryEntry, quarantineUri: String) {
+        AlertDialog.Builder(this)
+            .setTitle("Удалить исходный файл?")
+            .setMessage("MANA повторно проверит SHA-256 исходника и копии в MANA_Review. Будет удалён только исходный файл. Проверенная копия останется доступна для восстановления.")
+            .setNegativeButton("Отмена", null)
+            .setPositiveButton("Удалить оригинал") { _, _ ->
+                executor.execute {
+                    try {
+                        val original = DocumentFile.fromSingleUri(this, Uri.parse(entry.body))
+                            ?: error("Исходный файл больше недоступен.")
+                        val backup = DocumentFile.fromSingleUri(this, Uri.parse(quarantineUri))
+                            ?: error("Копия карантина недоступна.")
+                        val expected = entry.tags.firstOrNull { it.startsWith("sha256:") }?.removePrefix("sha256:")
+                            ?: error("Контрольная сумма отсутствует.")
+                        require(sha256(original.uri) == expected) { "Исходный файл изменился после карантина; удаление отменено." }
+                        require(sha256(backup.uri) == expected) { "Копия карантина не прошла проверку; удаление отменено." }
+                        require(original.delete()) { "Android не разрешил удалить исходный файл." }
+                        synchronized(store) {
+                            store.writeAll(store.readAll().map {
+                                if (it.id == entry.id) it.copy(tags = it.tags + "original-deleted", updatedAt = Instant.now()) else it
+                            })
+                        }
+                        runOnUiThread { showMessage("Исходный файл удалён. Проверенная копия сохранена в MANA_Review.") ; scan() }
+                    } catch (error: Exception) {
+                        runOnUiThread { showMessage("Удаление отменено: ${error.message}") }
+                    }
+                }
+            }.show()
     }
 
     private fun confirmDeleteCopy(entry: ManaDiaryEntry, quarantineUri: String) {
