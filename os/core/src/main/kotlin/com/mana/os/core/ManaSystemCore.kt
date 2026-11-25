@@ -4,7 +4,7 @@ import java.time.Instant
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-enum class BootPhase { COLD, HARDWARE_DISCOVERY, SECURITY_INIT, CORE_SERVICES, USER_SERVICES, READY, DEGRADED, SHUTTING_DOWN }
+enum class BootPhase { COLD, HARDWARE_DISCOVERY, SECURITY_INIT, CORE_SERVICES, USER_SERVICES, READY, DEGRADED, SHUTTING_DOWN, STOPPED }
 enum class ModuleState { REGISTERED, STARTING, RUNNING, DEGRADED, STOPPING, STOPPED, FAILED }
 
 data class DeviceFacts(
@@ -65,9 +65,10 @@ class ManaSystemCore(private val device: DeviceFacts) {
     fun boot(): List<ModuleHealth> = lock.withLock {
         check(phase == BootPhase.COLD) { "Boot already started." }
         phase = BootPhase.HARDWARE_DISCOVERY
-        try {
+        val startupOrder = try {
             validateDependencies()
-        } catch (configurationError: Throwable) {
+            dependencyOrder()
+        } catch (configurationError: Exception) {
             phase = BootPhase.DEGRADED
             throw configurationError
         }
@@ -75,14 +76,14 @@ class ManaSystemCore(private val device: DeviceFacts) {
             phase = BootPhase.SECURITY_INIT
             // Security policy and permission boundary checks are a mandatory boot gate.
             phase = BootPhase.CORE_SERVICES
-            for (id in dependencyOrder()) {
+            for (id in startupOrder) {
                 val module = modules.getValue(id)
                 health[id] = ModuleHealth(id, ModuleState.STARTING)
                 try {
                     module.start(context)
                     health[id] = ModuleHealth(id, ModuleState.RUNNING)
                     startedOrder += id
-                } catch (error: Throwable) {
+                } catch (error: Exception) {
                     health[id] = ModuleHealth(id, ModuleState.FAILED, error.message ?: error::class.java.simpleName)
                     throw error
                 }
@@ -94,7 +95,7 @@ class ManaSystemCore(private val device: DeviceFacts) {
             startedOrder.asReversed().forEach { id ->
                 val module = modules.getValue(id)
                 health[id] = ModuleHealth(id, ModuleState.STOPPING)
-                runCatching { module.stop(context) }
+                try { module.stop(context) } catch (_: Exception) { /* Continue best-effort rollback. */ }
                 health[id] = ModuleHealth(id, ModuleState.STOPPED)
             }
             startedOrder.clear()
@@ -109,10 +110,11 @@ class ManaSystemCore(private val device: DeviceFacts) {
         startedOrder.asReversed().forEach { id ->
             val module = modules.getValue(id)
             health[id] = ModuleHealth(id, ModuleState.STOPPING)
-            runCatching { module.stop(context) }
+            try { module.stop(context) } catch (_: Exception) { /* Continue stopping remaining modules. */ }
             health[id] = ModuleHealth(id, ModuleState.STOPPED)
         }
         startedOrder.clear()
+        phase = BootPhase.STOPPED
     }
 
     fun healthSnapshot(): List<ModuleHealth> = lock.withLock { health.values.toList() }
