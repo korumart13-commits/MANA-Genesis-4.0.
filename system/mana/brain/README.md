@@ -1,6 +1,6 @@
 # MANA Brain Binder integration
 
-Status: **AIDL CONTRACT + JVM FACADE IMPLEMENTED; ANDROID BINDER SERVICE NOT YET IMPLEMENTED**.
+Status: **AIDL CONTRACT + JVM FACADE + PROTECTED ANDROID BINDER TRANSPORT IMPLEMENTED; INFERENCE ENGINE NOT YET PACKAGED**.
 
 ## Implemented in this change
 
@@ -24,14 +24,14 @@ The eventual Android service must:
 
 ## Not yet implemented
 
-- Android `Service` class and manifest/permission wiring.
-- Mapping generated AIDL parcelables to `BrainCall` and `BrainResult`.
+- Packaging the canonical Kotlin/JVM engine and its runtime dependencies for Soong/Android.
+- Mapping generated AIDL parcelables to `BrainCall` and `BrainResult` inside the service.
 - Lifecycle owner for the LiteRT-LM engine and cancellation/back-pressure.
-- Assistant app binding/client and UI states.
+- Launcher app binding/client and user-facing readiness states.
 - Product signing/SELinux service domain and platform permission tests.
 - End-to-end Android instrumentation tests.
 
-The AIDL contract is not itself a running Binder service. Do not advertise the Assistant as connected until the adapter and client are built, permission-checked and tested in an Android 16 product image.
+The AIDL contract now has a registered Android Binder transport protected by a signature-level permission. The transport is not an inference engine: it returns `ENGINE_NOT_PACKAGED` and `isReady() == false` until the canonical engine is integrated. Do not advertise MANA Brain inference as operational until engine packaging, client integration and Android 16 product tests pass.
 
 
 ## Android Binder transport status
