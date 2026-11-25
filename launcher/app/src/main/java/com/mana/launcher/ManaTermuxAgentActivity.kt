@@ -27,10 +27,12 @@ class ManaTermuxAgentActivity : Activity() {
             "Показывает ветку и незакоммиченные изменения."),
         CHECK("Проверить изменения", "git diff --check",
             "Ищет ошибки пробелов и конфликтные маркеры в diff."),
-        TEST("Запустить тесты", "bash ./gradlew test --no-daemon",
-            "Запускает Gradle-тесты проекта."),
-        APK("Собрать APK", "bash ./gradlew :launcher:app:assembleDebug --no-daemon",
-            "Собирает отладочный APK компаньона; не устанавливает его автоматически.")
+        TEST("Запустить тесты ядра и Brain", "gradle -p os/core --no-daemon clean test && gradle -p engine/mana-brain --no-daemon clean test",
+            "Запускает те же JVM-наборы core и Brain, которые проверяются в CI. Требуется установленный Gradle и Java 17."),
+        APK("Собрать APK", "gradle -p launcher --no-daemon :app:assembleDebug :app:testDebugUnitTest",
+            "Собирает и тестирует Android-компаньон. Требуются Java 17, Gradle и настроенный Android SDK; APK не устанавливается автоматически."),
+        DEVICE_AUDIT("Собрать паспорт устройства", "bash ./device/collect_rmx5566_identity.sh",
+            "Считывает Android build, kernel, project ID, Verified Boot и память без root и без записи в разделы телефона. Отчёт сохраняется в Termux HOME.")
     }
 
     private val prefs by lazy { getSharedPreferences("mana_termux_agent", MODE_PRIVATE) }
