@@ -41,6 +41,7 @@ class ManaUpdatePackageVerifier(
 ) {
     fun verify(packageFile: File, stagingDirectory: File, minimumRollbackIndex: Long): VerifiedManaUpdatePackage {
         require(packageFile.isFile && packageFile.canRead()) { "Update package is not readable." }
+        require(packageFile.length() <= maxPayloadBytes + MAX_PACKAGE_OVERHEAD) { "Update archive exceeds the package size limit." }
         require(expectedDevice.isNotBlank())
         require(minimumRollbackIndex >= 0)
         require(stagingDirectory.exists() || stagingDirectory.mkdirs()) { "Cannot create update staging directory." }
@@ -57,6 +58,7 @@ class ManaUpdatePackageVerifier(
                     "Unsafe update ZIP path: $name"
                 }
                 require(name in ALLOWED_ENTRIES) { "Unexpected update package entry: $name" }
+                if (name == RELEASE_NOTES_NAME) require(entry.size in 0..MAX_RELEASE_NOTES_BYTES) { "Release notes are too large." }
             }
 
             val manifestEntry = zip.getEntry(MANIFEST_PATH) ?: error("Signed update manifest is missing.")
@@ -140,8 +142,11 @@ class ManaUpdatePackageVerifier(
     companion object {
         const val MANIFEST_PATH = "META-INF/mana-update.properties"
         const val PAYLOAD_NAME = "payload.bin"
+        private const val RELEASE_NOTES_NAME = "release-notes.txt"
         private const val MAX_MANIFEST_BYTES = 64 * 1024L
+        private const val MAX_RELEASE_NOTES_BYTES = 256 * 1024L
+        private const val MAX_PACKAGE_OVERHEAD = 2 * 1024 * 1024L
         private const val MAX_SIGNATURE_CHARS = 4096
-        private val ALLOWED_ENTRIES = setOf(MANIFEST_PATH, PAYLOAD_NAME, "release-notes.txt")
+        private val ALLOWED_ENTRIES = setOf(MANIFEST_PATH, PAYLOAD_NAME, RELEASE_NOTES_NAME)
     }
 }
