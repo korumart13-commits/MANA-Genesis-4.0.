@@ -1,6 +1,6 @@
 # MANA OS — integrated Android 16 hybrid platform build sequence
 
-This sequence targets a complete MANA-owned operating system with Android APK compatibility, not a launcher-only APK. The authoritative hybrid platform contract is [MANA_OS_HYBRID_PLATFORM_ARCHITECTURE.md](MANA_OS_HYBRID_PLATFORM_ARCHITECTURE.md), supported by [ANDROID16_PRODUCT_ARCHITECTURE.md](ANDROID16_PRODUCT_ARCHITECTURE.md).
+This sequence targets a complete MANA-owned operating system with Android APK compatibility, not a launcher-only APK. The authoritative hybrid platform contract is [MANA_OS_HYBRID_PLATFORM_ARCHITECTURE.md](MANA_OS_HYBRID_PLATFORM_ARCHITECTURE.md), supported by [ANDROID16_PRODUCT_ARCHITECTURE.md](ANDROID16_PRODUCT_ARCHITECTURE.md) and [MANA_VISUAL_EXPERIENCE.md](MANA_VISUAL_EXPERIENCE.md).
 
 ## Workstream A — MANA Brain as the primary system orchestrator
 
@@ -44,7 +44,9 @@ This sequence targets a complete MANA-owned operating system with Android APK co
 ## Workstream E — MANA system experience
 
 - MANA System Core and privileged service lifecycle.
-- Samsung One UI-inspired MANA Launcher: configurable home grid, dock, folders, widgets, app drawer, search, gestures and adaptive layouts; preserve Android app compatibility and accessibility.
+- Samsung One UI-inspired MANA Launcher: configurable home grid, dock, folders, widgets, app drawer, search, gestures and adaptive layouts; preserve Android app compatibility and accessibility. Apply MANA's original navy/blue design system, with Xiaomi/HyperOS-inspired control-center and device-hub patterns as secondary references.
+- Apply iOS-inspired motion/performance principles only: consistent low-jank transitions, responsive input, lifecycle-aware work and adaptive rendering. Do not import iOS frameworks or claim Android can run iOS binaries.
+- Use the full [MANA visual experience specification](MANA_VISUAL_EXPERIENCE.md) for launcher, lock screen, Control Center, notifications, settings, avatar and performance acceptance.
 - Real platform-level MANA SystemUI integration for status bar, notification shade, quick settings, lock screen and recents. A normal APK cannot replace these privileged platform surfaces.
 - Retain Android application compatibility while replacing selected system UX/services with MANA-owned implementations.
 - MANA Settings and Control Center integrated with Android's real settings and permission controllers.
