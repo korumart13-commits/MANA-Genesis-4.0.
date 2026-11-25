@@ -17,7 +17,8 @@ data class OtaManifest(
     val fingerprintPrefix: String,
     val payloadSha256: String,
     val payloadSizeBytes: Long,
-    val signingKeyId: String
+    val signingKeyId: String,
+    val signatureBase64: String = ""
 )
 
 data class OtaDeviceProfile(
