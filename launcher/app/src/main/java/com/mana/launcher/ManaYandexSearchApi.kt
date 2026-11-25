@@ -18,7 +18,7 @@ internal fun buildYandexSearchRequest(query: String, folderId: String, maxResult
     require(maxResults in 1..10)
     return JSONObject()
         .put("query", JSONObject()
-            .put("searchType", "SEARCH_TYPE_COM")
+            .put("searchType", "SEARCH_TYPE_RU")
             .put("queryText", query)
             .put("familyMode", "FAMILY_MODE_STRICT")
             .put("page", "0")
@@ -57,10 +57,25 @@ class ManaYandexSearchApi(private val credentials: ManaYandexAiStudioProvider) {
             check(status in 200..299) { "Yandex Search API returned HTTP $status." }
             val raw = JSONObject(response).optString("rawData")
             require(raw.isNotBlank()) { "Yandex Search API returned no result payload." }
-            val xml = Base64.decode(raw, Base64.DEFAULT).toString(Charsets.UTF_8)
-            parseXml(xml, maxResults)
+            val decoded = Base64.decode(raw, Base64.DEFAULT).toString(Charsets.UTF_8)
+            parseSmartSnippetJson(decoded, maxResults) ?: parseXml(decoded, maxResults)
         } finally { connection.disconnect() }
     }
+
+    private fun parseSmartSnippetJson(raw: String, maxResults: Int): List<ManaYandexSearchResult>? = runCatching {
+        val docs = JSONObject(raw).optJSONArray("docs") ?: return null
+        buildList {
+            for (index in 0 until minOf(docs.length(), maxResults)) {
+                val doc = docs.optJSONObject(index) ?: continue
+                val title = doc.optString("DocumentTitle").ifBlank { "Yandex Search result" }
+                val url = doc.optString("FullUrl")
+                val snippet = doc.optString("info_context").ifBlank { doc.optString("Description") }
+                if (url.startsWith("https://") && snippet.isNotBlank()) {
+                    add(ManaYandexSearchResult(title.take(240), url.take(2048), snippet.take(4000)))
+                }
+            }
+        }
+    }.getOrNull()
 
     private fun parseXml(xml: String, maxResults: Int): List<ManaYandexSearchResult> {
         require(xml.length <= MAX_XML_CHARS) { "Yandex Search XML exceeded the safety limit." }
@@ -96,7 +111,7 @@ class ManaYandexSearchApi(private val credentials: ManaYandexAiStudioProvider) {
                     if (tag == "doc" && inDoc) {
                         val safeUrl = link.toString().trim()
                         if (safeUrl.startsWith("https://") && title.isNotBlank()) {
-                            results += ManaYandexSearchResult(title.toString().trim().take(240), safeUrl.take(2048), snippet.toString().trim().take(700))
+                            results += ManaYandexSearchResult(title.toString().trim().take(240), safeUrl.take(2048), snippet.toString().trim().take(4000))
                         }
                         inDoc = false
                     }
