@@ -62,7 +62,23 @@ class MainActivity : Activity() {
     private var chatOutput: TextView? = null
     private var modelStatus: TextView? = null
 
-    override fun onResume() {\n        super.onResume()\n        if (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(this)) {\n            startService(Intent(this, ManaFloatingAvatarService::class.java))\n        }\n    }\n\n    private fun requestFloatingAvatar() {\n        if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {\n            startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))\n        } else {\n            startService(Intent(this, ManaFloatingAvatarService::class.java))\n            showMessage("Плавающая MANA включена.")\n        }\n    }\n\n    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onResume() {
+        super.onResume()
+        if (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(this)) {
+            startService(Intent(this, ManaFloatingAvatarService::class.java))
+        }
+    }
+
+    private fun requestFloatingAvatar() {
+        if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
+            startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+        } else {
+            startService(Intent(this, ManaFloatingAvatarService::class.java))
+            showMessage("Плавающая MANA включена.")
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = bg
         window.navigationBarColor = bg
@@ -175,7 +191,8 @@ class MainActivity : Activity() {
             background = rounded(panelRaised, 22)
         }
         card.addView(label("MANA ASSISTANT", 11, accentSoft, true))
-        card.addView(label("Твой телефон. Твои правила.", 19, textColor, true))\n        card.addView(action("Включить плавающий аватар поверх приложений") { requestFloatingAvatar() })
+        card.addView(label("Твой телефон. Твои правила.", 19, textColor, true))
+        card.addView(action("Включить плавающий аватар поверх приложений") { requestFloatingAvatar() })
         card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Локальный ИИ: выбери .litertlm-модель в окне MANA.", 12, muted, false))
         val p = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(19) }
         content.addView(card, p)
@@ -362,7 +379,8 @@ class MainActivity : Activity() {
                     require(copied > 0L) { "Файл модели пуст." }
                     val hash = digest.digest().joinToString("") { "%02x".format(it) }
                     Files.move(temp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
-                    File(directory, "selected-model.sha256").writeText("$hash  selected-model.litertlm\\n")
+                    File(directory, "selected-model.sha256").writeText("$hash  selected-model.litertlm\
+")
                 } finally {
                     if (temp.exists()) temp.delete()
                 }
@@ -389,11 +407,15 @@ class MainActivity : Activity() {
     private fun sendToLocalModel() {
         val prompt = chatInput?.text?.toString()?.trim().orEmpty()
         if (prompt.isBlank()) return
-        chatOutput?.text = "Ты: $prompt\n\nMANA думает…"
+        chatOutput?.text = "Ты: $prompt
+
+MANA думает…"
         manaBrain.respond(prompt, { chunk -> runOnUiThread { chatOutput?.append(chunk) } }) { result ->
             runOnUiThread {
                 result.onSuccess { chatInput?.setText("") }
-                    .onFailure { error -> chatOutput?.append("\n\nОшибка локального ИИ: ${error.message}") }
+                    .onFailure { error -> chatOutput?.append("
+
+Ошибка локального ИИ: ${error.message}") }
             }
         }
     }
