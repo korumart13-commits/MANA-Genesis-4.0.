@@ -63,3 +63,8 @@ See [source-level security review](SECURITY_REVIEW_2026-11-25.md). The review is
 ## Security and storage service milestone
 
 The host-JVM core now contains testable MANA Security and MANA Storage policy services. Security uses default-deny capability grants with audit events. Storage only evaluates registered metadata and supports user-approved reversible archive/quarantine plus restore; permanent deletion and real filesystem mutation are not implemented. Android Binder, runtime permission, SELinux, encryption, and device integration remain future work. See [service contract and integration gates](SECURITY_AND_STORAGE_SERVICES.md).
+
+
+## Full owner-requirements audit
+
+See [OWNER_FEATURE_AUDIT_2026-11-25.md](OWNER_FEATURE_AUDIT_2026-11-25.md) for the complete feature-by-feature status, duplicate launcher/assistant source finding, game integration boundaries, security gaps and required implementation order. The catalog now represents 26 modules, but this is architecture coverage rather than completed functionality.
