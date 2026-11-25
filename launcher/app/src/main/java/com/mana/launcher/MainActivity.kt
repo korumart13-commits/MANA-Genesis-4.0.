@@ -284,7 +284,7 @@ class MainActivity : Activity() {
             val preferences = getSharedPreferences("mana.settings", MODE_PRIVATE)
             val next = (preferences.getInt("avatar_outfit_index", 0) + 1) % 3
             preferences.edit().putInt("avatar_outfit_index", next).apply()
-            ManaAvatar3DView.outfitIndex = next
+            ManaAvatarAppearance.outfitIndex = next
             refreshFloatingAvatarStyle()
             showMessage("Наряд аватара изменён. Лицо и голос остались прежними.")
         })
@@ -292,14 +292,14 @@ class MainActivity : Activity() {
             val preferences = getSharedPreferences("mana.settings", MODE_PRIVATE)
             val enabled = !preferences.getBoolean("avatar_accessory_enabled", true)
             preferences.edit().putBoolean("avatar_accessory_enabled", enabled).apply()
-            ManaAvatar3DView.accessoryEnabled = enabled
+            ManaAvatarAppearance.accessoryEnabled = enabled
             refreshFloatingAvatarStyle()
             showMessage(if (enabled) "Аксессуар включён." else "Аксессуар скрыт.")
         })
         card.addView(action("Сменить выражение лица MANA") {
             val next = (ManaAvatarState.expressionIndex + 1) % 3
             ManaAvatarState.expressionIndex = next
-            ManaAvatar3DView.expressionIndex = next
+            ManaAvatarAppearance.expressionIndex = next
             showMessage("Выражение лица изменено.")
         })
         card.addView(action("Открыть зашифрованный дневник MANA") { showDiary() })
@@ -1032,7 +1032,7 @@ class MainActivity : Activity() {
                         chatInput?.setText("")
                         speakResponse(generated.toString())
                     }.onFailure { error ->
-                        ManaAvatar3DView.isSpeaking = false
+                        ManaAvatarAppearance.isSpeaking = false
                         ManaAvatarState.isSpeaking = false
                         chatOutput?.append("\n\nОшибка локального ИИ: ${error.message}")
                     }
@@ -1070,20 +1070,20 @@ class MainActivity : Activity() {
                     languageResult != TextToSpeech.LANG_NOT_SUPPORTED
                 engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) {
-                        ManaAvatar3DView.isSpeaking = true
+                        ManaAvatarAppearance.isSpeaking = true
                         ManaAvatarState.isSpeaking = true
                     }
                     override fun onDone(utteranceId: String?) {
-                        ManaAvatar3DView.isSpeaking = false
+                        ManaAvatarAppearance.isSpeaking = false
                         ManaAvatarState.isSpeaking = false
                     }
                     @Deprecated("Deprecated in Android")
                     override fun onError(utteranceId: String?) {
-                        ManaAvatar3DView.isSpeaking = false
+                        ManaAvatarAppearance.isSpeaking = false
                         ManaAvatarState.isSpeaking = false
                     }
                     override fun onError(utteranceId: String?, errorCode: Int) {
-                        ManaAvatar3DView.isSpeaking = false
+                        ManaAvatarAppearance.isSpeaking = false
                         ManaAvatarState.isSpeaking = false
                     }
                 })
@@ -1094,10 +1094,10 @@ class MainActivity : Activity() {
     private fun speakResponse(text: String) {
         val clean = text.trim()
         if (!voiceReady || clean.isEmpty()) return
-        ManaAvatar3DView.isSpeaking = true
+        ManaAvatarAppearance.isSpeaking = true
         ManaAvatarState.isSpeaking = true
         val result = textToSpeech?.speak(clean, TextToSpeech.QUEUE_FLUSH, null, "mana-response-${System.nanoTime()}")
-        if (result == TextToSpeech.ERROR) { ManaAvatar3DView.isSpeaking = false; ManaAvatarState.isSpeaking = false }
+        if (result == TextToSpeech.ERROR) { ManaAvatarAppearance.isSpeaking = false; ManaAvatarState.isSpeaking = false }
     }
 
     private fun startVoiceInput() {
@@ -1213,7 +1213,7 @@ class MainActivity : Activity() {
     override fun onDestroy() {
         if (::manaBrain.isInitialized) manaBrain.shutdown()
         if (::localRuntime.isInitialized) localRuntime.shutdown()
-        ManaAvatar3DView.isSpeaking = false
+        ManaAvatarAppearance.isSpeaking = false
         ManaAvatarState.isSpeaking = false
         speechRecognizer?.destroy()
         speechRecognizer = null
