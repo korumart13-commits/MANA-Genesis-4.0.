@@ -95,7 +95,8 @@
         <activity
             android:name=".ManaAvatarPreviewActivity"
             android:exported="false" />
-        <activity android:name=".ManaIntegrationSettingsActivity" android:exported="false" />\n        <activity android:name=".ManaDocumentStorageActivity" android:exported="false" />
+        <activity android:name=".ManaIntegrationSettingsActivity" android:exported="false" />
+        <activity android:name=".ManaDocumentStorageActivity" android:exported="false" />
         <activity android:name=".ManaDevicesActivity" android:exported="false" />
         <activity
             android:name=".ManaFutureUpdatesActivity"
