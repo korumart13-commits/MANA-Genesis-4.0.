@@ -61,12 +61,19 @@ class ManaFloatingAvatarService : Service() {
                 try { avatar?.let { windowManager.updateViewLayout(it, params) } } catch (_: IllegalArgumentException) { }
             }
         ).also { view ->
-            try { windowManager.addView(view, params) } catch (_: SecurityException) { stopSelf() }
+            try {
+                windowManager.addView(view, params)
+                view.onResume()
+            } catch (_: SecurityException) {
+                stopSelf()
+            }
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) {
+            getSharedPreferences("mana.settings", MODE_PRIVATE).edit()
+                .putBoolean("floating_avatar_enabled", false).apply()
             stopSelf()
             return START_NOT_STICKY
         }
