@@ -58,6 +58,7 @@ import com.mana.os.core.ManaFutureUpdateService
 import com.mana.os.core.ManaUpdateStage
 import com.mana.os.core.DeviceFacts
 import com.mana.os.core.SystemReadiness
+import com.mana.os.core.ManaOwnerCommandParser
 
 class MainActivity : Activity() {
     private val bg = Color.rgb(4, 7, 14)
@@ -1478,6 +1479,19 @@ class MainActivity : Activity() {
     private fun sendToLocalModel() {
         val prompt = chatInput?.text?.toString()?.trim().orEmpty()
         if (prompt.isBlank()) return
+        val ownerAction = ManaOwnerCommandParser.parseOwnerCommand(prompt)
+        if (ownerAction != null) {
+            chatOutput?.text = "MANA распознала прямую команду устройству. Открой подтверждение действия."
+            chatInput?.setText("")
+            startActivity(Intent(this, ManaDeviceControlsActivity::class.java).apply {
+                putExtra("mana.owner.action", ownerAction.action)
+                putExtra("mana.owner.request_id", ownerAction.requestId)
+                ownerAction.parameters.forEach { (key, value) ->
+                    putExtra("mana.owner.param.$key", value)
+                }
+            })
+            return
+        }
         chatOutput?.text = "Ты: $prompt\n\nMANA думает…"
         val generated = StringBuilder()
         val remembered = memoryService?.recall(prompt)?.take(4).orEmpty()
