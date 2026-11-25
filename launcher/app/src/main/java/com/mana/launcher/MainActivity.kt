@@ -379,6 +379,7 @@ class MainActivity : Activity() {
         card.addView(action("Идеи и будущие обновления MANA") { showFutureUpdates() })
         card.addView(action("Настроить облачный резерв ИИ") { showCloudSettings() })
         card.addView(action("Настроить Yandex AI Studio и VK") { startActivity(Intent(this, ManaIntegrationSettingsActivity::class.java)) })
+        card.addView(action("Устройства MANA • часы, наушники, автомобиль") { startActivity(Intent(this, ManaDevicesActivity::class.java)) })
         card.addView(action("Скачать официальную локальную Gemma 4 E2B (2,59 ГБ)") { downloadOfficialModel() })
         card.addView(action("Открыть Smart Receptionist") { showReceptionist() })
         card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Локальный ИИ: выбери .litertlm-модель в окне MANA.", 12, muted, false))
