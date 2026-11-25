@@ -16,15 +16,16 @@ import io.github.sceneview.node.ModelNode
 class ManaAvatarPreviewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ManaAvatarState.loadFromPreferences(this)
         window.statusBarColor = android.graphics.Color.rgb(4, 7, 14)
         window.navigationBarColor = android.graphics.Color.rgb(4, 7, 14)
-        val avatarAsset = ManaAvatarAssetSelector.assetName(this)
         setContent {
             val engine = rememberEngine()
             val modelLoader = rememberModelLoader(engine)
+            val avatarAsset = ManaAvatarState.assetName()
             val isSpeaking = ManaAvatarState.isSpeaking
             val expression = ManaAvatarState.expressionIndex
-            val animationName = when { isSpeaking -> "Speaking"; expression == 1 -> "Happy"; expression == 2 -> "Playful"; else -> "Idle" }
+            val animationName = when { isSpeaking -> "Speaking"; expression == 1 -> "Playful"; expression == 2 -> "Happy"; else -> "Idle" }
             SceneView(
                 modifier = Modifier.fillMaxSize(),
                 engine = engine,
