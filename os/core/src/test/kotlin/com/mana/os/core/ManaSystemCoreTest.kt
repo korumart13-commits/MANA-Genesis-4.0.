@@ -42,6 +42,7 @@ class ManaSystemCoreTest {
             override fun start(context: ManaSystemContext) = Unit
         })
         assertFailsWith<IllegalArgumentException> { core.boot() }
+        assertEquals(BootPhase.DEGRADED, core.phase)
     }
 
     @Test fun failsSafelyWhenModuleCannotStart() {
@@ -88,7 +89,8 @@ class ManaSystemCoreTest {
             override val dependencies = setOf("alpha")
             override fun start(context: ManaSystemContext) { events += "beta" }
         })
-        assertEquals(BootPhase.DEGRADED, core.boot().let { core.phase })
+        assertFailsWith<IllegalStateException> { core.boot() }
+        assertEquals(BootPhase.DEGRADED, core.phase)
         assertEquals(emptyList(), events)
     }
 
