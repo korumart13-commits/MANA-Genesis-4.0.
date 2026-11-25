@@ -42,6 +42,8 @@ import java.util.Locale
 import kotlin.math.max
 import com.mana.os.core.EncryptedFileManaDiaryStore
 import com.mana.os.core.ManaDiaryService
+import com.mana.os.core.EncryptedFileManaLifeTaskStore
+import com.mana.os.core.ManaLifeManagerService
 
 class MainActivity : Activity() {
     private val bg = Color.rgb(4, 7, 14)
@@ -70,6 +72,7 @@ class MainActivity : Activity() {
     private var textToSpeech: TextToSpeech? = null
     @Volatile private var voiceReady = false
     private var diaryService: ManaDiaryService? = null
+    private var lifeManager: ManaLifeManagerService? = null
     private var editingDiaryId: String? = null
 
     private fun requestFloatingAvatar() {
@@ -90,6 +93,16 @@ class MainActivity : Activity() {
         manaBrain = ManaBrainBridge(localRuntime)
         diaryService = try { ManaDiaryService(EncryptedFileManaDiaryStore(File(filesDir, "mana/diary.bin"), ManaAndroidKeyProvider())) } catch (error: Exception) {
             showMessage("Дневник пока недоступен: ${error.message}")
+            null
+        }
+        lifeManager = try {
+            ManaLifeManagerService(
+                EncryptedFileManaLifeTaskStore(
+                    EncryptedFileManaDiaryStore(File(filesDir, "mana/life.bin"), ManaAndroidKeyProvider(), "mana.life.v1")
+                )
+            )
+        } catch (error: Exception) {
+            showMessage("Планировщик пока недоступен: ${error.message}")
             null
         }
         initializeVoice()
@@ -204,7 +217,7 @@ class MainActivity : Activity() {
         card.addView(label("MANA ASSISTANT", 11, accentSoft, true))
         card.addView(label("Твой телефон. Твои правила.", 19, textColor, true))
         card.addView(action("Включить плавающий аватар поверх приложений") { requestFloatingAvatar() })
-        card.addView(action("Открыть зашифрованный дневник MANA") { showDiary() })
+        card.addView(action("Открыть зашифрованный дневник MANA") { showDiary() })\n        card.addView(action("Открыть MANA Life Manager") { showLifeManager() })
         card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Локальный ИИ: выбери .litertlm-модель в окне MANA.", 12, muted, false))
         val p = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(19) }
         content.addView(card, p)
@@ -378,6 +391,67 @@ class MainActivity : Activity() {
         }
         rootFrame.addView(overlay, lp)
         avatarPanel = overlay
+    }
+
+    private fun showLifeManager() {
+        val manager = lifeManager
+        if (manager == null) {
+            showMessage("Life Manager пока недоступен.")
+            return
+        }
+        showingDrawer = false
+        search.setText("")
+        content.removeAllViews()
+        content.addView(label("MANA LIFE MANAGER", 23, textColor, true))
+        content.addView(label("Локальные задачи хранятся в зашифрованном файле. Завершение задачи требует нажатия владельца.", 12, muted, false))
+        val input = EditText(this).apply {
+            hint = "Новая задача"
+            setTextColor(textColor)
+            setHintTextColor(muted)
+            isSingleLine = true
+            background = rounded(panelRaised, 12)
+            setPadding(dp(12), 0, dp(12), 0)
+        }
+        content.addView(input, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(12) })
+        val tasksBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        lateinit var refresh: () -> Unit
+        content.addView(action("Добавить задачу") {
+            val title = input.text.toString().trim()
+            if (title.isBlank()) showMessage("Напиши название задачи.")
+            else try {
+                manager.add(title)
+                input.setText("")
+                refresh()
+            } catch (error: Exception) {
+                showMessage("Не удалось добавить задачу: ${error.message}")
+            }
+        }, LinearLayout.LayoutParams(-1, dp(44)).apply { topMargin = dp(8) })
+        content.addView(label("Мои задачи", 17, textColor, true).apply { setPadding(0, dp(15), 0, dp(8)) })
+        content.addView(tasksBox, LinearLayout.LayoutParams(-1, -2))
+        refresh = {
+            tasksBox.removeAllViews()
+            manager.list(includeCompleted = true).forEach { task ->
+                val item = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dp(12), dp(10), dp(12), dp(10))
+                    background = rounded(panelRaised, 12)
+                }
+                item.addView(label(if (task.completed) "✓ ${task.title}" else task.title, 13, textColor, true))
+                if (!task.completed) {
+                    item.addView(action("Отметить выполненной") {
+                        try {
+                            manager.complete(task.id, approvedByUser = true)
+                            refresh()
+                        } catch (error: Exception) {
+                            showMessage("Не удалось завершить задачу: ${error.message}")
+                        }
+                    })
+                }
+                tasksBox.addView(item, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+            }
+            if (tasksBox.childCount == 0) tasksBox.addView(label("Пока нет задач.", 12, muted, false))
+        }
+        refresh()
     }
 
     private fun showDiary() {
