@@ -13,7 +13,7 @@ The unified CI workflow runs the existing independent checks as one release gate
 5. Avatar glTF structural validation.
 6. Only after all checks pass, CI creates one artifact named `MANA_Genesis_4.0_UNIFIED_SOURCE.zip` with the source modules and a SHA-256 checksum.
 
-This is a unified source snapshot, not a claim that all modules are already one executable Android system. It contains the current generations of source code, documentation and product definitions.
+The complete bundle is the single handoff file for the current project snapshot: source, docs, workflows, product definitions, and a separately built debug companion APK. It is still not one executable Android system or a flashable ROM. The APK is an ordinary companion app; the source archive contains OS/product code that still requires a complete AOSP/device build.
 
 ## Known integration gaps that remain release-blocking
 
@@ -31,7 +31,7 @@ This is a unified source snapshot, not a claim that all modules are already one 
 | State | Meaning |
 |---|---|
 | Source checks passed | Current modules compile/test in their respective host/Android source environments. |
-| Unified source archive produced | One ZIP contains the current project source and a checksum. |
+| Unified complete bundle produced | One ZIP contains the tracked source archive, debug companion APK, build/ROM status reports and checksums. |
 | AOSP product built | Requires a pinned AOSP tree and successful Soong product image build. Not achieved by this workflow. |
 | Device ROM built | Requires exact device tree, kernel, vendor/HAL, partition and AVB inputs. Not achieved. |
 | Device validated | Requires safe installation/recovery and hardware acceptance on RMX5566RU. Not achieved. |
