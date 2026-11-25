@@ -3,6 +3,7 @@ package com.mana.launcher
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.hardware.camera2.CameraManager
 import android.media.AudioManager
 import android.os.Build
@@ -84,6 +85,9 @@ class ManaAndroidActionAdapter(private val context: Context) {
     }
 
     private fun setTorch(enabled: Boolean): String {
+        check(appContext.checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            "Grant the Android Camera permission to MANA before controlling the torch"
+        }
         val manager = cameraManager ?: error("Camera service unavailable")
         val cameraId = manager.cameraIdList.firstOrNull { id ->
             manager.getCameraCharacteristics(id)
