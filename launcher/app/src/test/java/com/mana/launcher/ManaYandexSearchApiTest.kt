@@ -13,7 +13,7 @@ class ManaYandexSearchApiTest {
 
         assertEquals("folder-123", body.getString("folderId"))
         assertEquals("MANA OS Android", query.getString("queryText"))
-        assertEquals("SEARCH_TYPE_COM", query.getString("searchType"))
+        assertEquals("SEARCH_TYPE_RU", query.getString("searchType"))
         assertEquals("FAMILY_MODE_STRICT", query.getString("familyMode"))
         assertEquals("FIX_TYPO_MODE_ON", query.getString("fixTypoMode"))
         assertEquals("GROUP_MODE_DEEP", group.getString("groupMode"))
