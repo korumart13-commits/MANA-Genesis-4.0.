@@ -45,7 +45,8 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          p = Path("${PROJECT_DIR}/app/src/main/java/com/mana/os/app/MainActivity.kt")
+          import os
+          p = Path(os.environ["PROJECT_DIR"]) / "app/src/main/java/com/mana/os/app/MainActivity.kt"
           s = p.read_text(encoding="utf-8")
           broken = 'base("MANA", "Первоначальная настройка\nЯ стану твоим главным интерфейсом, сохраняя Android в качестве системной основы.")'
           fixed = 'base("MANA", "Первоначальная настройка\\nЯ стану твоим главным интерфейсом, сохраняя Android в качестве системной основы.")'
