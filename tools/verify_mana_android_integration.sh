@@ -21,6 +21,10 @@ grep -q '"mana.brain-java"' system/mana/apps/ManaAssistant/Android.bp
 grep -q 'ManaBrainBinderService' system/mana/apps/ManaAssistant/AndroidManifest.xml
 grep -q 'bindService' system/mana/apps/ManaLauncher/src/com/mana/launcher/ManaHomeActivity.java
 grep -q 'brainService.submit' system/mana/apps/ManaLauncher/src/com/mana/launcher/ManaHomeActivity.java
+grep -q 'forwardToCompanion' system/mana/apps/ManaLauncher/src/com/mana/launcher/ManaHomeActivity.java
+grep -q 'checkSignatures' system/mana/apps/ManaAssistant/src/com/mana/assistant/ManaBrainBinderService.java
+grep -q 'ArrayBlockingQueue' system/mana/apps/ManaAssistant/src/com/mana/assistant/ManaBrainBinderService.java
+grep -q 'ManaBrainAndroidRuntime.get().submit' system/mana/apps/ManaAssistant/src/com/mana/assistant/ManaBrainBinderService.java
 grep -q 'instrumentation_for: "ManaAssistant"' system/mana/apps/ManaAssistant/tests/Android.bp
 grep -q 'ManaLauncher' system/mana/mana_product.mk
 grep -q 'ManaAssistant' system/mana/mana_product.mk
