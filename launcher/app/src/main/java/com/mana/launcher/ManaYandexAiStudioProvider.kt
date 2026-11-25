@@ -65,8 +65,7 @@ class ManaYandexAiStudioProvider(context: Context) : InferenceProvider {
                 .put("modelUri", "gpt://${config.folderId}/${config.modelId}")
                 .put("completionOptions", JSONObject().put("stream", false).put("temperature", 0.6).put("maxTokens", "2048"))
                 .put("messages", org.json.JSONArray().put(JSONObject().put("role", "user").put("text", prompt)))
-                .put("store", false)
-            connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+                connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
             val code = connection.responseCode
             val response = readBounded(if (code in 200..299) connection.inputStream else connection.errorStream)
             check(code in 200..299) { "Yandex AI Studio returned HTTP $code. Check the folder, model, API key and quota." }
