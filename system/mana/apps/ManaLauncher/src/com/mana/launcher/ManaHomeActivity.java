@@ -66,12 +66,12 @@ public final class ManaHomeActivity extends Activity {
             brainService = IBrainService.Stub.asInterface(service);
             try {
                 boolean ready = brainService != null && brainService.isReady();
-                brainStatus.setText(ready ? "MANA Brain connected and ready" : "MANA Brain connected; local model unavailable");
-            } catch (RemoteException error) { brainStatus.setText("MANA Brain: service communication error"); }
+                brainStatus.setText(ready ? "MANA Brain готов к работе" : "Binder подключён; локальная модель откроется через MANA Genesis");
+            } catch (RemoteException error) { brainStatus.setText("MANA Brain: ошибка связи с сервисом"); }
         }
         @Override public void onServiceDisconnected(ComponentName name) {
             brainService = null;
-            brainStatus.setText("MANA Brain: connection lost");
+            brainStatus.setText("MANA Brain: соединение потеряно");
         }
     };
 
@@ -91,7 +91,7 @@ public final class ManaHomeActivity extends Activity {
         Intent service = new Intent();
         service.setClassName("com.mana.assistant", "com.mana.assistant.ManaBrainBinderService");
         brainBound = bindService(service, brainConnection, Context.BIND_AUTO_CREATE);
-        if (!brainBound && brainStatus != null) brainStatus.setText("MANA Brain service is not installed");
+        if (!brainBound && brainStatus != null) brainStatus.setText("Системный Binder недоступен; можно открыть MANA Genesis");
     }
 
     @Override
@@ -125,15 +125,15 @@ public final class ManaHomeActivity extends Activity {
 
     private void submitBrainPrompt() {
         String value = brainPrompt == null ? "" : brainPrompt.getText().toString().trim();
-        if (value.isEmpty()) { brainStatus.setText("Enter a message first."); return; }
-        if (brainService == null) { brainStatus.setText("MANA Brain is not connected."); return; }
+        if (value.isEmpty()) { brainStatus.setText("Сначала напиши сообщение."); return; }
+        if (brainService == null) { forwardToCompanion(value); return; }
         BrainRequest request = new BrainRequest();
         request.requestId = UUID.randomUUID().toString();
         request.prompt = value;
         request.allowCloud = false;
         request.sensitive = false;
         request.preferredCloudProvider = null;
-        brainStatus.setText("MANA is processing the request...");
+        brainStatus.setText("MANA обрабатывает запрос…");
         try {
             brainService.submit(request, new IBrainCallback.Stub() {
                 @Override public void onResult(BrainResponse response) {
@@ -144,7 +144,23 @@ public final class ManaHomeActivity extends Activity {
                     });
                 }
             });
-        } catch (RemoteException error) { brainStatus.setText("Could not send request to MANA Brain."); }
+        } catch (RemoteException error) { forwardToCompanion(value); }
+    }
+
+    private void forwardToCompanion(String prompt) {
+        Intent intent = new Intent();
+        intent.setClassName("com.mana.genesis", "com.mana.launcher.MainActivity");
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.putExtra("com.mana.launcher.OPEN_AVATAR_FROM_SYSTEM_ASSISTANT", true);
+        intent.putExtra("com.mana.genesis.OPEN_ASSISTANT_PANEL", true);
+        intent.putExtra("com.mana.genesis.INITIAL_PROMPT", prompt);
+        try {
+            startActivity(intent);
+            brainStatus.setText("Открываю MANA Genesis с твоим запросом…");
+        } catch (Exception unavailable) {
+            brainStatus.setText("Локальная модель недоступна. Установи MANA Genesis и выбери файл .litertlm.");
+            Toast.makeText(this, "MANA Genesis companion не найден.", Toast.LENGTH_LONG).show();
+        }
     }
 
     private void collectApplications() {
