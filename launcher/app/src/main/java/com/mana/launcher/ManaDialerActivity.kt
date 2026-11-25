@@ -139,6 +139,7 @@ class ManaDialerActivity : Activity() {
         root.addView(button("Отклонить входящий") { ManaInCallService.rejectCurrentCall(); refreshCallControls() })
         root.addView(button("Завершить звонок") { ManaInCallService.endCurrentCall(); refreshCallControls() })
         root.addView(button("Удержать / продолжить звонок") { ManaInCallService.holdCurrentCall(); refreshCallControls() })
+        root.addView(button("Переключить активный вызов") { ManaInCallService.selectNextCall(); refreshCallControls() })
         root.addView(button("Громкая связь") { ManaInCallService.setSpeaker(true) })
         root.addView(button("Динамик телефона") { ManaInCallService.setSpeaker(false) })
         root.addView(button("Выключить / включить микрофон") {
