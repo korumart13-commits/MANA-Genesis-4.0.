@@ -44,6 +44,25 @@ class ManaPersonalServicesTest {
         assertTrue(life.complete(task.id, approvedByUser = true).completed)
     }
 
+
+    @Test fun lifeManagerCanPersistTasksInEncryptedLocalStore() {
+        val directory = java.nio.file.Files.createTempDirectory("mana-life").toFile()
+        val key = diaryKey()
+        val provider = ManaSecretKeyProvider { key }
+        val store = EncryptedFileManaLifeTaskStore(
+            EncryptedFileManaDiaryStore(File(directory, "life.bin"), provider)
+        )
+        val manager = ManaLifeManagerService(store)
+        val task = manager.add("Review MANA update", Instant.parse("2026-12-01T10:00:00Z"), requiresConfirmation = true)
+        manager.complete(task.id, approvedByUser = true)
+        val reloaded = ManaLifeManagerService(
+            EncryptedFileManaLifeTaskStore(EncryptedFileManaDiaryStore(File(directory, "life.bin"), provider))
+        )
+        assertTrue(reloaded.list(includeCompleted = true).single().completed)
+        assertEquals(task.title, reloaded.list(includeCompleted = true).single().title)
+        directory.deleteRecursively()
+    }
+
     @Test fun receptionistPreservesRequestedDefaultsAndConsentGate() {
         val decision = ManaSmartReceptionistPolicy().onIncomingCall(numberKnown = false)
         assertEquals(Duration.ofSeconds(10), decision.delay)
