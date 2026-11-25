@@ -90,12 +90,21 @@ class MainActivity : Activity() {
     }
 
     private fun requestFloatingAvatar() {
-        getSharedPreferences("mana.settings", MODE_PRIVATE).edit().putBoolean("floating_avatar_enabled", true).apply()
+        val preferences = getSharedPreferences("mana.settings", MODE_PRIVATE)
         if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
+            preferences.edit().putBoolean("floating_avatar_enabled", true).apply()
             startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+            return
+        }
+        val enabled = preferences.getBoolean("floating_avatar_enabled", false)
+        if (enabled) {
+            preferences.edit().putBoolean("floating_avatar_enabled", false).apply()
+            stopService(Intent(this, ManaFloatingAvatarService::class.java))
+            showMessage("Плавающий аватар MANA выключен.")
         } else {
+            preferences.edit().putBoolean("floating_avatar_enabled", true).apply()
             startFloatingAvatarService()
-            showMessage("Плавающая MANA включена.")
+            showMessage("Плавающий 3D-аватар MANA включён.")
         }
     }
 
@@ -243,7 +252,7 @@ class MainActivity : Activity() {
         }
         card.addView(label("MANA ASSISTANT", 11, accentSoft, true))
         card.addView(label("Твой телефон. Твои правила.", 19, textColor, true))
-        card.addView(action("Включить плавающий аватар поверх приложений") { requestFloatingAvatar() })
+        card.addView(action(if (getSharedPreferences("mana.settings", MODE_PRIVATE).getBoolean("floating_avatar_enabled", false)) "Выключить плавающий 3D-аватар" else "Включить плавающий 3D-аватар") { requestFloatingAvatar() })
         card.addView(action("Сменить наряд MANA") {
             ManaAvatar3DView.outfitIndex = (ManaAvatar3DView.outfitIndex + 1) % 3
             showMessage("Наряд аватара изменён. Внешность и голос остались прежними.")
