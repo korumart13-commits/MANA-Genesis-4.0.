@@ -40,7 +40,7 @@ class ManaFloatingAvatarService : Service() {
             onDrag = { dx, dy ->
                 params.x = (params.x + dx.toInt()).coerceAtLeast(0)
                 params.y = (params.y + dy.toInt()).coerceAtLeast(0)
-                try { windowManager.updateViewLayout(avatar, params) } catch (_: IllegalArgumentException) { }
+                try { avatar?.let { windowManager.updateViewLayout(it, params) } } catch (_: IllegalArgumentException) { }
             },
             onTap = {
                 startActivity(Intent(this, MainActivity::class.java)
