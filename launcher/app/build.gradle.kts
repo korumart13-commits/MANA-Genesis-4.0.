@@ -28,6 +28,7 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-runtime-android:2.8.7")
     implementation(project(":core"))
     implementation("com.google.ai.edge.litertlm:litertlm-android:0.16.1")
     implementation("io.github.sceneview:sceneview:4.18.0")
