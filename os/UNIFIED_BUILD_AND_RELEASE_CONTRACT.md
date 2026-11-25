@@ -17,7 +17,7 @@ This is a unified source snapshot, not a claim that all modules are already one 
 
 ## Known integration gaps that remain release-blocking
 
-- The Gradle launcher prototype and Soong product apps are separate implementations. The Gradle app has the local inference, avatar and personal-feature prototypes; the Soong assistant shell is not yet wired to the Brain service.
+- The Gradle companion and Soong product apps remain separate UI implementations. The Android companion now consumes the same canonical `engine/mana-brain` Gradle module tested by JVM CI, and the duplicate Android copy was removed. The Soong assistant entry point opens the companion through an explicit intent handoff; it does not host the Brain service itself.
 - The MANA System Core is JVM-tested but is not integrated as Android system_server/Binder services.
 - The current MANA Control Center is a non-privileged settings hub, not a replacement for AOSP SystemUI or Quick Settings.
 - The repository does not contain a complete pinned Android 16 AOSP checkout/product build.
