@@ -23,10 +23,10 @@ An app on a user-controlled Android device cannot make a user-provided API key c
 
 ## Provider APIs
 
-- OpenAI: Responses/Chat Completions adapter according to the configured gateway version.
+- OpenAI: Responses API; request storage is disabled with `store=false`.
 - Anthropic: Messages API.
 - Google Gemini: generateContent API.
-- xAI: Responses/Chat Completions adapter according to the configured gateway version.
+- xAI: Responses API; request storage is disabled with `store=false`.
 
 The user must supply a valid model identifier and API key for the selected provider. No provider account, API credits, license, or entitlement is included with MANA.
 
