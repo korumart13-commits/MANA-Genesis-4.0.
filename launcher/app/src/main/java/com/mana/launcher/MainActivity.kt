@@ -595,7 +595,7 @@ class MainActivity : Activity() {
         search.setText("")
         content.removeAllViews()
         content.addView(label("MANA SMART RECEPTIONIST", 22, textColor, true))
-        content.addView(label("Локальная проверка контакта. Профиль: playful • задержка 10 секунд • неизвестные номера • сводка разговора. Автоответ после 10 секунд доступен только при добровольном назначении MANA приложением телефона.", 12, muted, false))
+        content.addView(label("Локальная проверка контакта. Профиль: playful • задержка автоответа 10 секунд • неизвестные номера • сводка метаданных вызова. Автоответ после 10 секунд доступен только при добровольном назначении MANA приложением телефона.", 12, muted, false))
         content.addView(action("Включить системное распознавание неизвестных вызовов") { requestCallScreeningRole() }, LinearLayout.LayoutParams(-1, dp(44)).apply { topMargin = dp(10) })
         content.addView(action("Открыть MANA Phone для настройки автоответа") { startActivity(Intent(this, ManaDialerActivity::class.java)) })
         content.addView(label("CallScreeningService распознаёт неизвестные номера и уведомляет владельца. Для автоответа через 10 секунд открой MANA Phone и отдельно назначь MANA приложением телефона; без этого системный номеронабиратель не меняется.", 11, muted, false))
@@ -625,7 +625,7 @@ class MainActivity : Activity() {
                 showMessage("Проверка контакта не удалась: ${error.message}")
             }
         }, LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(10) })
-        content.addView(label("Номер и контакты обрабатываются на устройстве. Для доступа требуется отдельное разрешение Android.", 11, muted, false).apply {
+        content.addView(label("Номер и контакты обрабатываются на устройстве. Доступ к аудио звонка и его расшифровка не выполняются. Для доступа к контактам требуется отдельное разрешение Android.", 11, muted, false).apply {
             setPadding(0, dp(10), 0, 0)
         })
     }
