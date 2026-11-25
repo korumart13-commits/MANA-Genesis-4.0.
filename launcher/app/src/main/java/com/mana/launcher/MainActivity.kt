@@ -87,6 +87,7 @@ class MainActivity : Activity() {
     private var speechRecognizer: SpeechRecognizer? = null
     private val audioPermissionRequestCode = 4111
     private val contactsPermissionRequestCode = 4112
+    private val callScreeningRoleRequestCode = 4113
     private lateinit var contactIntelligence: ManaContactIntelligence
 
     private fun startFloatingAvatarService() {
@@ -476,6 +477,23 @@ class MainActivity : Activity() {
         content.removeAllViews()
         content.addView(label("MANA SMART RECEPTIONIST", 22, textColor, true))
         content.addView(label("Локальная проверка контакта. Профиль: playful • задержка 10 секунд • неизвестные номера • сводка разговора. Фактический автоответ и запись звонков пока не включены.", 12, muted, false))
+        content.addView(action("Подключить MANA к проверке входящих звонков") {
+            if (Build.VERSION.SDK_INT < 29) {
+                showMessage("Системная роль проверки звонков доступна начиная с Android 10.")
+            } else {
+                val roles = getSystemService(android.app.role.RoleManager::class.java)
+                if (!roles.isRoleAvailable(android.app.role.RoleManager.ROLE_CALL_SCREENING)) {
+                    showMessage("На этой прошивке роль проверки звонков недоступна.")
+                } else if (roles.isRoleHeld(android.app.role.RoleManager.ROLE_CALL_SCREENING)) {
+                    showMessage("MANA уже выбрана для проверки входящих звонков.")
+                } else {
+                    startActivityForResult(
+                        roles.createRequestRoleIntent(android.app.role.RoleManager.ROLE_CALL_SCREENING),
+                        callScreeningRoleRequestCode
+                    )
+                }
+            }
+        }, LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(10) })
         val phone = EditText(this).apply {
             hint = "Номер телефона"
             setTextColor(textColor)
@@ -1115,6 +1133,9 @@ class MainActivity : Activity() {
         if (requestCode == audioPermissionRequestCode) {
             if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) startVoiceInput()
             else showMessage("Доступ к микрофону не предоставлен.")
+        }
+        if (requestCode == callScreeningRoleRequestCode) {
+            showMessage(if (resultCode == RESULT_OK) "Роль проверки звонков предоставлена MANA." else "Роль проверки звонков не предоставлена.")
         }
         if (requestCode == contactsPermissionRequestCode) {
             if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
