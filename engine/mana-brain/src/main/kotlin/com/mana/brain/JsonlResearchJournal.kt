@@ -21,7 +21,7 @@ class JsonlResearchJournal(
 
     override fun append(entry: ResearchJournalEntry) {
         synchronized(lock) {
-            file.toAbsolutePath().parent?.let(Files::createDirectories)
+            file.toAbsolutePath().parent?.let { Files.createDirectories(it) }
             val line = gson.toJson(entry) + "\n"
             Files.write(
                 file,
