@@ -45,6 +45,28 @@ class ManaPersonalServicesTest {
     }
 
 
+
+    @Test fun memoryIsEncryptedPersistentAndOwnerControlled() {
+        val directory = java.nio.file.Files.createTempDirectory("mana-memory").toFile()
+        val key = diaryKey()
+        val provider = ManaSecretKeyProvider { key }
+        val file = File(directory, "memory.bin")
+        val service = ManaMemoryService(
+            EncryptedFileManaMemoryStore(EncryptedFileManaDiaryStore(file, provider, "mana.memory.test"))
+        )
+        val item = service.remember("preference", "prefers offline local-first MANA", pinned = true)
+        assertFalse(String(file.readBytes(), Charsets.UTF_8).contains("offline local-first"))
+        assertFailsWith<IllegalArgumentException> { service.forget(item.id, approvedByUser = false) }
+        val reloaded = ManaMemoryService(
+            EncryptedFileManaMemoryStore(EncryptedFileManaDiaryStore(file, provider, "mana.memory.test"))
+        )
+        assertEquals(item.id, reloaded.recall("offline").single().id)
+        assertTrue(reloaded.expiredCandidates().isEmpty())
+        reloaded.forget(item.id, approvedByUser = true)
+        assertTrue(reloaded.recall().isEmpty())
+        directory.deleteRecursively()
+    }
+
     @Test fun lifeManagerCanPersistTasksInEncryptedLocalStore() {
         val directory = java.nio.file.Files.createTempDirectory("mana-life").toFile()
         val key = diaryKey()
