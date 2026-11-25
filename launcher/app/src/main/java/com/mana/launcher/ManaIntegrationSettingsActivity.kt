@@ -18,11 +18,11 @@ import kotlinx.coroutines.launch
 
 /** Owner-facing setup for official Yandex AI Studio and read-only VK connectors. */
 class ManaIntegrationSettingsActivity : ComponentActivity() {
-    private val backgroundColor = Color.rgb(4, 7, 14)
-    private val surfaceColor = Color.rgb(13, 32, 59)
-    private val accentColor = Color.rgb(90, 190, 255)
-    private val foregroundColor = Color.rgb(238, 246, 255)
-    private val mutedColor = Color.rgb(150, 174, 198)
+    private val backgroundArgb = Color.rgb(4, 7, 14)
+    private val surfaceArgb = Color.rgb(13, 32, 59)
+    private val accentArgb = Color.rgb(90, 190, 255)
+    private val foregroundArgb = Color.rgb(238, 246, 255)
+    private val mutedArgb = Color.rgb(150, 174, 198)
     private lateinit var yandex: ManaYandexAiStudioProvider
     private lateinit var vk: ManaVkReadOnlyConnector
     private lateinit var status: TextView
@@ -34,15 +34,15 @@ class ManaIntegrationSettingsActivity : ComponentActivity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(18), dp(18), dp(18), dp(18))
-            setBackgroundColor(this@ManaIntegrationSettingsActivity.backgroundColor)
+            setBackgroundColor(this@ManaIntegrationSettingsActivity.backgroundArgb)
         }
-        root.addView(text("Интеграции MANA", 25, foregroundColor, true))
-        root.addView(text("Ключи хранятся локально в AES-GCM через Android Keystore. Облачные запросы не запускаются автоматически.", 13, mutedColor))
-        status = text("Yandex: ${if (yandex.isAvailable()) "подключён" else "не настроен"} • VK: ${if (vk.isConfigured()) "подключён" else "не настроен"}", 12, accentColor)
+        root.addView(text("Интеграции MANA", 25, foregroundArgb, true))
+        root.addView(text("Ключи хранятся локально в AES-GCM через Android Keystore. Облачные запросы не запускаются автоматически.", 13, mutedArgb))
+        status = text("Yandex: ${if (yandex.isAvailable()) "подключён" else "не настроен"} • VK: ${if (vk.isConfigured()) "подключён" else "не настроен"}", 12, accentArgb)
         root.addView(status)
 
         root.addView(section("Yandex AI Studio"))
-        root.addView(text("Официальный API Yandex Cloud. Запросы могут тарифицироваться по условиям твоего аккаунта.", 12, mutedColor))
+        root.addView(text("Официальный API Yandex Cloud. Запросы могут тарифицироваться по условиям твоего аккаунта.", 12, mutedArgb))
         val yandexKey = field("Секретный API-ключ Yandex", password = true)
         val folder = field("ID каталога Yandex Cloud")
         val model = field("Model ID (пример: yandexgpt/latest)", initial = "yandexgpt/latest")
@@ -61,7 +61,7 @@ class ManaIntegrationSettingsActivity : ComponentActivity() {
                 .setMessage("Yandex получит текст «Ответь одним словом: готово». Запрос может тарифицироваться.")
                 .setNegativeButton("Отмена", null)
                 .setPositiveButton("Отправить") { _, _ ->
-                    lifecycleScope.launch {
+                    this@ManaIntegrationSettingsActivity.lifecycleScope.launch {
                         try { refreshStatus("Yandex ответил: " + yandex.generate("Ответь одним словом: готово.").take(240)) }
                         catch (error: Exception) { refreshStatus("Ошибка Yandex: ${error.message}") }
                     }
@@ -78,14 +78,14 @@ class ManaIntegrationSettingsActivity : ComponentActivity() {
         })
 
         root.addView(section("VK — только чтение"))
-        root.addView(text("Поддерживаются только users.get и wall.get. MANA не публикует записи, не ставит реакции и не отправляет сообщения.", 12, mutedColor))
+        root.addView(text("Поддерживаются только users.get и wall.get. MANA не публикует записи, не ставит реакции и не отправляет сообщения.", 12, mutedArgb))
         val vkToken = field("VK access token", password = true)
         root.addView(vkToken)
         root.addView(button("Подключить VK и прочитать профиль") {
             try {
                 vk.configureAccessToken(vkToken.text.toString())
                 vkToken.setText("")
-                lifecycleScope.launch {
+                this@ManaIntegrationSettingsActivity.lifecycleScope.launch {
                     try {
                         val profile = vk.readProfile()
                         refreshStatus("VK подключён: ${profile.firstName} ${profile.lastName} (ID ${profile.id}).")
@@ -95,7 +95,7 @@ class ManaIntegrationSettingsActivity : ComponentActivity() {
         })
         root.addView(button("Прочитать последние записи своей стены") {
             if (!vk.isConfigured()) { refreshStatus("Сначала подключи VK."); return@button }
-            lifecycleScope.launch {
+            this@ManaIntegrationSettingsActivity.lifecycleScope.launch {
                 try {
                     val posts = vk.readOwnWall(5)
                     refreshStatus(if (posts.isEmpty()) "VK: записей нет." else posts.joinToString("\n") { it.text.take(100) })
@@ -117,17 +117,17 @@ class ManaIntegrationSettingsActivity : ComponentActivity() {
         EditText(this).apply {
             hint = hintText
             setText(initial)
-            setTextColor(this@ManaIntegrationSettingsActivity.foregroundColor)
-            setHintTextColor(this@ManaIntegrationSettingsActivity.mutedColor)
+            setTextColor(this@ManaIntegrationSettingsActivity.foregroundArgb)
+            setHintTextColor(this@ManaIntegrationSettingsActivity.mutedArgb)
             inputType = if (password) InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
                 else InputType.TYPE_CLASS_TEXT
             isSingleLine = true
             setPadding(dp(12), dp(8), dp(12), dp(8))
-            setBackgroundColor(this@ManaIntegrationSettingsActivity.surfaceColor)
+            setBackgroundColor(this@ManaIntegrationSettingsActivity.surfaceArgb)
             layoutParams = LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(7) }
         }
 
-    private fun section(value: String) = text(value, 18, this@ManaIntegrationSettingsActivity.accentColor, true).apply {
+    private fun section(value: String) = text(value, 18, this@ManaIntegrationSettingsActivity.accentArgb, true).apply {
         setPadding(0, dp(22), 0, dp(5))
     }
 
@@ -142,8 +142,8 @@ class ManaIntegrationSettingsActivity : ComponentActivity() {
 
     private fun button(value: String, action: () -> Unit) = Button(this).apply {
         text = value
-        setTextColor(this@ManaIntegrationSettingsActivity.foregroundColor)
-        setBackgroundColor(this@ManaIntegrationSettingsActivity.surfaceColor)
+        setTextColor(this@ManaIntegrationSettingsActivity.foregroundArgb)
+        setBackgroundColor(this@ManaIntegrationSettingsActivity.surfaceArgb)
         gravity = Gravity.CENTER
         setOnClickListener { action() }
         layoutParams = LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(7) }
