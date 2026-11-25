@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.LifecycleService
-import androidx.lifecycle.ViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
 import io.github.sceneview.SceneView
 import io.github.sceneview.SurfaceType
 import io.github.sceneview.rememberEngine
@@ -63,7 +63,7 @@ class ManaFloatingAvatarService : LifecycleService() {
         }
         val avatarAsset = ManaAvatarAssetSelector.assetName(this)
         val compose = ComposeView(this).apply {
-            ViewTreeLifecycleOwner.set(this, this@ManaFloatingAvatarService)
+            setViewTreeLifecycleOwner(this@ManaFloatingAvatarService)
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 val engine = rememberEngine()
