@@ -18,7 +18,7 @@ internal fun buildYandexSearchRequest(query: String, folderId: String, maxResult
     require(maxResults in 1..10)
     return JSONObject()
         .put("query", JSONObject()
-            .put("searchType", "SEARCH_TYPE_COM")
+            .put("searchType", "SEARCH_TYPE_RU")
             .put("queryText", query)
             .put("familyMode", "FAMILY_MODE_STRICT")
             .put("page", "0")
