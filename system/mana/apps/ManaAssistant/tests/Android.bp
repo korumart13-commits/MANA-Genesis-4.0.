@@ -3,6 +3,8 @@ android_test {
     manifest: "AndroidManifest.xml",
     srcs: ["src/**/*.java"],
     static_libs: ["mana.brain-java"],
+    libs: ["android.test.runner"],
+    sdk_version: "test_current",
     instrumentation_for: "ManaAssistant",
     test_suites: ["device-tests"],
     certificate: "default",
