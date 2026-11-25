@@ -28,7 +28,6 @@ object ManaAvatarState {
         val expression = when {
             isSpeaking -> "speaking"
             expressionIndex == 1 -> "playful"
-            expressionIndex == 2 -> "speaking"
             else -> null
         }
         return if (expression == null) "$base.gltf" else "${base}_$expression.gltf"
