@@ -56,9 +56,11 @@ class ManaAdaptiveKnowledgeService(private val store: ManaAdaptiveKnowledgeStore
         require(ownerApproved) { "Explicit owner approval is required to save web knowledge." }
         require(title.isNotBlank() && title.length <= 240)
         require(snippet.isNotBlank() && snippet.length <= 700)
+        require(sourceUrl.length <= 2048) { "Source URL exceeds the storage limit." }
         val uri = URI(sourceUrl)
-        require(uri.scheme == "https" && !uri.host.isNullOrBlank()) { "Only HTTPS source URLs can be saved." }
-        val normalizedUrl = uri.toASCIIString().take(2048)
+        require(uri.scheme == "https" && !uri.host.isNullOrBlank() && uri.userInfo == null) { "Only HTTPS source URLs without embedded credentials can be saved." }
+        val normalizedUrl = uri.toASCIIString()
+        require(normalizedUrl.length <= 2048) { "Normalized source URL exceeds the storage limit." }
         val existing = items.values.firstOrNull { it.sourceUrl == normalizedUrl }
         val item = ManaKnowledgeItem(existing?.id ?: java.util.UUID.randomUUID().toString(),
             title.trim(), normalizedUrl, snippet.trim(), now)
