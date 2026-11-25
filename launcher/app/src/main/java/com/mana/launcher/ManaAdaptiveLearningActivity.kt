@@ -107,7 +107,7 @@ class ManaAdaptiveLearningActivity : Activity() {
         val lastRun = prefs.getLong(ManaAdaptiveLearningWorker.KEY_LAST_RUN, 0L)
         val lastRunText = if (lastRun > 0L) DateFormat.getDateTimeInstance().format(Date(lastRun)) else "нет"
         status.text = (if (enabled) "Статус: включено" else "Статус: выключено") +
-            "\\nПоследний запуск: $lastRunText\\n$lastStatus"
+            "\nПоследний запуск: $lastRunText\n$lastStatus"
     }
 
     private fun refreshKnowledge() {
