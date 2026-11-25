@@ -37,6 +37,8 @@ class ManaYandexAiStudioProvider(context: Context) : InferenceProvider {
 
     fun removeCredentials() = vault.clear()
 
+    fun currentConfig(): ManaYandexConfig? = config()
+
     private fun config(): ManaYandexConfig? {
         val raw = vault.read() ?: return null
         val json = JSONObject(raw)
