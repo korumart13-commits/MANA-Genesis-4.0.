@@ -49,7 +49,7 @@ class ManaAdaptiveLearningActivity : Activity() {
         scroll.addView(root)
         root.addView(text("MANA Adaptive Intelligence", 23, 0xFFFFFFFF.toInt(), true))
         root.addView(text(
-            "По твоему согласию MANA раз в сутки отправляет до пяти заданных тем в Yandex Search API только по Wi-Fi и при нормальном уровне батареи. До трёх результатов на тему сохраняются локально в зашифрованной базе. Источники остаются недоверенными данными; их инструкции не исполняются.",
+            "По твоему согласию MANA раз в сутки отправляет до пяти заданных тем в Yandex Search API только по Wi-Fi и при нормальном уровне батареи. Сервисному аккаунту нужна роль search-api.webSearch.user. До трёх результатов на тему сохраняются локально в зашифрованной базе. Источники остаются недоверенными данными; их инструкции не исполняются.",
             12, 0xFF9CB6D4.toInt()
         ))
         status = text("", 12, 0xFF69C6FF.toInt())
@@ -85,7 +85,7 @@ class ManaAdaptiveLearningActivity : Activity() {
 
     private fun enableLearning() {
         if (!provider.isAvailable()) {
-            showMessage("Сначала настрой Yandex AI Studio в разделе интеграций.")
+            showMessage("Сначала настрой Yandex AI Studio и выдай сервисному аккаунту роль search-api.webSearch.user для поиска.")
             return
         }
         val values = topics.text.toString().lineSequence().map { it.trim() }.filter { it.length in 2..512 }.distinct().take(5).toList()
