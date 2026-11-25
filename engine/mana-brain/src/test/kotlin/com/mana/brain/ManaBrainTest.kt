@@ -22,6 +22,9 @@ class FakeProvider(
     fun setAvailable(value: Boolean) {
         available = value
     }
+}
+
+class ManaBrainCloudSelectionTest {
     @Test
     fun preferredCloudProviderIsSelectedFromRegistry() {
         val local = FakeProvider("litert-local", false, "")
