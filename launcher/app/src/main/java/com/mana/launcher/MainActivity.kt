@@ -56,6 +56,8 @@ import com.mana.os.core.ManaSmartReceptionistPolicy
 import com.mana.os.core.EncryptedFileManaFutureUpdateStore
 import com.mana.os.core.ManaFutureUpdateService
 import com.mana.os.core.ManaUpdateStage
+import com.mana.os.core.DeviceFacts
+import com.mana.os.core.SystemReadiness
 
 class MainActivity : Activity() {
     private val bg = Color.rgb(4, 7, 14)
@@ -103,6 +105,7 @@ class MainActivity : Activity() {
     private val notificationPermissionRequestCode = 4114
     private val permissionSetupRequestCode = 4116
     private lateinit var contactIntelligence: ManaContactIntelligence
+    private var systemRuntime: ManaAndroidRuntimeSupervisor? = null
 
     private fun startFloatingAvatarService() {
         val intent = Intent(this, ManaFloatingAvatarService::class.java)
@@ -202,6 +205,7 @@ class MainActivity : Activity() {
         initializeVoice()
         loadApps()
         buildShell()
+        initializeSystemRuntime()
         if (getSharedPreferences("mana.settings", MODE_PRIVATE).getBoolean("first_run_setup_complete", false)) {
             showHome()
         } else {
@@ -477,12 +481,60 @@ class MainActivity : Activity() {
         setContentView(rootFrame)
     }
 
+    private fun initializeSystemRuntime() {
+        val deviceFacts = DeviceFacts(
+            product = Build.PRODUCT.ifBlank { "unknown-product" },
+            device = Build.DEVICE.ifBlank { "unknown-device" },
+            androidApi = Build.VERSION.SDK_INT,
+            kernelRelease = System.getProperty("os.version")?.takeIf { it.isNotBlank() } ?: "unknown-kernel",
+            abi = Build.SUPPORTED_ABIS.firstOrNull()?.takeIf { it.isNotBlank() } ?: "unknown-abi"
+        )
+        val probes = mapOf<String, () -> Boolean>(
+            "app.storage" to { filesDir.exists() && filesDir.isDirectory && filesDir.canWrite() },
+            "app.memory" to { memoryService != null },
+            "app.brain" to { ::manaBrain.isInitialized },
+            "app.launcher" to { ::content.isInitialized && ::rootFrame.isInitialized }
+        )
+        systemRuntime = runCatching {
+            ManaAndroidRuntimeSupervisor(deviceFacts, probes).also { it.start() }
+        }.onFailure {
+            showMessage("Диагностика MANA не запустилась: ${it.message}")
+        }.getOrNull()
+    }
+
+    private fun runtimeStatusText(): String {
+        val snapshot = systemRuntime?.snapshot()
+            ?: return "Диагностика приложения пока недоступна."
+        val readiness = when (snapshot.readiness) {
+            SystemReadiness.READY -> "ГОТОВО"
+            SystemReadiness.DEGRADED -> "ОГРАНИЧЕННЫЙ РЕЖИМ"
+            SystemReadiness.BLOCKED -> "ЕСТЬ БЛОКИРУЮЩИЕ ПРОБЛЕМЫ"
+        }
+        val running = snapshot.modules.count { it.state == com.mana.os.core.ModuleState.RUNNING }
+        val total = snapshot.modules.size
+        val failures = (snapshot.requiredFailures + snapshot.optionalFailures).joinToString("; ")
+        return "Состояние компонентов APK: $readiness\nЗапущено модулей: $running из $total" +
+            if (failures.isNotBlank()) "\nПроблемы: $failures" else ""
+    }
+
     private fun showHome() {
         showingDrawer = false
         search.setText("")
         content.removeAllViews()
         content.addView(label("Добро пожаловать", 24, textColor, true))
         content.addView(label("Я рядом. Нажми на мой аватар, чтобы открыть MANA.", 13, muted, false))
+
+        val runtimeCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = rounded(panel, 16)
+        }
+        runtimeCard.addView(label("ДИАГНОСТИКА КОМПОНЕНТОВ MANA", 11, accentSoft, true))
+        runtimeCard.addView(label(runtimeStatusText(), 12, textColor, false))
+        runtimeCard.addView(action("Обновить диагностику") {
+            runtimeCard.getChildAt(1).let { (it as? TextView)?.text = runtimeStatusText() }
+        })
+        content.addView(runtimeCard, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
 
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
