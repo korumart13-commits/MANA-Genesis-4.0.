@@ -1,0 +1,16 @@
+// Android/Soong view of the canonical JVM engine.
+// Cloud adapter files are intentionally excluded until Gson and kotlinx-coroutines
+// are supplied as verified Soong dependencies. The shared routing core and facade
+// are compiled directly from their existing Kotlin sources.
+java_library {
+    name: "mana-brain-core",
+    srcs: [
+        "src/main/kotlin/com/mana/brain/ManaBrain.kt",
+        "src/main/kotlin/com/mana/brain/ManaBrainFacade.kt",
+        "src/main/kotlin/com/mana/brain/ManaBrainAndroidRuntime.kt",
+    ],
+    sdk_version: "current",
+    visibility: [
+        "//system/mana/apps/ManaAssistant:__subpackages__",
+    ],
+}
