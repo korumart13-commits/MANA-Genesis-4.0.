@@ -403,8 +403,10 @@ class MainActivity : Activity() {
         val prompt = chatInput?.text?.toString()?.trim().orEmpty()
         if (prompt.isBlank()) return
         chatOutput?.text = "Ты: $prompt\n\nMANA думает…"
+        ManaAvatar3DView.isSpeaking = true
         manaBrain.respond(prompt, { chunk -> runOnUiThread { chatOutput?.append(chunk) } }) { result ->
             runOnUiThread {
+                ManaAvatar3DView.isSpeaking = false
                 result.onSuccess { chatInput?.setText("") }
                     .onFailure { error -> chatOutput?.append("\n\nОшибка локального ИИ: ${error.message}") }
             }
