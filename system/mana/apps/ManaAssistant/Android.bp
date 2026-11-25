@@ -1,0 +1,11 @@
+android_app {
+    name: "ManaAssistant",
+    manifest: "AndroidManifest.xml",
+    srcs: ["src/**/*.java"],
+    sdk_version: "current",
+    min_sdk_version: "29",
+    target_sdk_version: "36",
+    certificate: "platform",
+    privileged: false,
+    product_specific: true,
+}
