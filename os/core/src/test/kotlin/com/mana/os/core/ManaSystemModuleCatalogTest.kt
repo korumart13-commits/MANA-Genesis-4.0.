@@ -34,6 +34,7 @@ class ManaSystemModuleCatalogTest {
         val ids = ManaSystemModuleCatalog.modules.map { it.id }.toSet()
         val required = setOf(
             "mana.brain", "mana.modelmanager", "mana.cloudgateway", "mana.memory", "mana.voice",
+            "mana.avatar3d", "mana.calltelephony", "mana.gamebridge", "mana.integrationhub",
             "mana.avatar", "mana.adaptiveintelligence", "mana.futureupdates",
             "mana.yandex", "mana.vk", "mana.diary", "mana.lifemanager",
             "mana.contacts", "mana.receptionist", "mana.gameintelligence",
