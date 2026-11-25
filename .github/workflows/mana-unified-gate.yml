@@ -73,8 +73,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-      - name: Ensure Android Brain mirror matches tested Brain source
-        run: diff -u engine/mana-brain/src/main/kotlin/com/mana/brain/ManaBrain.kt launcher/app/src/main/java/com/mana/brain/ManaBrain.kt
+      - name: Ensure Android app consumes the single tested MANA Brain module
+        run: |
+          grep -F 'include(":app", ":core", ":brain")' launcher/settings.gradle.kts
+          grep -F 'project(":brain").projectDir = file("../engine/mana-brain")' launcher/settings.gradle.kts
+          grep -F 'implementation(project(":brain"))' launcher/app/build.gradle.kts
+          test ! -f launcher/app/src/main/java/com/mana/brain/ManaBrain.kt
       - name: Validate every bundled avatar asset
         run: |
           for model in launcher/app/src/main/assets/mana_avatar_genesis*.gltf; do
