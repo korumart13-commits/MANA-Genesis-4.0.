@@ -117,7 +117,8 @@ class ManaModelCatalog(context: Context) {
         const val MODEL_URL = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/21c646194210256750db12cfa1e4fdf22bd3ddf1/gemma-4-E2B-it.litertlm"
         const val MODEL_FILE = "gemma-4-E2B-it.litertlm"
         const val SHA256 = "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c"
-        private const val KEY_DOWNLOAD_ID = "gemma4_download_id"\n        private const val KEY_LICENSE_ACCEPTED = "gemma4_license_accepted"
+        private const val KEY_DOWNLOAD_ID = "gemma4_download_id"
+        private const val KEY_LICENSE_ACCEPTED = "gemma4_license_accepted"
         private const val KEY_ACTIVE_PATH = "active_model_path"
         const val MODEL_SIZE = 2_588_147_712L
         private const val REQUIRED_FREE_BYTES = 3_300_000_000L
