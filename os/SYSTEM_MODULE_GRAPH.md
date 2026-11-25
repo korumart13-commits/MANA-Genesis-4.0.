@@ -36,3 +36,12 @@ Before adding Android.bp, init rc, Binder interfaces or SELinux policy, the proj
 ## Next work
 
 Implement the first concrete platform adapter in a testable host module, then port the stable service contract to Android Binder once the AOSP tree and target integration are available.
+
+
+## First concrete service contracts (JVM)
+
+- `ManaSecurityService`: exact capability grants, default-deny decisions, expiry, revocation, explicit denial, and audit events.
+- `ManaStorageService`: metadata inventory, conservative archive recommendations, explicit approval for reversible archive/quarantine, restore history, and no permanent deletion.
+- Unit tests cover default deny, grant boundaries, expiry, secret-data restrictions, approval gates, pinned/secret file protection, and restore.
+
+These implementations are host-JVM policy models only. They are not Android Binder services, SELinux enforcement, Android permission checks, or real filesystem operations. See [Security and Storage service contracts](SECURITY_AND_STORAGE_SERVICES.md).
