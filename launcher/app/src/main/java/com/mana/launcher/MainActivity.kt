@@ -62,13 +62,6 @@ class MainActivity : Activity() {
     private var chatOutput: TextView? = null
     private var modelStatus: TextView? = null
 
-    override fun onResume() {
-        super.onResume()
-        if (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(this)) {
-            startService(Intent(this, ManaFloatingAvatarService::class.java))
-        }
-    }
-
     private fun requestFloatingAvatar() {
         if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
             startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
@@ -103,6 +96,9 @@ class MainActivity : Activity() {
         super.onResume()
         loadApps()
         if (::content.isInitialized && !showingDrawer) showHome()
+        if (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(this)) {
+            startService(Intent(this, ManaFloatingAvatarService::class.java))
+        }
     }
 
     private fun loadApps() {
