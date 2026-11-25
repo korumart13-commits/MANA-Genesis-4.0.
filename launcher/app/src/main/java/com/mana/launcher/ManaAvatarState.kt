@@ -15,13 +15,18 @@ object ManaAvatarState {
 object ManaAvatarAssetSelector {
     fun assetName(context: Context): String {
         val prefs = context.getSharedPreferences("mana.settings", Context.MODE_PRIVATE)
-        val outfit = prefs.getInt("avatar_outfit_index", 0).coerceIn(0, 2)
-        val accessory = prefs.getBoolean("avatar_accessory_enabled", true)
-        val base = when (outfit) {
+        return assetName(
+            prefs.getInt("avatar_outfit_index", 0),
+            prefs.getBoolean("avatar_accessory_enabled", true)
+        )
+    }
+
+    fun assetName(outfitIndex: Int, accessoryEnabled: Boolean): String {
+        val base = when (outfitIndex.coerceIn(0, 2)) {
             1 -> "mana_avatar_genesis_casual.gltf"
             2 -> "mana_avatar_genesis_evening.gltf"
             else -> "mana_avatar_genesis.gltf"
         }
-        return if (accessory) base else base.removeSuffix(".gltf") + "_no_accessory.gltf"
+        return if (accessoryEnabled) base else base.removeSuffix(".gltf") + "_no_accessory.gltf"
     }
 }
