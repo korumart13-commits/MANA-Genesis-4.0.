@@ -88,7 +88,11 @@ class MainActivity : Activity() {
         window.decorView.setBackgroundColor(bg)
         localRuntime = LocalModelRuntime(File(cacheDir, "mana-litert-cache"))
         manaBrain = ManaBrainBridge(localRuntime)
-        diaryService = try { ManaDiaryService(EncryptedFileManaDiaryStore(File(filesDir, "mana/diary.bin"), ManaAndroidKeyProvider())) } catch (error: Exception) {\n            showMessage("Дневник пока недоступен: ${error.message}")\n            null\n        }\n        initializeVoice()
+        diaryService = try { ManaDiaryService(EncryptedFileManaDiaryStore(File(filesDir, "mana/diary.bin"), ManaAndroidKeyProvider())) } catch (error: Exception) {
+            showMessage("Дневник пока недоступен: ${error.message}")
+            null
+        }
+        initializeVoice()
         loadApps()
         buildShell()
         showHome()
@@ -199,7 +203,8 @@ class MainActivity : Activity() {
         }
         card.addView(label("MANA ASSISTANT", 11, accentSoft, true))
         card.addView(label("Твой телефон. Твои правила.", 19, textColor, true))
-        card.addView(action("Включить плавающий аватар поверх приложений") { requestFloatingAvatar() })\n        card.addView(action("Открыть зашифрованный дневник MANA") { showDiary() })
+        card.addView(action("Включить плавающий аватар поверх приложений") { requestFloatingAvatar() })
+        card.addView(action("Открыть зашифрованный дневник MANA") { showDiary() })
         card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Локальный ИИ: выбери .litertlm-модель в окне MANA.", 12, muted, false))
         val p = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(19) }
         content.addView(card, p)
