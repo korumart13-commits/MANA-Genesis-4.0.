@@ -1,0 +1,30 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "MANA Genesis Companion",
+    "description": "Owner-installed MANA companion for Minecraft Bedrock. Uses the official Script API.",
+    "uuid": "7a7d8a2b-44ef-4e8d-a5d9-2d5b88e8a4b1",
+    "version": [0, 4, 0],
+    "min_engine_version": [1, 21, 80]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "a7b3e1e5-3a45-4c8d-9f8b-4a0c2b1e7d11",
+      "version": [0, 4, 0]
+    },
+    {
+      "type": "script",
+      "language": "javascript",
+      "uuid": "c9e4d2a1-6f3b-4d9a-8e7c-1b2a3d4e5f60",
+      "version": [0, 4, 0],
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.11.0"
+    }
+  ]
+}
