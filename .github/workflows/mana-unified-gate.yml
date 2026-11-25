@@ -107,14 +107,14 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: "platforms;android-36"
-      - name: Compile non-privileged MANA product apps
+      - name: Compile standalone non-privileged MANA product app sources
         shell: bash
         run: |
           mkdir -p "$RUNNER_TEMP/mana-ui-classes"
           javac -source 17 -target 17 \
             -classpath "$ANDROID_HOME/platforms/android-36/android.jar" \
             -d "$RUNNER_TEMP/mana-ui-classes" \
-            $(find system/mana/apps -name '*.java' -print)
+            $(find system/mana/apps -name '*.java' ! -name 'ManaBrainBinderService.java' ! -name 'ManaBrainBinderTest.java' -print)
       - name: Validate read-only Termux device audit script
         run: |
           bash -n device/collect_rmx5566_identity.sh
@@ -127,6 +127,14 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import xml.etree.ElementTree as ET
+          # Binder/AIDL and Kotlin runtime are compiled by Soong in a full AOSP tree,
+          # not by raw javac against android.jar. Validate the source wiring here.
+          assistant_bp = Path("system/mana/apps/ManaAssistant/Android.bp").read_text()
+          aidl_bp = Path("system/mana/brain/aidl/Android.bp").read_text()
+          binder = Path("system/mana/apps/ManaAssistant/src/com/mana/assistant/ManaBrainBinderService.java").read_text()
+          assert "mana.brain-java" in assistant_bp and "mana-brain-core" in assistant_bp
+          assert "aidl_interface" in aidl_bp and 'name: "mana.brain"' in aidl_bp
+          assert "IBrainService.Stub" in binder and "ManaBrainAndroidRuntime.get()" in binder
           product = Path("system/mana/mana_product.mk").read_text()
           expected = ["ManaLauncher", "ManaAssistant", "ManaSettings", "ManaControlCenter"]
           missing = [name for name in expected if name not in product]
