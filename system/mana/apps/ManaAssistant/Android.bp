@@ -2,7 +2,10 @@ android_app {
     name: "ManaAssistant",
     manifest: "AndroidManifest.xml",
     srcs: ["src/**/*.java"],
-    libs: ["mana.brain-java"],
+    static_libs: [
+        "mana.brain-java",
+        "mana-brain-core",
+    ],
     sdk_version: "current",
     min_sdk_version: "29",
     target_sdk_version: "36",
