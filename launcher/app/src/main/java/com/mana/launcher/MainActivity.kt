@@ -383,6 +383,15 @@ class MainActivity : Activity() {
         overlay.addView(action("Выбрать локальную модель (.litertlm)") { chooseModelFile() }.apply {
             setPadding(0, dp(10), 0, dp(10))
         })
+        overlay.addView(action("Каталог Gemma 4 E2B • около 2,58 ГБ") {
+            AlertDialog.Builder(this)
+                .setTitle("Локальная модель MANA")
+                .setMessage("Gemma 4 E2B IT — кандидат для проверки на этом телефоне. Загрузка около 2,58 ГБ. Производительность на RMX5566RU ещё не измерена. Открыть официальный репозиторий модели?")
+                .setNegativeButton("Не сейчас", null)
+                .setPositiveButton("Открыть источник") { _, _ ->
+                    startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm")))
+                }.show()
+        })
         chatOutput = TextView(this).apply {
             text = "Ответы будут генерироваться локально после загрузки модели."
             textSize = 12f
