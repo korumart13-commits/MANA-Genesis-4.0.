@@ -15,9 +15,10 @@ class LocalModelRuntime(private val cacheDirectory: File) {
     @Volatile private var engine: Engine? = null
     @Volatile private var conversation: Conversation? = null
     @Volatile private var loadedModel: File? = null
+    @Volatile private var loadedBackend: String? = null
 
     fun isReady(): Boolean = conversation != null && loadedModel?.isFile == true
-    fun modelName(): String? = loadedModel?.name
+    fun modelName(): String? = loadedModel?.let { "${it.name} · ${loadedBackend ?: "unknown"}" }
 
     fun load(modelFile: File, callback: (Result<String>) -> Unit) {
         executor.execute {
@@ -26,13 +27,13 @@ class LocalModelRuntime(private val cacheDirectory: File) {
                 require(modelFile.extension.equals("litertlm", ignoreCase = true)) { "Выбери файл с расширением .litertlm." }
                 closeLoaded()
                 cacheDirectory.mkdirs()
-                val candidate = Engine(EngineConfig(modelPath = modelFile.absolutePath, backend = Backend.CPU(), cacheDir = cacheDirectory.absolutePath))
-                candidate.initialize()
+                val (candidate, backendName) = createEngineWithFallback(modelFile)
                 val newConversation = candidate.createConversation()
                 engine = candidate
                 conversation = newConversation
                 loadedModel = modelFile
-                callback(Result.success(modelFile.name))
+                loadedBackend = backendName
+                callback(Result.success("${modelFile.name} · ${backendName}"))
             } catch (error: Exception) {
                 closeLoaded()
                 callback(Result.failure(error))
@@ -59,6 +60,31 @@ class LocalModelRuntime(private val cacheDirectory: File) {
         try { engine?.close() } catch (_: Exception) { }
         engine = null
         loadedModel = null
+        loadedBackend = null
+    }
+
+    private fun createEngineWithFallback(modelFile: File): Pair<Engine, String> {
+        var gpuFailure: Throwable? = null
+        var gpuEngine: Engine? = null
+        try {
+            gpuEngine = Engine(EngineConfig(modelPath = modelFile.absolutePath, backend = Backend.GPU(), cacheDir = cacheDirectory.absolutePath))
+            gpuEngine.initialize()
+            return gpuEngine to "GPU"
+        } catch (error: Exception) {
+            gpuFailure = error
+            try { gpuEngine?.close() } catch (_: Exception) { }
+        } catch (error: LinkageError) {
+            gpuFailure = error
+            try { gpuEngine?.close() } catch (_: Exception) { }
+        }
+        val cpuEngine = Engine(EngineConfig(modelPath = modelFile.absolutePath, backend = Backend.CPU(), cacheDir = cacheDirectory.absolutePath))
+        try {
+            cpuEngine.initialize()
+            return cpuEngine to "CPU"
+        } catch (error: Exception) {
+            try { cpuEngine.close() } catch (_: Exception) { }
+            throw IllegalStateException("GPU backend failed (${gpuFailure?.message}); CPU fallback failed (${error.message})", error)
+        }
     }
 
     fun shutdown() { executor.execute { closeLoaded() }; executor.shutdown() }
