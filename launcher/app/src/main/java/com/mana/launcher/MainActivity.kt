@@ -1070,13 +1070,16 @@ class MainActivity : Activity() {
                     }
                     override fun onDone(utteranceId: String?) {
                         ManaAvatar3DView.isSpeaking = false
+                        ManaAvatarState.isSpeaking = false
                     }
                     @Deprecated("Deprecated in Android")
                     override fun onError(utteranceId: String?) {
                         ManaAvatar3DView.isSpeaking = false
+                        ManaAvatarState.isSpeaking = false
                     }
                     override fun onError(utteranceId: String?, errorCode: Int) {
                         ManaAvatar3DView.isSpeaking = false
+                        ManaAvatarState.isSpeaking = false
                     }
                 })
             }
@@ -1087,8 +1090,9 @@ class MainActivity : Activity() {
         val clean = text.trim()
         if (!voiceReady || clean.isEmpty()) return
         ManaAvatar3DView.isSpeaking = true
+        ManaAvatarState.isSpeaking = true
         val result = textToSpeech?.speak(clean, TextToSpeech.QUEUE_FLUSH, null, "mana-response-${System.nanoTime()}")
-        if (result == TextToSpeech.ERROR) ManaAvatar3DView.isSpeaking = false
+        if (result == TextToSpeech.ERROR) { ManaAvatar3DView.isSpeaking = false; ManaAvatarState.isSpeaking = false }
     }
 
     private fun startVoiceInput() {
