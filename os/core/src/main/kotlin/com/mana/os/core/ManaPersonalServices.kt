@@ -48,6 +48,7 @@ class EncryptedFileManaDiaryStore(
 
     override fun readAll(): List<ManaDiaryEntry> = synchronized(lock) {
         if (!file.isFile) return@synchronized emptyList()
+        require(file.length() <= MAX_FILE_BYTES) { "Diary file exceeds the safe size limit" }
         val payload = file.readBytes()
         require(payload.size > magic.size + 12 + 16) { "Diary file is truncated" }
         require(payload.copyOfRange(0, magic.size).contentEquals(magic)) { "Unknown diary file format" }
@@ -80,18 +81,21 @@ class EncryptedFileManaDiaryStore(
             DataOutputStream(bytes).use { output ->
                 output.writeInt(entries.size)
                 entries.forEach { entry ->
-                    require(entry.title.length <= MAX_TEXT && entry.body.length <= MAX_TEXT) { "Diary text is too long" }
+                    require(entry.title.length <= MAX_TEXT && entry.body.length <= MAX_TEXT && entry.id.length <= 128) { "Diary text is too long" }
                     require(entry.tags.size <= MAX_TAGS) { "Too many diary tags" }
                     output.writeUTF(entry.id)
                     output.writeUTF(entry.title)
                     output.writeUTF(entry.body)
                     output.writeInt(entry.tags.size)
-                    entry.tags.sorted().forEach(output::writeUTF)
+                    entry.tags.sorted().forEach { tag ->
+                        require(tag.length <= MAX_TAG_LENGTH) { "Diary tag is too long" }
+                        output.writeUTF(tag)
+                    }
                     output.writeLong(entry.createdAt.toEpochMilli())
                     output.writeLong(entry.updatedAt.toEpochMilli())
                 }
             }
-            bytes.toByteArray()
+            bytes.toByteArray().also { require(it.size <= MAX_FILE_BYTES) { "Diary data exceeds the safe size limit" } }
         }
         val nonce = ByteArray(12).also(random::nextBytes)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
@@ -121,9 +125,11 @@ class EncryptedFileManaDiaryStore(
 
     companion object {
         private const val KEY_ALIAS = "mana.diary.v1"
-        private const val MAX_ENTRIES = 10000
+        private const val MAX_ENTRIES = 1000
         private const val MAX_TAGS = 32
-        private const val MAX_TEXT = 60000
+        private const val MAX_TAG_LENGTH = 256
+        private const val MAX_TEXT = 10000
+        private const val MAX_FILE_BYTES = 64 * 1024 * 1024
     }
 }
 
@@ -250,10 +256,12 @@ class ManaMemoryService(private val store: ManaMemoryStore) {
         return item
     }
 
-    @Synchronized fun recall(query: String = ""): List<ManaMemoryItem> {
+    @Synchronized fun recall(query: String = "", now: Instant = Instant.now()): List<ManaMemoryItem> {
         val term = query.trim()
-        return items.values.filter { term.isEmpty() || it.category.contains(term, true) || it.content.contains(term, true) }
-            .sortedByDescending { it.createdAt }
+        return items.values.filter { item ->
+            (item.expiresAt == null || now.isBefore(item.expiresAt)) &&
+                (term.isEmpty() || item.category.contains(term, true) || item.content.contains(term, true))
+        }.sortedByDescending { it.createdAt }
     }
 
     @Synchronized fun expiredCandidates(now: Instant = Instant.now()): List<ManaMemoryItem> =
