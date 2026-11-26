@@ -32,8 +32,12 @@ class ManaEngineBridgeService : Service() {
         override fun getEngineState(): String {
             enforceAuthorizedCaller()
             if (!initialized) return "UNAVAILABLE_ENGINE_NOT_INITIALIZED"
-            return runCatching { ManaEngineProcessOwner.engineRuntime()?.health()?.state?.name }
-                .getOrNull() ?: "UNAVAILABLE_ENGINE_NOT_INITIALIZED"
+            if (!ManaEngineProcessOwner.isRunning()) return "ENGINE_DEGRADED"
+            return if (ManaEngineProcessOwner.localModelRuntime()?.isReady() == true) {
+                "READY"
+            } else {
+                "READY_NO_LOCAL_MODEL"
+            }
         }
 
         override fun think(request: ManaBrainRequest?, callback: IManaEngineBackendCallback?) {
@@ -83,6 +87,11 @@ class ManaEngineBridgeService : Service() {
         try {
             ManaEngineProcessOwner.acquire(this, ManaAndroidKeyProvider())
             initialized = true
+            ManaEngineProcessOwner.ensureSavedModelLoaded(this) { result ->
+                result.onFailure { error ->
+                    android.util.Log.w(TAG, "Verified local model is not ready", error)
+                }
+            }
         } catch (error: Exception) {
             initialized = false
             android.util.Log.e(TAG, "Unable to acquire MANA Engine for platform bridge", error)
