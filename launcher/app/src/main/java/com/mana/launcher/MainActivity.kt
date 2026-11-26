@@ -318,27 +318,22 @@ class MainActivity : Activity() {
         search.setText("")
         content.removeAllViews()
 
-        val runtimePermissions = listOf(
-            Manifest.permission.RECORD_AUDIO,
-            Manifest.permission.READ_CONTACTS,
-            Manifest.permission.CAMERA,
-            Manifest.permission.CALL_PHONE,
-            Manifest.permission.READ_CALL_LOG
-        ) + (if (Build.VERSION.SDK_INT >= 33) listOf(Manifest.permission.POST_NOTIFICATIONS) else emptyList()) +
-            (if (Build.VERSION.SDK_INT >= 31) listOf(Manifest.permission.BLUETOOTH_CONNECT) else emptyList())
+        val runtimePermissions = declaredDangerousPermissions()
         val grantedCount = runtimePermissions.distinct().count {
             checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
         }
         val overlayGranted = Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(this)
         val writeSettingsGranted = Build.VERSION.SDK_INT < 23 || Settings.System.canWrite(this)
-        val roleManager = if (Build.VERSION.SDK_INT >= 29) getSystemService(RoleManager::class.java) else null
-        val assistantGranted = roleManager?.isRoleHeld(RoleManager.ROLE_ASSISTANT) == true
 
         content.addView(label("ДОБРО ПОЖАЛОВАТЬ В MANA", 23, textColor, true))
         content.addView(label(
             "MANA уже установлена. Настрой основные доступы одной кнопкой — Android покажет системные подтверждения, а выданные права сохранятся автоматически.",
             13, muted, false
         ))
+
+        content.addView(createAvatarSceneView(), LinearLayout.LayoutParams(-1, dp(230)).apply {
+            topMargin = dp(8)
+        })
 
         val welcome = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -384,13 +379,6 @@ class MainActivity : Activity() {
                 startActivity(Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:" + packageName)))
             } else showMessage("Доступ к изменению настроек уже включён.")
         }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
-        content.addView(action((if (assistantGranted) "✓ " else "") + "Назначить MANA цифровым ассистентом") {
-            requestAssistantRole()
-        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
-        content.addView(action("Статистика использования приложений — необязательно") {
-            startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
-
         content.addView(label(
             "Важно: одно нажатие запускает запрос всех обычных разрешений, но Android сам показывает и контролирует подтверждения. Доступ к звонкам, уведомлениям и другим чувствительным данным не будет включён скрытно.",
             11, muted, false
@@ -412,28 +400,31 @@ class MainActivity : Activity() {
         setContentView(rootFrame)
     }
 
-    private fun requestAllAvailableRuntimePermissions() {
-        // Request every declared Android dangerous/runtime permission in one system request.
-        // Special app access (overlay and WRITE_SETTINGS) is intentionally handled separately.
-        val requestedByApp = if (Build.VERSION.SDK_INT >= 33) {
+    private fun declaredDangerousPermissions(): List<String> {
+        val requested = if (Build.VERSION.SDK_INT >= 33) {
             packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(PackageManager.GET_PERMISSIONS.toLong())).requestedPermissions
         } else {
             @Suppress("DEPRECATION")
             packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS).requestedPermissions
-        }.orEmpty()
-
-        val pending = requestedByApp.distinct().filter { permission ->
-            val dangerous = runCatching {
+        }
+        return requested.orEmpty().distinct().filter { permission ->
+            runCatching {
                 val info = packageManager.getPermissionInfo(permission, 0)
                 (info.protectionLevel and PermissionInfo.PROTECTION_MASK_BASE) == PermissionInfo.PROTECTION_DANGEROUS
             }.getOrDefault(false)
-            dangerous && checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED
         }
+    }
 
+    private fun requestAllAvailableRuntimePermissions() {
+        // One tap requests every declared dangerous permission not yet granted.
+        // Overlay and WRITE_SETTINGS are special app-ops and remain owner-confirmed.
+        val pending = declaredDangerousPermissions().filter {
+            checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+        }
         if (pending.isNotEmpty()) {
             requestPermissions(pending.toTypedArray(), permissionSetupRequestCode)
         } else {
-            showMessage("Все доступные обычные разрешения уже выданы. Остались только специальные доступы, которые подтверждаются в настройках Android.")
+            showMessage("Все обычные разрешения уже выданы или Android не допускает их выдачу этому приложению.")
             showPermissionSetup()
         }
     }
