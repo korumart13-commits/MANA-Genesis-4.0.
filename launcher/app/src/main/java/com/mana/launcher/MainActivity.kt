@@ -1314,7 +1314,8 @@ class MainActivity : Activity() {
                                 allowCloud = allowCloud,
                                 sensitive = sensitive,
                                 preferredCloudProvider = preferredProvider,
-                                includePersonalMemory = true
+                                includePersonalMemory = true,
+                                memoryQuery = prompt
                             )
                         }
                         runOnUiThread {
