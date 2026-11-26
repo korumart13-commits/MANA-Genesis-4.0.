@@ -1377,29 +1377,6 @@ class MainActivity : Activity() {
             }
 
             chatOutput?.append("\n\nСлужба MANA Engine ещё не готова. Повтори запрос через несколько секунд.")
-            return
-
-            val generated = StringBuilder()
-            manaBrain.respond(
-                effectivePrompt,
-                allowCloud = allowCloud,
-                sensitive = sensitive,
-                preferredCloudProvider = preferredProvider,
-                onChunk = { chunk ->
-                    generated.append(chunk)
-                    runOnUiThread { chatOutput?.append(chunk) }
-                }) { result ->
-                runOnUiThread {
-                    result.onSuccess {
-                        chatInput?.setText("")
-                        speakResponse(generated.toString())
-                    }.onFailure { error ->
-                        ManaAvatar3DView.isSpeaking = false
-                        ManaAvatarState.isSpeaking = false
-                        chatOutput?.append("\n\nОшибка локального ИИ: ${error.message}")
-                    }
-                }
-            }
         }
 
         val providers = buildList {
