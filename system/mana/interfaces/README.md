@@ -33,3 +33,8 @@ fabricate model output or forward prompts to a cloud provider.
 The Gradle application service remains the currently tested process owner. Cross-process backend
 integration, Soong build validation, SELinux service context/domain and device-image testing remain
 subsequent work. No AOSP ROM build or device runtime test is claimed.
+
+
+## App-engine backend contract
+
+IManaEngineBackend is the reverse-side AIDL contract used only between the platform Brain host and the signature-protected com.mana.launcher engine bridge. It carries the same ManaBrainRequest contract and asynchronous result/error callback. The platform host remains responsible for authorization and policy checks; the app bridge repeats checks and delegates to the single process-owned runtime. The interface declaration alone does not package or platform-sign the app bridge.
