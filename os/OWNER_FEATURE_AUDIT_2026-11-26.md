@@ -66,3 +66,13 @@ Do not label any module “working” solely because it appears in the menu, man
 - Added a feature-manifest validator requirement and a static test for the new activity and safe public API handoffs.
 
 These additions are **prototypes**. They do not provide continuous biometric surveillance, reading private messenger databases, a full camera application, autonomous gameplay, a scheduled sleep/wake alarm, or a complete conversational telephone agent. Those require additional implementation and target-device validation.
+
+
+## Additional sleep-schedule implementation
+- Added daily bedtime and wake-time selection in MANA Control Center.
+- Added an Android AlarmManager receiver. It uses exact alarms only when Android grants exact-alarm access; otherwise it schedules an inexact alarm.
+- Sleep schedule is restored after device reboot and MANA package replacement.
+- Do Not Disturb access remains separately granted by the owner. The previous interruption filter is saved and restored at wake time.
+- Automated tests now check the scheduler wiring and reboot restoration.
+
+This is a usable first version of a scheduled quiet-hours feature, not a complete sleep-health tracker or sleep-stage detector.
