@@ -21,7 +21,7 @@ assert '"mana.brain-java"' in assistant_bp
 assert '"mana-brain-core"' in assistant_bp
 assert 'name: "mana.brain"' in aidl_bp and 'java: {' in aidl_bp
 for app in ("ManaLauncher", "ManaAssistant", "ManaSettings", "ManaControlCenter"):
-    assert re.search(rf"^\\s+{app}\\s*$", product, re.M), f"{app} is not installed in the MANA product fragment"
+    assert re.search(rf"^\s+{app}\s*$", product, re.M), f"{app} is not installed in the MANA product fragment"
 assert "mana.brain-java" not in product, "AIDL Java library is linked, not an installable product package"
 assert "mana-brain-core" not in product, "Brain engine is linked, not an installable product package"
 
