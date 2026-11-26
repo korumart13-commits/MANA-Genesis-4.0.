@@ -64,5 +64,17 @@ jobs:
 
       - name: Verify native library
         run: |
-          test -f build/llama-jni-arm64/libmana_llama_jni.so
-          file build/llama-jni-arm64/libmana_llama_jni.so
+          set -euo pipefail
+          LIB="build/llama-jni-arm64/libmana_llama_jni.so"
+          test -s "$LIB"
+          file "$LIB"
+          readelf -h "$LIB" | grep -E 'Class:.*ELF64'
+          readelf -h "$LIB" | grep -E 'Machine:.*AArch64'
+
+      - name: Publish ARM64 native build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mana-llama-jni-arm64-v8a
+          path: build/llama-jni-arm64/libmana_llama_jni.so
+          if-no-files-found: error
+          retention-days: 14
