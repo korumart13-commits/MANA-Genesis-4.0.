@@ -33,7 +33,7 @@ class ManaServiceResiliencePolicyTest {
     }
 
     @Test fun failuresOutsideWindowStartNewBudget() {
-        val policy = ManaServiceResiliencePolicy(maxAttempts = 1, failureWindowMs = 100)
+        val policy = ManaServiceResiliencePolicy(maxAttempts = 1, stableWindowMs = 50, failureWindowMs = 100)
         assertFalse(policy.recordFailure(0).exhausted)
         assertTrue(policy.recordFailure(50).exhausted)
         assertFalse(policy.recordFailure(151).exhausted)
