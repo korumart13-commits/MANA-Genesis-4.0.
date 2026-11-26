@@ -1,23 +1,29 @@
-# MANA system layer
+# MANA OS system layer — firmware only
 
-This is the planned AOSP-integrated MANA system layer. Components will be built as platform/product modules and privileged services, not as a separately installed launcher app.
+**Product scope:** branded Android/Realme-derived firmware and platform integration for the later standalone MANA application.
 
-## Planned packages
+MANA OS owns the operating-system experience: boot branding, launcher, lock screen, SystemUI, notifications, Quick Settings, Settings, product identity, platform policy and documented system interfaces. The standalone MANA AI application owns the agent, model, avatar, voice/personality, micro-world, memory, learning, game automation and user-facing autonomous behavior.
 
-- `ManaSystemCore`: boot phases, module dependency graph and health reporting (implemented in `os/core` as a JVM-testable foundation).
-- `ManaSystemModuleCatalog`: typed catalog of platform and MANA modules, dependency order, criticality and failure policy (implemented and covered by JVM tests).
-- `ManaBrainService`: local-first inference service; cloud providers remain opt-in.
-- `ManaModelManager`: model import, signature/hash checks, license acknowledgement, storage/RAM budgeting and model lifecycle.
-- `ManaAvatarService`: character state, animation, voice and assistant invocation.
-- `ManaLauncher` and `ManaAssistant`: first Android/Soong product source modules under `apps/` (not yet AOSP-built).
-- `ManaSystemUI`, `ManaSettings`, `ManaControlCenter`: remaining integrated platform UI modules.
-- `ManaReceptionist`, `ManaDiary`, `ManaLifeManager`, `ManaContactIntelligence`, `ManaGameIntelligence`: permission-gated system features.
-- `ManaUpdateService`: signed update verification, staged install and rollback checks.
+## Firmware modules
 
-The current dependency and failure-policy map is documented in [os/SYSTEM_MODULE_GRAPH.md](../../os/SYSTEM_MODULE_GRAPH.md).
+- `ManaLauncher`: HOME activity and MANA OS home-screen shell.
+- `ManaSettings`: MANA OS settings entry point and system settings navigation.
+- `ManaControlCenter`: current safe control/settings hub; eventual full Quick Settings/SystemUI replacement requires AOSP platform integration.
+- `ManaAssistant`: optional thin system integration/entry-point boundary for the separate MANA app. It is not the autonomous agent and must not package the local model, avatar, memory, game agent or learning loop.
+- `ManaBrainService` / Binder contracts: only a narrow, authenticated OS-to-app interface when needed; no duplicate agent runtime in the firmware.
 
-## Integration rule
+## Explicitly out of firmware scope
 
-Each service must declare its Android permissions, SELinux domain, Binder/API boundary, data ownership and failure behavior before it is added to a product image. No service may silently acquire root, bypass permission prompts or transmit private content to a cloud model.
+Do not add an LLM, local model weights, witch/avatar persona, micro-world, voice identity, agent memory, internet-learning engine, messaging agent, autonomous game/Minecraft bot or self-development agent to the firmware. Those belong to the separate MANA app.
 
-The catalog is architecture metadata, not proof that Android Binder services or privileged packages are already built. The launcher and assistant currently exist as ordinary product-app source modules; they are not yet compiled or included in a device image. Android `init` service declarations, package definitions and SELinux policy will be added only against a checked-out AOSP tree and verified target configuration.
+## Platform integration requirements
+
+- Prepare the standalone package identity `com.mana.genesis` as a potential default assistant through supported Android roles and VoiceInteractionService contracts.
+- If the exact app build and signing identity are verified, consider product preinstallation and narrowly scoped privileged permissions using partition-matched allowlists.
+- Expose only documented, purpose-specific Binder/AIDL APIs. Validate UID, package, signing certificate, capability and current grant at the system boundary.
+- Keep Android permission enforcement, AppOps, SELinux, Verified Boot, AVB and audit logs enabled.
+- Never grant permissions by pretending a runtime or special-access grant has occurred.
+
+## Current implementation state
+
+The Soong source modules for Launcher, Assistant, Settings and Control Center exist. The Launcher and Settings now have MANA dark-navy/cyan resources and theme references. These modules have not yet been integrated into a verified RMX5566RU product build. The device tree and OEM inputs remain incomplete; this directory is not a flashable ROM.
