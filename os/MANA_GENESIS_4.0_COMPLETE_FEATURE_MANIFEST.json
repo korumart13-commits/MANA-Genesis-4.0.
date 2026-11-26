@@ -546,5 +546,26 @@
     "simulations_must_not_be_misrepresented_as_real_device_changes": true,
     "continuous_development": true,
     "design_document": "docs/MANA_HOME_MICROVERSE_SELF_DEVELOPMENT_RU.md"
+  },
+  "mana_first_contract": {
+    "authority_model": "MANA is the primary intelligence, orchestration layer, identity and default user experience. Android/Realme is the underlying execution, hardware and security substrate, not a competing assistant identity.",
+    "user_visible_identity": "Use MANA branding, MANA HOME, MANA settings surfaces and MANA avatar wherever implemented and supported. Preserve stock Realme identity only where required for legal, compatibility, recovery, update and platform diagnostics.",
+    "control_plane": "MANA Brain owns intent understanding, planning, module routing, user context, prioritization and lifecycle policy. MANA OS executes approved operations through supported Android APIs, declared roles, permissions and verified platform integrations.",
+    "platform_boundary": "MANA must not claim kernel, bootloader, system-partition or privileged authority unless a verified device-specific system build and supported signing/install route actually grants it.",
+    "default_behavior": "Prefer MANA-native interfaces and workflows over OEM launcher/assistant surfaces when the owner has selected MANA as HOME. Fall back to stock platform screens for security prompts, permission grants, OEM firmware updates and unsupported hardware controls.",
+    "feature_completeness": "All owner-approved modules remain in the feature manifest until implemented, tested and explicitly retired by the owner. Unimplemented modules remain visible as planned, architecture, prototype or blocked; never silently remove or represent them as complete.",
+    "persistence": "Preserve MANA identity, memory, diary, goals, skills, micro-universe, preferences and development history across app releases using encrypted storage, versioned migrations, checkpoints and tested rollback.",
+    "system_updates": "Treat MANA component updates as first-class releases with device checks, signed metadata, integrity verification, release notes, staged installation, post-install health checks and rollback. Keep OEM firmware update flow separate and truthful.",
+    "priority_order": [
+      "owner safety and explicit intent",
+      "MANA identity, memory and continuity",
+      "MANA-native user experience",
+      "device compatibility and reliability",
+      "resource efficiency",
+      "optional integrations"
+    ],
+    "no_competing_personas": true,
+    "no_silent_feature_removal": true,
+    "no_false_system_privileges": true
   }
 }
