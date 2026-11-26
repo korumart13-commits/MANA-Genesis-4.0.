@@ -195,7 +195,7 @@ class ManaDeviceIntelligenceActivity : Activity() {
             else -> "unknown"
         })
         root.put("display_power", screen)
-        val sensors = (getSystemService(Context.SENSOR_SERVICE) as SensorManager).getSensorList(SensorManager.TYPE_ALL)
+        val sensors = (getSystemService(Context.SENSOR_SERVICE) as SensorManager).getSensorList(-1)
         val cameraNames = runCatching {
             val manager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
             manager.cameraIdList.map { id ->
