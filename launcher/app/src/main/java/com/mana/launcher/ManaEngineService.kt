@@ -70,9 +70,7 @@ class ManaEngineService : Service() {
             startForeground(NOTIFICATION_ID, notification)
         }
         try {
-            val keys = ManaAndroidKeyProvider()
-            ManaEngineProcessOwner.initializeDependenciesFromService(this, keys)
-            ManaEngineProcessOwner.initializeFromService(this, keys)
+            ManaEngineProcessOwner.acquire(this, ManaAndroidKeyProvider())
         } catch (error: Exception) {
             android.util.Log.e("MANA", "Unable to initialize MANA Engine in service", error)
             stopSelf()
@@ -84,7 +82,7 @@ class ManaEngineService : Service() {
     override fun onBind(intent: Intent?): IBinder = localBinder
 
     override fun onDestroy() {
-        ManaEngineProcessOwner.shutdown()
+        ManaEngineProcessOwner.release()
         super.onDestroy()
     }
 
