@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-mana-shell:
@@ -153,3 +153,24 @@ jobs:
             dist/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
+      - name: Publish public browser download (pre-release)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="mana-firmware-ui-0.1.0"
+          FILES=(
+            "dist/MANA_Genesis_4.0_FIRMWARE_UI_UPDATE.zip"
+            "dist/MANA_UPDATE_INFO.json"
+            "dist/SHA256SUMS.txt"
+          )
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${FILES[@]}" --clobber
+          else
+            gh release create "$TAG" "${FILES[@]}" \
+              --title "MANA Genesis 4.0 — Firmware UI +1 (preview)" \
+              --notes-file dist/README_RU.md \
+              --prerelease \
+              --target "$GITHUB_SHA"
+          fi
