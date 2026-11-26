@@ -57,3 +57,8 @@ host-side Soong test has not yet been executed because a full AOSP/Soong checkou
 The dependency-free host test is executed directly by the Gradle verification workflow using
 `javac` and `java`, so policy behavior is exercised even without an AOSP checkout. The
 Soong `java_test_host` target remains available for execution in a full AOSP tree.
+
+
+## Request policy hardening
+
+The Binder request policy now also enforces a 32,768-character prompt ceiling, rejects a cloud-provider selection on local-only requests, and validates explicit provider names against the supported set (OpenAI, Anthropic, Google/Gemini, xAI/Grok, Yandex and VK). The Binder service passes the requested provider through the policy validator before queueing work. Host tests cover oversized prompts, unknown providers, provider selection on local-only requests, and accepted provider aliases.
