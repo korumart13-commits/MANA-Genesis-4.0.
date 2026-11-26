@@ -29,7 +29,7 @@ This sequence replaces the separate launcher-APK-first workflow.
 
 - MANA System Core and privileged service lifecycle.
 - MANA System UI, launcher, settings and control center.
-- MANA Brain with local LiteRT-LM as first provider.
+- MANA Brain behind the backend-neutral LocalInferenceRuntime contract; llama.cpp is the intended primary backend, with LiteRT-LM retained during migration.
 - Model manager with explicit model selection, license acknowledgement, storage/RAM checks and offline operation.
 - Avatar renderer and animation assets integrated into System UI.
 - Diary, Life Manager, Contact Intelligence, receptionist and game integrations behind Android permission gates.
