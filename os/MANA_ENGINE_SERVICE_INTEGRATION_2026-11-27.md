@@ -83,3 +83,21 @@
 - Removed the duplicate explicit Kotlin JVM version from `engine/mana-brain/build.gradle.kts`; the included `:brain` project now resolves the version from the root build plugin classpath.
 - Fix commits: `ea263c0f429aa46402b08132d310d87b7af32ed2` and `3d5317e74530b0afb7ed491a4a2e65447117e849`.
 - New launcher workflow runs `45905181796` and `45905179029` were observed in progress after the fix. No successful test/build result is claimed until these runs complete.
+
+## Service-owned construction correction — 2026-11-27
+
+This section supersedes earlier paragraphs above that described Activity-side preparation or startup from `onStartCommand()`.
+
+- `ManaEngineService.onCreate()` posts its foreground notification first, then constructs the local inference runtime, cloud/Yandex provider adapters, `ManaBrainBridge`, and encrypted memory service through `ManaEngineProcessOwner.initializeDependenciesFromService()`.
+- The same service then calls `initializeFromService()` to create and start `ManaEngineAndroidRuntime`. `MainActivity` no longer constructs Brain, local inference, or the shared encrypted memory service.
+- The Activity receives the service-owned dependencies through its local Binder. Chat requests are routed through `LocalBinder.think()`.
+- Activity destruction only unbinds and releases Activity-owned UI/voice resources. It does not shut down the service-owned local model runtime.
+- Binder now exposes an initialization check. If service startup failed, the Activity reports the failure and avoids dereferencing uninitialized dependencies.
+- The Gradle workflow statically checks that the Activity contains no Brain/runtime/memory construction and no call to `localRuntime.shutdown()`.
+
+## Latest source verification
+
+- Service-ownership, Binder and startup-guard changes have been committed to the default branch.
+- CI run `45906083753` (commit `ea28290e0c4d9833af938d186c09354153a3cb59`) passed the Brain/core tests; Android debug compilation was still running at the last inspection.
+- Subsequent lifecycle and Binder-guard commits triggered a fresh workflow run. Their Android compile/test result must be checked separately.
+- No physical-device test or complete AOSP/ROM build is claimed.
