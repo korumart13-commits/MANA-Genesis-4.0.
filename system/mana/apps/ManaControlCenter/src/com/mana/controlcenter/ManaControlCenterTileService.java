@@ -19,7 +19,7 @@ public final class ManaControlCenterTileService extends TileService {
     @Override public void onClick() {
         super.onClick();
         unlockAndRun(() -> {
-            Intent intent = new Intent(this, ManaControlCenterActivity.class);
+            Intent intent = new Intent(this, ManaShadeActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivityAndCollapse(intent);
         });
