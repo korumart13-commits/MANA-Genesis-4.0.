@@ -124,7 +124,6 @@ class ManaFloatingAvatarService : LifecycleService() {
         avatarView?.let {
             try { windowManager.removeView(it) }
             catch (_: IllegalArgumentException) { }
-            it.onDetachedFromWindow()
         }
         avatarView = null
         super.onDestroy()
