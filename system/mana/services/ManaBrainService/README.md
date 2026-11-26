@@ -11,6 +11,7 @@ This Soong product module provides the Android-side Binder endpoint for the MANA
 - Personal-memory cloud export requires explicit cloud and personal-memory consent flags.
 - Request validation is extracted into a pure Java policy class with a host-side JUnit test target.
 - Accepted requests are dispatched away from the Binder transaction thread.
+- The queue is bounded to 32 pending requests; overload and shutdown races return an explicit `SERVICE_BUSY` error instead of accumulating unbounded work.
 - The service fails closed with `ENGINE_UNAVAILABLE` until a real local inference backend is connected. It does not generate fake answers or forward prompts to a cloud provider.
 
 ## Product integration status
