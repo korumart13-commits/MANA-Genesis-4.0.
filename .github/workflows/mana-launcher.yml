@@ -88,6 +88,11 @@ jobs:
           test -f system/mana/interfaces/Android.bp
           grep -F 'name: "mana-brain-interface"' system/mana/interfaces/Android.bp
           grep -F 'void think(in ManaBrainRequest request, IManaBrainCallback callback);' system/mana/interfaces/src/com/mana/brain/IManaBrain.aidl
+          grep -F 'interface IManaEngineBackend {' system/mana/interfaces/src/com/mana/brain/IManaEngineBackend.aidl
+          grep -F 'void think(in ManaBrainRequest request, IManaEngineBackendCallback callback);' system/mana/interfaces/src/com/mana/brain/IManaEngineBackend.aidl
+          grep -F 'String memoryQuery;' system/mana/interfaces/src/com/mana/brain/ManaBrainRequest.aidl
+          grep -F 'aidl = true' launcher/app/build.gradle.kts
+          grep -F 'aidl.srcDir("../../system/mana/interfaces/src")' launcher/app/build.gradle.kts
           grep -F 'boolean allowCloud = false;' system/mana/interfaces/src/com/mana/brain/ManaBrainRequest.aidl
           grep -F 'boolean sensitive = false;' system/mana/interfaces/src/com/mana/brain/ManaBrainRequest.aidl
           grep -F 'static_libs: ["mana-brain-interface"],' system/mana/apps/ManaAssistant/Android.bp
