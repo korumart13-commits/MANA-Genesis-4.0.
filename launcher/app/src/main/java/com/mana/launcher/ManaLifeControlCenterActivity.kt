@@ -4,6 +4,8 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.app.KeyguardManager
 import android.app.NotificationManager
+import android.app.TimePickerDialog
+import android.app.AlarmManager
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
@@ -123,6 +125,49 @@ class ManaLifeControlCenterActivity : Activity() {
         body.addView(button("Включить / выключить ночной режим MANA") { toggleSleepMode() })
         body.addView(button("Настроить системный режим «Не беспокоить»") {
             startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
+        })
+        val bedHour = prefs.getInt(ManaSleepScheduler.KEY_BED_HOUR, 22)
+        val bedMinute = prefs.getInt(ManaSleepScheduler.KEY_BED_MINUTE, 0)
+        val wakeHour = prefs.getInt(ManaSleepScheduler.KEY_WAKE_HOUR, 7)
+        val wakeMinute = prefs.getInt(ManaSleepScheduler.KEY_WAKE_MINUTE, 0)
+        body.addView(button("Время отхода ко сну: ${String.format("%02d:%02d", bedHour, bedMinute)}") {
+            TimePickerDialog(this, { _, hour, minute ->
+                prefs.edit().putInt(ManaSleepScheduler.KEY_BED_HOUR, hour)
+                    .putInt(ManaSleepScheduler.KEY_BED_MINUTE, minute).apply()
+                render()
+            }, bedHour, bedMinute, true).show()
+        })
+        body.addView(button("Время пробуждения: ${String.format("%02d:%02d", wakeHour, wakeMinute)}") {
+            TimePickerDialog(this, { _, hour, minute ->
+                prefs.edit().putInt(ManaSleepScheduler.KEY_WAKE_HOUR, hour)
+                    .putInt(ManaSleepScheduler.KEY_WAKE_MINUTE, minute).apply()
+                render()
+            }, wakeHour, wakeMinute, true).show()
+        })
+        body.addView(button("Сохранить ежедневное расписание") {
+            prefs.edit().putBoolean(ManaSleepScheduler.KEY_ENABLED, true).apply()
+            ManaSleepScheduler.schedule(this)
+            if (Build.VERSION.SDK_INT >= 31) {
+                val alarm = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                if (!alarm.canScheduleExactAlarms()) {
+                    AlertDialog.Builder(this)
+                        .setTitle("Точное расписание")
+                        .setMessage("Расписание уже сохранено с приблизительным временем. Разреши точные будильники Android, если хочешь более точное срабатывание.")
+                        .setPositiveButton("Настроить") { _, _ ->
+                            runCatching { startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:$packageName"))) }
+                        }
+                        .setNegativeButton("Позже", null)
+                        .show()
+                }
+            }
+            toast("Расписание MANA сохранено.")
+            render()
+        })
+        body.addView(button("Отключить ежедневное расписание") {
+            prefs.edit().putBoolean(ManaSleepScheduler.KEY_ENABLED, false).apply()
+            ManaSleepScheduler.cancel(this)
+            toast("Расписание сна отключено.")
+            render()
         })
         body.addView(label("Переключатель сохраняет профиль MANA. Системный режим «Не беспокоить» меняется только после отдельной выдачи доступа и отдельного действия владельца. Автоматическое расписание сна ещё требует интеграции и тестирования.", 12f, muted))
 
