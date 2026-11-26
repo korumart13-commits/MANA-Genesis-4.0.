@@ -72,3 +72,12 @@ The newer launcher workflow is still running at the time of this update: [run 45
 A fresh recursive repository-tree inspection found no tracked SELinux policy files or privileged-permission allowlist files (no `service_contexts`, `file_contexts`, `sepolicy` or `privapp-permissions` paths). This confirms blocker 4 is still open. No speculative allow rules have been added: the correct service type, domain, contexts and least-privilege rules must be derived and tested against the exact Android 16 AOSP policy checkout, not guessed from the OEM vendor policy version.
 
 The staging workflow is a preparation tool only. It does not create an AOSP checkout, resolve product integration, generate platform signing keys, build a ROM, or authorize flashing.
+
+
+## Local model integrity module — 2026-11-27
+
+Implemented a dedicated `ModelArtifactIntegrity` verifier for the Gemma 4 E2B model catalog. It requires the exact published file length, recomputes SHA-256 from the complete file on every validation, and restricts the canonical file path to the app-specific download directory. The old size/mtime cache was removed because metadata equality is not cryptographic integrity evidence. Unit tests cover the trusted file, same-length content replacement with restored mtime, and a file outside the allowed directory. This is source-level implementation pending the current Gradle CI run and does not establish model performance on RMX5566RU.
+
+## Release build investigation — 2026-11-27
+
+The earlier release build did not fail during Kotlin compilation or APK packaging; it failed at `:app:lintVitalAnalyzeRelease`. The logged exception is an AndroidX Lifecycle custom lint detector crash (`NonNullableMutableLiveDataDetector`) with a Kotlin Analysis API binary incompatibility while analyzing `LocalModelRuntime.kt`. Lifecycle runtime dependencies were aligned from 2.8.7 to stable 2.11.1 to test whether the newer detector resolves the incompatibility. This is a targeted dependency correction, not a bypass: release lint remains enabled. The result is pending CI verification.
