@@ -37,7 +37,27 @@ MANA replaces the Realme UI layer and user-facing system applications progressiv
 
 ## MANA Brain authority model
 
-MANA Brain is the central assistant and planner, but it is not an unrestricted root shell. It requests typed capabilities through the platform Binder contract. Each capability is checked by caller identity, signature, Android permission/role state and risk policy. Sensitive or destructive actions require an Android-mediated user confirmation. The service must fail closed if the model/provider is unavailable. Cloud providers are opt-in and must never receive secrets or private content by default.
+MANA Brain is the primary user-facing intelligence and orchestration layer. Android remains the security reference monitor for the current generation. MANA may receive broad system capabilities only through explicitly integrated, platform-authorized services and declared permissions; it must not impersonate the owner, silently bypass Android permission dialogs, defeat lock-screen authentication, or turn a model response into proof of consent.
+
+Capabilities are divided into:
+- ordinary app capabilities, granted through Android runtime permissions and roles;
+- system capabilities, exposed only by platform-signed services and explicit allowlists;
+- owner-confirmed sensitive operations, where Android-mediated confirmation is required;
+- boot-chain, encryption, credential and destructive operations, which retain Android's independent safeguards and may require physical or recovery-side confirmation.
+
+The phrase "owner requests it" is an authorization intent, not a mechanism to forge credentials or skip mandatory platform protections. The service must fail closed if caller identity, signature, permission state or policy cannot be verified. The service must also fail closed if the model/provider is unavailable. Cloud providers are opt-in and must never receive secrets or private content by default.
+
+## MANA visual system
+
+Canonical palette:
+- Background: #071426
+- Surface: #102B50
+- Primary: #1765A8
+- Accent: #54C8F5
+- Text: #EAF4FF
+- Secondary text: #91A9C5
+
+The first implementation is applied to ManaControlCenter resources and activity styling. Other system apps and platform SystemUI must consume the same palette as they are integrated.
 
 ## Integration order
 
