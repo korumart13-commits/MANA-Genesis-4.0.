@@ -23,7 +23,7 @@ class ManaLocalInferenceService : Service() {
     private val binder = object : ILocalInferenceService.Stub() {
         override fun isModelReady(): Boolean {
             enforceAssistantCaller()
-            return modelFile().isFile
+            return runtime.isReady()
         }
 
         override fun generate(requestId: String?, prompt: String?, callback: ILocalInferenceCallback?) {
