@@ -21,6 +21,15 @@ A C85/C85 Pro Android 16 OEM source family has now been located. The vendor/kern
 
 This is a useful lead, **not yet a safe kernel/DTBO match**: the phone's runtime kernel is 5.15.197, and the audited OEM source commit identifies a different RMX release. See [OEM_SOURCE_MATRIX.md](OEM_SOURCE_MATRIX.md) for pinned repositories, commit IDs, source evidence and the exact compatibility blockers.
 
+## Reproducible source workspace
+
+- [Pinned OEM source lock](oem-source-lock.json)
+- [Fetch exact OEM candidate commits](fetch_oem_candidates.sh)
+- [Port readiness gate report](report_port_gates.sh)
+- [Porting workspace and remaining blockers](PORTING_WORKSPACE.md)
+
+These scripts acquire public research sources only. They do not generate or flash device images.
+
 ## Expected eventual tree (not yet populated)
 
 ```
