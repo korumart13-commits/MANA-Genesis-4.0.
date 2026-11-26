@@ -9,8 +9,8 @@ class ManaAvatarVoiceUiTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
 
     def test_avatar_is_the_only_visible_voice_entry_point_in_assistant_panel(self):
-        self.assertIn('contentDescription = "Коснуться аватара, чтобы поговорить с MANA"', self.source)
-        self.assertIn("setOnClickListener { startVoiceInput() }", self.source)
+        self.assertIn("top.addView(createAvatarSceneView { startVoiceInput() }", self.source)
+        self.assertIn('contentDescription = "3D-аватар MANA. Коснись, чтобы поговорить."', self.source)
         self.assertNotIn('action("Голос")', self.source)
 
     def test_no_external_google_or_system_recognition_activity_is_launched(self):
