@@ -76,3 +76,11 @@ These additions are **prototypes**. They do not provide continuous biometric sur
 - Automated tests now check the scheduler wiring and reboot restoration.
 
 This is a usable first version of a scheduled quiet-hours feature, not a complete sleep-health tracker or sleep-stage detector.
+
+
+## MANA Device Intelligence addition
+- Added a dedicated Samsung One UI-inspired large-header/card screen for device inventory.
+- It reads Android-exposed identity/build/fingerprint, kernel, ABI, RAM, storage, display, battery, camera IDs, sensors and system feature declarations.
+- Added an owner-triggered generator that writes `MANA_Device_Port_Blueprint.zip` with the device report, BoardConfig/device/product templates and a patch-plan manifest.
+- Unknown OEM values are explicitly marked TODO; the generator does not fabricate vendor blobs, kernel config, partition sizes, AVB keys or a flashable binary.
+- The screen and generator are registered in the app manifest, launcher menu, core module catalog and feature manifest. Static tests cover the wiring.
