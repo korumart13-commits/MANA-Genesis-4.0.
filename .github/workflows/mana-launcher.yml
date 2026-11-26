@@ -4,6 +4,10 @@ on:
   push:
     paths:
       - 'launcher/**'
+      - 'system/mana/android-binder/**'
+      - 'system/mana/brain/aidl/**'
+      - 'system/mana/apps/ManaAssistant/src/**'
+      - 'system/mana/apps/ManaLauncher/src/**'
       - '.github/workflows/mana-launcher.yml'
       - 'tools/validate_mana_gltf.py'
   pull_request:
@@ -33,7 +37,7 @@ jobs:
       - name: Verify Android app consumes the canonical tested Brain module
         working-directory: .
         run: |
-          grep -F 'include(":app", ":core", ":brain")' launcher/settings.gradle.kts
+          grep -F 'include(":app", ":core", ":brain", ":system-binder")' launcher/settings.gradle.kts
           grep -F 'project(":brain").projectDir = file("../engine/mana-brain")' launcher/settings.gradle.kts
           grep -F 'implementation(project(":brain"))' launcher/app/build.gradle.kts
           test ! -f launcher/app/src/main/java/com/mana/brain/ManaBrain.kt
@@ -45,7 +49,7 @@ jobs:
           done
       - name: Compile launcher and LiteRT-LM prototype
         working-directory: launcher
-        run: gradle --no-daemon :app:assembleDebug :app:testDebugUnitTest
+        run: gradle --no-daemon :system-binder:assembleDebug :app:assembleDebug :app:testDebugUnitTest
 
       - name: Publish Android companion APK
         uses: actions/upload-artifact@v4
