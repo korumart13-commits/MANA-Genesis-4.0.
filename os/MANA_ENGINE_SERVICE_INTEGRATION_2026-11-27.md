@@ -60,3 +60,9 @@
 - Static source inspection confirms the Activity chat path uses Binder and contains no direct Brain fallback.
 - No Gradle compilation, Android instrumentation test, emulator run, or physical RMX5566RU test has been confirmed.
 - The foreground service remains `START_NOT_STICKY`; process-death restoration and continuous 24/7 execution are not claimed.
+
+## Activity recreation race hardening
+
+- Dependency reuse now checks the prepared runtime state, not only whether Engine initialization has completed. This prevents a recreated Activity from allocating replacement Brain/local-inference dependencies during the interval between service startup and Engine initialization.
+- Service startup is requested only after the process owner reports that all required dependencies are prepared.
+- Follow-up source read-back confirmed there are no remaining Activity calls to `ManaEngineProcessOwner.engineRuntime()`, no direct `engine.think()` calls, and no direct `manaBrain.respond()` fallback in the chat submission path. Requests use the Binder API.
