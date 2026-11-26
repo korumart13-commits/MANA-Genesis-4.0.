@@ -92,3 +92,10 @@ Unit tests cover unchanged source bytes, exact copied bytes/digest, distinct rec
 ## Android build-toolchain correction — 2026-11-27
 
 The Lifecycle 2.11.1 trial was rejected by CI before Kotlin compilation: its transitive Compose runtime artifact requires compileSdk 37 and AGP 9.1+, while this project is intentionally still on compileSdk 36 and AGP 8.7.3. The dependency set was moved to Lifecycle 2.10.0 as a compatibility candidate. The next CI run must confirm AAR metadata, lint, compilation, tests and release packaging; no release APK is claimed yet.
+
+
+## MANA health and recovery diagnostics UI — 2026-11-27
+
+Added a read-only in-app status screen, reachable from the MANA home screen, showing observed Engine state, system supervisor phase, last startup failure, local-model readiness, encrypted memory/Microworld availability, persistence file metadata, recovery-copy inventory, Android API/device identity and Keystore-provider availability. The screen can copy a plain-text diagnostic report for troubleshooting. It does not expose memory contents, secrets, key material, or personal data, and it does not modify stores or permissions.
+
+The home Activity now has a minimal fallback screen when the Engine cannot initialize or bind, so the owner can still open diagnostics and retry the connection rather than being left with a blank screen. This reports app-level runtime state only; it is not proof that the MANA AOSP platform service or a complete MANA OS firmware is installed.
