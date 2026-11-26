@@ -110,13 +110,27 @@ object ManaEngineProcessOwner {
             val cloudGateway = ManaCloudGateway(app, keyProvider)
             val yandexProvider = ManaYandexAiStudioProvider(app)
             val brainBridge = ManaBrainBridge(local, listOf(cloudGateway, yandexProvider))
-            val memoryService = ManaMemoryService(
-                EncryptedFileManaMemoryStore(
-                    EncryptedFileManaDiaryStore(
-                        java.io.File(app.filesDir, "mana/memory.bin"), keyProvider, "mana.memory.v1"
+            val memoryFile = java.io.File(app.filesDir, "mana/memory.bin")
+            val memoryService = try {
+                ManaMemoryService(
+                    EncryptedFileManaMemoryStore(
+                        EncryptedFileManaDiaryStore(memoryFile, keyProvider, "mana.memory.v1")
                     )
                 )
-            )
+            } catch (error: Exception) {
+                val recoveryCopy = runCatching {
+                    ManaEncryptedDataRecovery.preserve(
+                        memoryFile,
+                        java.io.File(app.filesDir, "mana/recovery"),
+                        "memory"
+                    )
+                }.getOrNull()
+                val detail = recoveryCopy?.name ?: "recovery-copy-unavailable"
+                throw IllegalStateException(
+                    "MANA encrypted memory could not be opened. Original data was not modified; recovery: $detail",
+                    error
+                )
+            }
             inference = local
             cloud = cloudGateway
             yandex = yandexProvider
