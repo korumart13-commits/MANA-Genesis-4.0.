@@ -1,0 +1,59 @@
+name: MANA Genesis 4.0 — firmware preflight package
+
+on:
+  push:
+    branches:
+      - mana-genesis-4-rmx5566-firmware-only
+    paths:
+      - "installer/**"
+      - ".github/workflows/mana-firmware-preflight-package.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Bash syntax validation
+        run: |
+          bash -n installer/MANA_RMX5566RU_PREFLIGHT.sh
+          bash -n installer/tests/preflight_test.sh
+
+      - name: ShellCheck
+        run: |
+          shellcheck -s bash installer/MANA_RMX5566RU_PREFLIGHT.sh installer/tests/preflight_test.sh
+
+      - name: Run mocked device tests
+        run: bash installer/tests/preflight_test.sh
+
+      - name: Assemble package
+        run: |
+          set -euo pipefail
+          mkdir -p dist/MANA_Genesis_4.0_RMX5566RU_Preflight
+          cp installer/MANA_RMX5566RU_PREFLIGHT.sh dist/MANA_Genesis_4.0_RMX5566RU_Preflight/
+          cp installer/README_RU.md dist/MANA_Genesis_4.0_RMX5566RU_Preflight/README_RU.md
+          cp installer/tests/preflight_test.sh dist/MANA_Genesis_4.0_RMX5566RU_Preflight/
+          chmod +x dist/MANA_Genesis_4.0_RMX5566RU_Preflight/MANA_RMX5566RU_PREFLIGHT.sh
+          cd dist
+          zip -qr MANA_Genesis_4.0_RMX5566RU_Preflight.zip MANA_Genesis_4.0_RMX5566RU_Preflight
+          sha256sum MANA_Genesis_4.0_RMX5566RU_Preflight.zip > MANA_Genesis_4.0_RMX5566RU_Preflight.zip.sha256
+
+      - name: Upload validated package
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA_Genesis_4.0_RMX5566RU_Preflight
+          path: |
+            dist/MANA_Genesis_4.0_RMX5566RU_Preflight.zip
+            dist/MANA_Genesis_4.0_RMX5566RU_Preflight.zip.sha256
+          if-no-files-found: error
+          retention-days: 30
