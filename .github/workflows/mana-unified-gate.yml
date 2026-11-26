@@ -159,6 +159,8 @@ jobs:
           for model in launcher/app/src/main/assets/mana_avatar_genesis*.gltf; do
             python3 tools/validate_mana_gltf.py "$model"
           done
+      - name: Enforce avatar-only voice UI (no external Google microphone screen)
+        run: python3 -m unittest discover -s tools/tests -p 'test_mana_avatar_voice_ui.py' -v
       - name: Build Android prototype and run unit tests
         working-directory: launcher
         run: gradle --no-daemon :system-binder:assembleDebug :app:assembleDebug :app:testDebugUnitTest
