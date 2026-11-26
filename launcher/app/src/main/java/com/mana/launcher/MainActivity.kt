@@ -80,7 +80,6 @@ class MainActivity : Activity() {
     private val voiceRequestCode = 4107
     private val modelRequestCode = 4108
     private lateinit var localRuntime: LocalModelRuntime
-    private lateinit var manaBrain: ManaBrainBridge
     private lateinit var cloudGateway: ManaCloudGateway
     private lateinit var yandexProvider: ManaYandexAiStudioProvider
     private lateinit var vkConnector: ManaVkReadOnlyConnector
@@ -101,6 +100,11 @@ class MainActivity : Activity() {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as? ManaEngineService.LocalBinder ?: return
             manaEngineBinder = binder
+            localRuntime = binder.localModelRuntime()
+            cloudGateway = binder.cloudGateway()
+            yandexProvider = binder.yandexProvider()
+            memoryService = binder.memoryService()
+            initializeUiAfterEngineConnected()
             modelStatus?.text = if (binder.isReady()) {
                 "MANA Engine подключён и готов."
             } else {
@@ -174,21 +178,20 @@ class MainActivity : Activity() {
         window.statusBarColor = bg
         window.navigationBarColor = bg
         window.decorView.setBackgroundColor(bg)
+        val engineIntent = Intent(this, ManaEngineService::class.java)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(engineIntent) else startService(engineIntent)
+            manaEngineBound = bindService(engineIntent, manaEngineConnection, BIND_AUTO_CREATE)
+        } catch (error: Exception) {
+            android.util.Log.e("MANA", "Unable to connect to Engine service", error)
+        }
+    }
+
+    private fun initializeUiAfterEngineConnected() {
+        if (uiInitialized) return
+        uiInitialized = true
         contactIntelligence = ManaContactIntelligence(this)
         modelCatalog = runCatching { ManaModelCatalog(this) }.getOrNull()
-        val hasPreparedRuntime = ManaEngineProcessOwner.isPrepared()
-        localRuntime = if (hasPreparedRuntime) {
-            checkNotNull(ManaEngineProcessOwner.localModelRuntime()) { "MANA local inference dependency is missing" }
-        } else {
-            LocalModelRuntime(File(cacheDir, "mana-litert-cache"))
-        }
-        cloudGateway = ManaCloudGateway(this, ManaAndroidKeyProvider())
-        yandexProvider = ManaYandexAiStudioProvider(this)
-        manaBrain = if (hasPreparedRuntime) {
-            checkNotNull(ManaEngineProcessOwner.brainBridge()) { "MANA Brain dependency is missing" }
-        } else {
-            ManaBrainBridge(localRuntime, listOf(cloudGateway, yandexProvider))
-        }
         diaryService = try { ManaDiaryService(EncryptedFileManaDiaryStore(File(filesDir, "mana/diary.bin"), ManaAndroidKeyProvider())) } catch (error: Exception) {
             showMessage("Дневник пока недоступен: ${error.message}")
             null
@@ -203,16 +206,7 @@ class MainActivity : Activity() {
             showMessage("Планировщик пока недоступен: ${error.message}")
             null
         }
-        memoryService = ManaEngineProcessOwner.memoryService() ?: try {
-            ManaMemoryService(
-                EncryptedFileManaMemoryStore(
-                    EncryptedFileManaDiaryStore(File(filesDir, "mana/memory.bin"), ManaAndroidKeyProvider(), "mana.memory.v1")
-                )
-            )
-        } catch (error: Exception) {
-            showMessage("Память MANA пока недоступна: ${error.message}")
-            null
-        }
+        memoryService = ManaEngineProcessOwner.memoryService()
         adaptiveKnowledgeService = try {
             com.mana.os.core.ManaAdaptiveKnowledgeService(
                 com.mana.os.core.EncryptedFileManaAdaptiveKnowledgeStore(
@@ -237,28 +231,6 @@ class MainActivity : Activity() {
             showMessage("Хранилище будущих обновлений недоступно: " + error.message)
             null
         }
-        if (!hasPreparedRuntime && memoryService != null) {
-            try {
-                ManaEngineProcessOwner.prepare(manaBrain, localRuntime, memoryService!!)
-            } catch (error: Exception) {
-                showMessage("Не удалось подготовить MANA Engine: ${error.message}")
-            }
-        }
-        if (ManaEngineProcessOwner.isPrepared()) {
-            try {
-                val engineServiceIntent = Intent(this, ManaEngineService::class.java)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    startForegroundService(engineServiceIntent)
-                } else {
-                    startService(engineServiceIntent)
-                }
-                if (!manaEngineBound) {
-                    manaEngineBound = bindService(engineServiceIntent, manaEngineConnection, BIND_AUTO_CREATE)
-                }
-            } catch (error: Exception) {
-                showMessage("Не удалось запустить службу MANA Engine: ${error.message}")
-            }
-        }
         initializeVoice()
         loadApps()
         buildShell()
@@ -274,7 +246,6 @@ class MainActivity : Activity() {
             }
         }
     }
-
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -1593,7 +1564,6 @@ class MainActivity : Activity() {
         // The service owns shared components while active. If initialization never
         // transferred ownership, release the Activity-created inference resources here.
         if (!ManaEngineProcessOwner.isInstalled() && !ManaEngineProcessOwner.isPrepared()) {
-            if (::manaBrain.isInitialized) manaBrain.shutdown()
             if (::localRuntime.isInitialized) localRuntime.shutdown()
         }
         ManaAvatar3DView.isSpeaking = false
