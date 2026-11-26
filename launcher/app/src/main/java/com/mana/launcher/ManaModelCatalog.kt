@@ -12,6 +12,7 @@ import java.security.MessageDigest
  * Uses DownloadManager for resumable background transfer, then verifies the
  * publisher's SHA-256 before making the model selectable.
  */
+// MANA full offline package: model chunks are embedded in the companion APK.
 class ManaModelCatalog(context: Context) {
     private val app = context.applicationContext
     private val manager = app.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
