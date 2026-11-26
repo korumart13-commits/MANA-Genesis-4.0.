@@ -21,3 +21,8 @@ This Soong product module provides the Android-side Binder endpoint for the MANA
 ## Current limitation
 
 The Android Service/Binder endpoint exists in source, but it is not yet a functioning inference host. It has not been built by Soong against an AOSP checkout and has no target-specific SELinux service context/domain or backend adapter. Those steps are mandatory before shipping it in a device image. The tested Gradle foreground service remains a separate application-process engine owner; no cross-process backend adapter has been implemented.
+
+
+## Request bounds
+
+The platform endpoint limits prompts to 32,768 characters. Explicit cloud-provider names are allowlisted (OpenAI, Anthropic, Google/Gemini, xAI/Grok, Yandex and VK); a provider cannot be selected when the request is local-only. These checks happen before the request enters the bounded worker queue.
