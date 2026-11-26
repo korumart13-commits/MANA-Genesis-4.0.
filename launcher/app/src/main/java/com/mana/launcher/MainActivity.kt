@@ -6,6 +6,9 @@ import android.content.pm.PackageManager
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.ComponentName
+import android.content.ServiceConnection
+import android.os.IBinder
 import android.content.pm.ResolveInfo
 import android.graphics.Canvas
 import android.graphics.Color
@@ -92,7 +95,33 @@ class MainActivity : Activity() {
     private var memoryService: ManaMemoryService? = null
     private var adaptiveKnowledgeService: com.mana.os.core.ManaAdaptiveKnowledgeService? = null
     private var futureUpdateService: ManaFutureUpdateService? = null
-    private val manaEngineRuntime: ManaEngineAndroidRuntime? get() = ManaEngineProcessOwner.engineRuntime()
+    private var manaEngineRuntime: ManaEngineAndroidRuntime? = null
+    private var manaEngineBound = false
+    private val manaEngineConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as? ManaEngineService.LocalBinder ?: return
+            manaEngineRuntime = binder.engineRuntime()
+            modelStatus?.text = if (binder.isReady()) {
+                "MANA Engine подключён и готов."
+            } else {
+                "MANA Engine подключён; выполняется инициализация."
+            }
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            manaEngineRuntime = null
+            modelStatus?.text = "Связь со службой MANA Engine потеряна."
+        }
+
+        override fun onBindingDied(name: ComponentName?) {
+            manaEngineRuntime = null
+            modelStatus?.text = "Соединение со службой MANA Engine завершилось."
+            if (manaEngineBound) {
+                runCatching { unbindService(this) }
+                manaEngineBound = false
+            }
+        }
+    }
     private var voiceTarget: EditText? = null
     private var editingDiaryId: String? = null
     private var useCloudForNextPrompt = false
@@ -216,6 +245,9 @@ class MainActivity : Activity() {
                     startForegroundService(engineServiceIntent)
                 } else {
                     startService(engineServiceIntent)
+                }
+                if (!manaEngineBound) {
+                    manaEngineBound = bindService(engineServiceIntent, manaEngineConnection, BIND_AUTO_CREATE)
                 }
             } catch (error: Exception) {
                 showMessage("Не удалось запустить службу MANA Engine: ${error.message}")
@@ -1568,6 +1600,11 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        if (manaEngineBound) {
+            runCatching { unbindService(manaEngineConnection) }
+            manaEngineBound = false
+        }
+        manaEngineRuntime = null
         // The service owns shared components while active. If initialization never
         // transferred ownership, release the Activity-created inference resources here.
         if (!ManaEngineProcessOwner.isInstalled() && !ManaEngineProcessOwner.isPrepared()) {
