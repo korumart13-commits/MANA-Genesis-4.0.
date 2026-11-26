@@ -1,0 +1,107 @@
+name: MANA update artifact download chunks
+
+on:
+  push:
+    branches: ["mana-genesis-4-rmx5566-rom-port"]
+    paths:
+      - ".github/workflows/mana-update-artifact-chunks.yml"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  split-verified-update-package:
+    name: Split the verified 3.7 GB update ZIP into downloadable parts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the already-built MANA update artifact from its successful package run
+        uses: actions/download-artifact@v4
+        with:
+          name: MANA-Genesis-4.0-Update-Package
+          run-id: 45849175159
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: dist
+
+      - name: Split ZIP64 update into 450 MB parts and verify total length
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/parts
+          package="dist/MANA_Genesis_4.0_UPDATE_PACKAGE.zip"
+          test -s "$package"
+          split --bytes=450000000 --numeric-suffixes=0 --suffix-length=2 "$package" "dist/parts/MANA-UPDATE.part-"
+          python3 - <<'PY'
+          from pathlib import Path
+          parts = sorted(Path("dist/parts").glob("MANA-UPDATE.part-*"))
+          total = sum(p.stat().st_size for p in parts)
+          assert len(parts) == 9, f"Expected 9 parts, found {len(parts)}"
+          assert total == 3708527784, f"Update length mismatch: {total}"
+          assert all(p.stat().st_size <= 450000000 for p in parts)
+          print(f"Verified {len(parts)} download parts; combined bytes={total}")
+          PY
+
+      - name: Upload part 00
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Update-Part-00
+          path: dist/parts/MANA-UPDATE.part-00
+          compression-level: 0
+          retention-days: 7
+      - name: Upload part 01
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Update-Part-01
+          path: dist/parts/MANA-UPDATE.part-01
+          compression-level: 0
+          retention-days: 7
+      - name: Upload part 02
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Update-Part-02
+          path: dist/parts/MANA-UPDATE.part-02
+          compression-level: 0
+          retention-days: 7
+      - name: Upload part 03
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Update-Part-03
+          path: dist/parts/MANA-UPDATE.part-03
+          compression-level: 0
+          retention-days: 7
+      - name: Upload part 04
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Update-Part-04
+          path: dist/parts/MANA-UPDATE.part-04
+          compression-level: 0
+          retention-days: 7
+      - name: Upload part 05
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Update-Part-05
+          path: dist/parts/MANA-UPDATE.part-05
+          compression-level: 0
+          retention-days: 7
+      - name: Upload part 06
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Update-Part-06
+          path: dist/parts/MANA-UPDATE.part-06
+          compression-level: 0
+          retention-days: 7
+      - name: Upload part 07
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Update-Part-07
+          path: dist/parts/MANA-UPDATE.part-07
+          compression-level: 0
+          retention-days: 7
+      - name: Upload part 08
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Update-Part-08
+          path: dist/parts/MANA-UPDATE.part-08
+          compression-level: 0
+          retention-days: 7
