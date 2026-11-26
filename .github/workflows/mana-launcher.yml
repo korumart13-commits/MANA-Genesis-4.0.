@@ -119,7 +119,10 @@ jobs:
           grep -F 'acceptsMemoryExportOnlyWithBothConsents' system/mana/services/ManaBrainService/tests/src/com/mana/system/brain/ManaBrainRequestPolicyTest.java
           grep -F 'boolean allowPersonalMemoryToCloud = false;' system/mana/interfaces/src/com/mana/brain/ManaBrainRequest.aidl
           grep -F 'ENGINE_UNAVAILABLE' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
-          grep -F 'Executors.newSingleThreadExecutor' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+          grep -F 'new ThreadPoolExecutor(' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+          grep -F 'new ArrayBlockingQueue<>(MAX_PENDING_REQUESTS)' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+          grep -F 'catch (RejectedExecutionException overloaded)' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+          grep -F 'MAX_PENDING_REQUESTS = 32' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
           grep -F 'requests.execute' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
           grep -F 'requests.shutdownNow()' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
       - name: Validate embedded full-body MANA glTF asset
