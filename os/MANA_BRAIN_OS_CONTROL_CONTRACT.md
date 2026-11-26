@@ -50,3 +50,12 @@ The product target is realme C85 4G RMX5566RU / RE645F. Retain Android 16 framew
 - Android instrumentation tests on the target build.
 - Exact-device tests for permissions, settings, telephony, notifications and update/rollback.
 - Full image build and first boot are separate gates; no ROM/OTA is complete before all release gates pass.
+
+
+## Binder adapter progress (2026-11-26)
+
+The protected `IBrainService` now exposes `executeCapability` using structured AIDL request/response parcelables. Its Android adapter rechecks current permission grants and relevant special-access state before asking the shared registry for a decision. It currently executes only app launch and allowlisted Settings navigation through public Android APIs.
+
+The request's `ownerConfirmed` boolean is intentionally ignored. Sensitive actions remain disabled until consent can be obtained and verified through a trusted owner-facing system UI flow. No arbitrary shell, root, accessibility injection, or hidden API execution is exposed.
+
+The JVM capability registry compiles and passed six local smoke assertions. Android Gradle/AIDL compilation and instrumentation tests are authored but have not yet been executed; target-device and Soong verification remain outstanding.
