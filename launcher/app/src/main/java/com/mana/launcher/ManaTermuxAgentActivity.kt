@@ -92,49 +92,78 @@ class ManaTermuxAgentActivity : Activity() {
         val scroll = ScrollView(this)
         val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         body.addView(text("MANA", 32f, textColor, true))
-        body.addView(text("AUTODEV  •  ПОМОЩНИК РАЗРАБОТКИ", 12f, accent, true).apply {
+        body.addView(text("AUTODEV", 12f, accent, true).apply {
             setPadding(0, dp(2), 0, dp(18))
         })
 
         val installed = termuxInstalled()
         val granted = installed && runPermissionGranted()
         val status = card()
-        status.addView(text("СОСТОЯНИЕ ПОДКЛЮЧЕНИЯ", 12f, accent, true))
+        status.addView(text("СРЕДА РАЗРАБОТКИ", 12f, accent, true))
         status.addView(text(
-            if (!installed) "Termux пока не установлен"
-            else if (!granted) "Termux найден — осталось подключить разрешение"
-            else "Подключение готово — можно запускать проверки",
-            17f, textColor, true
+            if (!installed) "Нужно подключить Termux"
+            else if (!granted) "Termux найден — ожидается разрешение Android"
+            else "Среда подключена",
+            18f, textColor, true
         ).apply { setPadding(0, dp(7), 0, dp(5)) })
         status.addView(text(
-            if (!installed) "Установи Termux и открой его один раз. MANA объяснит следующий шаг."
-            else if (!granted) "Android должен разрешить MANA запускать команды в Termux. Это подтверждается владельцем телефона."
-            else "Выбирай задачу обычными словами. Перед запуском MANA покажет описание и команду.",
+            if (!installed) "Termux нужен для безопасного запуска сборки и проверок на телефоне."
+            else if (!granted) "Открой настройки MANA и разреши запуск команд. Затем включи внешний запуск в Termux."
+            else "Напиши задачу обычными словами. MANA сама выберет подходящую безопасную операцию.",
             13f, muted
         ))
-        body.addView(status, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(14) })
+        body.addView(status, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
 
-        body.addView(text("НАЧАТЬ РАБОТУ", 13f, accent, true).apply {
-            setPadding(0, dp(4), 0, dp(7))
-        })
-        body.addView(action(if (!installed || !granted) "1. Подключить Termux" else "1. Проверить проект", true) {
-            if (!installed) showTermuxMissing()
+        body.addView(text("ЧТО СДЕЛАТЬ С ПРОЕКТОМ?", 13f, accent, true))
+        val request = EditText(this).apply {
+            setTextColor(textColor)
+            setHintTextColor(muted)
+            textSize = 15f
+            minLines = 2
+            maxLines = 4
+            gravity = android.view.Gravity.TOP
+            setPadding(dp(14), dp(13), dp(14), dp(13))
+            hint = "Например: проверь проект, запусти тесты или собери APK"
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(surface)
+                cornerRadius = dp(18).toFloat()
+                setStroke(dp(1), primary)
+            }
+        }
+        body.addView(request, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(9) })
+        body.addView(action("Выполнить задачу", true) {
+            val query = request.text.toString().trim().lowercase()
+            val task = when {
+                query.contains("собер") || query.contains("apk") -> Task.APK
+                query.contains("тест") -> Task.TEST
+                query.contains("ошиб") || query.contains("diff") -> Task.CHECK
+                query.contains("телефон") || query.contains("устройств") || query.contains("диагност") -> Task.DEVICE_AUDIT
+                query.contains("проект") || query.contains("статус") || query.contains("ветк") || query.contains("проверь") -> Task.STATUS
+                else -> null
+            }
+            if (task == null) {
+                Toast.makeText(this, "Попробуй: «проверь проект», «запусти тесты», «собери APK» или «проверь телефон».", Toast.LENGTH_LONG).show()
+            } else if (!installed) showTermuxMissing()
             else if (!granted) showTermuxConnection()
-            else confirmTask(Task.STATUS)
-        }, LinearLayout.LayoutParams(-1, dp(54)).apply { bottomMargin = dp(8) })
-        body.addView(action("2. Проверить, протестировать или собрать APK") {
-            if (!installed || !granted) showTermuxConnection() else chooseTask()
-        }, LinearLayout.LayoutParams(-1, dp(52)).apply { bottomMargin = dp(8) })
-        body.addView(action("3. Пошаговая инструкция") { showSetup() },
-            LinearLayout.LayoutParams(-1, dp(52)).apply { bottomMargin = dp(14) })
+            else confirmTask(task)
+        }, LinearLayout.LayoutParams(-1, dp(54)).apply { topMargin = dp(12) })
 
-        val project = card()
-        project.addView(text("ПАПКА ПРОЕКТА", 12f, accent, true))
-        project.addView(text(projectDir(), 13f, textColor).apply { setPadding(0, dp(6), 0, dp(8)) })
-        project.addView(action("Изменить папку проекта") { editProjectDir() })
-        body.addView(project, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(14) })
         body.addView(text(
-            "Важно: MANA не получает root и не меняет системные разделы. Сборка полной прошивки требует отдельной AOSP-среды и проверенных файлов именно твоего устройства.",
+            "Понимает запросы: «проверь проект» • «найди ошибки» • «запусти тесты» • «собери APK» • «проверь телефон».",
+            12f, muted
+        ).apply { setPadding(0, dp(12), 0, dp(16)) })
+        body.addView(text("ПАПКА ПРОЕКТА", 11f, accent, true))
+        body.addView(text(projectDir(), 12f, textColor).apply { setPadding(0, dp(5), 0, dp(5)) })
+        body.addView(text("Изменить папку проекта", 13f, accent).apply {
+            setPadding(0, dp(8), 0, dp(12))
+            setOnClickListener { editProjectDir() }
+        })
+        body.addView(text("Инструкция по подключению Termux", 13f, accent).apply {
+            setPadding(0, dp(8), 0, dp(12))
+            setOnClickListener { showSetup() }
+        })
+        body.addView(text(
+            "MANA не получает root и не записывает данные в системные разделы. Сборка полной прошивки требует отдельной AOSP-среды и проверенных файлов устройства.",
             11f, muted
         ))
         scroll.addView(body)
