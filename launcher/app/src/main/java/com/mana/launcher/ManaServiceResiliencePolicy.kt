@@ -58,5 +58,17 @@ internal class ManaServiceResiliencePolicy(
     }
 
     @Synchronized
+    fun restore(savedAttempts: Int, savedLastFailureAtMs: Long?) {
+        require(savedAttempts in 0..maxAttempts)
+        require(savedLastFailureAtMs == null || savedLastFailureAtMs >= 0L)
+        attempts = savedAttempts
+        lastFailureAtMs = savedLastFailureAtMs
+        healthySinceMs = null
+    }
+
+    @Synchronized
+    fun snapshot(): Pair<Int, Long?> = attempts to lastFailureAtMs
+
+    @Synchronized
     fun attempts(): Int = attempts
 }
