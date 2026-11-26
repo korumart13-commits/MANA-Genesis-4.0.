@@ -55,3 +55,12 @@ No claim is made here that these materials were never supplied; this status reco
 ## Artifact naming rule
 
 A debug APK is an application prototype. A source ZIP is a source archive. Neither is a flashable ROM, OTA update, or recovery package.
+
+
+## Follow-up lifecycle hardening — 2026-11-27
+
+- Updated `ManaBrainBridge` to make shutdown idempotent and reject new requests after shutdown.
+- Asynchronous `respond()` now completes its callback with a failure if shutdown races with coroutine launch/cancellation; completion is guarded so the callback is delivered at most once.
+- Added `ManaBrainBridgeTest.requestAfterShutdownCompletesCallbackWithFailure` as a regression test.
+- This is a lifecycle correctness fix inside the existing application-process integration. It does **not** move MANA Engine into a foreground/system service and does not provide persistent background execution.
+- The regression test has been committed but has not yet been executed in a verified Gradle/CI run.
