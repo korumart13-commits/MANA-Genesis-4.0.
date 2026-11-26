@@ -28,12 +28,12 @@ class ManaShogunHydraTest {
 
     @Test fun grantedCapabilityExecutesAndIsAudited() {
         val security = ManaSecurityService()
-        val capability = SecurityCapability("owner", "microworld", SecurityAction.WRITE)
-        security.grant(SecurityGrant(capability))
+        val grantedCapability = SecurityCapability("owner", "microworld", SecurityAction.WRITE)
+        security.grant(SecurityGrant(grantedCapability))
         val hydra = ManaHydraRegistry(security)
         hydra.register(object : ManaHydraTool {
             override val id = "microworld.observe"
-            override val capability = capability
+            override val capability = grantedCapability
             override fun execute(input: String) = "saved:$input"
         })
         val report = ManaShogun(hydra).execute(
