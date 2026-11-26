@@ -77,7 +77,7 @@ jobs:
           grep -F 'boolean allowCloud = false;' system/mana/interfaces/src/com/mana/brain/ManaBrainRequest.aidl
           grep -F 'boolean sensitive = false;' system/mana/interfaces/src/com/mana/brain/ManaBrainRequest.aidl
           grep -F 'static_libs: ["mana-brain-interface"],' system/mana/apps/ManaAssistant/Android.bp
-          grep -F 'This is an interface contract, not an implemented Android system service.' system/mana/interfaces/README.md
+          grep -F 'ENGINE_UNAVAILABLE' system/mana/interfaces/README.md
       - name: Validate platform MANA Brain service boundary
         run: |
           test -f system/mana/services/ManaBrainService/Android.bp
