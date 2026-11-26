@@ -1,0 +1,25 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.mana.system.brain">
+
+    <permission
+        android:name="com.mana.permission.BIND_BRAIN"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="com.mana.permission.BIND_BRAIN" />
+
+    <application
+        android:label="MANA Brain Service"
+        android:allowBackup="false"
+        android:directBootAware="false">
+
+        <service
+            android:name=".ManaBrainService"
+            android:description="@string/mana_brain_service_description"
+            android:exported="true"
+            android:permission="com.mana.permission.BIND_BRAIN"
+            android:process=":brain">
+            <intent-filter>
+                <action android:name="com.mana.action.BIND_BRAIN" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>
