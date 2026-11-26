@@ -20,7 +20,8 @@ REQUIRED = {
     "mana.contacts", "mana.receptionist", "mana.calltelephony",
     "mana.gameintelligence", "mana.gamebridge", "mana.microuniverse",
     "mana.yandex", "mana.vk", "mana.integrationhub", "mana.developercenter",
-    "mana.localnode", "mana.deviceecosystem", "mana.kernellab", "mana.owneridentity",\n    "mana.sleep", "mana.camera", "mana.messaging", "mana.lifecontrolcenter",
+    "mana.localnode", "mana.deviceecosystem", "mana.kernellab", "mana.owneridentity",
+    "mana.sleep", "mana.camera", "mana.messaging", "mana.lifecontrolcenter", "mana.deviceintelligence",
 }
 
 
