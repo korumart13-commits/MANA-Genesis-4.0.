@@ -28,6 +28,10 @@ class LocalModelRuntime(private val cacheDirectory: File) {
             try {
                 require(modelFile.isFile && modelFile.canRead()) { "Файл модели недоступен для чтения." }
                 require(modelFile.extension.equals("litertlm", ignoreCase = true)) { "Выбери файл с расширением .litertlm." }
+                if (isReady() && loadedModel?.canonicalFile == modelFile.canonicalFile) {
+                    callback(Result.success(modelName() ?: modelFile.name))
+                    return@execute
+                }
                 closeLoaded()
                 cacheDirectory.mkdirs()
                 val (candidate, newConversation, backendName) = createEngineWithFallback(modelFile)
