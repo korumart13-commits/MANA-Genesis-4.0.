@@ -635,38 +635,15 @@ class MainActivity : Activity() {
         })
     }
 
-    /** Full-body animated MANA model is part of the first installed screen, not a later add-on. */
+    /** Always-on-device procedural 3D renderer: no glTF/Filament load is required for the main avatar. */
     private fun createAvatarSceneView(): View {
-        val asset = ManaAvatarAssetSelector.assetName(this)
-        return ComposeView(this).apply {
-            setContent {
-                val engine = rememberEngine()
-                val modelLoader = rememberModelLoader(engine)
-                val expression = ManaAvatarState.expressionIndex
-                val animationName = when {
-                    ManaAvatarState.isSpeaking -> "Speaking"
-                    expression == 1 -> "Happy"
-                    expression == 2 -> "Playful"
-                    else -> "Idle"
-                }
-                SceneView(
-                    modifier = Modifier.fillMaxSize(),
-                    surfaceType = SurfaceType.TextureSurface,
-                    engine = engine,
-                    modelLoader = modelLoader,
-                    isOpaque = false
-                ) {
-                    rememberModelInstance(modelLoader, asset)?.let { instance ->
-                        ModelNode(
-                            modelInstance = instance,
-                            scaleToUnits = 2.25f,
-                            autoAnimate = false,
-                            animationName = animationName,
-                            animationLoop = true
-                        )
-                    }
-                }
-            }
+        return ManaAvatar3DView(
+            this,
+            onDrag = { _, _ -> },
+            onTap = { toggleAvatarPanel() },
+            onDragEnd = { }
+        ).apply {
+            contentDescription = "3D-аватар MANA"
         }
     }
 
