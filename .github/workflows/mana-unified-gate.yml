@@ -124,6 +124,8 @@ jobs:
             -classpath "$ANDROID_HOME/platforms/android-36/android.jar" \
             -d "$RUNNER_TEMP/mana-ui-classes" \
             $(find system/mana/apps -name '*.java' ! -name 'ManaBrainBinderService.java' ! -name 'ManaBrainBinderTest.java' ! -name 'ManaHomeActivity.java' -print)
+      - name: Validate MANA Brain and Android 16 Soong wiring
+        run: python3 tools/validate_mana_soong_wiring.py
       - name: Validate read-only Termux device audit script
         run: |
           bash -n device/collect_rmx5566_identity.sh
