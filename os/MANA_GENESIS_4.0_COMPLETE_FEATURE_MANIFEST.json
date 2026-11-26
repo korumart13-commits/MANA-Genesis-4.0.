@@ -136,7 +136,30 @@
       "save_to_gallery": "owner_selected_export",
       "set_wallpaper": "Android WallpaperManager with explicit owner confirmation",
       "no_duplicate_camera_app": true,
-      "camera_access": "launch stock Realme camera through supported Android intents/APIs only"
+      "camera_access": "launch stock Realme camera through supported Android intents/APIs only",
+      "wallpaper_autopilot": "MANA may automatically choose and set newly generated avatar images as wallpaper after the owner enables the feature once; no per-change confirmation, with pause/disable controls."
+    },
+    "wallpaper_autopilot": {
+      "enabled_by_owner_once": true,
+      "mana_may_choose_and_change_wallpaper_without_per_change_confirmation": true,
+      "choose_from_newly_generated_avatar_art_and_owner_approved_collection": true,
+      "change_when_mana_decides": true,
+      "optional_schedule_and_quiet_hours": true,
+      "owner_can_pause_resume_or_disable_at_any_time": true,
+      "keep_wallpaper_history_and_restore_previous": true,
+      "use_android_wallpaper_manager": true,
+      "respect_android_permission_and_platform_limits": true,
+      "never_change_lock_screen_or_home_screen_scope_without_the_owner_selected_setting": true,
+      "no_repeated_confirmation_after_autopilot_is_enabled": true
+    },
+    "on_screen_presence": {
+      "floating_avatar_overlay": true,
+      "remains_available_across_launcher_and_supported_apps": true,
+      "user_can_drag_and_reposition": true,
+      "tap_to_open_mana_conversation_or_controls": true,
+      "user_can_hide_or_pause": true,
+      "overlay_permission_required_and_owner_granted": true,
+      "fallback": "MANA HOME avatar remains visible when overlay permission is unavailable."
     }
   },
   "receptionist": {
@@ -199,7 +222,9 @@
     "background_activity_launch": "not_attempted; Android background launch restrictions respected",
     "boot_model_loading": "deferred until MANA foreground use or owner request to avoid loading multi-GB model during boot",
     "user_confirmation_required_for_home_role": true,
-    "stock_camera_behavior": "MANA launches and hands off to the existing Realme camera; it does not package or create a second camera application."
+    "stock_camera_behavior": "Use the installed Realme camera through supported Android intents/APIs. Do not package a second camera app or duplicate camera UI.",
+    "avatar_presence": "MANA's movable floating avatar should remain accessible over supported phone screens when the owner grants overlay access; MANA HOME avatar is the fallback.",
+    "wallpaper_autopilot": "After the owner enables wallpaper autopilot once, MANA may select and set new avatar wallpapers automatically through Android WallpaperManager within the owner's selected home/lock-screen scope; owner can pause or disable it."
   },
   "update_delivery": {
     "channel": "com.mana.genesis.system",
@@ -627,7 +652,7 @@
     "no_silent_feature_removal": true,
     "no_false_system_privileges": true
   },
-  "audit_note_2026_11_26": "The MANA Control Center now includes Android credential re-authentication, camera launch, share/SMS handoff, game session usage-access helper, Realme Game Space launch, and a daily bedtime/wake alarm scheduler with inexact fallback when exact-alarm access is not granted. These remain app-level integrations; they do not make MANA a privileged OS or full camera/messenger/game controller. Full standalone launcher APK workflow now fetches the pinned Gemma 4 E4B 3.66 GB LiteRT-LM model at build time, verifies its exact byte size and SHA-256, and packages it uncompressed as an APK asset. The owner must explicitly import/activate it; it is not loaded at boot. This does not turn the APK into a flashable ROM. MANA Device Intelligence Activity added to the launcher: it collects Android-exposed build, ABI, RAM, storage, display, battery, camera, sensor and system-feature data, then generates a ZIP with a device report and explicitly incomplete ROM port templates. It does not produce a flashable ROM binary or write firmware partitions. Owner clarification: do not create a duplicate camera app or camera UI. Keep only integration with the installed Realme camera through supported Android intents/APIs. Add MANA Avatar Studio inside the encrypted Diary: generate new images of the same stable avatar identity with changeable outfits/accessories/poses/backgrounds, save owner-selected images to the gallery, and offer wallpaper setting through Android WallpaperManager with explicit owner confirmation. This is a planned architecture item until generator/provider and UI are implemented and tested.",
+  "audit_note_2026_11_26": "The MANA Control Center now includes Android credential re-authentication, camera launch, share/SMS handoff, game session usage-access helper, Realme Game Space launch, and a daily bedtime/wake alarm scheduler with inexact fallback when exact-alarm access is not granted. These remain app-level integrations; they do not make MANA a privileged OS or full camera/messenger/game controller. Full standalone launcher APK workflow now fetches the pinned Gemma 4 E4B 3.66 GB LiteRT-LM model at build time, verifies its exact byte size and SHA-256, and packages it uncompressed as an APK asset. The owner must explicitly import/activate it; it is not loaded at boot. This does not turn the APK into a flashable ROM. MANA Device Intelligence Activity added to the launcher: it collects Android-exposed build, ABI, RAM, storage, display, battery, camera, sensor and system-feature data, then generates a ZIP with a device report and explicitly incomplete ROM port templates. It does not produce a flashable ROM binary or write firmware partitions. Owner clarification: do not create a duplicate camera app or camera UI. Keep only integration with the installed Realme camera through supported Android intents/APIs. Add MANA Avatar Studio inside the encrypted Diary: generate new images of the same stable avatar identity with changeable outfits/accessories/poses/backgrounds, save owner-selected images to the gallery, and offer wallpaper setting through Android WallpaperManager with explicit owner confirmation. This is a planned architecture item until generator/provider and UI are implemented and tested. Permanent owner rule: do not duplicate any app already installed on the phone. Integrate with existing Realme/Android camera, dialer, messaging, gallery, calendar, clock, file and media apps through supported interfaces. Keep unique MANA-native intelligence and orchestration. Restore the full original MANA concept inventory, including MANA Brain/OS, launcher, system UI, lock screen, notifications, permissions hub, Diary, Life Manager, Contacts Intelligence, Smart Receptionist, Yandex/VK, Game Intelligence/Minecraft, micro-universe, device ecosystem, self-development/AutoDev, update/recovery and device adaptation. The avatar must be visible on screen as a movable floating presence. Avatar Studio belongs in the Diary; after the owner enables wallpaper autopilot once, MANA may generate/select and change avatar wallpapers autonomously without asking on every change, with pause/disable and wallpaper history.",
   "local_model_package": {
     "bundled_model": "Gemma 4 E4B IT LiteRT-LM",
     "file": "gemma-4-E4B-it.litertlm",
@@ -637,5 +662,192 @@
     "license": "Apache-2.0",
     "activation": "owner-consented import; never auto-load at boot",
     "target_device_benchmark": "not yet measured on RMX5566RU"
+  },
+  "global_product_rules": {
+    "preserve_all_owner_approved_ideas": true,
+    "no_silent_feature_removal": true,
+    "no_duplicate_installed_apps": {
+      "rule": "If an equivalent app already exists on the phone, MANA integrates with and launches that installed app through supported Android intents, roles, APIs or share contracts. Do not create a redundant MANA copy.",
+      "examples": [
+        "camera",
+        "phone_and_dialer",
+        "sms_and_messaging",
+        "gallery_and_media_viewer",
+        "calendar",
+        "clock_and_alarm",
+        "file_manager",
+        "browser",
+        "music_and_video_players"
+      ],
+      "exception": "Create a MANA-native module only when it adds a genuinely unique MANA capability that the installed app does not provide; do not replace the installed app."
+    },
+    "preserve_android_and_google_platform": true,
+    "replace_realme_user_experience_where_supported": true,
+    "keep_stock_realme_hardware_services_and_apps": true,
+    "one_mana_identity": true,
+    "maximum_autonomy_with_android_security_and_owner_controls": true,
+    "all_ideas_remain_in_manifest_until_owner_explicitly_retires_them": true,
+    "feature_statuses_must_be_truthful": [
+      "implemented_verified",
+      "partial",
+      "prototype",
+      "architecture",
+      "blocked"
+    ]
+  },
+  "installed_app_integration": {
+    "principle": "MANA is the intelligence and orchestration layer, not a collection of duplicate stock apps.",
+    "launch_existing_apps": true,
+    "supported_methods": [
+      "Android intents",
+      "RoleManager",
+      "ContentResolver and supported content contracts",
+      "share sheets",
+      "official public APIs",
+      "OEM-supported APIs"
+    ],
+    "never_clone_or_replace_existing_apps": true,
+    "preserve_stock_camera_phone_radio_sensor_display_audio_and_oem_hal": true,
+    "camera": "Use the installed Realme camera. MANA may request capture or open the camera using supported Android camera intents/APIs; no separate MANA camera app or duplicate camera UI.",
+    "phone_and_calls": "Use the existing dialer/Telecom framework and request roles only when the owner chooses.",
+    "messages": "Open installed messaging apps and hand off text/media through supported intents or official APIs; do not clone private messenger clients.",
+    "gallery": "Use the installed gallery/media picker for browsing and use MediaStore for owner-approved exports.",
+    "media_and_files": "Prefer existing system apps; create only MANA-specific orchestration, indexing or secure diary/workspace functions."
+  },
+  "avatar_presence_and_wallpaper": {
+    "single_stable_avatar_identity": true,
+    "visible_on_phone_screen": {
+      "floating_avatar_overlay": true,
+      "remains_available_across_launcher_and_supported_apps": true,
+      "user_can_drag_and_reposition": true,
+      "tap_to_open_mana_conversation_or_controls": true,
+      "user_can_hide_or_pause": true,
+      "overlay_permission_required_and_owner_granted": true,
+      "fallback": "MANA HOME avatar remains visible when overlay permission is unavailable."
+    },
+    "avatar_studio_location": "MANA Diary > Avatar Studio",
+    "image_generation": {
+      "create_original_images": true,
+      "preserve_same_avatar_face_hair_identity_and_voice": true,
+      "changeable": [
+        "clothing",
+        "accessories",
+        "pose",
+        "facial_expression",
+        "scene",
+        "background",
+        "lighting",
+        "seasonal_style"
+      ],
+      "generation_sources": [
+        "configured cloud image-generation provider",
+        "future compatible on-device image model when available"
+      ],
+      "never_claim_offline_image_generation_until_a_local_image_model_is_integrated": true
+    },
+    "wallpaper_autopilot": {
+      "enabled_by_owner_once": true,
+      "mana_may_choose_and_change_wallpaper_without_per_change_confirmation": true,
+      "choose_from_newly_generated_avatar_art_and_owner_approved_collection": true,
+      "change_when_mana_decides": true,
+      "optional_schedule_and_quiet_hours": true,
+      "owner_can_pause_resume_or_disable_at_any_time": true,
+      "keep_wallpaper_history_and_restore_previous": true,
+      "use_android_wallpaper_manager": true,
+      "respect_android_permission_and_platform_limits": true,
+      "never_change_lock_screen_or_home_screen_scope_without_the_owner_selected_setting": true,
+      "no_repeated_confirmation_after_autopilot_is_enabled": true
+    },
+    "gallery_export": "Save generated images to shared gallery only through an explicit save/export action or a user-enabled save rule."
+  },
+  "original_concept_modules": [
+    {
+      "id": "mana.lock-screen",
+      "name": "MANA lock screen experience, owner-approved shortcuts and avatar presence",
+      "status": "architecture"
+    },
+    {
+      "id": "mana.notifications",
+      "name": "MANA notification center, summaries and user-controlled notification organization",
+      "status": "architecture"
+    },
+    {
+      "id": "mana.appmanager",
+      "name": "Installed-app launcher, app discovery and supported app handoff; no duplicate stock apps",
+      "status": "partial"
+    },
+    {
+      "id": "mana.filemanager",
+      "name": "MANA file and document workspace, secure storage and quarantine",
+      "status": "prototype"
+    },
+    {
+      "id": "mana.permissionshub",
+      "name": "Single permissions center for runtime permissions and special Android access pages",
+      "status": "partial"
+    },
+    {
+      "id": "mana.controlcenter",
+      "name": "MANA quick controls and device settings handoff",
+      "status": "partial"
+    },
+    {
+      "id": "mana.wallpaperautopilot",
+      "name": "Autonomous avatar wallpaper generation, selection and automatic wallpaper rotation",
+      "status": "architecture"
+    },
+    {
+      "id": "mana.avatarpresence",
+      "name": "Persistent floating on-screen MANA avatar with movable overlay and conversation entry",
+      "status": "prototype"
+    },
+    {
+      "id": "mana.voiceassistant",
+      "name": "System assistant entry point, voice interaction, speech input/output and supported assistant role",
+      "status": "partial"
+    },
+    {
+      "id": "mana.systemadaptation",
+      "name": "Device-aware MANA adaptation, capability detection and compatibility report",
+      "status": "prototype"
+    },
+    {
+      "id": "mana.recoveryrestore",
+      "name": "Safe recovery handoff, encrypted state backup/restore and rollback planning",
+      "status": "blocked"
+    },
+    {
+      "id": "mana.diary-avatarstudio",
+      "name": "Diary-integrated Avatar Studio and personal visual archive",
+      "status": "architecture"
+    }
+  ],
+  "permissions_hub": {
+    "single_entry_point": true,
+    "ordinary_runtime_permissions": [
+      "camera",
+      "microphone",
+      "contacts",
+      "phone",
+      "notifications",
+      "nearby_devices_bluetooth",
+      "media_and_photos"
+    ],
+    "special_access_flows": [
+      "display_over_other_apps",
+      "modify_system_settings",
+      "usage_access",
+      "do_not_disturb_policy",
+      "exact_alarms",
+      "battery_optimization_exemption",
+      "assistant_role",
+      "call_screening_role",
+      "default_dialer_role",
+      "home_launcher_role"
+    ],
+    "android_system_confirmation_required": true,
+    "never_claim_permissions_can_be_granted_silently": true,
+    "owner_can_revoke_permissions": true,
+    "request_only_when_feature_needs_them": true
   }
 }
