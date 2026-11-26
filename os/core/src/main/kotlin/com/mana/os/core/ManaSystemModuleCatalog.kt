@@ -122,8 +122,7 @@ object ManaSystemModuleCatalog {
         SystemModuleDescriptor("mana.messaging", "com.mana.messaging", setOf("platform.security", "mana.contacts"),
             ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "official messaging APIs and Android share intents; no private database access"),
         SystemModuleDescriptor("mana.lifecontrolcenter", "com.mana.lifecontrolcenter", setOf("mana.brain", "mana.owneridentity", "mana.sleep", "mana.camera", "mana.messaging", "mana.gameintelligence", "mana.calltelephony"),
-            ModuleCriticality.REQUIRED, ModuleFailurePolicy.ENTER_DEGRADED, "owner-facing app-level capability hub; platform roles and permissions remain user controlled")
-,
+            ModuleCriticality.REQUIRED, ModuleFailurePolicy.ENTER_DEGRADED, "owner-facing app-level capability hub; platform roles and permissions remain user controlled"),
         SystemModuleDescriptor("mana.deviceintelligence", "com.mana.deviceintelligence", setOf("platform.android16", "platform.hardware", "platform.storage", "mana.updater", "mana.developercenter"),
             ModuleCriticality.REQUIRED, ModuleFailurePolicy.ENTER_DEGRADED, "device inventory and generated device-specific ROM port blueprint")
     )
