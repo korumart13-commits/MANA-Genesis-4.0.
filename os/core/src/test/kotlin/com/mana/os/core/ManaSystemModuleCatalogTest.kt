@@ -14,6 +14,10 @@ class ManaSystemModuleCatalogTest {
     @Test fun dependencyOrderPlacesFoundationsBeforeFeatures() {
         val order = ManaSystemModuleCatalog.dependencyOrder()
         assertTrue(order.indexOf("platform.kernel") < order.indexOf("platform.hardware"))
+        assertTrue(order.indexOf("platform.hardware") < order.indexOf("platform.android16"))
+        assertTrue(order.indexOf("mana.localruntime") < order.indexOf("mana.brain"))
+        assertTrue(order.indexOf("mana.brain") < order.indexOf("mana.systemcore"))
+        assertTrue(order.indexOf("mana.systemcore") < order.indexOf("mana.systemui"))
         assertTrue(order.indexOf("platform.security") < order.indexOf("mana.brain"))
         assertTrue(order.indexOf("mana.brain") < order.indexOf("mana.avatar"))
         assertTrue(order.indexOf("mana.systemui") < order.indexOf("mana.launcher"))
@@ -42,7 +46,8 @@ class ManaSystemModuleCatalogTest {
             "mana.launcher", "mana.systemui", "mana.settings", "mana.controlcenter",
             "mana.updater", "mana.recovery", "mana.localnode",
             "mana.deviceecosystem", "mana.developercenter", "mana.autodev", "mana.kernellab",
-            "mana.finance", "mana.lifestudio", "mana.microuniverse", "platform.kernel"
+            "mana.finance", "mana.lifestudio", "mana.microuniverse", "platform.kernel",
+            "platform.android16", "mana.systemcore", "mana.localruntime", "mana.stockappbridge"
         )
         assertTrue(ids.containsAll(required), "Missing owner-requested modules: ${required - ids}")
     }
