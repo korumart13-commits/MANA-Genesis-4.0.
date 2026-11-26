@@ -62,3 +62,17 @@ Soong `java_test_host` target remains available for execution in a full AOSP tre
 ## Request policy hardening
 
 The Binder request policy now also enforces a 32,768-character prompt ceiling, rejects a cloud-provider selection on local-only requests, and validates explicit provider names against the supported set (OpenAI, Anthropic, Google/Gemini, xAI/Grok, Yandex and VK). The Binder service passes the requested provider through the policy validator before queueing work. Host tests cover oversized prompts, unknown providers, provider selection on local-only requests, and accepted provider aliases.
+
+
+## Cross-process engine bridge implemented in source
+
+- Added IManaEngineBackend and its callback to the shared AIDL interface module.
+- Added ManaEngineBridgeService to the Gradle Android application. It exposes the existing app-process engine over Binder, checks the signature permission again at each Binder entry point, validates prompt size/provider/cloud policy, and returns asynchronous results.
+- The platform ManaBrainService now binds explicitly to com.mana.launcher/.ManaEngineBridgeService, negotiates protocol version 1, forwards validated requests and returns engine results/errors to the original system client.
+- Added a reference-counted process owner so the foreground app service and remote bridge share exactly one local model, Brain, encrypted memory and Microworld runtime. Releasing one service no longer shuts down resources still held by the other.
+- Added an explicit memory-query field and passed the independent personal-memory/cloud-export consent through to the existing core request policy.
+- The Gradle app compiles the shared AIDL source directory; CI now checks the bridge contract and ownership boundaries.
+
+## Bridge integration constraints — not yet a working device integration
+
+The bridge implementation is source-complete but not yet verified by an Android build after these changes or by Soong/device tests. The Gradle application must be packaged into the AOSP product as package com.mana.launcher and signed with the same platform certificate as ManaBrainService; the current standalone debug APK does not satisfy the signature permission. The existing Soong ManaLauncher product module is a separate minimal Java home-app stub and does not yet package the Gradle Kotlin engine or ManaEngineBridgeService. The current product therefore cannot resolve the bridge endpoint until that packaging/signing integration is completed. Until then the platform service reports a disconnected/unavailable backend and does not invent output.
