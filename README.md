@@ -9,6 +9,10 @@ MANA Genesis 4.0 is being developed as an Android 16 AOSP-derived operating syst
 - Build the MANA system layer into the OS: System UI, launcher, settings, avatar, local-first MANA Brain and system services.
 - Preserve the stock boot chain until device-specific sources, recovery and signing are verified.
 
+## Core architecture
+
+The requested Shogun MANA brain, MANA Hydra capability orchestration and MANA Engine integration plan are documented in [docs/SHOGUN_MANA_HYDRA_MANA_ENGINE_ARCHITECTURE.md](docs/SHOGUN_MANA_HYDRA_MANA_ENGINE_ARCHITECTURE.md). Existing MANA Brain code is preserved as the initial inference-routing foundation.
+
 ## Project status
 
 This repository currently contains the project documentation, device profile, MANA Brain JVM foundation and previous application prototypes. It does **not** yet contain a complete AOSP source checkout or a validated bootable RMX5566RU ROM/kernel build.
