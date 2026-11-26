@@ -378,7 +378,7 @@ jobs:
                   "file": rel,
                   "kind": kind,
                   "size": p.stat().st_size,
-                  "sha256": hashlib.sha256(p.read_bytes()).hexdigest(),
+                  "sha256": hashlib.sha256(iter(lambda: p.open("rb").read(1024 * 1024), b"")).hexdigest(),
               })
           update = {
               "format": "MANA-Genesis-4.0-userspace-preview",
@@ -433,6 +433,15 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: MANA-Genesis-4.0-unified-source
-          path: dist/*
+          path: |
+            dist/MANA_Genesis_4.0_UNIFIED_SOURCE.zip
+            dist/MANA_Genesis_4.0_COMPLETE_BUNDLE.zip
+            dist/MANA_UPDATE_INFO.json
+            dist/MANA_UPDATE_README_RU.txt
+            dist/ROM_STATUS.txt
+            dist/BUILD_STATUS.txt
+            dist/SHA256SUMS.txt
+            dist/android-companion/app-debug.apk
+            dist/realme-update-bridge/app-debug.apk
           if-no-files-found: error
           retention-days: 30
