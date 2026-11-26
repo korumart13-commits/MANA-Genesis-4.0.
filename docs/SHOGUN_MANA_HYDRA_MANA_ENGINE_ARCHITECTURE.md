@@ -54,25 +54,11 @@ If "Geeko" refers to a different engine already developed in another branch/arch
 
 ## Selected local inference runtime
 
-**Selected runtime: Google LiteRT-LM for Android (Kotlin API).** This is the model-execution engine that runs the local LLM on the phone. It is distinct from Shogun MANA (the orchestrator) and from the project-owned MANA Engine (the integration/control layer).
+The selected architecture change is recorded in [ADR-001](ADR-001-LOCAL-INFERENCE-ENGINE.md): llama.cpp becomes the intended primary CPU-first local inference backend behind MANA Engine, while the existing LiteRT-LM Android adapter remains available during migration and as an optional secondary backend. The switch is not considered complete until the new backend builds and passes benchmarks on RMX5566RU.
 
-The current repository already contains a concrete Android integration:
-- Dependency: `com.google.ai.edge.litertlm:litertlm-android:0.16.1` in `launcher/app/build.gradle.kts`.
-- Runtime adapter: `launcher/app/src/main/java/com/mana/launcher/LocalModelRuntime.kt`.
-- The adapter creates LiteRT-LM `Engine` and `Conversation`, streams generated messages, attempts GPU first and falls back to CPU, and owns lifecycle on a dedicated background thread.
-- `ManaBrainBridge.kt` routes local inference through this adapter before considering any permitted cloud provider.
+llama.cpp is selected for its portable Android arm64-v8a NDK path, GGUF model ecosystem, runtime CPU-kernel selection and optional Arm KleidiAI acceleration. For RMX5566RU, CPU is the required baseline; Adreno 610 GPU acceleration remains experimental and Qualcomm QNN/NPU is not assumed. Begin device evaluation with quantized 1B–3B-class models and choose the default only after RAM, speed, heat and battery measurements.
 
-This means LiteRT-LM is not merely a proposal in a setup note: the Android prototype has a real adapter in source. However, source presence does not prove a successful build, successful model load, stable GPU operation, or acceptable speed on RMX5566RU. Those must be tested on the target device.
-
-### RMX5566RU backend policy
-
-The verified target is Qualcomm SM6225 / Adreno 610. Use CPU as the guaranteed compatibility baseline. Keep GPU as an optional acceleration attempt and automatically fall back to CPU if initialization or inference fails. Do not assume Qualcomm NPU support: no compatible NPU delegate or target-specific model compilation has been verified for this phone.
-
-A second runtime such as llama.cpp may be evaluated as an optional adapter for GGUF model compatibility, but it is not the selected primary runtime. Its published OpenCL Android verification currently names newer Snapdragon/Adreno devices; its documentation warns that phone-class Adreno 6xx devices may have outdated drivers/compilers. Therefore do not promise Adreno 610 GPU acceleration from llama.cpp without a device test.
-
-### Model and release pinning
-
-Keep model weights separate from the OS source and install them only through an explicit owner-controlled model manager. Pin runtime and model versions in the build, verify publisher checksums, record model license/terms, and run memory, latency, thermal and battery benchmarks before selecting a default model. Do not use a floating `latest.release` dependency for a reproducible firmware build.
+LiteRT-LM remains in the current Android prototype at `launcher/app/src/main/java/com/mana/launcher/LocalModelRuntime.kt`. It must not be deleted until the llama.cpp backend passes parity and device tests. Neither runtime implements phone features by itself: Shogun plans, Hydra invokes permission-bounded tools, and MANA Engine routes model inference and tool execution.
 
 ## Inference and provider policy
 
