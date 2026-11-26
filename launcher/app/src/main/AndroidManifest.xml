@@ -142,6 +142,7 @@
             android:label="MANA AutoDev" />
         <activity android:name=".ManaSystemAdaptationActivity" android:exported="false" android:label="Адаптация MANA к системе телефона" />
         <activity android:name=".ManaLifeControlCenterActivity" android:exported="false" android:label="MANA Control Center" />
+        <activity android:name=".ManaDeviceIntelligenceActivity" android:exported="false" android:label="MANA Device Intelligence" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -157,5 +158,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/mana_file_paths" />
+        </provider>
     </application>
 </manifest>
