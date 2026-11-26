@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <permission android:name="com.mana.shell.permission.BIND_MANA_SYSTEM" android:protectionLevel="signature" />
     <uses-feature android:name="android.software.home_screen" android:required="false" />
     <queries>
         <intent>
@@ -16,6 +17,8 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+        <activity android:name="com.mana.launcher.ManaLockScreenPreviewActivity" android:exported="false" android:label="MANA Lock Screen Preview" />
+        <activity android:name="com.mana.controlcenter.ManaShadeActivity" android:exported="false" android:label="MANA Shade Preview" />
         <activity android:name="com.mana.settings.ManaSettingsActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -28,6 +31,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service android:name="com.mana.shell.ManaSystemBridgeService" android:exported="true" android:permission="com.mana.shell.permission.BIND_MANA_SYSTEM" />
         <service android:name="com.mana.controlcenter.ManaControlCenterTileService"
             android:exported="true" android:icon="@android:drawable/ic_menu_manage"
             android:label="MANA" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
