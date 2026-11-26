@@ -133,6 +133,12 @@ jobs:
             echo "Unexpected privileged or block-writing command in read-only audit script."
             exit 1
           fi
+      - name: Validate pinned RE645F OEM source acquisition and port gates
+        run: |
+          bash -n device/realme/RE645F/fetch_oem_candidates.sh
+          bash -n device/realme/RE645F/report_port_gates.sh
+          python3 -m json.tool device/realme/RE645F/oem-source-lock.json >/dev/null
+          bash device/realme/RE645F/report_port_gates.sh
       - name: Validate product package declarations and manifests
         run: |
           python3 - <<'PY'
