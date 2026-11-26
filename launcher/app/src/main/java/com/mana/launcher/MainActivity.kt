@@ -147,10 +147,13 @@ class MainActivity : Activity() {
         window.decorView.setBackgroundColor(bg)
         contactIntelligence = ManaContactIntelligence(this)
         modelCatalog = runCatching { ManaModelCatalog(this) }.getOrNull()
-        localRuntime = LocalModelRuntime(File(cacheDir, "mana-litert-cache"))
+        val existingEngineRuntime = ManaEngineProcessOwner.engineRuntime()
+        localRuntime = existingEngineRuntime?.let { ManaEngineProcessOwner.localModelRuntime() }
+            ?: LocalModelRuntime(File(cacheDir, "mana-litert-cache"))
         cloudGateway = ManaCloudGateway(this, ManaAndroidKeyProvider())
         yandexProvider = ManaYandexAiStudioProvider(this)
-        manaBrain = ManaBrainBridge(localRuntime, listOf(cloudGateway, yandexProvider))
+        manaBrain = existingEngineRuntime?.let { ManaEngineProcessOwner.brainBridge() }
+            ?: ManaBrainBridge(localRuntime, listOf(cloudGateway, yandexProvider))
         diaryService = try { ManaDiaryService(EncryptedFileManaDiaryStore(File(filesDir, "mana/diary.bin"), ManaAndroidKeyProvider())) } catch (error: Exception) {
             showMessage("Дневник пока недоступен: ${error.message}")
             null
@@ -165,7 +168,7 @@ class MainActivity : Activity() {
             showMessage("Планировщик пока недоступен: ${error.message}")
             null
         }
-        memoryService = try {
+        memoryService = ManaEngineProcessOwner.memoryService() ?: try {
             ManaMemoryService(
                 EncryptedFileManaMemoryStore(
                     EncryptedFileManaDiaryStore(File(filesDir, "mana/memory.bin"), ManaAndroidKeyProvider(), "mana.memory.v1")
@@ -199,7 +202,7 @@ class MainActivity : Activity() {
             showMessage("Хранилище будущих обновлений недоступно: " + error.message)
             null
         }
-        manaEngineRuntime = memoryService?.let { memory ->
+        manaEngineRuntime = existingEngineRuntime ?: memoryService?.let { memory ->
             runCatching {
                 ManaEngineAndroidRuntime(this, manaBrain, memory, ManaAndroidKeyProvider()).also { engine ->
                     val health = engine.start()
@@ -211,9 +214,10 @@ class MainActivity : Activity() {
                 showMessage("Центральный MANA Engine пока недоступен: ${error.message}")
             }.getOrNull()
         }
-        if (manaEngineRuntime != null) {
+        if (manaEngineRuntime != null && !ManaEngineProcessOwner.isInstalled()) {
             try {
-                ManaEngineProcessOwner.install(manaEngineRuntime!!, manaBrain, localRuntime)
+                val memory = checkNotNull(memoryService) { "MANA memory service is unavailable" }
+                ManaEngineProcessOwner.install(manaEngineRuntime!!, manaBrain, localRuntime, memory)
                 val engineServiceIntent = Intent(this, ManaEngineService::class.java)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     startForegroundService(engineServiceIntent)
