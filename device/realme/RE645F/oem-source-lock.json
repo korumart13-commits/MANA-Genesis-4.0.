@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "target": {
+    "product": "realme C85 4G",
+    "model": "RMX5566RU",
+    "device": "RE645F",
+    "android": "16",
+    "api": 36,
+    "soc": "Qualcomm SM6225 / Snapdragon 685",
+    "platform": "bengal",
+    "runtime_kernel": "5.15.197-android13-8-o-01074-gdfa4acfa411e",
+    "bootloader": "locked",
+    "avb": "green",
+    "boot_scheme": "A/B",
+    "dynamic_partitions": true
+  },
+  "sources": [
+    {
+      "name": "realme-c85-c85pro-androidb-kernel-source",
+      "url": "https://github.com/realme-kernel-opensource/realme_C85_C85pro-AndroidB-kernel-source.git",
+      "revision": "52ea05ec6849f7c3dd9a65864b5a52038deb9f9d",
+      "path": "kernel/realme/c85-family-kernel",
+      "role": "OEM Bengal kernel source candidate",
+      "compatibility": "candidate_only",
+      "known_kernel_release": "5.15.180",
+      "target_kernel_release": "5.15.197",
+      "warning": "Different RMX release and kernel release mismatch. Do not build/flash for RMX5566RU without exact-match verification."
+    },
+    {
+      "name": "realme-c85-c85pro-androidb-vendor-source",
+      "url": "https://github.com/realme-kernel-opensource/realme_C85_C85pro-AndroidB-vendor-source.git",
+      "revision": "2ab37fb9ceda42cd8679dec8585d4ff5209c4e90",
+      "path": "vendor/realme/c85-family-kernel-platform",
+      "role": "Oplus Qualcomm Bengal/Moscow device-tree overlay source candidate",
+      "compatibility": "candidate_only",
+      "project_id_candidate": 25697,
+      "warning": "Overlay project ID is a useful lead, not proof of exact panel/sensor/variant compatibility."
+    }
+  ],
+  "build_policy": {
+    "allow_boot_image": false,
+    "allow_dtbo_image": false,
+    "allow_vendor_boot_image": false,
+    "allow_vbmeta_image": false,
+    "allow_super_image": false,
+    "allow_ota": false,
+    "reason": "No verified RMX5566RU device tree, exact kernel ABI/config, matching vendor blobs, partition metadata, AVB/recovery/restore validation."
+  }
+}
