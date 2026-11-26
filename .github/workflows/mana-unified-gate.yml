@@ -354,14 +354,17 @@ jobs:
           cat > dist/BUILD_STATUS.txt <<'EOF'
           MANA Genesis 4.0 — release contents
           - UNIFIED_SOURCE.zip: all tracked project source, docs and workflows (sensitive build-local files excluded).
+          - UPDATE_PACKAGE.zip: MANA companion APK, Realme updater handoff APK, full offline Gemma 4 E2B weights and Apache-2.0 license text.
           - android-companion/app-debug.apk: debug Android companion; not a firmware installer.
           - realme-update-bridge/app-debug.apk: permission-free handoff to the OEM system-update settings; it does not install a MANA ROM or bypass OEM signature checks.
           - ROM_STATUS.txt: explicit device/ROM readiness limitation.
-          - SHA256SUMS.txt: checksums for the source archive and APK.
+          - SHA256SUMS.txt: checksums for source, APKs, model, update package and complete bundle.
           AOSP source modules and JVM/Android prototypes are not equivalent to a bootable device ROM.
           Device-specific RMX5566RU validation is still required.
           EOF
           sha256sum dist/MANA_Genesis_4.0_UNIFIED_SOURCE.zip > dist/SHA256SUMS.txt
+          sha256sum dist/MANA_UPDATE_INFO.json >> dist/SHA256SUMS.txt
+          sha256sum dist/MANA_UPDATE_README_RU.txt >> dist/SHA256SUMS.txt
           sha256sum dist/android-companion/app-debug.apk >> dist/SHA256SUMS.txt
           sha256sum dist/realme-update-bridge/app-debug.apk >> dist/SHA256SUMS.txt
           python3 - <<'PY'
