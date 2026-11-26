@@ -2,7 +2,7 @@ name: MANA Genesis 4.0 — single offline APK (chunked Gemma)
 
 on:
   push:
-    branches: ["mana-genesis-4-rmx5566-rom-port"]
+    branches: ["mana-genesis-4-rmx5566-rom-port", "mana-genesis-4-rmx5566-firmware-only"]
     paths:
       - ".github/workflows/mana-full-offline-apk.yml"
       - "launcher/app/build.gradle.kts"
