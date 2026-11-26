@@ -21,6 +21,24 @@ class ManaEngineRuntimeTest {
         }
     }
 
+    private class MemoryStore : ManaMemoryStore {
+        private var values = emptyList<ManaMemoryItem>()
+        override fun readAll() = values
+        override fun writeAll(items: List<ManaMemoryItem>) { values = items.toList() }
+    }
+
+    private class WorldStore : MicroworldStore {
+        private var value = MicroworldSnapshot()
+        override fun load() = value
+        override fun save(snapshot: MicroworldSnapshot) { value = snapshot }
+    }
+
+    private data class Fixture(
+        val engine: ManaEngineRuntime,
+        val memory: ManaMemoryService,
+        val worldStore: WorldStore
+    )
+
     private fun <T> runSuspend(block: suspend () -> T): T {
         var result: Result<T>? = null
         block.startCoroutine(object : Continuation<T> {
@@ -30,63 +48,82 @@ class ManaEngineRuntimeTest {
         return result?.getOrThrow() ?: error("Suspending test operation did not complete synchronously")
     }
 
-    private fun runtime(reasoner: FakeReasoner): ManaEngineRuntime {
+    private fun fixture(reasoner: FakeReasoner): Fixture {
         val system = ManaSystemCore(DeviceFacts("RMX5566RU", "bengal", 36, "5.15.197", "arm64-v8a"))
         system.register(object : ManaSystemModule {
             override val id = "engine.memory"
             override fun start(context: ManaSystemContext) { context.services["memory"] = true }
         })
-        val memory = ManaMemoryService(object : ManaMemoryStore {
-            private var values = emptyList<ManaMemoryItem>()
-            override fun readAll() = values
-            override fun writeAll(items: List<ManaMemoryItem>) { values = items }
-        })
-        val world = ManaMicroworldService(InMemoryMicroworldStore())
+        val memory = ManaMemoryService(MemoryStore())
+        val worldStore = WorldStore()
+        val world = ManaMicroworldService(worldStore)
         val security = ManaSecurityService()
         val shogun = ManaShogun(ManaHydraRegistry(security))
-        return ManaEngineRuntime(
+        val engine = ManaEngineRuntime(
             system, reasoner, memory, world, shogun,
             Clock.fixed(Instant.parse("2026-11-26T20:00:00Z"), ZoneOffset.UTC)
         )
+        return Fixture(engine, memory, worldStore)
     }
 
     @Test fun startsSystemAndExposesReadyHealth() {
-        val engine = runtime(FakeReasoner())
-        val health = engine.start()
+        val fixture = fixture(FakeReasoner())
+        val health = fixture.engine.start()
         assertEquals(ManaEngineState.READY, health.state)
         assertEquals(BootPhase.READY, health.systemPhase)
     }
 
-    @Test fun personalMemoryIsNotIncludedUnlessRequestOptsIn() {
+    @Test fun personalMemoryRequiresRequestOptIn() {
         val reasoner = FakeReasoner()
-        val engine = runtime(reasoner)
-        engine.start()
-        val result = runSuspend { engine.think(ManaEngineRequest("Что я предпочитаю?")) }
-        assertEquals(0, result.memoryItemsUsed)
-        assertFalse(reasoner.lastRequest!!.prompt.contains("секретный"))
+        val fixture = fixture(reasoner)
+        fixture.memory.remember("preference", "люблю синий цвет", DataSensitivity.PERSONAL)
+        fixture.memory.remember("private", "секретный пароль не хранить в промпте", DataSensitivity.SECRET)
+        fixture.engine.start()
+
+        val withoutOptIn = runSuspend { fixture.engine.think(ManaEngineRequest("Что я предпочитаю?")) }
+        assertEquals(0, withoutOptIn.memoryItemsUsed)
+        assertFalse(reasoner.lastRequest!!.prompt.contains("люблю синий цвет"))
+
+        val withOptIn = runSuspend {
+            fixture.engine.think(ManaEngineRequest("Что я предпочитаю?", includePersonalMemory = true))
+        }
+        assertEquals(1, withOptIn.memoryItemsUsed)
+        assertTrue(reasoner.lastRequest!!.prompt.contains("люблю синий цвет"))
+        assertFalse(reasoner.lastRequest!!.prompt.contains("секретный пароль"))
+    }
+
+    @Test fun personalMemoryDoesNotReachCloudWithoutSeparateConsent() {
+        val reasoner = FakeReasoner()
+        val fixture = fixture(reasoner)
+        fixture.memory.remember("preference", "личное предпочтение", DataSensitivity.PERSONAL)
+        fixture.engine.start()
+        runSuspend {
+            fixture.engine.think(ManaEngineRequest(
+                "вопрос", allowCloud = true, includePersonalMemory = true
+            ))
+        }
+        assertFalse(reasoner.lastRequest!!.prompt.contains("личное предпочтение"))
+        assertTrue(reasoner.lastRequest!!.allowCloud)
     }
 
     @Test fun sensitiveRequestsCannotUseCloudEvenWhenCallerRequestsIt() {
         val reasoner = FakeReasoner()
-        val engine = runtime(reasoner)
-        engine.start()
+        val fixture = fixture(reasoner)
+        fixture.engine.start()
         runSuspend {
-            engine.think(ManaEngineRequest("личный вопрос", allowCloud = true, sensitive = true))
+            fixture.engine.think(ManaEngineRequest("личный вопрос", allowCloud = true, sensitive = true))
         }
         assertFalse(reasoner.lastRequest!!.allowCloud)
         assertTrue(reasoner.lastRequest!!.sensitive)
     }
 
-    @Test fun stopsSystemAndPausesMicroworld() {
-        val engine = runtime(FakeReasoner())
-        engine.start()
-        val stopped = engine.stop()
+    @Test fun stopsSystemAndPersistsMicroworldPause() {
+        val fixture = fixture(FakeReasoner())
+        fixture.engine.start()
+        val stopped = fixture.engine.stop()
         assertEquals(ManaEngineState.STOPPED, stopped.state)
         assertEquals(BootPhase.STOPPED, stopped.systemPhase)
-        assertEquals(MicroworldRunState.PAUSED, engine.health().let { 
-            // Health reports revision/state separately; paused state is checked through lifecycle below.
-            if (it.state == ManaEngineState.STOPPED) MicroworldRunState.PAUSED else MicroworldRunState.ACTIVE
-        })
+        assertEquals(MicroworldRunState.PAUSED, fixture.worldStore.load().runState)
     }
 
     @Test fun failedSystemBootLeavesEngineDegraded() {
@@ -95,11 +132,9 @@ class ManaEngineRuntimeTest {
             override val id = "engine.fail"
             override fun start(context: ManaSystemContext) { error("synthetic boot failure") }
         })
-        val memory = ManaMemoryService(object : ManaMemoryStore {
-            override fun readAll() = emptyList<ManaMemoryItem>()
-            override fun writeAll(items: List<ManaMemoryItem>) {}
-        })
-        val world = ManaMicroworldService(InMemoryMicroworldStore())
+        val memory = ManaMemoryService(MemoryStore())
+        val worldStore = WorldStore()
+        val world = ManaMicroworldService(worldStore)
         val engine = ManaEngineRuntime(system, FakeReasoner(), memory, world, ManaShogun(ManaHydraRegistry(ManaSecurityService())))
         val health = engine.start()
         assertEquals(ManaEngineState.DEGRADED, health.state)
