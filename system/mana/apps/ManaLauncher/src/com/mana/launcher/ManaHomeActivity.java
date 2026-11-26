@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.GridLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -168,10 +169,16 @@ public final class ManaHomeActivity extends Activity {
         tile.setContentDescription(app.label);
         tile.setOnClickListener(v -> launch(app.packageName));
 
-        TextView glyph = text(firstGlyph(app.label), 23, BLUE, true);
-        glyph.setGravity(Gravity.CENTER);
-        tile.addView(glyph, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(38)));
+        ImageView icon = new ImageView(this);
+        icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        try {
+            icon.setImageDrawable(getPackageManager().getApplicationIcon(app.packageName));
+        } catch (PackageManager.NameNotFoundException missing) {
+            icon.setImageResource(android.R.drawable.sym_def_app_icon);
+        }
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(42), dp(42));
+        iconParams.gravity = Gravity.CENTER;
+        tile.addView(icon, iconParams);
 
         TextView label = text(app.label, 11, TEXT, false);
         label.setGravity(Gravity.CENTER);
