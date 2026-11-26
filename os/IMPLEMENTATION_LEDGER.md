@@ -153,3 +153,14 @@ MANA now exposes an owner-invoked **Open Master Games** action in the Game Intel
 See also:
 - `os/MANA_EXPERIENCE_ARCHITECTURE.md`
 - `os/BOOT_CHAIN_AND_EFI_REFERENCE_POLICY.md`
+
+
+## MANA OS firmware-only implementation increment — 2026-11-26
+
+- Added `os/MANA_OS_FIRMWARE_ONLY_IMPLEMENTATION_RU.md` as the authoritative firmware-only scope for the RMX5566RU target. It explicitly separates the firmware from the later standalone MANA AI app.
+- Added the MANA dark-navy/cyan color resources and app themes to the Soong `ManaLauncher` and `ManaSettings` source modules.
+- Updated the launcher application label to **MANA OS** and settings label to **MANA OS Settings**.
+- Explicitly wired each app's `res` directory in its Soong `Android.bp`.
+- Added `.github/workflows/mana-os-branding-validation.yml` to parse the XML and verify the MANA OS labels/theme references.
+- These are real source changes in the repository. They are **not yet AOSP/Soong-built** and do not yet replace Realme SystemUI, lock screen, framework settings, boot animation or product identity. The validation workflow file is committed; a run for this workflow has not yet been observed.
+- No RMX5566RU image, OTA or flashable package has been generated. The exact OEM/device bring-up blockers listed above remain in force.
