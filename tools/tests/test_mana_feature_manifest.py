@@ -29,6 +29,10 @@ class FeatureManifestTests(unittest.TestCase):
         self.assertIn("Intent.ACTION_SEND", source)
         self.assertIn("createConfirmDeviceCredentialIntent", source)
         self.assertIn("ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS", source)
+        sleep = (ROOT.parent / "launcher/app/src/main/java/com/mana/launcher/ManaSleepSchedule.kt").read_text()
+        self.assertIn("setExactAndAllowWhileIdle", sleep)
+        self.assertIn("setAndAllowWhileIdle", sleep)
+        self.assertIn("ManaSleepScheduler.schedule(context)", (ROOT.parent / "launcher/app/src/main/java/com/mana/launcher/ManaBootLifecycle.kt").read_text())
         self.assertNotIn("Runtime.exec", source)
         self.assertNotIn("su -c", source)
 
