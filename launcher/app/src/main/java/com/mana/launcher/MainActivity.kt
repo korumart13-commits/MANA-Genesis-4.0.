@@ -104,6 +104,7 @@ class MainActivity : Activity() {
             if (!binder.isInitialized()) {
                 runCatching { unbindService(this) }
                 manaEngineBound = false
+                reconnectController?.onFailure()
                 showEngineUnavailableScreen("MANA Engine не смог запуститься. Доступна диагностика; ядро не будет имитировать готовность.")
                 return
             }
