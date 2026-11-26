@@ -73,6 +73,49 @@ class ManaModelCatalog(context: Context) {
         return id
     }
 
+    /** Copies the E4B model embedded in the full APK into app-specific storage, then verifies it. */
+    fun installBundledGemma4E4B(licenseAccepted: Boolean): File {
+        require(licenseAccepted) { "Owner must review the Gemma terms before importing this bundled model." }
+        prefs.edit().putBoolean(KEY_E4B_LICENSE_ACCEPTED, true).apply()
+        val target = File(directory, E4B_MODEL_FILE)
+        if (target.isFile && target.length() == E4B_MODEL_SIZE &&
+            sha256(target).equals(E4B_SHA256, ignoreCase = true)) {
+            prefs.edit().putString(KEY_E4B_ACTIVE_PATH, target.absolutePath).apply()
+            return target
+        }
+        require(directory.usableSpace >= E4B_MODEL_SIZE + 500_000_000L) {
+            "Для распаковки встроенной Gemma 4 E4B требуется около 4,16 ГБ свободного места."
+        }
+        val temporary = File(directory, "$E4B_MODEL_FILE.importing")
+        if (temporary.exists()) require(temporary.delete()) { "Не удалось очистить незавершённый импорт модели." }
+        try {
+            app.assets.open(E4B_MODEL_FILE).buffered().use { input ->
+                java.io.FileOutputStream(temporary).buffered().use { output ->
+                    val buffer = ByteArray(1024 * 1024)
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        output.write(buffer, 0, count)
+                    }
+                    output.flush()
+                }
+            }
+            require(temporary.isFile && temporary.length() == E4B_MODEL_SIZE) {
+                "Размер встроенной Gemma 4 E4B не совпал с каталогом."
+            }
+            require(sha256(temporary).equals(E4B_SHA256, ignoreCase = true)) {
+                "SHA-256 встроенной Gemma 4 E4B не совпал. Импорт отменён."
+            }
+            if (target.exists()) require(target.delete()) { "Не удалось заменить предыдущую модель E4B." }
+            require(temporary.renameTo(target)) { "Не удалось сохранить проверенную модель E4B." }
+            prefs.edit().putString(KEY_E4B_ACTIVE_PATH, target.absolutePath).apply()
+            return target
+        } catch (error: Exception) {
+            temporary.delete()
+            throw error
+        }
+    }
+
     /** Returns null while the E4B download is still running; verifies exact size and SHA-256. */
     fun verifyCompletedGemma4E4BDownload(): File? {
         if (!prefs.getBoolean(KEY_E4B_LICENSE_ACCEPTED, false)) return null
