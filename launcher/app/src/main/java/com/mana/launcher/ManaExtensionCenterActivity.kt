@@ -18,7 +18,7 @@ import android.widget.TextView
  * code or grant Android permissions by itself.
  */
 class ManaExtensionCenterActivity : Activity() {
-    private val background = Color.rgb(7, 20, 38)
+    private val backgroundColor = Color.rgb(7, 20, 38)
     private val surface = Color.rgb(16, 43, 80)
     private val accent = Color.rgb(84, 200, 245)
     private val primaryTextColor = Color.rgb(234, 244, 255)
@@ -63,7 +63,7 @@ class ManaExtensionCenterActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(18), dp(18), dp(18), dp(24))
-            setBackgroundColor(background)
+            setBackgroundColor(backgroundColor)
         }
         root.addView(TextView(this).apply {
             text = "MANA · ЦЕНТР МОДУЛЕЙ"
