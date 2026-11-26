@@ -60,6 +60,11 @@ class ManaUpdateManifestTests(unittest.TestCase):
         with self.assertRaises(ManifestError):
             validate_manifest(self.manifest, self.public, "different-build")
 
+    def test_requires_strictly_newer_mana_channel_version(self):
+        validate_manifest(self.manifest, self.public, installed_version_code=0)
+        with self.assertRaises(ManifestError):
+            validate_manifest(self.manifest, self.public, installed_version_code=1)
+
     def test_rejects_modified_manifest(self):
         bad = dict(self.manifest)
         bad["version_code"] = 2
