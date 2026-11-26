@@ -51,7 +51,12 @@ public final class ManaBrainService extends Service {
             if (callback == null) {
                 return;
             }
-            final String validationError = validate(request);
+            final String validationError = ManaBrainRequestPolicy.validate(
+                    request.text,
+                    request.sensitive,
+                    request.allowCloud,
+                    request.includePersonalMemory,
+                    request.allowPersonalMemoryToCloud);
             if (validationError != null) {
                 callback.onError("POLICY_DENIED", validationError);
                 return;
@@ -69,20 +74,6 @@ public final class ManaBrainService extends Service {
             });
         }
     };
-
-    private static String validate(ManaBrainRequest request) {
-        if (request == null || request.text == null || request.text.trim().isEmpty()) {
-            return "A non-empty prompt is required.";
-        }
-        if (request.sensitive && request.allowCloud) {
-            return "Sensitive requests must not be sent to a cloud provider.";
-        }
-        if (request.allowPersonalMemoryToCloud
-                && (!request.allowCloud || !request.includePersonalMemory)) {
-            return "Cloud memory export requires cloud and personal-memory consent.";
-        }
-        return null;
-    }
 
     private void enforceAuthorizedCaller() {
         if (checkCallingPermission(BIND_PERMISSION) != PackageManager.PERMISSION_GRANTED) {
