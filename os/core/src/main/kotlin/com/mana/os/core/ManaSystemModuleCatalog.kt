@@ -30,6 +30,8 @@ data class SystemModuleDescriptor(
  */
 object ManaSystemModuleCatalog {
     val modules: List<SystemModuleDescriptor> = listOf(
+        SystemModuleDescriptor("platform.android16", "com.mana.platform.android16", setOf("platform.hardware", "platform.security"),
+            ModuleCriticality.REQUIRED, ModuleFailurePolicy.ABORT_BOOT, "AOSP Android 16 framework and ART platform"),
         SystemModuleDescriptor("platform.kernel", "com.mana.platform.kernel", emptySet(),
             ModuleCriticality.REQUIRED, ModuleFailurePolicy.ABORT_BOOT, "device-matched Linux kernel; retain stock kernel until exact OEM source and ABI are verified"),
         SystemModuleDescriptor("platform.hardware", "com.mana.platform.hardware", setOf("platform.kernel"),
@@ -40,15 +42,19 @@ object ManaSystemModuleCatalog {
             ModuleCriticality.REQUIRED, ModuleFailurePolicy.ENTER_DEGRADED, "scoped app-private storage"),
         SystemModuleDescriptor("mana.modelmanager", "com.mana.modelmanager", setOf("platform.storage", "platform.security"),
             ModuleCriticality.REQUIRED, ModuleFailurePolicy.ENTER_DEGRADED, "local model files, integrity and license metadata"),
+        SystemModuleDescriptor("mana.localruntime", "com.mana.localruntime", setOf("mana.modelmanager", "platform.storage"),
+            ModuleCriticality.REQUIRED, ModuleFailurePolicy.ENTER_DEGRADED, "LiteRT-LM offline inference runtime and lifecycle"),
         SystemModuleDescriptor("mana.cloudgateway", "com.mana.cloudgateway", setOf("platform.security"),
             ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "OpenAI, Anthropic, Google and xAI adapters; per-provider opt-in; secrets in secure storage"),
-        SystemModuleDescriptor("mana.brain", "com.mana.brain", setOf("platform.security", "platform.storage", "mana.modelmanager", "mana.memory"),
-            ModuleCriticality.REQUIRED, ModuleFailurePolicy.ENTER_DEGRADED, "local inference; cloud opt-in only"),
+        SystemModuleDescriptor("mana.brain", "com.mana.brain", setOf("platform.security", "platform.storage", "mana.localruntime", "mana.memory"),
+            ModuleCriticality.REQUIRED, ModuleFailurePolicy.ENTER_DEGRADED, "single MANA identity; local inference first; cloud opt-in only"),
         SystemModuleDescriptor("mana.avatar", "com.mana.avatar", setOf("mana.brain"),
             ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "camera/microphone only by explicit permission"),
         SystemModuleDescriptor("mana.avatar3d", "com.mana.avatar3d", setOf("mana.avatar", "platform.storage"),
             ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "local glTF assets, overlay permission, user-controlled rendering"),
-        SystemModuleDescriptor("mana.systemui", "com.mana.systemui", setOf("platform.security", "mana.brain"),
+        SystemModuleDescriptor("mana.systemcore", "com.mana.systemcore", setOf("platform.android16", "platform.storage", "mana.brain"),
+            ModuleCriticality.REQUIRED, ModuleFailurePolicy.ENTER_DEGRADED, "MANA service lifecycle, dependency ordering, health and rollback supervisor"),
+        SystemModuleDescriptor("mana.systemui", "com.mana.systemui", setOf("platform.security", "mana.brain", "mana.systemcore"),
             ModuleCriticality.REQUIRED, ModuleFailurePolicy.ENTER_DEGRADED, "system UI Binder APIs"),
         SystemModuleDescriptor("mana.launcher", "com.mana.launcher", setOf("mana.systemui"),
             ModuleCriticality.REQUIRED, ModuleFailurePolicy.ENTER_DEGRADED, "home role and user profile"),
@@ -103,7 +109,9 @@ object ManaSystemModuleCatalog {
         SystemModuleDescriptor("mana.deviceecosystem", "com.mana.deviceecosystem", setOf("platform.security"),
             ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "explicit Bluetooth/Wi-Fi pairing and scoped device permissions"),
         SystemModuleDescriptor("mana.recovery", "com.mana.recovery", setOf("platform.security", "platform.storage", "mana.updater"),
-            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "verified recovery and rollback; device-specific boot chain only")
+            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "verified recovery and rollback; device-specific boot chain only"),
+        SystemModuleDescriptor("mana.stockappbridge", "com.mana.stockappbridge", setOf("platform.hardware", "platform.security"),
+            ModuleCriticality.REQUIRED, ModuleFailurePolicy.ENTER_DEGRADED, "preserve and launch OEM camera, phone, radio, sensor and device applications")
     )
 
     fun validate(): List<String> {
