@@ -143,7 +143,7 @@ public final class ManaBrainBinderService extends Service {
     }
 
     private void submitLocal(BrainBinderRequest request, IBrainCallback callback) {
-        ILocalInferenceService provider = localInference;
+        ILocalInferenceService provider = awaitLocalProvider();
         if (provider == null) {
             sendError(callback, request.requestId, ERROR_INFERENCE_UNAVAILABLE,
                     "MANA Genesis local inference provider is not installed or not bound.");
