@@ -30,13 +30,17 @@ The OS build pipeline will eventually build Android platform targets and MANA sy
 A local repo manifest is provided at `platform/local_manifests/mana.xml`. It pins this MANA source
 repository to a specific Git commit and places it at `vendor/mana/genesis` in the AOSP checkout.
 
-After initializing the official Android 16 AOSP manifest, copy the local manifest into the checkout:
+The local manifest must be downloaded **before** the first `repo sync`; otherwise the
+MANA project would not yet exist in the checkout. After `repo init`, run:
 
 ```sh
 mkdir -p .repo/local_manifests
-cp vendor/mana/genesis/platform/local_manifests/mana.xml .repo/local_manifests/mana.xml
+curl -fL "https://raw.githubusercontent.com/korumart13-commits/MANA-Genesis-4.0./main/platform/local_manifests/mana.xml" -o .repo/local_manifests/mana.xml
 repo sync -c -j"$(nproc)" --no-tags
 ```
+
+The downloaded manifest pins the MANA source project to an immutable commit. Do not replace its
+`revision` with a moving branch for reproducible builds.
 
 The product configuration fragment is at
 `vendor/mana/genesis/system/mana/mana_product.mk`. It must be included by a verified product
