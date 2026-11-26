@@ -2,15 +2,40 @@
 
 ## Device identity is now resolved
 
-The owner-provided runtime properties identify the target as:
+The owner-provided runtime properties and the two Settings screenshots identify the target as:
 
-- Model/product: `RMX5566RU`
+- Marketing name: `realme C85` (4G model)
+- Model/product: `RMX5566` / `RMX5566RU`
 - Device codename: `RE645F`
 - Board/platform: `bengal`
 - SoC: Qualcomm `SM6225` / Snapdragon 685 family
 - Hardware: `qcom`
 - GPU: Adreno 610
 - ABI: arm64-v8a
+
+The screenshots independently confirm the retail model, exact software build, kernel release, hardware revision, Android version, RAM configuration and storage capacity. The runtime audit remains the source of truth for the device target.
+
+### Owner-observed device profile
+
+| Field | Observed value | Evidence |
+|---|---|---|
+| Device name | realme C85 | Settings → About device |
+| Model | RMX5566 | Settings → About device |
+| Software build | RMX5566_16.0.5.1310 (EX01) | About device / Version |
+| Android release | Android 16 | Version |
+| realme UI | 7.0 | Version |
+| Firmware branch labels | Q_V1_P14, Q_V1_P14 | Version |
+| Hardware revision | RMX5566_11 | Version |
+| Kernel release | 5.15.197-android13-8-o-01074-gdfa4acfa411e | Version |
+| SoC | Qualcomm Snapdragon 685, octa-core | About device |
+| RAM | 8 GB physical + 16 GB RAM expansion | About device |
+| Internal storage | 256 GB total; 140 GB shown in use | About device |
+| Battery | 7000 mAh (typ.) | About device |
+| Display | 6.8 inch | About device |
+| Cameras | 8 MP front, 50 MP rear | About device |
+| Android security update | 1 October 2026 | Version |
+
+The 16 GB RAM expansion is virtual/assisted memory and must not be counted as physical RAM. The screenshot reports 140 GB used out of 256 GB; this is a point-in-time usage figure, not a partition map.
 
 This is the **realme C85 4G**, not the realme C85 5G. The distinction is important because the two retail names refer to different hardware platforms:
 
@@ -25,7 +50,7 @@ References:
 - realme C85 5G official specs: https://www.realme.com/th/realme-c85-5g/specs
 - Qualcomm Snapdragon 685 product brief: https://docs.qualcomm.com/doc/87-43683-1/87-43683-1_REV_C_Snapdragon_685_4G_Mobile_Platform_Product_Brief.pdf
 
-The runtime audit from the actual phone takes precedence over a retail label. Do not use C85 5G / RMX5253 / MediaTek device trees, kernels, vendor images or firmware for RMX5566RU.
+Do not use C85 5G / RMX5253 / MediaTek device trees, kernels, vendor images or firmware for RMX5566RU.
 
 ## Source discovery outcome
 
@@ -37,6 +62,20 @@ Searches were performed for `RMX5566`, `RE645F`, `moscow-b`, `SM6225 5.15.197`, 
 - A generic SoC match or a repository name containing “bengal” is not sufficient evidence of compatibility.
 
 A search returning no exact candidate is not proof that no OEM source exists. It means no candidate is approved from current evidence.
+
+## Next device-audit stage
+
+The two screenshots strengthen the identity and firmware baseline, but they do not reveal the partition layout, boot chain, VINTF declarations, vendor interface level, exact kernel config, device tree or proprietary firmware inventory. The next safe audit is a read-only Termux/ADB property and partition inventory. It must not unlock, root, modify or flash the phone.
+
+Collect, where Android permits:
+
+- `getprop` output (especially fingerprint, incremental build, product/vendor/boot properties, ABI and security patch properties).
+- `/proc/cmdline`, `/proc/version`, `/proc/partitions` and block-device symlink names.
+- `/vendor/etc/vintf/manifest.xml`, framework compatibility matrix and vendor API level, if readable.
+- `/sys/fs/selinux/enforce` and verified-boot state properties.
+- Bootloader unlock eligibility and official stock firmware/restore package availability, without changing device state.
+
+Do not upload personal identifiers, serial numbers, IMEI, Android ID, Wi-Fi identifiers, account data or tokens. Redact those fields before sharing diagnostics.
 
 ## Required artifacts to unblock device ROM work
 
@@ -50,4 +89,4 @@ A search returning no exact candidate is not proof that no OEM source exists. It
 
 ## Current decision
 
-Continue userspace MANA development, Android platform service design and build automation. Do not build or flash device-specific boot, vendor_boot, dtbo, vbmeta, recovery, super or OTA images until the exact artifacts above are verified.
+Continue userspace MANA development, Android platform service design and build automation. The next device-specific work is a read-only hardware/firmware inventory and source matching. Do not build or flash device-specific boot, vendor_boot, dtbo, vbmeta, recovery, super or OTA images until the exact artifacts above are verified.
