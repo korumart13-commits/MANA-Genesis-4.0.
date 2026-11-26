@@ -62,13 +62,14 @@ import com.mana.os.core.ManaOwnerCommandParser
 import com.mana.os.core.ManaActionProposalParser
 
 class MainActivity : Activity() {
-    private val bg = Color.rgb(4, 7, 14)
-    private val panel = Color.rgb(10, 22, 42)
-    private val panelRaised = Color.rgb(13, 32, 59)
-    private val accent = Color.rgb(52, 163, 255)
-    private val accentSoft = Color.rgb(105, 198, 255)
-    private val textColor = Color.rgb(238, 246, 255)
-    private val muted = Color.rgb(139, 163, 190)
+    // Canonical MANA Genesis 4.0 palette shared with the Android system apps.
+    private val bg = Color.rgb(7, 20, 38)             // #071426
+    private val panel = Color.rgb(16, 43, 80)          // #102B50
+    private val panelRaised = Color.rgb(23, 101, 168)   // #1765A8
+    private val accent = Color.rgb(84, 200, 245)       // #54C8F5
+    private val accentSoft = Color.rgb(145, 169, 197)  // #91A9C5
+    private val textColor = Color.rgb(234, 244, 255)   // #EAF4FF
+    private val muted = Color.rgb(145, 169, 197)        // #91A9C5
 
     private lateinit var rootFrame: FrameLayout
     private lateinit var page: LinearLayout
