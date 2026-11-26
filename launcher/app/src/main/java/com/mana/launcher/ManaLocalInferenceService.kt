@@ -15,7 +15,7 @@ import java.io.File
  * Only the installed MANA Assistant package may invoke this exported Binder endpoint.
  */
 class ManaLocalInferenceService : Service() {
-    private val runtime by lazy { LocalModelRuntime(File(cacheDir, "mana-system-litert-cache")) }
+    private val runtime by lazy { ManaLocalModelRuntimeHolder.get(this) }
     private val loadLock = Any()
     private val pendingLoads = mutableListOf<(Result<Unit>) -> Unit>()
     private var loading = false
@@ -123,7 +123,7 @@ class ManaLocalInferenceService : Service() {
     }
 
     override fun onDestroy() {
-        runtime.shutdown()
+        // The shared runtime remains alive while the companion process is active.
         super.onDestroy()
     }
 
