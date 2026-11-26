@@ -325,6 +325,18 @@ class MainActivity : Activity() {
         }
         val overlayGranted = Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(this)
         val writeSettingsGranted = Build.VERSION.SDK_INT < 23 || Settings.System.canWrite(this)
+        val usageGranted = if (Build.VERSION.SDK_INT >= 21) runCatching {
+            val appOps = getSystemService(android.app.AppOpsManager::class.java)
+            @Suppress("DEPRECATION")
+            appOps.checkOpNoThrow("android:get_usage_stats", android.os.Process.myUid(), packageName) == android.app.AppOpsManager.MODE_ALLOWED
+        }.getOrDefault(false) else false
+        val dndGranted = getSystemService(android.app.NotificationManager::class.java).isNotificationPolicyAccessGranted
+        val exactAlarmGranted = Build.VERSION.SDK_INT < 31 || getSystemService(android.app.AlarmManager::class.java).canScheduleExactAlarms()
+        val batteryExemptionGranted = Build.VERSION.SDK_INT < 23 || getSystemService(android.os.PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
+        val roles = getSystemService(RoleManager::class.java)
+        val assistantGranted = Build.VERSION.SDK_INT >= 29 && roles?.isRoleAvailable(RoleManager.ROLE_ASSISTANT) == true && roles.isRoleHeld(RoleManager.ROLE_ASSISTANT)
+        val callScreeningGranted = Build.VERSION.SDK_INT >= 29 && roles?.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING) == true && roles.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
+        val dialerGranted = Build.VERSION.SDK_INT >= 29 && roles?.isRoleAvailable(RoleManager.ROLE_DIALER) == true && roles.isRoleHeld(RoleManager.ROLE_DIALER)
 
         content.addView(label("ДОБРО ПОЖАЛОВАТЬ В MANA", 23, textColor, true))
         content.addView(label(
@@ -403,8 +415,32 @@ class MainActivity : Activity() {
                 startActivity(Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:" + packageName)))
             } else showMessage("Доступ к изменению настроек уже включён.")
         }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+        content.addView(action((if (usageGranted) "✓ " else "") + "Доступ к статистике использования приложений") {
+            openSpecialAccess(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
+        content.addView(action((if (dndGranted) "✓ " else "") + "Доступ к режиму «Не беспокоить»") {
+            openSpecialAccess(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+        content.addView(action((if (exactAlarmGranted) "✓ " else "") + "Разрешить точные будильники и расписание сна") {
+            if (Build.VERSION.SDK_INT >= 31) openSpecialAccess(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:$packageName"))
+            else showMessage("На этой версии Android отдельный доступ к точным будильникам не требуется.")
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+        content.addView(action((if (batteryExemptionGranted) "✓ " else "") + "Разрешить работу MANA без оптимизации батареи") {
+            if (Build.VERSION.SDK_INT >= 23 && !batteryExemptionGranted) {
+                openSpecialAccess(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName"))
+            } else showMessage("MANA уже исключена из оптимизации батареи или доступ не требуется.")
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+        content.addView(action((if (assistantGranted) "✓ " else "") + "Назначить MANA системным ассистентом") {
+            requestAssistantRole()
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+        content.addView(action((if (callScreeningGranted) "✓ " else "") + "Назначить MANA для распознавания вызовов") {
+            requestCallScreeningRole()
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+        content.addView(action((if (dialerGranted) "✓ " else "") + "Назначить MANA телефонным приложением") {
+            requestDialerRole()
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
         content.addView(label(
-            "Важно: одно нажатие запускает запрос всех обычных разрешений, но Android сам показывает и контролирует подтверждения. Доступ к звонкам, уведомлениям и другим чувствительным данным не будет включён скрытно.",
+            "Важно: Android не разрешает выдать специальные доступы одним нажатием. Каждая кнопка открывает соответствующий системный экран или запрос роли. Если прошивка realme не поддерживает конкретную роль, MANA сообщит об этом. Не выдавай доступы, назначение которых тебе не нужно.",
             11, muted, false
         ).apply { setPadding(0, dp(14), 0, dp(8)) })
         content.addView(action("ГОТОВО — ОТКРЫТЬ MANA") {
@@ -451,6 +487,33 @@ class MainActivity : Activity() {
                 (info.protectionLevel and PermissionInfo.PROTECTION_MASK_BASE) == PermissionInfo.PROTECTION_DANGEROUS
             }.getOrDefault(false)
         }
+    }
+
+    private fun openSpecialAccess(action: String, data: Uri? = null) {
+        val intent = Intent(action).apply {
+            if (data != null) this.data = data
+            if (resolveActivity(packageManager) == null) throw ActivityNotFoundException(action)
+        }
+        runCatching { startActivity(intent) }.onFailure {
+            showMessage("Этот экран специальных разрешений недоступен на прошивке realme: ${it.message ?: action}")
+        }
+    }
+
+    private fun requestDialerRole() {
+        if (Build.VERSION.SDK_INT < 29) {
+            showMessage("Системная роль телефонного приложения требует Android 10 или новее.")
+            return
+        }
+        val roleManager = getSystemService(RoleManager::class.java)
+        if (!roleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {
+            showMessage("На этой прошивке роль телефонного приложения недоступна.")
+            return
+        }
+        if (roleManager.isRoleHeld(RoleManager.ROLE_DIALER)) {
+            showMessage("MANA уже назначена телефонным приложением.")
+            return
+        }
+        startActivityForResult(roleManager.createRequestRoleIntent(RoleManager.ROLE_DIALER), 4117)
     }
 
     private fun requestAllAvailableRuntimePermissions() {
@@ -684,6 +747,7 @@ class MainActivity : Activity() {
             "Адаптация MANA к системе телефона" to { startActivity(Intent(this, ManaSystemAdaptationActivity::class.java)) },
             "MANA Control Center" to { startActivity(Intent(this, ManaLifeControlCenterActivity::class.java)) },
             "MANA Device Intelligence" to { startActivity(Intent(this, ManaDeviceIntelligenceActivity::class.java)) },
+            "Центр разрешений MANA" to { showPermissionSetup() },
             "Adaptive Intelligence" to { startActivity(Intent(this, ManaAdaptiveLearningActivity::class.java)) },
             "Автономное исследование" to { startActivity(Intent(this, ManaAutonomyActivity::class.java)) },
             "AutoDev" to { startActivity(Intent(this, ManaTermuxAgentActivity::class.java)) },
