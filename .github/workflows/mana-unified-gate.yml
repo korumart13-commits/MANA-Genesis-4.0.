@@ -1,35 +1,13 @@
-name: MANA Genesis 4.0 — unified source gate
-
-on:
-  push:
-    branches: ["**"]
-    paths:
-      - "os/**"
-      - "engine/**"
-      - "launcher/**"
-      - "system/**"
-      - "game/**"
-      - "device/**"
-      - "kernel/**"
-      - "tools/**"
-      - ".github/workflows/mana-unified-gate.yml"
-  pull_request:
-    paths:
-      - "os/**"
-      - "engine/**"
-      - "launcher/**"
-      - "system/**"
-      - "game/**"
-      - "device/**"
-      - "kernel/**"
-      - "tools/**"
-      - ".github/workflows/mana-unified-gate.yml"
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
 jobs:
+  aosp16-manifest-pin:
+    name: Verify pinned upstream Android 16 manifest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact AOSP release tag and commit
+        run: bash tools/verify_aosp_manifest_pin.sh
+
+
   core-tests:
     name: MANA OS Core tests
     runs-on: ubuntu-latest
