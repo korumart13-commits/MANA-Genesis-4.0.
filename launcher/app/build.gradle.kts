@@ -19,7 +19,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    buildFeatures { buildConfig = true; compose = true }
+    buildFeatures { buildConfig = true; compose = true; aidl = true }
+    // Compile the exact AIDL contract also consumed by the Android 16 Soong product.
+    sourceSets.getByName("main").aidl.srcDir(rootProject.file("../system/mana/brain/aidl"))
 }
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2025.11.00"))
