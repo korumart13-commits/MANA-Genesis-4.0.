@@ -25,7 +25,7 @@ class ModelArtifactIntegrityTest {
             val file = File(root, "model.bin").apply { writeText("trusted-model") }
             val originalLength = file.length()
             val originalMtime = file.lastModified()
-            file.writeText("tampered-model")
+            file.writeText("trussed-model")
             file.setLastModified(originalMtime)
             assertFalse(ModelArtifactIntegrity.matches(file, originalLength, sha256("trusted-model"), root))
         } finally {
