@@ -67,6 +67,15 @@ def validate(data: dict, catalog_text: str) -> None:
     autonomy = data.get("autonomy", {})
     if not autonomy.get("offline_local_inference") or not autonomy.get("local_encrypted_memory") or not autonomy.get("self_code_build_and_test"):
         raise ValueError("Local-first and self-development invariants are missing")
+    adaptive = data.get("adaptive_intelligence", {})
+    if not adaptive.get("source_validation") or not adaptive.get("local_knowledge_base") or not adaptive.get("resource_aware_scheduling"):
+        raise ValueError("Adaptive learning requirements are incomplete")
+    future = data.get("future_updates", {})
+    if future.get("pipeline") != ["idea", "plan", "development", "build", "test", "signed_candidate", "owner_approval", "install"]:
+        raise ValueError("Future Updates pipeline is incomplete or out of order")
+    security = data.get("security", {})
+    if not security.get("selinux_enforcing") or not security.get("verified_boot_preserved"):
+        raise ValueError("Android security and Verified Boot invariants are missing")
 
 
 def main() -> int:
