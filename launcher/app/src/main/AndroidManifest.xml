@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="com.mana.permission.BIND_BRAIN" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
@@ -73,6 +74,14 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.telecom.CallScreeningService" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".ManaEngineBridgeService"
+            android:exported="true"
+            android:permission="com.mana.permission.BIND_BRAIN">
+            <intent-filter>
+                <action android:name="com.mana.action.BIND_ENGINE_BACKEND" />
             </intent-filter>
         </service>
         <service
