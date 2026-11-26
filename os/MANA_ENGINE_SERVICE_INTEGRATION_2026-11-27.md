@@ -101,3 +101,10 @@ This section supersedes earlier paragraphs above that described Activity-side pr
 - CI run `45906083753` (commit `ea28290e0c4d9833af938d186c09354153a3cb59`) passed the Brain/core tests; Android debug compilation was still running at the last inspection.
 - Subsequent lifecycle and Binder-guard commits triggered a fresh workflow run. Their Android compile/test result must be checked separately.
 - No physical-device test or complete AOSP/ROM build is claimed.
+
+## Compile regression and correction
+
+- Gradle run `45906316165` passed the static ownership checks and `:brain:test` / `:core:test`, then found a Kotlin compile error: the deferred UI initialization flag was referenced but not declared.
+- Added the missing `uiInitialized` field in commit `e1e25257967e456107412dfd2a44e22446028711`.
+- Follow-up Gradle run `45906472269` is validating that correction. Static ownership checks and glTF validation have passed; Brain/core tests are running, and Android compilation has not yet completed.
+- The previous compile failure is not being represented as a successful build. A fresh passing Android compile is required before this service integration can be marked build-verified.
