@@ -12,7 +12,7 @@ import android.os.IBinder
 import android.os.Binder
 
 /**
- * Keeps the already initialized MANA Engine alive independently of MainActivity.
+ * Owns MANA Engine initialization and exposes a narrow local Binder API to app clients.
  * This is an app-level foreground service, not a privileged Android system daemon.
  */
 class ManaEngineService : Service() {
