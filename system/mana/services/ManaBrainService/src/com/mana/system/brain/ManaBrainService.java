@@ -1,6 +1,7 @@
 package com.mana.system.brain;
 
 import android.app.Service;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -8,6 +9,9 @@ import android.os.RemoteException;
 import com.mana.brain.IManaBrain;
 import com.mana.brain.IManaBrainCallback;
 import com.mana.brain.ManaBrainRequest;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Platform-facing Binder endpoint for MANA Brain.
@@ -20,6 +24,12 @@ public final class ManaBrainService extends Service {
     public static final String BIND_PERMISSION = "com.mana.permission.BIND_BRAIN";
     private static final int PROTOCOL_VERSION = 1;
     private static final String STATE_UNAVAILABLE = "UNAVAILABLE_NO_ENGINE_BACKEND";
+
+    private final ExecutorService requests = Executors.newSingleThreadExecutor(r -> {
+        Thread thread = new Thread(r, "MANA-Brain-Binder");
+        thread.setDaemon(true);
+        return thread;
+    });
 
     private final IManaBrain.Stub binder = new IManaBrain.Stub() {
         @Override
@@ -41,28 +51,38 @@ public final class ManaBrainService extends Service {
             if (callback == null) {
                 return;
             }
-            if (request == null || request.text == null || request.text.trim().isEmpty()) {
-                callback.onError("INVALID_REQUEST", "A non-empty prompt is required.");
-                return;
-            }
-            if (request.sensitive && request.allowCloud) {
-                callback.onError("POLICY_DENIED",
-                        "Sensitive requests must not be sent to a cloud provider.");
-                return;
-            }
-            if (request.allowPersonalMemoryToCloud
-                    && (!request.allowCloud || !request.includePersonalMemory)) {
-                callback.onError("POLICY_DENIED",
-                        "Cloud memory export requires cloud and personal-memory consent.");
+            final String validationError = validate(request);
+            if (validationError != null) {
+                callback.onError("POLICY_DENIED", validationError);
                 return;
             }
 
-            // Fail closed until the real local inference backend is connected and tested.
-            callback.onError("ENGINE_UNAVAILABLE",
-                    "MANA Brain platform service is installed, but its inference backend "
-                            + "has not yet been integrated.");
+            // Never run inference or wait for a backend on a Binder transaction thread.
+            requests.execute(() -> {
+                try {
+                    callback.onError("ENGINE_UNAVAILABLE",
+                            "MANA Brain platform service is installed, but its inference backend "
+                                    + "has not yet been integrated.");
+                } catch (RemoteException ignored) {
+                    // The client may have disconnected while the request was queued.
+                }
+            });
         }
     };
+
+    private static String validate(ManaBrainRequest request) {
+        if (request == null || request.text == null || request.text.trim().isEmpty()) {
+            return "A non-empty prompt is required.";
+        }
+        if (request.sensitive && request.allowCloud) {
+            return "Sensitive requests must not be sent to a cloud provider.";
+        }
+        if (request.allowPersonalMemoryToCloud
+                && (!request.allowCloud || !request.includePersonalMemory)) {
+            return "Cloud memory export requires cloud and personal-memory consent.";
+        }
+        return null;
+    }
 
     private void enforceAuthorizedCaller() {
         if (checkCallingPermission(BIND_PERMISSION) != PackageManager.PERMISSION_GRANTED) {
@@ -71,10 +91,16 @@ public final class ManaBrainService extends Service {
     }
 
     @Override
-    public IBinder onBind(android.content.Intent intent) {
+    public IBinder onBind(Intent intent) {
         if (intent == null || !ACTION_BIND.equals(intent.getAction())) {
             return null;
         }
         return binder;
+    }
+
+    @Override
+    public void onDestroy() {
+        requests.shutdownNow();
+        super.onDestroy();
     }
 }
