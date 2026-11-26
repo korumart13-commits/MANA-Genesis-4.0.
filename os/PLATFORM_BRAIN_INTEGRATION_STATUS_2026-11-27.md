@@ -7,19 +7,20 @@
 - Signature-level bind permission: `com.mana.permission.BIND_BRAIN`.
 - Repeated permission enforcement inside Binder entry points.
 - Per-request cloud and sensitive-data policy checks.
-- Separate opt-in flag for personal-memory export to cloud.
-- Product package declaration: `ManaBrainService` in `system/mana/mana_product.mk`.
+- Separate opt-in flags for cloud use and personal-memory export.
+- Dedicated single-thread executor for accepted Binder requests.
+- Product fragment `system/mana/mana_product.mk` declares `ManaBrainService` in `PRODUCT_PACKAGES`.
 - Service endpoint fails closed with `ENGINE_UNAVAILABLE` until a real local inference backend is connected.
 
 ## Deliberately not claimed
 
-The platform service is not yet a working inference host. It is not Soong-built against an AOSP checkout, not installed into a real product image, and has no target-specific SELinux service context/domain. The Gradle app foreground service is a separate application-process prototype; no cross-process backend adapter has been implemented.
+The platform service is not yet a working inference host. It is not Soong-built against an AOSP checkout, not installed into a real product image, and has no target-specific SELinux service context/domain. The product fragment has not yet been included by a verified device product makefile. The Gradle app foreground service is a separate application-process prototype; no cross-process backend adapter has been implemented.
 
-The AIDL/API and service source have only source-level CI checks. Current Gradle CI does not compile Soong modules.
+The AIDL/API and service source have source-level CI checks only. Current Gradle CI does not compile Soong modules.
 
 ## Required next implementation sequence
 
-1. Pin an Android 16 AOSP manifest/branch and establish a reproducible build environment.
+1. Establish a reproducible Android 16 AOSP checkout and pin its exact manifest revision.
 2. Build `mana-brain-interface` and `ManaBrainService` with Soong in that tree.
 3. Add a dedicated SELinux service type, service_contexts mapping and least-privilege rules only after checking actual AOSP policy and package identity.
 4. Implement a backend adapter that connects the platform Binder service to the single local-first MANA engine. Do not duplicate model/memory ownership between processes.
@@ -30,19 +31,13 @@ The AIDL/API and service source have only source-level CI checks. Current Gradle
 ## Current test evidence
 
 - The application-side service-owned engine migration passed `:brain:test`, `:core:test`, `:app:assembleDebug` and `:app:testDebugUnitTest` in workflow run 45906472269.
-- The later platform Binder service source changes are under a new CI run; they are not covered by that earlier Android build.
+- Workflow run 45907689204 completed all substantive source checks, Brain/Core tests, Android compile and app unit-test steps, and both artifact uploads; GitHub was still executing post-job cleanup at the last poll.
+- The platform service source is checked by static CI assertions, not compiled by Soong.
 - A successful Gradle build is not an AOSP/Soong build and is not a flashable ROM.
 
+## Binder execution hardening
 
-## Binder execution hardening update
+Accepted requests are dispatched onto a dedicated single-thread executor rather than performing backend work on the Binder transaction thread. A disconnected callback is handled without crashing the service, and the executor is shut down in `onDestroy()`. Empty prompts, sensitive+cloud requests, and cloud memory export without both consents are rejected before work is queued.
 
-The platform service now dispatches accepted requests onto a dedicated single-thread executor rather
-than performing backend work on the Binder transaction thread. It handles a disconnected callback
-without crashing the service and shuts down the executor in `onDestroy()`. Request validation
-remains fail-closed: empty prompts, sensitive+cloud requests, and cloud memory export without both
-consents are rejected before work is queued.
-
-Source commit: `88d6cc6a707cb92898a746ccf1143c011cbec37f`.
-CI assertions for executor dispatch and lifecycle cleanup are in
-`5fdf432eb9dc4dcd6d9fa21ffe0f7415b6f24ace`; the corresponding workflow is running at the time
-of this update. This is source-level validation only, not a Soong compile or device test.
+Service implementation commit: `88d6cc6a707cb92898a746ccf1143c011cbec37f`.
+CI assertions for executor dispatch and lifecycle cleanup: `5fdf432eb9dc4dcd6d9fa21ffe0f7415b6f24ace`.
