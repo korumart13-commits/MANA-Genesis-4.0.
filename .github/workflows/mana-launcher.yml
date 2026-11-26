@@ -57,6 +57,7 @@ jobs:
           assert "ManaMemoryService(" not in activity
           assert "binder.localModelRuntime()" in activity
           assert "binder.memoryService()" in activity
+          assert "localRuntime.shutdown()" not in activity
           assert "engineBinder.think(" in activity
           assert "manaBrain.respond(" not in activity
           assert "val brainBridge = ManaBrainBridge(local, listOf(cloudGateway, yandexProvider))" in owner
