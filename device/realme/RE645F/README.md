@@ -15,6 +15,12 @@ Status: **FOUNDATION / NON-BUILDABLE PLACEHOLDER**. This directory records the e
 
 The hardware profile maps to the Snapdragon 685 / C85 4G platform. Do not use C85 5G / RMX5253 / MediaTek resources.
 
+## Public OEM source candidate
+
+A C85/C85 Pro Android 16 OEM source family has now been located. The vendor/kernel-platform repository contains a Moscow overlay that explicitly declares Oplus project ID 25697, matching the project-ID candidate in the RMX5566 firmware catalog. Its paired kernel tree targets Qualcomm Bengal and declares Linux 5.15.180.
+
+This is a useful lead, **not yet a safe kernel/DTBO match**: the phone's runtime kernel is 5.15.197, and the audited OEM source commit identifies a different RMX release. See [OEM_SOURCE_MATRIX.md](OEM_SOURCE_MATRIX.md) for pinned repositories, commit IDs, source evidence and the exact compatibility blockers.
+
 ## Expected eventual tree (not yet populated)
 
 ```
@@ -50,7 +56,8 @@ Only add these build files when their values are sourced from matching OEM firmw
 - [CONFIRMED] Target identity and runtime kernel string from owner-provided audit.
 - [CONFIRMED] A/B, dynamic partitions, locked bootloader and green Verified Boot.
 - [DOCUMENTED] This directory's intended layout and bring-up gates.
-- [MISSING] Actual device tree, product makefiles, BoardConfig, fstab, init scripts, DTS/DTBO and overlays.
+- [CANDIDATE] C85-family OEM Bengal kernel/vendor source and Moscow project-25697 overlay; kernel release still mismatches target runtime.
+- [MISSING] Actual RMX5566RU product makefiles, BoardConfig, fstab, init scripts, exact DTS/DTBO composition and overlays.
 - [MISSING] Verified vendor blobs and device-specific VINTF/SELinux integration.
 
 Do not run `lunch` for RE645F and do not create images from this directory yet: no product target is defined.
