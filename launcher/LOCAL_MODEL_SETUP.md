@@ -40,3 +40,10 @@ Gemma 4 E2B IT в формате LiteRT-LM:
 - Устройство не прошло физический benchmark с Gemma 4 E2B; если памяти или ускорителя не хватит, выбери меньшую модель.
 - Gradle compile проверяет сборку исходников, но не гарантирует, что конкретный файл модели загрузится на RMX5566RU.
 - Этот Android-прототип ещё не является собранной MANA OS прошивкой.
+
+## Full standalone APK model asset (MANA 4.0.4 build line)
+The full APK workflow now downloads the official LiteRT Community Gemma 4 E4B IT model from the pinned upstream revision `2eee7ac325f20eb8c9ac1d0e972f7c84663062da`, checks the exact size `3,659,530,240` bytes and SHA-256 `0b2a8980ce155fd97673d8e820b4d29d9c7d99b8fa6806f425d969b145bd52e0`, then packages it uncompressed inside the APK. The APK itself is therefore expected to exceed 3.6 GB when this build step succeeds.
+
+The model is not copied or loaded silently. The owner must open MANA's avatar panel and choose “Встроенная Gemma 4 E4B”, accept the model terms, and wait for the integrity-checked import. The app keeps E4B out of automatic boot loading. The phone needs roughly another 4.1 GB of free app-specific storage to import the model from the installed APK.
+
+**Important target-device warning:** The E4B model's published CPU memory peak is about 3,283 MB on a Samsung S26 Ultra, not on the RMX5566RU. The realme has 8 GB physical RAM and a different Qualcomm chipset/GPU. The E4B model may be slow, may fail to initialize, or may cause memory pressure on this phone. It is included to meet the full offline-package requirement, not because compatibility has been proven. The smaller E2B model remains the safer first benchmark candidate.
