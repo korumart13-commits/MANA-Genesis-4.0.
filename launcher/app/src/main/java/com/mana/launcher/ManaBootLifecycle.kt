@@ -22,6 +22,8 @@ class ManaBootReceiver : BroadcastReceiver() {
         if (action != Intent.ACTION_BOOT_COMPLETED &&
             action != Intent.ACTION_MY_PACKAGE_REPLACED) return
 
+        // Restore owner-enabled sleep alarms after reboot or MANA update.
+        runCatching { ManaSleepScheduler.schedule(context) }
         val request = OneTimeWorkRequestBuilder<ManaBootInitializationWorker>().build()
         WorkManager.getInstance(context).enqueueUniqueWork(
             WORK_NAME,
