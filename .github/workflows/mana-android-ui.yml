@@ -37,7 +37,7 @@ jobs:
           javac -source 17 -target 17 \
             -classpath "$ANDROID_HOME/platforms/android-36/android.jar" \
             -d "$RUNNER_TEMP/mana-ui-classes" \
-            $(find system/mana/apps -name '*.java' ! -name 'ManaBrainBinderService.java' ! -name 'ManaHomeActivity.java' -print)
+            $(find system/mana/apps -name '*.java' ! -name 'ManaBrainBinderService.java' ! -name 'ManaBrainBinderTest.java' ! -name 'ManaHomeActivity.java' -print)
       - name: Validate MANA product package integration
         run: |
           python3 - <<'PY'
