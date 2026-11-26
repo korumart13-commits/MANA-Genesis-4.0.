@@ -1,0 +1,154 @@
+name: MANA Genesis 4.0 — firmware UI update only
+
+on:
+  push:
+    branches: ["mana-genesis-4-rmx5566-firmware-only"]
+    paths:
+      - "firmware/**"
+      - "system/mana/apps/**"
+      - "system/mana/mana_product.mk"
+      - "device/realme/RE645F/**"
+      - "os/MANA_OS_FIRMWARE_ONLY_IMPLEMENTATION_RU.md"
+      - "docs/REALME_UPDATE_COMPATIBILITY_RU.md"
+      - ".github/workflows/mana-firmware-only.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-mana-shell:
+    name: Build MANA Shell APK (no AI app)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: "platforms;android-36;build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+      - name: Verify firmware-only scope
+        run: |
+          set -euo pipefail
+          ! grep -R -n 'com\\.mana\\.genesis\\|ManaBrain\\|Gemma\\|LiteRT' firmware/android-shell system/mana/apps
+          grep -F 'com.mana.launcher.ManaHomeActivity' firmware/android-shell/mana-shell/src/main/AndroidManifest.xml
+          grep -F 'com.mana.settings.ManaSettingsActivity' firmware/android-shell/mana-shell/src/main/AndroidManifest.xml
+          grep -F 'com.mana.controlcenter.ManaControlCenterActivity' firmware/android-shell/mana-shell/src/main/AndroidManifest.xml
+      - name: Build unified MANA HOME, Settings and Control Center APK
+        run: gradle -p firmware/android-shell --no-daemon clean :mana-shell:assembleDebug
+      - name: Verify APK structure and package metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="firmware/android-shell/mana-shell/build/outputs/apk/debug/mana-shell-debug.apk"
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.mana.shell'"
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          from pathlib import Path
+          apk = Path("firmware/android-shell/mana-shell/build/outputs/apk/debug/mana-shell-debug.apk")
+          with ZipFile(apk) as z:
+              names = z.namelist()
+              assert "AndroidManifest.xml" in names
+              assert any(n.startswith("classes") and n.endswith(".dex") for n in names)
+              assert not any("gemma" in n.lower() or "mana/brain" in n.lower() for n in names)
+          print(f"Verified firmware-only MANA Shell APK: {apk.stat().st_size} bytes")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Genesis-4.0-Firmware-Shell-APK
+          path: firmware/android-shell/mana-shell/build/outputs/apk/debug/mana-shell-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+  package-firmware-update:
+    name: Create MANA firmware UI update ZIP
+    runs-on: ubuntu-latest
+    needs: [build-mana-shell]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: MANA-Genesis-4.0-Firmware-Shell-APK
+          path: dist/apk
+      - name: Package firmware UI update and device integration source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/source
+          cp firmware/README_RU.md dist/README_RU.md
+          cp docs/REALME_UPDATE_COMPATIBILITY_RU.md dist/REALME_UPDATE_COMPATIBILITY_RU.md
+          cp os/MANA_OS_FIRMWARE_ONLY_IMPLEMENTATION_RU.md dist/MANA_OS_FIRMWARE_ONLY_IMPLEMENTATION_RU.md
+          cp device/RMX5566RU_TARGET_PROFILE.md dist/RMX5566RU_TARGET_PROFILE.md
+          cp -a system/mana/apps dist/source/
+          cp system/mana/mana_product.mk dist/source/
+          cp -a device/realme/RE645F dist/source/RE645F
+          cp -a kernel/DEVICE_KERNEL_SOURCE_AUDIT.md dist/ 2>/dev/null || true
+          cp -a kernel/RE645F_KERNEL_INTEGRATION.md dist/ 2>/dev/null || true
+          cat > dist/UPDATE_STATUS.txt <<'EOF'
+          MANA Genesis 4.0 — firmware UI update package
+          Contains one installable user-space MANA Shell APK plus the AOSP firmware integration source and device porting documentation.
+          This is NOT a flashable ROM, NOT an OEM OTA and does NOT write Android system partitions.
+          AI app / MANA Brain / local model are intentionally excluded from this release.
+          The package preserves documented integration points for a future separately built com.mana.genesis application.
+          Device-specific boot/vendor_boot/dtbo/vbmeta/super/OTA images remain disabled until exact RMX5566RU source, partition, AVB and recovery validation is complete.
+          EOF
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+          import hashlib, json
+          root = Path("dist")
+          apk = root / "apk/mana-shell-debug.apk"
+          assert apk.is_file() and apk.stat().st_size > 0
+          files = []
+          for p in sorted(root.rglob("*")):
+              if p.is_file() and p.name != "MANA_UPDATE_INFO.json" and p.name != "SHA256SUMS.txt":
+                  files.append(p)
+          payload = {
+              "product": "MANA Genesis 4.0",
+              "release": "MANA Firmware UI +1",
+              "version_code": 1,
+              "target": {"model": "RMX5566RU", "device": "RE645F", "android_api": 36},
+              "package_type": "user_space_firmware_ui_layer",
+              "contains_ai_application": False,
+              "contains_local_ai_model": False,
+              "is_oem_ota": False,
+              "is_flashable_rom": False,
+              "writes_system_partitions": False,
+              "installable_apk": "apk/mana-shell-debug.apk",
+              "sha256": hashlib.sha256(apk.read_bytes()).hexdigest(),
+              "future_ai_package_extension": "com.mana.genesis",
+              "limitations": [
+                  "MANA Shell is a user-space HOME launcher and settings/control-center hub, not a privileged SystemUI replacement.",
+                  "Android requires owner confirmation to install the APK and select the HOME role.",
+                  "Realme OEM system partitions remain unchanged.",
+                  "A complete RMX5566RU ROM requires exact matching device tree, kernel, vendor, partition, AVB and recovery inputs."
+              ]
+          }
+          (root / "MANA_UPDATE_INFO.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+          with ZipFile(root / "MANA_Genesis_4.0_FIRMWARE_UI_UPDATE.zip", "w", ZIP_DEFLATED, compresslevel=6) as z:
+              for p in files + [root / "MANA_UPDATE_INFO.json"]:
+                  z.write(p, p.relative_to(root))
+          package = root / "MANA_Genesis_4.0_FIRMWARE_UI_UPDATE.zip"
+          digest = hashlib.sha256(package.read_bytes()).hexdigest()
+          (root / "SHA256SUMS.txt").write_text(f"{digest}  {package.name}\n{hashlib.sha256(apk.read_bytes()).hexdigest()}  apk/mana-shell-debug.apk\n", encoding="utf-8")
+          with ZipFile(package) as z:
+              assert z.testzip() is None
+              assert "apk/mana-shell-debug.apk" in z.namelist()
+              assert "source/apps/ManaLauncher/Android.bp" in z.namelist()
+          print(f"Created {package} ({package.stat().st_size} bytes), SHA-256 {digest}")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Genesis-4.0-Firmware-UI-Update
+          path: |
+            dist/MANA_Genesis_4.0_FIRMWARE_UI_UPDATE.zip
+            dist/MANA_UPDATE_INFO.json
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
