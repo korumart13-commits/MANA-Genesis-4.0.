@@ -140,6 +140,7 @@ def main() -> int:
             run(["git", "diff", "--check", base], worktree)
             run(["git", "switch", "-c", branch], worktree)
             run(["git", "add", "--"] + changed, worktree)
+            run(["git", "diff", "--cached", "--check", base], worktree)
             run(["git", "-c", "user.name=MANA AutoDev",
                  "-c", "user.email=autodev@mana.local",
                  "commit", "-m", f"AutoDev candidate: {args.track} {stamp}"], worktree)
