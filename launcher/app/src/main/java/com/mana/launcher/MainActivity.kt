@@ -96,6 +96,7 @@ class MainActivity : Activity() {
     private var futureUpdateService: ManaFutureUpdateService? = null
     private var manaEngineBinder: ManaEngineService.LocalBinder? = null
     private var manaEngineBound = false
+    private var uiInitialized = false
     private val manaEngineConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as? ManaEngineService.LocalBinder ?: return
