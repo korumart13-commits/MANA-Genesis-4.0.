@@ -301,6 +301,7 @@ class MainActivity : Activity() {
             startFloatingAvatarService()
         }
         activateCompletedModelDownload()
+        activateCompletedGemma4E4BDownload()
     }
 
     /**
@@ -857,8 +858,8 @@ class MainActivity : Activity() {
         overlay.addView(action("Выбрать локальную модель (.litertlm)") { chooseModelFile() }.apply {
             setPadding(0, dp(10), 0, dp(10))
         })
-        overlay.addView(action("Встроенная Gemma 4 E4B • 3,66 ГБ") {
-            activateBundledGemma4E4B()
+        overlay.addView(action("Загрузить Gemma 4 E4B • 3,66 ГБ") {
+            downloadGemma4E4B()
         }.apply {
             setPadding(0, dp(10), 0, dp(10))
         })
@@ -1556,49 +1557,50 @@ class MainActivity : Activity() {
         return markers.any(value::contains)
     }
 
-    private fun activateBundledGemma4E4B() {
+    private fun downloadGemma4E4B() {
+        val catalog = modelCatalog ?: run { showMessage("Хранилище загрузок Android недоступно."); return }
         AlertDialog.Builder(this)
-            .setTitle("Встроенная локальная модель Gemma 4 E4B")
+            .setTitle("Загрузка локальной модели Gemma 4 E4B")
             .setMessage(
-                "В APK включена модель размером 3,66 ГБ. Перед импортом MANA проверит свободное место и SHA-256. " +
-                    "Модель не запускается автоматически при старте телефона. На другом устройстве Android опубликован пик CPU-памяти около 3,28 ГБ; " +
-                    "на realme RMX5566RU производительность и совместимость не измерены. Для 8 ГБ физической RAM E2B может оказаться безопаснее. " +
-                    "Прочитай лицензию Apache 2.0 и условия Gemma. Продолжая, ты подтверждаешь, что ознакомился с условиями."
+                "Модель не будет включена в APK: так сборка и установка приложения остаются надёжными. " +
+                    "По твоему желанию MANA загрузит её отдельно — около 3,66 ГБ, только по Wi-Fi, с проверкой размера и SHA-256. " +
+                    "Нужно около 4,2 ГБ свободного места. Производительность на RMX5566RU с 8 ГБ физической RAM ещё не измерена. " +
+                    "Перед загрузкой ознакомься с условиями Gemma."
             )
             .setNegativeButton("Отмена", null)
-            .setNeutralButton("Условия Gemma") { _, _ ->
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://ai.google.dev/gemma/terms")))
-            }
-            .setPositiveButton("Принять и импортировать") { _, _ ->
-                val catalog = modelCatalog
-                if (catalog == null) {
-                    showMessage("Хранилище моделей Android недоступно.")
-                    return@setPositiveButton
+            .setNeutralButton("Условия Gemma") { _, _ -> startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://ai.google.dev/gemma/terms"))) }
+            .setPositiveButton("Принимаю и скачать") { _, _ ->
+                try {
+                    val id = catalog.enqueueGemma4E4B(licenseAccepted = true)
+                    if (id == -1L) activateCompletedGemma4E4BDownload()
+                    else showMessage("Загрузка Gemma 4 E4B началась через Android Download Manager. Только Wi-Fi. После завершения вернись в MANA — файл будет проверен и подключён.")
+                } catch (error: Exception) {
+                    showMessage("Не удалось начать загрузку Gemma 4 E4B: ${error.message}")
                 }
-                modelStatus?.text = "Проверка и импорт Gemma 4 E4B…"
-                Thread {
-                    try {
-                        val file = catalog.copyBundledGemma4E4B(licenseAccepted = true)
-                        localRuntime.load(file) { result ->
-                            runOnUiThread {
-                                result.onSuccess { name ->
-                                    modelStatus?.text = "Gemma 4 E4B активна: $name"
-                                    showMessage("Gemma 4 E4B импортирована и подключена к MANA Brain. На этом устройстве следи за нагревом и свободной памятью.")
-                                }.onFailure { error ->
-                                    modelStatus?.text = "Gemma 4 E4B не запустилась: ${error.message}"
-                                    showMessage("Модель сохранена, но LiteRT-LM не смог её запустить: ${error.message}")
-                                }
-                            }
-                        }
-                    } catch (error: Exception) {
-                        runOnUiThread {
-                            modelStatus?.text = "Импорт Gemma 4 E4B не пройден."
-                            showMessage("Не удалось проверить или импортировать модель: ${error.message}")
-                        }
-                    }
-                }.start()
             }
             .show()
+    }
+
+    private fun activateCompletedGemma4E4BDownload() {
+        val catalog = modelCatalog ?: return
+        Thread {
+            try {
+                val file = catalog.verifyCompletedGemma4E4BDownload() ?: return@Thread
+                localRuntime.load(file) { result ->
+                    runOnUiThread {
+                        result.onSuccess { name ->
+                            modelStatus?.text = "Gemma 4 E4B активна: $name"
+                            showMessage("Gemma 4 E4B прошла проверку SHA-256 и подключена к MANA Brain. Следи за нагревом и свободной памятью.")
+                        }.onFailure { error ->
+                            modelStatus?.text = "Gemma 4 E4B не запустилась: ${error.message}"
+                            showMessage("Файл проверен, но LiteRT-LM не смог его запустить: ${error.message}")
+                        }
+                    }
+                }
+            } catch (error: Exception) {
+                runOnUiThread { showMessage("Проверка Gemma 4 E4B не пройдена: ${error.message}") }
+            }
+        }.start()
     }
 
     private fun downloadOfficialModel() {
