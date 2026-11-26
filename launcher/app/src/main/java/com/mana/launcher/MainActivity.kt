@@ -1560,11 +1560,8 @@ class MainActivity : Activity() {
             runCatching { unbindService(manaEngineConnection) }
             manaEngineBound = false
         }
-        // The service owns shared components while active. If initialization never
-        // transferred ownership, release the Activity-created inference resources here.
-        if (!ManaEngineProcessOwner.isInstalled() && !ManaEngineProcessOwner.isPrepared()) {
-            if (::localRuntime.isInitialized) localRuntime.shutdown()
-        }
+        // Local inference is owned exclusively by ManaEngineService.
+        // Activity destruction must never shut down service-owned model resources.
         ManaAvatar3DView.isSpeaking = false
         ManaAvatarState.isSpeaking = false
         speechRecognizer?.destroy()
