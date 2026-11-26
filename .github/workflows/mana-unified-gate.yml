@@ -410,6 +410,11 @@ jobs:
                   "No RMX5566RU flashable system image is included.",
                   "No OEM signing or bootloader bypass is included."
               ],
+              "source_bundle": {
+                  "file": "source/MANA_Genesis_4.0_UNIFIED_SOURCE.zip",
+                  "size": (root / "MANA_Genesis_4.0_UNIFIED_SOURCE.zip").stat().st_size,
+                  "sha256": sha256_file(root / "MANA_Genesis_4.0_UNIFIED_SOURCE.zip")
+              },
               "feature_manifest": {
                   "file": "MANA_FEATURE_MANIFEST.json",
                   "module_count": len(json.loads(Path("os/MANA_GENESIS_4.0_COMPLETE_FEATURE_MANIFEST.json").read_text(encoding="utf-8"))["modules"]),
@@ -419,8 +424,8 @@ jobs:
           (root / "MANA_UPDATE_INFO.json").write_text(json.dumps(update, indent=2) + chr(10), encoding="utf-8")
           (root / "MANA_UPDATE_README_RU.txt").write_text(chr(10).join([
               "MANA Genesis 4.0 — единый локальный пакет компонентов",
-              "Внутри: Android APK MANA с LiteRT-LM runtime, APK-переходник Realme, Gemma 4 E2B (2,588,147,712 байт), полный текст Apache-2.0, архитектурный документ и полный каталог согласованных функций MANA.",
-              "1. Распакуй ZIP в память телефона.",
+              "Внутри: Android APK MANA с LiteRT-LM runtime, APK-переходник Realme, Gemma 4 E2B (2,588,147,712 байт), полный исходный архив проекта, полный текст Apache-2.0, архитектурный документ и полный каталог согласованных функций MANA.",
+              "1. Распакуй единый ZIP в память телефона. В нём есть и готовые APK, и веса модели, и полный архив исходников.",
               "2. Установи android-companion/app-debug.apk и открой MANA.",
               "3. В MANA открой выбор локальной модели и импортируй local-model/gemma-4-E2B-it.litertlm.",
               "4. Дождись сообщения об успешной загрузке локальной модели. После этого генерация работает без интернета.",
@@ -441,7 +446,10 @@ jobs:
           from zipfile import ZipFile, ZIP_STORED
           with ZipFile("dist/MANA_Genesis_4.0_UPDATE_PACKAGE.zip", "a", compression=ZIP_STORED, allowZip64=True) as archive:
               archive.write("dist/local-model/gemma-4-E2B-it.litertlm", "local-model/gemma-4-E2B-it.litertlm")
-              archive.testzip()
+              archive.write("dist/MANA_Genesis_4.0_UNIFIED_SOURCE.zip", "source/MANA_Genesis_4.0_UNIFIED_SOURCE.zip")
+              bad = archive.testzip()
+              if bad is not None:
+                  raise SystemExit(f"Update ZIP integrity check failed at {bad}")
           PY
           sha256sum dist/local-model/gemma-4-E2B-it.litertlm >> dist/SHA256SUMS.txt
           sha256sum dist/MODEL_LICENSE_APACHE-2.0.txt >> dist/SHA256SUMS.txt
