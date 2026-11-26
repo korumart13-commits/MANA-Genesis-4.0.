@@ -120,13 +120,8 @@
         <activity android:name=".ManaAutonomyActivity" android:exported="false" android:label="MANA Autonomous Research" />
         <activity
             android:name=".ManaTermuxAgentActivity"
-            android:exported="true"
-            android:label="MANA Code Agent">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:exported="false"
+            android:label="MANA AutoDev" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
