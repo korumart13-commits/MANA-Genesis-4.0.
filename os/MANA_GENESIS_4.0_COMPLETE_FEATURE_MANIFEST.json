@@ -37,7 +37,13 @@
     "os_role": "Android-based platform, services, launcher, settings and system UI controlled by MANA Brain",
     "theme": "dark navy and blue",
     "launcher_style": "Android-like, not iOS-like",
-    "boot_branding": "MANA when a verified system integration exists"
+    "boot_branding": "MANA when a verified system integration exists",
+    "architecture_metaphor": {
+      "mana_brain": "brain — central intelligence, reasoning, planning and memory",
+      "mana_os": "spinal_cord_and_nervous_system — coordinates services and translates Brain decisions into platform operations",
+      "android_realme": "body — framework, kernel, drivers, HAL and device services that operate the hardware",
+      "phone": "house_and_environment — the physical device and its installed tools"
+    }
   },
   "autonomy": {
     "level": "maximum_with_capability_boundaries",
@@ -79,7 +85,10 @@
     "summon": [
       "assistant_gesture",
       "power_button_long_press_when_supported_by_system_ui"
-    ]
+    ],
+    "primary_renderer": "native OpenGL ES renderer shared by home screen, full-screen preview and floating overlay",
+    "asset_fallback": "procedural renderer remains visible if optional glTF loading fails",
+    "wardrobe_preferences_persist": true
   },
   "receptionist": {
     "character": "playful",
