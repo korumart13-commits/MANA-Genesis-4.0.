@@ -21,7 +21,7 @@ class ManaAvatarPreviewActivity : Activity() {
         window.navigationBarColor = Color.rgb(4, 7, 14)
         window.decorView.setBackgroundColor(Color.rgb(7, 20, 38))
 
-        val avatar = ManaAvatar3DView(this, { _, _ -> }, { cycleExpression() }, { })
+        val avatar = ManaAvatar3DView(this, onDrag = { _: Float, _: Float -> Unit }, onTap = { cycleExpression() }, onDragEnd = { Unit })
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), dp(12), dp(12), dp(12))
