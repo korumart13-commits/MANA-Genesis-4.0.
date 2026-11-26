@@ -10,10 +10,12 @@ on:
       - 'system/mana/apps/ManaLauncher/src/**'
       - '.github/workflows/mana-launcher.yml'
       - 'tools/validate_mana_gltf.py'
+      - 'tools/tests/test_mana_feature_manifest.py'
   pull_request:
     paths:
       - 'launcher/**'
       - '.github/workflows/mana-launcher.yml'
+      - 'tools/tests/test_mana_feature_manifest.py'
   workflow_dispatch:
 
 permissions:
