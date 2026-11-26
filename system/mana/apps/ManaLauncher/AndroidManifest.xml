@@ -2,6 +2,7 @@
     package="com.mana.launcher">
     <uses-feature android:name="android.software.home_screen" android:required="true" />
     <queries>
+        <package android:name="com.mana.assistant" />
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
