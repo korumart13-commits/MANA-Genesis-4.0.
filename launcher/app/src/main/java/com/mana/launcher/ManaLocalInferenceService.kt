@@ -64,7 +64,11 @@ class ManaLocalInferenceService : Service() {
 
     override fun onBind(intent: Intent?): IBinder = binder
 
-    private fun modelFile() = File(filesDir, "mana-models/selected-model.litertlm")
+    private fun modelFile(): File =
+        // The catalog stores the verified multi-GB model in app-specific Downloads.
+        // Fall back to the private import location for manually imported models.
+        ManaModelCatalog(this).verifiedSavedModel()
+            ?: File(filesDir, "mana-models/selected-model.litertlm")
 
     private fun ensureLoaded(completion: (Result<Unit>) -> Unit) {
         if (runtime.isReady()) {
