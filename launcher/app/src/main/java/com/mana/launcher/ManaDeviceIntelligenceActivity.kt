@@ -310,7 +310,7 @@ PRODUCT_MODEL := ${report.getJSONObject("system").optString("model")}
 
     private fun androidProductsTemplate(report: JSONObject) = """
 # GENERATED TEMPLATE — NOT FLASHABLE
-PRODUCT_MAKEFILES := \$(LOCAL_DIR)/mana_${report.getJSONObject("system").optString("device")}.mk
+PRODUCT_MAKEFILES := $(LOCAL_DIR)/mana_${report.getJSONObject("system").optString("device")}.mk
 COMMON_LUNCH_CHOICES := mana_${report.getJSONObject("system").optString("device")}-userdebug
 """.trimIndent()
 
