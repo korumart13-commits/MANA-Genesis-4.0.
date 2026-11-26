@@ -307,7 +307,7 @@ jobs:
           cp models/APACHE-2.0-LICENSE.txt dist/MODEL_LICENSE_APACHE-2.0.txt
           cp os/MANA_GENESIS_4.0_COMPLETE_FEATURE_MANIFEST.json dist/MANA_FEATURE_MANIFEST.json
           cp docs/MANA_ARCHITECTURE_RU.md dist/MANA_ARCHITECTURE_RU.md
-          cp docs/MANA_HOME_MICROVERSE_SELF_DEVELOPMENT_RU.md dist/MANA_HOME_MICROVERSE_SELF_DEVELOPMENT_RU.md
+          cp docs/MANA_HOME_MICROVERSE_SELF_DEVELOPMENT_RU.md dist/\n          cp docs/REALME_UPDATE_COMPATIBILITY_RU.md dist/MANA_HOME_MICROVERSE_SELF_DEVELOPMENT_RU.md
       - name: Package all current MANA source modules
         shell: bash
         run: |
@@ -436,8 +436,8 @@ jobs:
           sha256sum dist/MANA_UPDATE_README_RU.txt >> dist/SHA256SUMS.txt
           sha256sum dist/MANA_FEATURE_MANIFEST.json >> dist/SHA256SUMS.txt
           sha256sum dist/MANA_ARCHITECTURE_RU.md >> dist/SHA256SUMS.txt
-          sha256sum dist/MANA_HOME_MICROVERSE_SELF_DEVELOPMENT_RU.md >> dist/SHA256SUMS.txt
-          (cd dist && zip -q MANA_Genesis_4.0_UPDATE_PACKAGE.zip MANA_UPDATE_INFO.json MANA_UPDATE_README_RU.txt MANA_FEATURE_MANIFEST.json MANA_ARCHITECTURE_RU.md MANA_HOME_MICROVERSE_SELF_DEVELOPMENT_RU.md MODEL_LICENSE_APACHE-2.0.txt android-companion/app-debug.apk)
+          sha256sum dist/MANA_HOME_MICROVERSE_SELF_DEVELOPMENT_RU.md >> dist/SHA256SUMS.txt\n          sha256sum dist/REALME_UPDATE_COMPATIBILITY_RU.md >> dist/SHA256SUMS.txt
+          (cd dist && zip -q MANA_Genesis_4.0_UPDATE_PACKAGE.zip MANA_UPDATE_INFO.json MANA_UPDATE_README_RU.txt MANA_FEATURE_MANIFEST.json MANA_ARCHITECTURE_RU.md MANA_HOME_MICROVERSE_SELF_DEVELOPMENT_RU.md REALME_UPDATE_COMPATIBILITY_RU.md MODEL_LICENSE_APACHE-2.0.txt android-companion/app-debug.apk)
           python3 - <<'PY'
           from zipfile import ZipFile, ZIP_STORED
           with ZipFile("dist/MANA_Genesis_4.0_UPDATE_PACKAGE.zip", "a", compression=ZIP_STORED, allowZip64=True) as archive:
