@@ -152,7 +152,7 @@ class MainActivity : Activity() {
         window.decorView.setBackgroundColor(bg)
         contactIntelligence = ManaContactIntelligence(this)
         modelCatalog = runCatching { ManaModelCatalog(this) }.getOrNull()
-        localRuntime = LocalModelRuntime(File(cacheDir, "mana-litert-cache"))
+        localRuntime = ManaLocalModelRuntimeHolder.get(this)
         cloudGateway = ManaCloudGateway(this, ManaAndroidKeyProvider())
         yandexProvider = ManaYandexAiStudioProvider(this)
         manaBrain = ManaBrainBridge(localRuntime, listOf(cloudGateway, yandexProvider))
@@ -1772,7 +1772,6 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         if (::manaBrain.isInitialized) manaBrain.shutdown()
-        if (::localRuntime.isInitialized) localRuntime.shutdown()
         ManaAvatar3DView.isSpeaking = false
         ManaAvatarState.isSpeaking = false
         speechRecognizer?.destroy()
