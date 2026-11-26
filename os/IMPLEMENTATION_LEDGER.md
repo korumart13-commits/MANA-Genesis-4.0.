@@ -119,3 +119,19 @@ MANA now exposes an owner-invoked **Open Master Games** action in the Game Intel
 - Added JVM tests for unknown capabilities, Android runtime permissions, Android special access, owner confirmation, disabled/unsupported capabilities and duplicate IDs.
 - Added `os/MANA_BRAIN_OS_CONTROL_CONTRACT.md` describing the Brain → OS → device execution model and the required Android platform adapter.
 - These new sources are committed but their tests have **not yet been run in CI or Soong**. No device-side capability adapter, complete SystemUI replacement, AOSP image, or RMX5566RU ROM is claimed by this change.
+
+
+## 2026-11-26 Binder capability adapter increment
+
+- Extended the protected `IBrainService` AIDL contract with `executeCapability(ManaCapabilityRequest)` and a structured `ManaCapabilityResponse`.
+- Added the Android platform adapter `ManaAndroidCapabilityExecutor`. It reads current package permission grants with `Context.checkSelfPermission`, checks notification-listener special access and dialer role state, then evaluates the shared `ManaCapabilityRegistry`.
+- Implemented only two execution adapters: launching an installed package through `PackageManager.getLaunchIntentForPackage`, and opening a small allowlist of Android Settings screens through public Settings actions.
+- Added package-visibility declarations for launcher activities.
+- Sensitive capabilities remain disabled. The adapter deliberately ignores the caller-supplied `ownerConfirmed` boolean; a Binder field is not proof of owner consent. Contacts, call control, notification reading and OTA installation have no execution adapter in this increment.
+- Added Android instrumentation test sources for unknown capabilities, fail-closed sensitive actions, missing launch targets and non-allowlisted settings pages.
+- Updated the Android Binder module source filters and instrumentation-test dependencies so the adapter and tests are included in that module.
+
+### Verification status for this increment
+
+- **Passed locally:** the exact capability-registry Kotlin source compiles with the installed Kotlin compiler; six smoke assertions passed (unknown ID, disabled sensitive capability, missing notification special access, allowed low-risk capability, disabled capability, and owner-confirmation requirement).
+- **Not run:** Android Binder/AIDL Gradle compilation, Android instrumentation tests, Soong build, and RMX5566 device tests. This environment did not provide an Android SDK/device test run. Do not mark the adapter as Android-build-verified until those checks execute.
