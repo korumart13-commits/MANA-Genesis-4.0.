@@ -70,3 +70,26 @@ If project properties are blank, that is acceptable; do not use root or read/wri
 - `cd-Crypton/android_kernel_realme_sm6225` (`android13-bengal`) declares Linux 4.19.157, not target 5.15.197.
 - `cdpkp/android_kernel_tree_realme_sm6225` (`lineage-20`) also declares Linux 4.19.157.
 - The C85 5G RMX5253 / MediaTek source is not applicable to this Qualcomm C85 4G target.
+
+
+## Additional project-ID match discovered — 2026-11-26
+
+A further public firmware-catalog cross-check identifies the RMX5566 C85 4G firmware family with Oplus project/PCB ID **25697**. This is external catalog metadata, not a property read directly from the handset in this audit, so it is treated as a strong candidate mapping rather than sole proof of the phone's live project ID.
+
+Crucially, the official realme-kernel-opensource C85/C85 Pro Android B vendor-source tree at commit `2ab37fb9ceda42cd8679dec8585d4ff5209c4e90` contains the exact matching overlay:
+
+- `kernel_platform/qcom/proprietary/devicetree/oplus/Moscow-25697-khaje-qrd-nopmi-overlay.dts`
+- It explicitly declares `oplus,dtsi_no = <25697>` and `oplus,project-id = <25697>`.
+- It includes the Moscow common overlay, NFC, 25695 sensor profile, and the shared charging DTSI for 25695/25696/25697.
+- The same source tree contains the matching common Moscow SM6225 fingerprint, touchscreen, thermal and LED fragments.
+
+This is a substantial improvement over the previously noted 25665/25666-only candidates: **25697 is now the leading board-overlay candidate for RMX5566**. Do not select 25695 merely because some shared fragments use that filename; the top-level 25697 overlay is the candidate that sets the project ID.
+
+Remaining release blockers are still real:
+- The public source kernel tree declares Linux 5.15.180, while the handset audit reports 5.15.197. The source branch/commit and vendor module ABI must be reconciled to the exact installed build before building or using a kernel.
+- This overlay is not a complete `device/realme/RE645F` product tree and does not supply all proprietary Android vendor blobs, modem firmware, HAL/VINTF manifests, partition sizes, AVB metadata, signing keys or a verified stock restore package.
+- The device's exact live project property should be reconciled against 25697 if it is available in the previously captured audit output; do not ask the owner to repeat an audit already supplied.
+
+Sources:
+- Public RMX5566 firmware catalog lists project ID 25697: https://solution-firmware.com/index.php?a=downloads&b=folder&id=2894
+- OEM source overlay at the pinned vendor-source commit: https://github.com/realme-kernel-opensource/realme_C85_C85pro-AndroidB-vendor-source/blob/2ab37fb9ceda42cd8679dec8585d4ff5209c4e90/kernel_platform/qcom/proprietary/devicetree/oplus/Moscow-25697-khaje-qrd-nopmi-overlay.dts
