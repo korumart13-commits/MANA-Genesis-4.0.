@@ -21,3 +21,16 @@ This commit adds the policy and unit tests only. Scheduling, persisted crash-loo
 3. Use bounded WorkManager work for deferred recovery where Android permits it; user-initiated retry remains available in diagnostics.
 4. Reset the budget only after the Engine remains healthy for the stable window.
 5. Test process death, duplicate callbacks, force-stop behavior and Android 16 background-start restrictions on emulator and RMX5566.
+
+## Runtime integration added
+
+The launcher now uses a lifecycle-scoped reconnect controller:
+
+- Retry budget and last failure timestamp are persisted in app-private SharedPreferences.
+- Service disconnection, binding death and an uninitialized Binder endpoint feed the same bounded policy.
+- Duplicate scheduled retries are suppressed.
+- Reconnect delays are bounded by the policy; a stable 60-second connection resets the budget.
+- The controller is cancelled when the Activity is destroyed.
+- A manual retry remains available through the existing degraded-state screen.
+
+This is app-process lifecycle recovery, not an always-on daemon. Delayed retries only execute while the process/looper remains alive; force-stop, process death, Doze and Android foreground-service restrictions remain authoritative. No boot receiver or automatic background foreground-service launch has been added. Device/emulator runtime testing is still required.
