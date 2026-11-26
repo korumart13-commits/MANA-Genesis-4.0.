@@ -18,6 +18,10 @@ import android.os.Binder
 class ManaEngineService : Service() {
     inner class LocalBinder : Binder() {
         fun isReady(): Boolean = ManaEngineProcessOwner.isRunning()
+        fun localModelRuntime(): LocalModelRuntime = checkNotNull(ManaEngineProcessOwner.localModelRuntime())
+        fun memoryService(): com.mana.os.core.ManaMemoryService? = ManaEngineProcessOwner.memoryService()
+        fun cloudGateway(): ManaCloudGateway = checkNotNull(ManaEngineProcessOwner.cloudGateway())
+        fun yandexProvider(): ManaYandexAiStudioProvider = checkNotNull(ManaEngineProcessOwner.yandexProvider())
         suspend fun think(
             text: String,
             allowCloud: Boolean = false,
@@ -64,20 +68,17 @@ class ManaEngineService : Service() {
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
+        try {
+            val keys = ManaAndroidKeyProvider()
+            ManaEngineProcessOwner.initializeDependenciesFromService(this, keys)
+            ManaEngineProcessOwner.initializeFromService(this, keys)
+        } catch (error: Exception) {
+            android.util.Log.e("MANA", "Unable to initialize MANA Engine in service", error)
+            stopSelf()
+        }
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (!ManaEngineProcessOwner.isInstalled()) {
-            try {
-                ManaEngineProcessOwner.initializeFromService(this, ManaAndroidKeyProvider())
-            } catch (error: Exception) {
-                android.util.Log.e("MANA", "Unable to initialize MANA Engine in service", error)
-                stopSelf(startId)
-                return START_NOT_STICKY
-            }
-        }
-        return START_NOT_STICKY
-    }
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_NOT_STICKY
 
     override fun onBind(intent: Intent?): IBinder = localBinder
 
