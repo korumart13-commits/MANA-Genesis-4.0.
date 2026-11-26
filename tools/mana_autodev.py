@@ -53,6 +53,13 @@ def run(args: list[str], cwd: Path, timeout: int = 1800) -> str:
     return result.stdout
 
 
+def validate_patch_text(patch_text: str) -> None:
+    if "GIT binary patch" in patch_text or "Binary files " in patch_text:
+        raise AutoDevError("Binary patch content is forbidden")
+    if re.search(r"^(?:old mode|new mode|deleted file mode|new file mode 120000) ", patch_text, re.MULTILINE):
+        raise AutoDevError("File mode changes and symlinks are forbidden")
+
+
 def validate_paths(track: str, paths: list[str]) -> None:
     if track not in TRACKS:
         raise AutoDevError(f"Unknown development track: {track}")
@@ -101,10 +108,7 @@ def main() -> int:
     if patch.stat().st_size > 2_000_000:
         raise AutoDevError("Patch exceeds the 2 MB safety limit")
     patch_text = patch.read_text(encoding="utf-8")
-    if "GIT binary patch" in patch_text or "Binary files " in patch_text:
-        raise AutoDevError("Binary patch content is forbidden")
-    if re.search(r"^(?:old mode|new mode|deleted file mode|new file mode 120000) ", patch_text, re.MULTILINE):
-        raise AutoDevError("File mode changes and symlinks are forbidden")
+    validate_patch_text(patch_text)
 
     status = run(["git", "status", "--porcelain", "--untracked-files=all"], repo)
     if status.strip():
