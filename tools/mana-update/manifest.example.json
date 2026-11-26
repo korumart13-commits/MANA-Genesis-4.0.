@@ -1,0 +1,28 @@
+{
+  "package": "com.mana.update",
+  "displayName": "MANA Update",
+  "version": "0.1.0",
+  "status": "specification-only",
+  "target": {
+    "manufacturer": "realme",
+    "model": "RMX5566RU",
+    "androidApi": 36,
+    "baseBuild": "RMX5566_16.0.5.1310(EX01)"
+  },
+  "installPolicy": {
+    "userInitiated": true,
+    "silentInstall": false,
+    "privilegeEscalation": false,
+    "bypassAvb": false,
+    "disableSelinux": false,
+    "verifySha256": true,
+    "verifySignature": true,
+    "abortOnMismatch": true
+  },
+  "payloads": [],
+  "notes": [
+    "No OTA payload is included.",
+    "This manifest is not an Android installer or a Realme OTA package.",
+    "A valid OEM-accepted signature and verified compatible payload are required for firmware updates."
+  ]
+}
