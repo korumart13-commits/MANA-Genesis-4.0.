@@ -16,7 +16,7 @@ This changes the local model execution backend, not the system orchestrator:
 
 ## Why llama.cpp
 
-The upstream project documents an Android arm64-v8a NDK build, automatic CPU feature selection, GGUF model loading, and optional Arm KleidiAI acceleration. This gives MANA a portable CPU-first path across Android ARM64 devices and a broad quantized GGUF model ecosystem. The runtime can select compatible kernels based on the actual CPU rather than assuming one specific accelerator.
+The upstream project now includes an Android Studio binding under `examples/llama.android/lib`, with a Kotlin `InferenceEngine` API, token `Flow`, GGUF metadata reader and JNI/CMake implementation. The upstream Android and NDK build guides document arm64-v8a support and optional Arm KleidiAI acceleration. The source revision inspected for this integration is pinned to upstream commit `e8d7128fea197f1cdc4dcfb1af3bf33564197e8c` (2026-11-26); do not silently track `master`. This gives MANA a portable CPU-first path across Android ARM64 devices and a broad quantized GGUF model ecosystem. The runtime can select compatible kernels based on the actual CPU rather than assuming one specific accelerator.
 
 Official references:
 - https://github.com/ggml-org/llama.cpp/blob/master/docs/android.md
@@ -41,9 +41,9 @@ For multimodal tasks, register separate model/runtime capability profiles (text,
 
 ## Migration plan
 
-1. Define a stable `LocalInferenceRuntime` interface in MANA Engine: load/unload, model metadata, streaming generation, cancellation, context limits, health and resource reporting.
-2. Move the current LiteRT-LM-specific implementation behind that interface without changing user-facing Brain contracts.
-3. Add a llama.cpp Android arm64 backend using upstream-supported native integration and GGUF. Pin an upstream commit/release and record build flags and licenses.
+1. Add the backend-neutral `LocalInferenceRuntime` contract to the Android module. The existing LiteRT-LM implementation now implements this contract, and `ManaBrainBridge` depends on the interface rather than a LiteRT-specific class.
+2. Integrate the upstream Android binding/JNI implementation at the pinned revision, retaining its license notices and exposing it through the same interface.
+3. Build the native library for Android arm64-v8a with portable CPU settings; enable KleidiAI only where the pinned upstream build supports it and device testing confirms benefit.
 4. Add model metadata validation, quantization/context settings, bounded memory, cancellation, crash isolation and explicit owner-controlled model import.
 5. Run identical prompt/latency/memory/thermal tests against both backends on the RMX5566RU.
 6. Make llama.cpp the default only after successful device tests. Keep LiteRT-LM as a selectable fallback until parity and stability are established.
@@ -58,3 +58,14 @@ For multimodal tasks, register separate model/runtime capability profiles (text,
 - Local-first and sensitive-request no-cloud policies remain unchanged.
 - No credentials or model files are embedded in source or firmware.
 - Device benchmark results are recorded before choosing the default model.
+
+
+## Android integration source inspected
+
+- Upstream Android sample: https://github.com/ggml-org/llama.cpp/tree/e8d7128fea197f1cdc4dcfb1af3bf33564197e8c/examples/llama.android
+- Android library API: `lib/src/main/java/com/arm/aichat/InferenceEngine.kt`
+- Android JNI implementation: `lib/src/main/java/com/arm/aichat/internal/InferenceEngineImpl.kt`
+- Native JNI bridge: `lib/src/main/cpp/ai_chat.cpp`
+- Native CMake integration: `lib/src/main/cpp/CMakeLists.txt`
+
+The upstream sample currently declares minSdk 33 and NDK 29.0.13113456, with CMake 3.31.6. MANA must reconcile these with its Android product configuration before integration; do not copy only the Kotlin facade and assume native inference exists.
