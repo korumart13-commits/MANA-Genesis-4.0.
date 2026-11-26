@@ -164,3 +164,10 @@ See also:
 - Added `.github/workflows/mana-os-branding-validation.yml` to parse the XML and verify the MANA OS labels/theme references.
 - These are real source changes in the repository. They are **not yet AOSP/Soong-built** and do not yet replace Realme SystemUI, lock screen, framework settings, boot animation or product identity. The validation workflow file is committed; a run for this workflow has not yet been observed.
 - No RMX5566RU image, OTA or flashable package has been generated. The exact OEM/device bring-up blockers listed above remain in force.
+
+
+### Verification follow-up — MANA OS branding source checks
+
+- GitHub Actions run [45870151076](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/45870151076) completed successfully for commit `b60a634d9197fcce958b71d1e000d4637f2a50ca`. Its Android UI job compiled the MANA UI Java sources against the Android 16 API and passed package-integration and manifest/permission-surface checks.
+- GitHub Actions run [45870172403](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/45870172403) completed successfully for commit `d99d5c48034988149c7cc4519b2b2c67dca93cf6`. XML parsing and MANA OS branding/theme-reference checks passed.
+- These checks validate source syntax and the existing Android UI Java compile workflow. They do not constitute a full Soong build, AOSP product build, SystemUI replacement, device boot test or flashable RMX5566RU firmware.
