@@ -17,8 +17,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public final class ManaAssistantActivity extends Activity {
-    private static final int NAVY = Color.rgb(7, 20, 38);
-    private static final int BLUE = Color.rgb(84, 200, 245);
+    private static final int NAVY = Color.rgb(7, 20, 38);       // #071426
+    private static final int SURFACE = Color.rgb(16, 43, 80);   // #102B50
+    private static final int PRIMARY = Color.rgb(23, 101, 168); // #1765A8
+    private static final int BLUE = Color.rgb(84, 200, 245);    // #54C8F5
+    private static final int TEXT = Color.rgb(234, 244, 255);   // #EAF4FF
+    private static final int MUTED = Color.rgb(145, 169, 197);  // #91A9C5
     private TextView status;
     private EditText prompt;
 
@@ -37,7 +41,7 @@ public final class ManaAssistantActivity extends Activity {
 
         TextView title = new TextView(this);
         title.setText("MANA");
-        title.setTextColor(Color.WHITE);
+        title.setTextColor(TEXT);
         title.setTextSize(34);
         title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         root.addView(title);
@@ -49,15 +53,16 @@ public final class ManaAssistantActivity extends Activity {
         root.addView(identity);
 
         status = new TextView(this);
-        status.setTextColor(Color.LTGRAY);
+        status.setTextColor(MUTED);
         status.setTextSize(15);
         status.setPadding(0, dp(22), 0, dp(18));
         status.setText("Системная точка входа MANA. Открой companion-приложение, чтобы использовать ИИ, локальную память и 3D-аватар.");
         root.addView(status);
 
         prompt = new EditText(this);
-        prompt.setTextColor(Color.WHITE);
-        prompt.setHintTextColor(Color.GRAY);
+        prompt.setTextColor(TEXT);
+        prompt.setHintTextColor(MUTED);
+        prompt.setBackgroundColor(SURFACE);
         prompt.setHint("Сообщение для Маны (передаётся в приложение)");
         prompt.setMinLines(2);
         prompt.setGravity(48);
