@@ -1,0 +1,10 @@
+android_app {
+    name: "ManaBrainService",
+    manifest: "AndroidManifest.xml",
+    srcs: ["src/**/*.java"],
+    static_libs: ["mana-brain-interface"],
+    platform_apis: true,
+    certificate: "platform",
+    privileged: true,
+    product_specific: true,
+}
