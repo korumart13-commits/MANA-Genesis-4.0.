@@ -53,3 +53,35 @@ jobs:
       - name: Compile Android launcher and test app
         working-directory: launcher
         run: gradle --no-daemon :app:assembleDebug :app:testDebugUnitTest
+
+      - name: Package complete tracked MANA source tree
+        run: |
+          mkdir -p release
+          git archive --format=zip --output=release/MANA-Genesis-4.0-source.zip HEAD
+          sha256sum release/MANA-Genesis-4.0-source.zip > release/SHA256SUMS.txt
+          cat > release/BUILD_SCOPE.txt <<'EOF'
+          MANA Genesis 4.0 — source bundle
+          This archive contains the tracked source project at the workflow commit.
+          The Android debug APK, if produced, is a launcher/application prototype only.
+          This archive is NOT a complete AOSP checkout, device ROM, OTA package or flashable image.
+          Target: RMX5566RU / RE645F / Qualcomm SM6225 / Android 16.
+          Device-specific kernel, device tree, vendor blobs, VINTF, AVB signing,
+          recovery and stock-restore validation remain release blockers.
+          EOF
+      - name: Upload source project bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Genesis-4.0-source-project
+          path: |
+            release/MANA-Genesis-4.0-source.zip
+            release/SHA256SUMS.txt
+            release/BUILD_SCOPE.txt
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload Android debug prototype separately
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Android-debug-prototype-NOT-ROM
+          path: launcher/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
+          retention-days: 14
