@@ -15,7 +15,6 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.content.pm.PermissionInfo
 import android.app.AlertDialog
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.ResolveInfo
 import android.graphics.Canvas
@@ -91,7 +90,6 @@ class MainActivity : Activity() {
     private var avatarPanel: View? = null
     private var showingDrawer = false
     private var apps: List<ResolveInfo> = emptyList()
-    private val voiceRequestCode = 4107
     private val modelRequestCode = 4108
     private val homeRoleRequestCode = 4110
     private lateinit var localRuntime: LocalModelRuntime
@@ -836,7 +834,11 @@ class MainActivity : Activity() {
             elevation = dp(22).toFloat()
         }
         val top = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
-        top.addView(AvatarView(this), LinearLayout.LayoutParams(dp(52), dp(52)))
+        top.addView(AvatarView(this).apply {
+            contentDescription = "Коснуться аватара, чтобы поговорить с MANA"
+            isClickable = true
+            setOnClickListener { startVoiceInput() }
+        }, LinearLayout.LayoutParams(dp(52), dp(52)))
         val titleBlock = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), 0, 0, 0)
@@ -901,11 +903,11 @@ class MainActivity : Activity() {
             setPadding(0, dp(8), 0, 0)
         }
         controls.addView(action("Отправить") { sendToLocalModel() }, LinearLayout.LayoutParams(0, dp(42), 1f))
-        controls.addView(action("Голос") { startVoiceInput() }, LinearLayout.LayoutParams(0, dp(42), 1f))
         controls.addView(action("Закрыть") {
             avatarPanel?.let(rootFrame::removeView)
             avatarPanel = null
         }, LinearLayout.LayoutParams(0, dp(42), 1f))
+        overlay.addView(label("Коснись аватара MANA, чтобы заговорить. Она ответит своим голосом.", 11, muted, false))
         overlay.addView(controls)
         val lp = FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM).apply {
             leftMargin = dp(14)
@@ -1849,64 +1851,72 @@ class MainActivity : Activity() {
         if (result == TextToSpeech.ERROR) { ManaAvatar3DView.isSpeaking = false; ManaAvatarState.isSpeaking = false }
     }
 
+    /**
+     * Voice capture stays inside the MANA screen. Never launch ACTION_RECOGNIZE_SPEECH:
+     * that external activity can display the Google microphone UI. The avatar is the
+     * only visible voice affordance; SpeechRecognizer streams results back to MANA.
+     */
     private fun startVoiceInput() {
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), audioPermissionRequestCode)
             return
         }
-        if (Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(this)) {
-            startOnDeviceVoiceInput()
-        } else {
-            AlertDialog.Builder(this)
-                .setTitle("Офлайн-распознавание")
-                .setMessage("На устройстве сейчас не обнаружен офлайн-движок русского распознавания. Системный распознаватель может использовать сеть. Продолжить?")
-                .setNegativeButton("Отмена", null)
-                .setPositiveButton("Продолжить") { _, _ -> startSystemVoiceInput() }
-                .show()
-        }
+        startNativeVoiceInput()
     }
 
     private fun voiceIntent() = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
         putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
         putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ru-RU")
-        putExtra(RecognizerIntent.EXTRA_PROMPT, "Скажите что-нибудь для MANA")
         putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
         putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
     }
 
-    private fun startSystemVoiceInput() {
-        try {
-            startActivityForResult(voiceIntent(), voiceRequestCode)
-        } catch (_: ActivityNotFoundException) {
-            showMessage("На устройстве не найден сервис распознавания речи.")
-        }
-    }
-
-    private fun startOnDeviceVoiceInput() {
+    private fun startNativeVoiceInput() {
         try {
             speechRecognizer?.destroy()
-            val recognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
+            val onDeviceAvailable = Build.VERSION.SDK_INT >= 31 &&
+                SpeechRecognizer.isOnDeviceRecognitionAvailable(this)
+            val recognizer = if (onDeviceAvailable) {
+                SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
+            } else {
+                // App-owned capture session; this calls the recognition service directly
+                // and does not open a Google/Android voice-recognition screen.
+                SpeechRecognizer.createSpeechRecognizer(this)
+            }
             speechRecognizer = recognizer
             recognizer.setRecognitionListener(object : RecognitionListener {
-                override fun onReadyForSpeech(params: Bundle?) { runOnUiThread { showMessage("MANA слушает…") } }
+                override fun onReadyForSpeech(params: Bundle?) {
+                    runOnUiThread {
+                        ManaAvatarState.expressionIndex = 1
+                        chatOutput?.text = "Я слушаю тебя…"
+                    }
+                }
                 override fun onBeginningOfSpeech() {}
                 override fun onRmsChanged(rmsdB: Float) {}
                 override fun onBufferReceived(buffer: ByteArray?) {}
-                override fun onEndOfSpeech() {}
+                override fun onEndOfSpeech() {
+                    runOnUiThread { chatOutput?.text = "Секунду, я обрабатываю сказанное…" }
+                }
                 override fun onError(error: Int) {
-                    runOnUiThread { showMessage("Офлайн-распознавание завершилось с ошибкой: $error") }
+                    runOnUiThread {
+                        ManaAvatarState.expressionIndex = 0
+                        chatOutput?.text = "Не получилось распознать речь. Коснись аватара и попробуй ещё раз."
+                    }
                     speechRecognizer?.destroy()
                     speechRecognizer = null
                 }
                 override fun onResults(results: Bundle?) {
                     val spoken = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
                     runOnUiThread {
+                        ManaAvatarState.expressionIndex = 0
                         val target = voiceTarget
                         voiceTarget = null
                         if (!spoken.isNullOrBlank() && target != null) target.setText(spoken)
                         else if (!spoken.isNullOrBlank()) {
                             chatInput?.setText(spoken)
                             sendToLocalModel()
+                        } else {
+                            chatOutput?.text = "Я не расслышала. Попробуй сказать ещё раз."
                         }
                     }
                     speechRecognizer?.destroy()
@@ -1915,11 +1925,13 @@ class MainActivity : Activity() {
                 override fun onPartialResults(partialResults: Bundle?) {}
                 override fun onEvent(eventType: Int, params: Bundle?) {}
             })
+            chatOutput?.text = "Коснись аватара, чтобы начать разговор."
             recognizer.startListening(voiceIntent())
         } catch (error: Exception) {
             speechRecognizer?.destroy()
             speechRecognizer = null
-            showMessage("Не удалось запустить офлайн-распознавание: ${error.message}")
+            ManaAvatarState.expressionIndex = 0
+            showMessage("Не удалось включить голосовой режим MANA: ${error.message}")
         }
     }
 
@@ -1951,13 +1963,6 @@ class MainActivity : Activity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == modelRequestCode && resultCode == RESULT_OK) {
             data?.data?.let(::importModel)
-        }
-        if (requestCode == voiceRequestCode && resultCode == RESULT_OK) {
-            val spoken = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
-            val target = voiceTarget
-            voiceTarget = null
-            if (!spoken.isNullOrBlank() && target != null) target.setText(spoken)
-            else if (!spoken.isNullOrBlank()) { chatInput?.setText(spoken); sendToLocalModel() }
         }
         if (requestCode == callScreeningRoleRequestCode && Build.VERSION.SDK_INT >= 29) {
             val roleManager = getSystemService(RoleManager::class.java)
