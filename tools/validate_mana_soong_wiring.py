@@ -33,6 +33,7 @@ gradle_app = (root / "launcher/app/build.gradle.kts").read_text()
 assert "aidl = true" in gradle_app, "Android Gradle AIDL compiler is disabled"
 assert 'rootProject.file("../system/mana/brain/aidl")' in gradle_app, "Gradle must compile the shared Soong AIDL sources"
 assert (root / "launcher/app/src/test/java/com/mana/brain/AidlContractCompileTest.kt").is_file(), "Generated AIDL contract compile test is missing"
+android_uri = "http://schemas.android.com/apk/res/android"
 launcher_manifest = ET.parse(root / "system/mana/apps/ManaLauncher/AndroidManifest.xml").getroot()
 assert "com.mana.permission.BIND_BRAIN" in [
     node.attrib.get("{" + android_uri + "}name")
