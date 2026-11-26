@@ -19,6 +19,8 @@ import com.mana.brain.IBrainService;
 import com.mana.brain.ILocalInferenceCallback;
 import com.mana.brain.ILocalInferenceService;
 import com.mana.brain.ManaBrainAndroidRuntime;
+import com.mana.brain.ManaCapabilityRequest;
+import com.mana.brain.ManaCapabilityResponse;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
@@ -35,6 +37,7 @@ public final class ManaBrainBinderService extends Service {
     private static final int MAX_PROMPT_CHARS = 32768;
 
     private volatile ILocalInferenceService localInference;
+    private ManaAndroidCapabilityExecutor capabilityExecutor;
     private boolean localInferenceBound;
     private final Object providerLock = new Object();
 
@@ -106,10 +109,24 @@ public final class ManaBrainBinderService extends Service {
             enforceAuthorizedCaller();
             return ManaBrainAndroidRuntime.get().engineVersion();
         }
+
+        @Override public ManaCapabilityResponse executeCapability(ManaCapabilityRequest request) {
+            enforceAuthorizedCaller();
+            if (request == null) {
+                ManaCapabilityResponse response = new ManaCapabilityResponse();
+                response.allowed = false;
+                response.executed = false;
+                response.denialReason = "INVALID_REQUEST";
+                response.message = "Capability request is required.";
+                return response;
+            }
+            return capabilityExecutor.execute(request);
+        }
     };
 
     @Override public void onCreate() {
         super.onCreate();
+        capabilityExecutor = new ManaAndroidCapabilityExecutor(this);
         ensureLocalProviderBound();
     }
 
