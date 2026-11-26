@@ -96,6 +96,7 @@ class MainActivity : Activity() {
     private var futureUpdateService: ManaFutureUpdateService? = null
     private var manaEngineBinder: ManaEngineService.LocalBinder? = null
     private var manaEngineBound = false
+    private var reconnectController: ManaEngineReconnectController? = null
     private var uiInitialized = false
     private val manaEngineConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -106,6 +107,7 @@ class MainActivity : Activity() {
                 showEngineUnavailableScreen("MANA Engine не смог запуститься. Доступна диагностика; ядро не будет имитировать готовность.")
                 return
             }
+            reconnectController?.onConnected()
             manaEngineBinder = binder
             localRuntime = binder.localModelRuntime()
             cloudGateway = binder.cloudGateway()
@@ -121,7 +123,10 @@ class MainActivity : Activity() {
 
         override fun onServiceDisconnected(name: ComponentName?) {
             manaEngineBinder = null
-            modelStatus?.text = "Связь со службой MANA Engine потеряна."
+            manaEngineBound = false
+            runCatching { unbindService(this) }
+            modelStatus?.text = "Связь со службой MANA Engine потеряна. Планируется ограниченное переподключение."
+            reconnectController?.onFailure()
         }
 
         override fun onBindingDied(name: ComponentName?) {
@@ -131,6 +136,7 @@ class MainActivity : Activity() {
                 runCatching { unbindService(this) }
                 manaEngineBound = false
             }
+            reconnectController?.onFailure()
         }
     }
     private var voiceTarget: EditText? = null
@@ -180,11 +186,19 @@ class MainActivity : Activity() {
         }
     }
 
+    override fun onDestroy() {
+        reconnectController?.cancel()
+        if (manaEngineBound) runCatching { unbindService(manaEngineConnection) }
+        manaEngineBound = false
+        super.onDestroy()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = bg
         window.navigationBarColor = bg
         window.decorView.setBackgroundColor(bg)
+        reconnectController = ManaEngineReconnectController(this) { attemptEngineConnection() }
         showEngineUnavailableScreen("Подключение к MANA Engine…")
         attemptEngineConnection()
     }
