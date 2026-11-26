@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# MANA RMX5566 read-only audit v2. Metadata only; no root or partition reads.
+# MANA RMX5566 read-only audit v3. Metadata only; no root or partition reads.
 set -u
 
 STAMP="$(date +%Y%m%d_%H%M%S 2>/dev/null || echo unknown_time)"
@@ -21,7 +21,7 @@ capture_shell() {
 }
 
 cat > "$WORK/00_README.txt" <<'EOF'
-MANA RMX5566 READ-ONLY AUDIT v2
+MANA RMX5566 READ-ONLY AUDIT v3
 Metadata only. No root, bootloader unlock, partition content reads, writes,
 mounts, flashing, or setting changes. Access-denied results are acceptable.
 Review the archive before sharing and redact any unexpected personal data.
@@ -104,7 +104,7 @@ done
 '
 capture_shell "11_vendor_modules.txt" '
 for d in /vendor/lib/modules /vendor_dlkm/lib/modules /odm/lib/modules /odm_dlkm/lib/modules /system/lib/modules /system_dlkm/lib/modules; do
- if [ -d "$d" ]; then echo "### $d"; find "$d" -maxdepth 2 -type f \\( -name "*.ko" -o -name "modules.load" -o -name "modules.dep" -o -name "modules.alias" \\) -print 2>&1; fi
+ if [ -d "$d" ]; then echo "### $d"; find "$d" -maxdepth 2 -type f \( -name "*.ko" -o -name "modules.load" -o -name "modules.dep" -o -name "modules.alias" \) -print 2>&1; fi
 done
 '
 capture_shell "12_tool_availability.txt" 'for c in getprop uname ls lsmod modinfo readlink find sha256sum zip getenforce; do command -v "$c" 2>/dev/null || echo "$c: not installed"; done'
