@@ -76,6 +76,14 @@
             </intent-filter>
         </service>
         <service
+            android:name=".ManaEngineService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Owner-enabled persistent MANA AI engine runtime" />
+        </service>
+        <service
             android:name=".ManaFloatingAvatarService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
