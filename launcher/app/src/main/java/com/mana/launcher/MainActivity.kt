@@ -211,6 +211,21 @@ class MainActivity : Activity() {
                 showMessage("Центральный MANA Engine пока недоступен: ${error.message}")
             }.getOrNull()
         }
+        if (manaEngineRuntime != null) {
+            try {
+                ManaEngineProcessOwner.install(manaEngineRuntime!!, manaBrain, localRuntime)
+                val engineServiceIntent = Intent(this, ManaEngineService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(engineServiceIntent)
+                } else {
+                    startService(engineServiceIntent)
+                }
+            } catch (error: Exception) {
+                ManaEngineProcessOwner.shutdown()
+                manaEngineRuntime = null
+                showMessage("Фоновая служба MANA Engine не запустилась: ${error.message}")
+            }
+        }
         initializeVoice()
         loadApps()
         buildShell()
@@ -1558,10 +1573,9 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
-        runCatching { manaEngineRuntime?.close() }
+        // MANA Engine, Brain and local inference are owned by ManaEngineService,
+        // so Activity recreation must not terminate the shared runtime.
         manaEngineRuntime = null
-        if (::manaBrain.isInitialized) manaBrain.shutdown()
-        if (::localRuntime.isInitialized) localRuntime.shutdown()
         ManaAvatar3DView.isSpeaking = false
         ManaAvatarState.isSpeaking = false
         speechRecognizer?.destroy()
