@@ -5,7 +5,6 @@ import android.content.Context
 import android.net.Uri
 import android.os.Environment
 import java.io.File
-import java.security.MessageDigest
 
 /**
  * Official owner-initiated Gemma 4 E2B LiteRT-LM download.
@@ -23,9 +22,8 @@ class ManaModelCatalog(context: Context) {
         require(licenseAccepted) { "Owner must review and accept the Gemma terms before downloading this model." }
         prefs.edit().putBoolean(KEY_LICENSE_ACCEPTED, true).apply()
         val target = File(directory, MODEL_FILE)
-        if (target.isFile && target.length() == MODEL_SIZE && sha256(target) == SHA256) {
-            prefs.edit().putString(KEY_ACTIVE_PATH, target.absolutePath).apply()
-            saveVerifiedMetadata(target)
+        if (ModelArtifactIntegrity.matches(target, MODEL_SIZE, SHA256, directory)) {
+            prefs.edit().putString(KEY_ACTIVE_PATH, target.canonicalPath).apply()
             return -1L
         }
         if (target.exists()) require(target.delete()) { "Не удалось удалить повреждённый предыдущий файл модели." }
@@ -51,18 +49,11 @@ class ManaModelCatalog(context: Context) {
         if (!prefs.getBoolean(KEY_LICENSE_ACCEPTED, false)) return null
         val path = savedModelPath() ?: return null
         val file = File(path)
-        if (!file.isFile || file.length() != MODEL_SIZE) {
-            prefs.edit().remove(KEY_ACTIVE_PATH).remove(KEY_VERIFIED_LENGTH).remove(KEY_VERIFIED_MTIME).apply()
+        if (!ModelArtifactIntegrity.matches(file, MODEL_SIZE, SHA256, directory)) {
+            prefs.edit().remove(KEY_ACTIVE_PATH).apply()
             return null
         }
-        val cached = prefs.getLong(KEY_VERIFIED_LENGTH, -1L) == file.length() &&
-            prefs.getLong(KEY_VERIFIED_MTIME, -1L) == file.lastModified()
-        if (!cached && !sha256(file).equals(SHA256, ignoreCase = true)) {
-            prefs.edit().remove(KEY_ACTIVE_PATH).remove(KEY_VERIFIED_LENGTH).remove(KEY_VERIFIED_MTIME).apply()
-            return null
-        }
-        if (!cached) saveVerifiedMetadata(file)
-        return file
+        return file.canonicalFile
     }
 
     /** Returns null while queued/running; throws for a failed or invalid completed download. */
@@ -73,11 +64,9 @@ class ManaModelCatalog(context: Context) {
             // A previously verified file can be selected again in this process without
             // requiring a second DownloadManager record.
             val existing = File(directory, MODEL_FILE)
-            if (existing.isFile && existing.length() == MODEL_SIZE &&
-                sha256(existing).equals(SHA256, ignoreCase = true)) {
-                prefs.edit().putString(KEY_ACTIVE_PATH, existing.absolutePath).apply()
-                saveVerifiedMetadata(existing)
-                return existing
+            if (ModelArtifactIntegrity.matches(existing, MODEL_SIZE, SHA256, directory)) {
+                prefs.edit().putString(KEY_ACTIVE_PATH, existing.canonicalPath).apply()
+                return existing.canonicalFile
             }
             return null
         }
@@ -96,35 +85,13 @@ class ManaModelCatalog(context: Context) {
             throw IllegalStateException("Загрузка модели не завершилась (код $reason). Проверь Wi-Fi и свободное место.")
         }
         val file = File(directory, MODEL_FILE)
-        require(file.isFile && file.length() == MODEL_SIZE) {
-            "Размер загруженной модели не совпадает с ожидаемым диапазоном."
-        }
-        val actual = sha256(file)
-        if (!actual.equals(SHA256, ignoreCase = true)) {
+        if (!ModelArtifactIntegrity.matches(file, MODEL_SIZE, SHA256, directory)) {
             file.delete()
             prefs.edit().remove(KEY_DOWNLOAD_ID).apply()
             throw SecurityException("SHA-256 модели не совпал с официальным значением. Файл удалён.")
         }
-        prefs.edit().putString(KEY_ACTIVE_PATH, file.absolutePath).remove(KEY_DOWNLOAD_ID).apply()
-        saveVerifiedMetadata(file)
-        return file
-    }
-
-    private fun saveVerifiedMetadata(file: File) {
-        prefs.edit().putLong(KEY_VERIFIED_LENGTH, file.length())
-            .putLong(KEY_VERIFIED_MTIME, file.lastModified()).apply()
-    }
-    private fun sha256(file: File): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        file.inputStream().buffered().use { input ->
-            val buffer = ByteArray(1024 * 1024)
-            while (true) {
-                val count = input.read(buffer)
-                if (count < 0) break
-                digest.update(buffer, 0, count)
-            }
-        }
-        return digest.digest().joinToString("") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
+        prefs.edit().putString(KEY_ACTIVE_PATH, file.canonicalPath).remove(KEY_DOWNLOAD_ID).apply()
+        return file.canonicalFile
     }
 
     companion object {
@@ -134,8 +101,6 @@ class ManaModelCatalog(context: Context) {
         private val KEY_DOWNLOAD_ID = "gemma4_download_id"
         private val KEY_LICENSE_ACCEPTED = "gemma4_license_accepted"
         private val KEY_ACTIVE_PATH = "active_model_path"
-        private val KEY_VERIFIED_LENGTH = "verified_model_length"
-        private val KEY_VERIFIED_MTIME = "verified_model_mtime"
         const val MODEL_SIZE = 2_588_147_712L
         private val REQUIRED_FREE_BYTES = 3_300_000_000L
     }
