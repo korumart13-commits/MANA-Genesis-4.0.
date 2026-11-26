@@ -21,6 +21,9 @@ object ManaEngineProcessOwner {
     ) {
         synchronized(lock) {
             check(engine == null) { "MANA Engine is already running" }
+            check(brain == null && inference == null && memory == null) {
+                "MANA Engine dependencies are already prepared; refusing to replace live process resources"
+            }
             brain = brainBridge
             inference = localInference
             memory = memoryService
@@ -42,7 +45,9 @@ object ManaEngineProcessOwner {
         }
     }
 
-    fun isPrepared(): Boolean = brain != null && inference != null && memory != null
+    fun isPrepared(): Boolean = synchronized(lock) {
+        brain != null && inference != null && memory != null
+    }
     fun isInstalled(): Boolean = engine != null
     fun engineRuntime(): ManaEngineAndroidRuntime? = engine
     fun brainBridge(): ManaBrainBridge? = brain
