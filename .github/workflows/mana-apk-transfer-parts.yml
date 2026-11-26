@@ -13,12 +13,20 @@ jobs:
   split:
     runs-on: ubuntu-latest
     steps:
-      - name: Download verified full APK artifact and split
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Download verified APK artifact from build run
+        uses: actions/download-artifact@v4
+        with:
+          name: MANA-Genesis-4.0-Full-Offline-APK-Gemma4-E4B
+          path: incoming
+          repository: ${{ github.repository }}
+          run-id: 45856525889
+          github-token: ${{ github.token }}
+      - name: Split APK and create checksum
+        shell: bash
         run: |
-          gh run download 45856525889 -R "${{ github.repository }}" -n MANA-Genesis-4.0-Full-Offline-APK-Gemma4-E4B -D incoming
-          mkdir extracted parts
+          set -euo pipefail
+          mkdir -p extracted parts
+          find incoming -type f -maxdepth 3 -print
           unzip -q incoming/*.zip -d extracted
           APK="$(find extracted -type f -name '*.apk' -print -quit)"
           test -n "$APK"
