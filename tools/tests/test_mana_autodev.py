@@ -27,9 +27,9 @@ class AutoDevPolicyTests(unittest.TestCase):
             with self.subTest(path=path), self.assertRaises(autodev.AutoDevError):
                 autodev.validate_paths("engine", [path])
 
-    def test_app_track_cannot_change_system_partitions_or_workflows(self):
-        for path in ("system/mana/apps/ManaSettings/src/New.java", "kernel/boot.img",
-                     ".github/workflows/build.yml"):
+    def test_app_track_allows_mana_apps_but_not_firmware_or_workflows(self):
+        autodev.validate_paths("apps", ["system/mana/apps/ManaSettings/src/New.java"])
+        for path in ("kernel/boot.img", ".github/workflows/build.yml"):
             with self.subTest(path=path), self.assertRaises(autodev.AutoDevError):
                 autodev.validate_paths("apps", [path])
 
