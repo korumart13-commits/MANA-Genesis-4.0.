@@ -66,6 +66,10 @@ jobs:
         run: python -m unittest discover -s tools/tests -p 'test_mana_autodev.py' -v
       - name: Syntax-check self-development tools
         run: python -m py_compile tools/mana_autodev.py tools/validate_mana_kernel_patch.py
+      - name: Validate complete owner-requested module inventory
+        run: |
+          python3 tools/validate_mana_feature_manifest.py
+          python -m unittest discover -s tools/tests -p 'test_mana_feature_manifest.py' -v
 
   core-tests:
     name: MANA OS Core tests
