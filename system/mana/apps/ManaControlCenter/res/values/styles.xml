@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="ManaControlCenterTheme" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:colorAccent">@color/mana_accent</item>
+        <item name="android:colorControlActivated">@color/mana_accent</item>
+        <item name="android:colorPrimary">@color/mana_primary</item>
+        <item name="android:colorPrimaryDark">@color/mana_background</item>
+        <item name="android:windowBackground">@color/mana_background</item>
+        <item name="android:navigationBarColor">@color/mana_background</item>
+        <item name="android:statusBarColor">@color/mana_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
