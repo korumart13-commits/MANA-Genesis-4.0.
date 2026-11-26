@@ -16,7 +16,8 @@ android {
             java.srcDirs = [
                 "../../../system/mana/apps/ManaLauncher/src",
                 "../../../system/mana/apps/ManaSettings/src",
-                "../../../system/mana/apps/ManaControlCenter/src"
+                "../../../system/mana/apps/ManaControlCenter/src",
+                "src/main/java"
             ]
             // The single shell APK uses the shared MANA launcher theme resources.
             // Settings and Control Center draw their UI programmatically and have no unique resource dependencies.
