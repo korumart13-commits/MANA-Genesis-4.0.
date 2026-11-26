@@ -43,7 +43,10 @@
       "mana_os": "spinal_cord_and_nervous_system — coordinates services and translates Brain decisions into platform operations",
       "android_realme": "body — framework, kernel, drivers, HAL and device services that operate the hardware",
       "phone": "house_and_environment — the physical device and its installed tools"
-    }
+    },
+    "primary_system_identity": "MANA",
+    "logical_authority": "MANA is the top-level intelligence and user-experience orchestrator above any replaceable Android/OEM shell; Android/Realme remains the hardware-facing substrate and enforces actual privilege boundaries.",
+    "primary_entry_point": "MANA HOME launcher after explicit owner approval of Android HOME role"
   },
   "autonomy": {
     "level": "maximum_with_capability_boundaries",
@@ -141,7 +144,15 @@
     "control_center_quick_settings": true,
     "boot_branding": "MANA",
     "stock_camera_phone_and_oem_hardware_apps_preserved": true,
-    "avatar_power_button_summon_only_when_supported": true
+    "avatar_power_button_summon_only_when_supported": true,
+    "primary_user_experience": "MANA",
+    "home_role_request": true,
+    "boot_completed_receiver": true,
+    "package_replaced_receiver": true,
+    "boot_initialization_worker": true,
+    "background_activity_launch": "not_attempted; Android background launch restrictions respected",
+    "boot_model_loading": "deferred until MANA foreground use or owner request to avoid loading multi-GB model during boot",
+    "user_confirmation_required_for_home_role": true
   },
   "update_delivery": {
     "channel": "com.mana.genesis.system",
@@ -152,7 +163,9 @@
     "bridge_installs_firmware": false,
     "realme_oem_signature_required_for_stock_recovery": true,
     "automatic_system_partition_write_allowed": false,
-    "full_device_rom_release_status": "blocked_pending_exact_device_tree_kernel_vendor_avb_and_oem_trust_route"
+    "full_device_rom_release_status": "blocked_pending_exact_device_tree_kernel_vendor_avb_and_oem_trust_route",
+    "installation_requirement": "MANA app, launcher, boot lifecycle, runtime, model weights and module catalog ship together in one self-contained package; default HOME role requires one-time owner confirmation.",
+    "keep_mana_as_primary_home_after_update": true
   },
   "game_intelligence": {
     "autonomy": "high",
