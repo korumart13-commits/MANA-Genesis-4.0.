@@ -92,7 +92,7 @@ class MainActivity : Activity() {
     private var memoryService: ManaMemoryService? = null
     private var adaptiveKnowledgeService: com.mana.os.core.ManaAdaptiveKnowledgeService? = null
     private var futureUpdateService: ManaFutureUpdateService? = null
-    private var manaEngineRuntime: ManaEngineAndroidRuntime? = null
+    private val manaEngineRuntime: ManaEngineAndroidRuntime? get() = ManaEngineProcessOwner.engineRuntime()
     private var voiceTarget: EditText? = null
     private var editingDiaryId: String? = null
     private var useCloudForNextPrompt = false
@@ -202,22 +202,15 @@ class MainActivity : Activity() {
             showMessage("Хранилище будущих обновлений недоступно: " + error.message)
             null
         }
-        manaEngineRuntime = existingEngineRuntime ?: memoryService?.let { memory ->
-            runCatching {
-                ManaEngineAndroidRuntime(this, manaBrain, memory, ManaAndroidKeyProvider()).also { engine ->
-                    val health = engine.start()
-                    if (health.state != com.mana.os.core.ManaEngineState.READY) {
-                        showMessage("MANA Engine запущен в ограниченном режиме: ${health.lastFailure ?: health.state.name}")
-                    }
-                }
-            }.onFailure { error ->
-                showMessage("Центральный MANA Engine пока недоступен: ${error.message}")
-            }.getOrNull()
-        }
-        if (manaEngineRuntime != null && !ManaEngineProcessOwner.isInstalled()) {
+        if (existingEngineRuntime == null && memoryService != null) {
             try {
-                val memory = checkNotNull(memoryService) { "MANA memory service is unavailable" }
-                ManaEngineProcessOwner.install(manaEngineRuntime!!, manaBrain, localRuntime, memory)
+                ManaEngineProcessOwner.prepare(manaBrain, localRuntime, memoryService!!)
+            } catch (error: Exception) {
+                showMessage("Не удалось подготовить MANA Engine: ${error.message}")
+            }
+        }
+        if (existingEngineRuntime != null || memoryService != null) {
+            try {
                 val engineServiceIntent = Intent(this, ManaEngineService::class.java)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     startForegroundService(engineServiceIntent)
@@ -225,9 +218,7 @@ class MainActivity : Activity() {
                     startService(engineServiceIntent)
                 }
             } catch (error: Exception) {
-                ManaEngineProcessOwner.shutdown()
-                manaEngineRuntime = null
-                showMessage("Фоновая служба MANA Engine не запустилась: ${error.message}")
+                showMessage("Не удалось запустить службу MANA Engine: ${error.message}")
             }
         }
         initializeVoice()
@@ -1583,7 +1574,6 @@ class MainActivity : Activity() {
             if (::manaBrain.isInitialized) manaBrain.shutdown()
             if (::localRuntime.isInitialized) localRuntime.shutdown()
         }
-        manaEngineRuntime = null
         ManaAvatar3DView.isSpeaking = false
         ManaAvatarState.isSpeaking = false
         speechRecognizer?.destroy()
