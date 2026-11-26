@@ -63,6 +63,10 @@ Searches were performed for `RMX5566`, `RE645F`, `moscow-b`, `SM6225 5.15.197`, 
 
 A search returning no exact candidate is not proof that no OEM source exists. It means no candidate is approved from current evidence.
 
+### Android 16 kernel compatibility interpretation
+
+The reported `5.15.197-android13-8-o-01074-gdfa4acfa411e` release is in the Android 13 / 5.15 kernel lineage. AOSP's Android 16 kernel compatibility table lists `android13-5.15` among supported kernel branches. This is a useful platform-level compatibility signal, but it does **not** identify the exact OEM kernel source, vendor module ABI, defconfig, DTS/DTBO, or prove this phone can boot an arbitrary Android 16 image. The exact OEM kernel and matching vendor modules are still required. See the [AOSP Android common kernel compatibility table](https://source.android.com/docs/core/architecture/kernel/android-common).
+
 ## Next device-audit stage
 
 The two screenshots strengthen the identity and firmware baseline, but they do not reveal the partition layout, boot chain, VINTF declarations, vendor interface level, exact kernel config, device tree or proprietary firmware inventory. The next safe audit is a read-only Termux/ADB property and partition inventory. It must not unlock, root, modify or flash the phone.
