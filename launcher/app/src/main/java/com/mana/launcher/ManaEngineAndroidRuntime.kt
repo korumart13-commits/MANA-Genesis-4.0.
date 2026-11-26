@@ -2,12 +2,10 @@ package com.mana.launcher
 
 import android.content.Context
 import android.os.Build
-import com.mana.os.core.DataSensitivity
 import com.mana.os.core.EncryptedFileMicroworldStore
 import com.mana.os.core.ManaEngineHealth
 import com.mana.os.core.ManaEngineRequest
 import com.mana.os.core.ManaEngineRuntime
-import com.mana.os.core.ManaEngineState
 import com.mana.os.core.ManaHydraRegistry
 import com.mana.os.core.ManaMemoryService
 import com.mana.os.core.ManaMicroworldService
@@ -20,7 +18,6 @@ import com.mana.os.core.ManaSystemCore
 import com.mana.os.core.ManaSystemContext
 import com.mana.os.core.ManaSystemModule
 import com.mana.os.core.DeviceFacts
-import com.mana.os.core.BootPhase
 import java.io.File
 
 /**
@@ -96,7 +93,8 @@ class ManaEngineAndroidRuntime(
         allowCloud: Boolean = false,
         sensitive: Boolean = false,
         preferredCloudProvider: String? = null,
-        includePersonalMemory: Boolean = true
+        includePersonalMemory: Boolean = true,
+        memoryQuery: String = text
     ) = runtime.think(
         ManaEngineRequest(
             text = text,
@@ -104,7 +102,7 @@ class ManaEngineAndroidRuntime(
             sensitive = sensitive,
             preferredCloudProvider = preferredCloudProvider,
             includePersonalMemory = includePersonalMemory,
-            memoryQuery = text,
+            memoryQuery = memoryQuery,
             allowPersonalMemoryToCloud = false
         )
     )
