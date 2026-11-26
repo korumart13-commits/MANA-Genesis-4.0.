@@ -46,6 +46,17 @@ All listed modules belong to one OS product and one MANA identity. They are not 
 | VK integration | Official API-based services where licensed and available | Network opt-in, provider credentials |
 | Game Intelligence | Game-aware tools and Minecraft integration where permitted | Brain, user-granted game/storage APIs |
 
+## Additional owner-requested modules
+
+- **Life Studio:** one workspace joining Diary, Life Manager, personal planning and related tools.
+- **Finance:** private finance records and analysis; payment/transfer actions remain separately authorized.
+- **Micro-universe:** sandboxed micro-world simulation, world building, exploration and creator tools.
+- **MANA AutoDev / Self-Development:** Brain-generated source patches, isolated worktrees, tests, candidate branches, audit and rollback.
+- **MANA Kernel Lab:** review-only MANA driver patchsets until exact RMX5566RU OEM kernel source, ABI, vendor modules and recovery path are verified.
+- **Stock App Bridge:** preserve and invoke the device's supported camera, phone, radio, sensor and OEM applications rather than replacing hardware-facing components with unverified substitutes.
+
+These modules are part of the complete target inventory even where implementation is still architectural or blocked. Their presence in this map is not a claim that they are already packaged or working on the phone.
+
 ## Device ecosystem
 
 - MANA Primary Node: this phone is the primary local node; LAN server remains off by default.
