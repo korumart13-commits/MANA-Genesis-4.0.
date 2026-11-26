@@ -44,7 +44,8 @@ def load_public_key(path: Path) -> Ed25519PublicKey:
 
 
 def validate_manifest(manifest: dict, public_key: Ed25519PublicKey,
-                      expected_fingerprint: str | None = None) -> None:
+                      expected_fingerprint: str | None = None,
+                      installed_version_code: int | None = None) -> None:
     if not isinstance(manifest, dict):
         raise ManifestError("Manifest root must be an object")
     required = {
@@ -62,6 +63,8 @@ def validate_manifest(manifest: dict, public_key: Ed25519PublicKey,
         raise ManifestError("version_code must be a positive integer")
     if manifest["version_name"] != f"MANA +{manifest['version_code']}":
         raise ManifestError("version_name must match the MANA channel version_code")
+    if installed_version_code is not None and manifest["version_code"] <= installed_version_code:
+        raise ManifestError("MANA update is not newer than the installed MANA channel version")
     if not isinstance(manifest["release_id"], str) or not manifest["release_id"].strip():
         raise ManifestError("release_id must be non-empty")
 
@@ -110,11 +113,13 @@ def main() -> int:
     parser.add_argument("manifest", type=Path)
     parser.add_argument("--public-key", required=True, type=Path)
     parser.add_argument("--expected-fingerprint")
+    parser.add_argument("--installed-version-code", type=int, help="Current MANA channel version; not the Realme/Android version")
     args = parser.parse_args()
     try:
         manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
         validate_manifest(
-            manifest, load_public_key(args.public_key), args.expected_fingerprint
+            manifest, load_public_key(args.public_key), args.expected_fingerprint,
+            args.installed_version_code
         )
     except (OSError, json.JSONDecodeError, ManifestError) as exc:
         print(f"MANA UPDATE REJECTED: {exc}", file=sys.stderr)
