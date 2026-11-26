@@ -45,7 +45,7 @@ class FeatureManifestTests(unittest.TestCase):
         self.assertIn("enqueueGemma4E4B", catalog)
         self.assertIn("verifyCompletedGemma4E4BDownload", catalog)
         self.assertIn("installBundledGemma4E4B", catalog)
-        self.assertIn('noCompress += "litertlm"', gradle)
+        self.assertIn('noCompress += listOf("litertlm", "part")', gradle)
         self.assertIn('buildConfigField("boolean", "MANA_BUNDLED_MODEL"', gradle)
         self.assertIn("manaBundledModel=true", workflow)
         self.assertIn("gemma-4-E4B-it.litertlm", workflow)
