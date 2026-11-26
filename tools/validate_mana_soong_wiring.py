@@ -41,6 +41,7 @@ assert (root / "launcher/app/src/test/java/com/mana/brain/AidlContractCompileTes
 assert (root / "system/mana/apps/ManaLauncher/tests/Android.bp").is_file(), "Launcher-UID Binder integration test is missing"
 assert (root / "system/mana/apps/ManaLauncher/tests/src/com/mana/launcher/tests/ManaLauncherBrainIntegrationTest.java").is_file()
 assert (root / "launcher/app/src/main/java/com/mana/launcher/ManaLocalInferenceService.kt").is_file()
+assert (root / "launcher/app/src/main/java/com/mana/launcher/ManaLocalModelRuntimeHolder.kt").is_file()
 
 android_uri = "http://schemas.android.com/apk/res/android"
 android_ns = "{" + android_uri + "}"
