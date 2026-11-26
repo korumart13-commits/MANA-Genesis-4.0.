@@ -9,8 +9,8 @@
         </intent>
     </queries>
     <uses-permission android:name="com.mana.permission.BIND_BRAIN" />
-    <application android:label="MANA"
-        android:theme="@android:style/Theme.Material.NoActionBar"
+    <application android:label="MANA OS"
+        android:theme="@style/ManaLauncherTheme"
         android:allowBackup="false" android:supportsRtl="true">
         <activity android:name=".ManaHomeActivity" android:exported="true">
             <intent-filter>
