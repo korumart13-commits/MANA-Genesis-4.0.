@@ -30,8 +30,6 @@
         <intent>
             <action android:name="android.speech.RecognitionService" />
         </intent>
-    </queries>
-    <queries>
         <package android:name="com.mana.assistant" />
     </queries>
     <application
