@@ -38,6 +38,8 @@ gradle_app = (root / "launcher/app/build.gradle.kts").read_text()
 assert "aidl = true" in gradle_app
 assert 'rootProject.file("../system/mana/brain/aidl")' in gradle_app
 assert (root / "launcher/app/src/test/java/com/mana/brain/AidlContractCompileTest.kt").is_file()
+assert (root / "system/mana/apps/ManaLauncher/tests/Android.bp").is_file(), "Launcher-UID Binder integration test is missing"
+assert (root / "system/mana/apps/ManaLauncher/tests/src/com/mana/launcher/tests/ManaLauncherBrainIntegrationTest.java").is_file()
 assert (root / "launcher/app/src/main/java/com/mana/launcher/ManaLocalInferenceService.kt").is_file()
 
 android_uri = "http://schemas.android.com/apk/res/android"
@@ -68,4 +70,4 @@ assert "android.service.quicksettings.action.QS_TILE" in [
     x.attrib.get(android_ns + "name") for x in tile.findall("intent-filter/action")
 ]
 
-print(f"MANA Android contract valid: {len(brain_sources)} Kotlin engine sources, {len(aidl_files)} shared AIDL sources, local LiteRT-LM Binder bridge, 4 product apps, Quick Settings integration.")
+print(f"MANA Android contract valid: {len(brain_sources)} Kotlin engine sources, {len(aidl_files)} shared AIDL sources, LiteRT-LM Binder provider, Launcher-UID integration test, 4 product apps, Quick Settings integration.")
