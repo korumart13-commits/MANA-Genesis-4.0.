@@ -46,6 +46,19 @@ class FeatureManifestTests(unittest.TestCase):
         self.assertIn("gemma-4-E4B-it.litertlm", workflow)
         self.assertIn("sha256sum --check -", workflow)
 
+    def test_device_intelligence_activity_and_port_blueprint_are_registered(self):
+        source = (ROOT.parent / "launcher/app/src/main/java/com/mana/launcher/ManaDeviceIntelligenceActivity.kt").read_text()
+        manifest = (ROOT.parent / "launcher/app/src/main/AndroidManifest.xml").read_text()
+        launcher = (ROOT.parent / "launcher/app/src/main/java/com/mana/launcher/MainActivity.kt").read_text()
+        self.assertIn("ManaDeviceIntelligenceActivity", manifest)
+        self.assertIn("ManaDeviceIntelligenceActivity", launcher)
+        self.assertIn("Build.FINGERPRINT", source)
+        self.assertIn("getMemoryInfo", source)
+        self.assertIn("CameraManager", source)
+        self.assertIn("MANA_Device_Port_Blueprint.zip", source)
+        self.assertIn("binary_firmware_generated", source)
+        self.assertIn("androidx.core.content.FileProvider", manifest)
+
     def test_missing_micro_universe_is_rejected(self):
         bad = dict(self.data)
         bad["modules"] = [m for m in self.data["modules"] if m["id"] != "mana.microuniverse"]
