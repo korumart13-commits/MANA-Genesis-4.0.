@@ -47,9 +47,9 @@ class AutoDevPolicyTests(unittest.TestCase):
 
     def test_binary_and_symlink_patches_are_rejected(self):
         for patch in (
-            "GIT binary patch\\nliteral 10\\n",
-            "diff --git a/foo.kt b/foo.kt\\nnew file mode 120000\\n",
-            "diff --git a/foo.kt b/foo.kt\\nold mode 100644\\nnew mode 100755\\n",
+            "GIT binary patch\nliteral 10\n",
+            "diff --git a/foo.kt b/foo.kt\nnew file mode 120000\n",
+            "diff --git a/foo.kt b/foo.kt\nold mode 100644\nnew mode 100755\n",
         ):
             with self.subTest(patch=patch), self.assertRaises(autodev.AutoDevError):
                 autodev.validate_patch_text(patch)
