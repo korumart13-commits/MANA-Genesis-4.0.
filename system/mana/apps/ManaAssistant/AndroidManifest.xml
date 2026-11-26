@@ -5,6 +5,10 @@
         android:name="com.mana.permission.BIND_BRAIN"
         android:protectionLevel="signature" />
 
+    <queries>
+        <package android:name="com.mana.genesis" />
+    </queries>
+
     <application android:label="MANA"
         android:theme="@android:style/Theme.Material.NoActionBar"
         android:allowBackup="false" android:supportsRtl="true">
