@@ -2,7 +2,6 @@ package com.mana.launcher
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import io.github.sceneview.SceneView
 import io.github.sceneview.SurfaceType
