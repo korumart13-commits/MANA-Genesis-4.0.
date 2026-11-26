@@ -14,6 +14,7 @@ data class ManaCapability(
     val id: String,
     val description: String,
     val requiredPermissions: Set<String> = emptySet(),
+    val requiredAccess: Set<String> = emptySet(),
     val risk: CapabilityRisk = CapabilityRisk.LOW,
     val requiresOwnerConfirmation: Boolean = false,
     val enabledByDefault: Boolean = false
@@ -22,6 +23,7 @@ data class ManaCapability(
         require(id.matches(Regex("[a-z][a-z0-9_.-]{1,63}"))) { "Invalid capability id" }
         require(description.isNotBlank()) { "Capability description must not be blank" }
         require(requiredPermissions.none { it.isBlank() }) { "Permission names must not be blank" }
+        require(requiredAccess.none { it.isBlank() }) { "Access names must not be blank" }
         require(risk != CapabilityRisk.SENSITIVE || requiresOwnerConfirmation) {
             "Sensitive capabilities must require owner confirmation"
         }
@@ -30,6 +32,7 @@ data class ManaCapability(
 
 data class CapabilityContext(
     val grantedPermissions: Set<String>,
+    val grantedAccess: Set<String> = emptySet(),
     val ownerConfirmed: Boolean,
     val deviceSupportsCapability: Boolean,
     val enabled: Boolean
@@ -45,6 +48,7 @@ enum class DenialReason {
     DISABLED,
     DEVICE_UNSUPPORTED,
     MISSING_PERMISSION,
+    MISSING_SPECIAL_ACCESS,
     OWNER_CONFIRMATION_REQUIRED
 }
 
@@ -71,6 +75,9 @@ class ManaCapabilityRegistry(capabilities: Collection<ManaCapability>) {
         }
         if (!context.grantedPermissions.containsAll(capability.requiredPermissions)) {
             return CapabilityDecision.Denied(DenialReason.MISSING_PERMISSION)
+        }
+        if (!context.grantedAccess.containsAll(capability.requiredAccess)) {
+            return CapabilityDecision.Denied(DenialReason.MISSING_SPECIAL_ACCESS)
         }
         if (capability.requiresOwnerConfirmation && !context.ownerConfirmed) {
             return CapabilityDecision.Denied(DenialReason.OWNER_CONFIRMATION_REQUIRED)
@@ -100,7 +107,7 @@ class ManaCapabilityRegistry(capabilities: Collection<ManaCapability>) {
                 ManaCapability(
                     id = "device.notifications.read",
                     description = "Read notifications through an owner-enabled listener",
-                    requiredPermissions = setOf("android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"),
+                    requiredAccess = setOf("notification_listener"),
                     risk = CapabilityRisk.ELEVATED
                 ),
                 ManaCapability(
@@ -114,6 +121,7 @@ class ManaCapabilityRegistry(capabilities: Collection<ManaCapability>) {
                     id = "calls.answer",
                     description = "Answer an incoming call through the approved dialer role",
                     requiredPermissions = setOf("android.permission.ANSWER_PHONE_CALLS"),
+                    requiredAccess = setOf("role_dialer"),
                     risk = CapabilityRisk.SENSITIVE,
                     requiresOwnerConfirmation = true
                 ),
