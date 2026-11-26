@@ -11,8 +11,8 @@ android {
         applicationId = "com.mana.genesis"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
-        versionName = "4.0.4"
+        versionCode = 6
+        versionName = "4.0.5"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
