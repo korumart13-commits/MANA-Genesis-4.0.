@@ -101,9 +101,9 @@ class MainActivity : Activity() {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as? ManaEngineService.LocalBinder ?: return
             if (!binder.isInitialized()) {
-                showMessage("MANA Engine не смог запуститься. Проверь журнал устройства; интерфейс не будет подключаться к незапущенному ядру.")
                 runCatching { unbindService(this) }
                 manaEngineBound = false
+                showEngineUnavailableScreen("MANA Engine не смог запуститься. Доступна диагностика; ядро не будет имитировать готовность.")
                 return
             }
             manaEngineBinder = binder
@@ -185,13 +185,44 @@ class MainActivity : Activity() {
         window.statusBarColor = bg
         window.navigationBarColor = bg
         window.decorView.setBackgroundColor(bg)
+        showEngineUnavailableScreen("Подключение к MANA Engine…")
+        attemptEngineConnection()
+    }
+
+    private fun attemptEngineConnection() {
+        if (manaEngineBound) return
         val engineIntent = Intent(this, ManaEngineService::class.java)
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(engineIntent) else startService(engineIntent)
             manaEngineBound = bindService(engineIntent, manaEngineConnection, BIND_AUTO_CREATE)
+            if (!manaEngineBound) showEngineUnavailableScreen("Android не подтвердил подключение к MANA Engine.")
         } catch (error: Exception) {
             android.util.Log.e("MANA", "Unable to connect to Engine service", error)
+            showEngineUnavailableScreen("Не удалось подключиться: ${error.message ?: error.javaClass.simpleName}")
         }
+    }
+
+    private fun showEngineUnavailableScreen(message: String) {
+        val fallback = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(24), dp(28), dp(24), dp(28))
+            setBackgroundColor(bg)
+        }
+        fallback.addView(label("MANA", 34, textColor, true))
+        fallback.addView(label("GENESIS 4.0", 12, accentSoft, true).apply {
+            setPadding(0, dp(4), 0, dp(18))
+        })
+        fallback.addView(label(message, 14, textColor, false).apply {
+            setPadding(0, 0, 0, dp(18))
+        })
+        fallback.addView(action("Открыть диагностику MANA") {
+            startActivity(Intent(this, ManaSystemStatusActivity::class.java))
+        }, LinearLayout.LayoutParams(-1, dp(48)))
+        fallback.addView(action("Повторить подключение") {
+            attemptEngineConnection()
+        }, LinearLayout.LayoutParams(-1, dp(48)))
+        setContentView(fallback)
     }
 
     private fun initializeUiAfterEngineConnected() {
