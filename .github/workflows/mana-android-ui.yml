@@ -7,6 +7,8 @@ on:
       - 'system/mana/mana_product.mk'
       - 'engine/mana-brain/Android.bp'
       - 'system/mana/brain/**'
+      - 'launcher/app/src/main/AndroidManifest.xml'
+      - 'launcher/app/src/main/java/com/mana/launcher/ManaLocalInferenceService.kt'
       - '.github/workflows/mana-android-ui.yml'
   pull_request:
     paths:
@@ -37,7 +39,7 @@ jobs:
           javac -source 17 -target 17 \
             -classpath "$ANDROID_HOME/platforms/android-36/android.jar" \
             -d "$RUNNER_TEMP/mana-ui-classes" \
-            $(find system/mana/apps -name '*.java' ! -name 'ManaBrainBinderService.java' ! -name 'ManaBrainBinderTest.java' ! -name 'ManaHomeActivity.java' -print)
+            $(find system/mana/apps -name '*.java' ! -name 'ManaBrainBinderService.java' ! -name 'ManaBrainBinderTest.java' ! -name 'ManaLauncherBrainIntegrationTest.java' ! -name 'ManaHomeActivity.java' -print)
       - name: Validate MANA product package integration
         run: |
           python3 - <<'PY'
