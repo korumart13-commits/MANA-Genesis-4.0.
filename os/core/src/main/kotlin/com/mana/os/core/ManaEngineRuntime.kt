@@ -28,6 +28,8 @@ data class ManaEngineRequest(
     val preferredCloudProvider: String? = null,
     /** Personal memories are added only when this request explicitly opts in. */
     val includePersonalMemory: Boolean = false,
+    /** Separate consent is required before personal memories may accompany a cloud request. */
+    val allowPersonalMemoryToCloud: Boolean = false,
     val memoryQuery: String = "",
     val requestedAt: Instant = Instant.now()
 ) {
@@ -80,7 +82,7 @@ class ManaEngineRuntime(
 
     @Synchronized
     fun start(): ManaEngineHealth {
-        check(engineState == ManaEngineState.NEW || engineState == ManaEngineState.STOPPED) {
+        check(engineState == ManaEngineState.NEW) {
             "MANA Engine cannot start from state $engineState"
         }
         engineState = ManaEngineState.STARTING
@@ -154,7 +156,7 @@ class ManaEngineRuntime(
             .filter { item ->
                 when (item.sensitivity) {
                     DataSensitivity.PUBLIC -> true
-                    DataSensitivity.PERSONAL -> request.includePersonalMemory
+                    DataSensitivity.PERSONAL -> request.includePersonalMemory && (!request.allowCloud || request.allowPersonalMemoryToCloud)
                     DataSensitivity.SENSITIVE -> request.sensitive
                     DataSensitivity.SECRET -> false
                 }
