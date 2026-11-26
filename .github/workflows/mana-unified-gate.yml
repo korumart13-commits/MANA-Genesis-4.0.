@@ -367,6 +367,12 @@ jobs:
           import hashlib, json
           from pathlib import Path
           root = Path("dist")
+          def sha256_file(path):
+              digest = hashlib.sha256()
+              with path.open("rb") as stream:
+                  for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                      digest.update(chunk)
+              return digest.hexdigest()
           payloads = []
           for rel, kind in (
               ("android-companion/app-debug.apk", "companion_apk"),
@@ -378,7 +384,7 @@ jobs:
                   "file": rel,
                   "kind": kind,
                   "size": p.stat().st_size,
-                  "sha256": hashlib.sha256(iter(lambda: p.open("rb").read(1024 * 1024), b"")).hexdigest(),
+                  "sha256": sha256_file(p),
               })
           update = {
               "format": "MANA-Genesis-4.0-userspace-preview",
