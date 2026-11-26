@@ -31,3 +31,17 @@
 - A previously loaded local model is not loaded a second time on Activity recreation.
 - Local inference shutdown is now idempotent, and Activity cleanup releases Brain/inference only when ownership was not transferred to the service.
 - These follow-up changes are source-level changes only; no build or runtime test has been confirmed.
+
+## Service-owned Engine construction — follow-up
+
+- `MainActivity` no longer constructs or starts `ManaEngineAndroidRuntime`.
+- The Activity prepares the shared Brain, local inference runtime, and encrypted memory dependency, then requests startup of `ManaEngineService`.
+- The service promotes itself to foreground immediately in `onCreate()`, then constructs and starts `ManaEngineAndroidRuntime` from `onStartCommand()`. This ordering avoids doing engine initialization before the foreground-service notification is posted.
+- `ManaEngineProcessOwner.initializeFromService()` is now the sole Android call site that constructs and starts the Engine runtime.
+- The Activity reads the runtime through the process owner. Activity recreation reuses the service-owned Engine.
+- Activity cleanup preserves prepared dependencies during the short interval between service request and service initialization.
+
+## Current verification
+
+- The updated Kotlin and manifest files were fetched back from GitHub after the commits and inspected.
+- No successful Gradle/CI build or Android device run has been confirmed. In particular, compilation of the service integration, Android 16 foreground-service behavior, model loading, and recovery after process death remain unverified.
