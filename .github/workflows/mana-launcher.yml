@@ -12,6 +12,8 @@ on:
       - 'os/core/**'
       - '.github/workflows/mana-launcher.yml'
       - 'tools/validate_mana_gltf.py'
+      - 'tools/stage_mana_aosp_prebuilt.sh'
+      - 'tools/test_stage_mana_aosp_prebuilt.sh'
   pull_request:
     paths:
       - 'launcher/**'
@@ -166,6 +168,9 @@ jobs:
           grep -F 'MAX_PENDING_REQUESTS = 32' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
           grep -F 'requests.execute' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
           grep -F 'requests.shutdownNow()' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+      - name: Validate AOSP prebuilt staging workflow
+        run: |
+          bash tools/test_stage_mana_aosp_prebuilt.sh
       - name: Validate embedded full-body MANA glTF asset
         working-directory: .
         run: |
@@ -179,6 +184,18 @@ jobs:
         working-directory: launcher
         run: gradle --no-daemon :app:assembleDebug :app:testDebugUnitTest
 
+      - name: Build unsigned release APK for AOSP platform signing
+        working-directory: launcher
+        run: |
+          gradle --no-daemon :app:assembleRelease
+          APK="app/build/outputs/apk/release/app-release-unsigned.apk"
+          test -f "$APK"
+          APKANALYZER="$(find "$ANDROID_HOME" -type f -name apkanalyzer | head -n 1)"
+          test -n "$APKANALYZER"
+          test "$("$APKANALYZER" manifest application-id "$APK")" = "com.mana.launcher"
+          "$APKANALYZER" manifest print "$APK" | grep -q 'ManaEngineBridgeService'
+          "$APKANALYZER" manifest print "$APK" | grep -q 'com.mana.permission.BIND_BRAIN'
+          sha256sum "$APK" > app/build/outputs/apk/release/SHA256SUMS.txt
       - name: Package complete tracked MANA source tree
         run: |
           mkdir -p release
@@ -203,6 +220,15 @@ jobs:
             release/BUILD_SCOPE.txt
           if-no-files-found: error
           retention-days: 30
+      - name: Upload unsigned release APK for AOSP platform signing
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Android-release-unsigned-for-AOSP-platform-signing
+          path: |
+            launcher/app/build/outputs/apk/release/app-release-unsigned.apk
+            launcher/app/build/outputs/apk/release/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload Android debug prototype separately
         uses: actions/upload-artifact@v4
         with:
