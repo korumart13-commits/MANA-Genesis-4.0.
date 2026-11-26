@@ -298,6 +298,16 @@ jobs:
         with:
           name: MANA-Realme-MANA-Plus-1-Updater-Bridge-APK
           path: dist/realme-update-bridge
+      - name: Download and verify the complete offline Gemma 4 E2B model
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/local-model
+          curl --fail --location --retry 5 --retry-all-errors \
+            "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/21c646194210256750db12cfa1e4fdf22bd3ddf1/gemma-4-E2B-it.litertlm" \
+            --output dist/local-model/gemma-4-E2B-it.litertlm
+          test "$(stat -c%s dist/local-model/gemma-4-E2B-it.litertlm)" = "2588147712"
+          echo "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c  dist/local-model/gemma-4-E2B-it.litertlm" | sha256sum --check -
       - name: Package all current MANA source modules
         shell: bash
         run: |
@@ -361,6 +371,7 @@ jobs:
           for rel, kind in (
               ("android-companion/app-debug.apk", "companion_apk"),
               ("realme-update-bridge/app-debug.apk", "companion_apk"),
+              ("local-model/gemma-4-E2B-it.litertlm", "model_bundle"),
           ):
               p = root / rel
               payloads.append({
@@ -376,13 +387,15 @@ jobs:
               "target": {"model": "RMX5566RU", "device": "RE645F", "android_api": 36},
               "base_fingerprint": "realme/RMX5566RU/RE645F:16/BP2A.250605.015/V.2f025ac-8895bb-9a8318:user/release-keys",
               "payloads": payloads,
-              "install_mode": "manual Android APK installation for preview only",
+              "install_mode": "manual APK installation plus bundled offline model import",
               "is_oem_ota": False,
               "is_flashable_rom": False,
               "installs_firmware": False,
-              "status": "preview_bundle_not_system_update",
+              "status": "offline_ai_preview_bundle_not_system_update",
               "limitations": [
                   "Debug companion APK is not a privileged/system app.",
+              "Bundled Gemma 4 E2B weights must be imported into the app after APK installation.",
+              "Gemma 4 E2B has not been benchmarked on the target RMX5566RU; local inference performance is not guaranteed.",
                   "Updater bridge only opens Realme system update settings.",
                   "No RMX5566RU flashable system image is included.",
                   "No OEM signing or bootloader bypass is included."
@@ -391,13 +404,23 @@ jobs:
           (root / "MANA_UPDATE_INFO.json").write_text(json.dumps(update, indent=2) + chr(10), encoding="utf-8")
           (root / "MANA_UPDATE_README_RU.txt").write_text(chr(10).join([
               "MANA Genesis 4.0 — предварительный пакет компонентов",
-              "Это пакет APK для тестирования пользовательского слоя MANA, не прошивка и не OTA.",
+              "Пакет включает APK MANA, APK-переходник Realme и локальную модель Gemma 4 E2B (2,588,147,712 байт).",
+              "После установки APK импортируй файл из local-model/gemma-4-E2B-it.litertlm в приложении MANA.",
+              "Лицензия модели: Apache-2.0; сведения и условия см. в карточке модели Google/LiteRT Community.",
+              "Это пакет компонентов MANA, не прошивка и не OTA.",
               "Не устанавливает Android/Realme firmware, не разблокирует загрузчик и не меняет системные разделы.",
               "Updater Bridge только открывает штатные настройки обновления Realme.",
               "Перед установкой APK проверьте совместимость и разрешите установку из выбранного источника."
           ]) + chr(10), encoding="utf-8")
           PY
           (cd dist && zip -q MANA_Genesis_4.0_UPDATE_PACKAGE.zip MANA_UPDATE_INFO.json MANA_UPDATE_README_RU.txt android-companion/app-debug.apk realme-update-bridge/app-debug.apk)
+          python3 - <<'PY'
+          from zipfile import ZipFile, ZIP_STORED
+          with ZipFile("dist/MANA_Genesis_4.0_UPDATE_PACKAGE.zip", "a", compression=ZIP_STORED, allowZip64=True) as archive:
+              archive.write("dist/local-model/gemma-4-E2B-it.litertlm", "local-model/gemma-4-E2B-it.litertlm")
+              archive.testzip()
+          PY
+          sha256sum dist/local-model/gemma-4-E2B-it.litertlm >> dist/SHA256SUMS.txt
           sha256sum dist/MANA_Genesis_4.0_UPDATE_PACKAGE.zip >> dist/SHA256SUMS.txt
           (cd dist && zip -q MANA_Genesis_4.0_COMPLETE_BUNDLE.zip MANA_Genesis_4.0_UNIFIED_SOURCE.zip MANA_Genesis_4.0_UPDATE_PACKAGE.zip MANA_UPDATE_INFO.json MANA_UPDATE_README_RU.txt ROM_STATUS.txt BUILD_STATUS.txt SHA256SUMS.txt android-companion/app-debug.apk realme-update-bridge/app-debug.apk)
           sha256sum dist/MANA_Genesis_4.0_COMPLETE_BUNDLE.zip >> dist/SHA256SUMS.txt
