@@ -13,7 +13,7 @@ import java.io.File
 import java.util.concurrent.Executors
 
 /** Owns LiteRT-LM Engine and Conversation on one dedicated background thread. */
-class LocalModelRuntime(private val cacheDirectory: File) {
+class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntime {
     private val executor = Executors.newSingleThreadExecutor { task -> Thread(task, "MANA-LiteRT-LM") }
     @Volatile private var engine: Engine? = null
     @Volatile private var conversation: Conversation? = null
