@@ -308,6 +308,7 @@ jobs:
             --output dist/local-model/gemma-4-E2B-it.litertlm
           test "$(stat -c%s dist/local-model/gemma-4-E2B-it.litertlm)" = "2588147712"
           echo "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c  dist/local-model/gemma-4-E2B-it.litertlm" | sha256sum --check -
+          cp models/APACHE-2.0-LICENSE.txt dist/MODEL_LICENSE_APACHE-2.0.txt
       - name: Package all current MANA source modules
         shell: bash
         run: |
@@ -412,14 +413,14 @@ jobs:
               "MANA Genesis 4.0 — предварительный пакет компонентов",
               "Пакет включает APK MANA, APK-переходник Realme и локальную модель Gemma 4 E2B (2,588,147,712 байт).",
               "После установки APK импортируй файл из local-model/gemma-4-E2B-it.litertlm в приложении MANA.",
-              "Лицензия модели: Apache-2.0; сведения и условия см. в карточке модели Google/LiteRT Community.",
+              "Лицензия модели: Apache-2.0; полный текст включён в MODEL_LICENSE_APACHE-2.0.txt.",
               "Это пакет компонентов MANA, не прошивка и не OTA.",
               "Не устанавливает Android/Realme firmware, не разблокирует загрузчик и не меняет системные разделы.",
               "Updater Bridge только открывает штатные настройки обновления Realme.",
               "Перед установкой APK проверьте совместимость и разрешите установку из выбранного источника."
           ]) + chr(10), encoding="utf-8")
           PY
-          (cd dist && zip -q MANA_Genesis_4.0_UPDATE_PACKAGE.zip MANA_UPDATE_INFO.json MANA_UPDATE_README_RU.txt android-companion/app-debug.apk realme-update-bridge/app-debug.apk)
+          (cd dist && zip -q MANA_Genesis_4.0_UPDATE_PACKAGE.zip MANA_UPDATE_INFO.json MANA_UPDATE_README_RU.txt MODEL_LICENSE_APACHE-2.0.txt android-companion/app-debug.apk realme-update-bridge/app-debug.apk)
           python3 - <<'PY'
           from zipfile import ZipFile, ZIP_STORED
           with ZipFile("dist/MANA_Genesis_4.0_UPDATE_PACKAGE.zip", "a", compression=ZIP_STORED, allowZip64=True) as archive:
@@ -427,6 +428,7 @@ jobs:
               archive.testzip()
           PY
           sha256sum dist/local-model/gemma-4-E2B-it.litertlm >> dist/SHA256SUMS.txt
+          sha256sum dist/MODEL_LICENSE_APACHE-2.0.txt >> dist/SHA256SUMS.txt
           sha256sum dist/MANA_Genesis_4.0_UPDATE_PACKAGE.zip >> dist/SHA256SUMS.txt
           (cd dist && zip -q MANA_Genesis_4.0_COMPLETE_BUNDLE.zip MANA_Genesis_4.0_UNIFIED_SOURCE.zip MANA_Genesis_4.0_UPDATE_PACKAGE.zip MANA_UPDATE_INFO.json MANA_UPDATE_README_RU.txt ROM_STATUS.txt BUILD_STATUS.txt SHA256SUMS.txt android-companion/app-debug.apk realme-update-bridge/app-debug.apk)
           sha256sum dist/MANA_Genesis_4.0_COMPLETE_BUNDLE.zip >> dist/SHA256SUMS.txt
