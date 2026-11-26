@@ -119,7 +119,7 @@ class ManaSystemAdaptationActivity : Activity() {
 
     private fun action(title: String, run: () -> Unit) = TextView(this).apply {
         text = title
-        setTextColor(text)
+        setTextColor(Color.WHITE)
         textSize = 14f
         gravity = Gravity.CENTER
         setPadding(dp(14), dp(15), dp(14), dp(15))
