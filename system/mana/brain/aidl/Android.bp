@@ -7,6 +7,8 @@ aidl_interface {
         "com/mana/brain/BrainBinderResponse.aidl",
         "com/mana/brain/IBrainService.aidl",
         "com/mana/brain/IBrainCallback.aidl",
+        "com/mana/brain/ManaCapabilityRequest.aidl",
+        "com/mana/brain/ManaCapabilityResponse.aidl",
     ],
     unstable: true,
     backend: {
