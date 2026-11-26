@@ -13,25 +13,89 @@ jobs:
   split:
     runs-on: ubuntu-latest
     steps:
-      - name: Download verified full APK artifact
+      - name: Download verified full APK artifact and split
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh run download 45856525889 -R "${{ github.repository }}" -n MANA-Genesis-4.0-Full-Offline-APK-Gemma4-E4B -D incoming
-          mkdir extracted
+          mkdir extracted parts
           unzip -q incoming/*.zip -d extracted
           APK="$(find extracted -type f -name '*.apk' -print -quit)"
           test -n "$APK"
-          mkdir parts
           split -b 450000000 --numeric-suffixes=0 --suffix-length=2 "$APK" parts/MANA-Genesis-4.0.apk.part-
           sha256sum "$APK" | tee parts/SHA256SUMS.txt
           printf '%s\n' "$(basename "$APK")" > parts/APK_FILENAME.txt
           printf '%s\n' "$(stat -c%s "$APK")" > parts/APK_SIZE.txt
-      - name: Publish transfer parts individually
+      - name: Upload part 00
         uses: actions/upload-artifact@v4
         with:
-          path: parts/*
-          pattern: MANA-Genesis-4.0.apk.part-*
+          name: MANA-APK-Part-00
+          path: parts/MANA-Genesis-4.0.apk.part-00
           compression-level: 0
-          if-no-files-found: error
+          retention-days: 30
+      - name: Upload part 01
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-APK-Part-01
+          path: parts/MANA-Genesis-4.0.apk.part-01
+          compression-level: 0
+          retention-days: 30
+      - name: Upload part 02
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-APK-Part-02
+          path: parts/MANA-Genesis-4.0.apk.part-02
+          compression-level: 0
+          retention-days: 30
+      - name: Upload part 03
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-APK-Part-03
+          path: parts/MANA-Genesis-4.0.apk.part-03
+          compression-level: 0
+          retention-days: 30
+      - name: Upload part 04
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-APK-Part-04
+          path: parts/MANA-Genesis-4.0.apk.part-04
+          compression-level: 0
+          retention-days: 30
+      - name: Upload part 05
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-APK-Part-05
+          path: parts/MANA-Genesis-4.0.apk.part-05
+          compression-level: 0
+          retention-days: 30
+      - name: Upload part 06
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-APK-Part-06
+          path: parts/MANA-Genesis-4.0.apk.part-06
+          compression-level: 0
+          retention-days: 30
+      - name: Upload part 07
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-APK-Part-07
+          path: parts/MANA-Genesis-4.0.apk.part-07
+          compression-level: 0
+          retention-days: 30
+      - name: Upload part 08
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-APK-Part-08
+          path: parts/MANA-Genesis-4.0.apk.part-08
+          compression-level: 0
+          retention-days: 30
+      - name: Upload metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-APK-Metadata
+          path: |
+            parts/SHA256SUMS.txt
+            parts/APK_FILENAME.txt
+            parts/APK_SIZE.txt
+          compression-level: 0
           retention-days: 30
