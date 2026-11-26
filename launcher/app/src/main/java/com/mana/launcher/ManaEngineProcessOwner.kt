@@ -23,6 +23,8 @@ object ManaEngineProcessOwner {
         }
     }
 
+    fun isInstalled(): Boolean = engine != null
+
     fun isRunning(): Boolean = engine?.health()?.state == com.mana.os.core.ManaEngineState.READY
 
     fun shutdown() {
