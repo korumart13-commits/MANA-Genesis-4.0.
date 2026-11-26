@@ -24,7 +24,7 @@ class ManaMicroworldServiceTest {
         world.finishExperiment(experiment.id, "Результат сохранён как наблюдение")
 
         val restored = service(store).snapshot()
-        assertEquals(5, restored.revision)
+        assertEquals(6, restored.revision)
         assertEquals(2, restored.spaces.size)
         assertEquals(1, restored.objects.size)
         assertEquals(1, restored.observations.size)
