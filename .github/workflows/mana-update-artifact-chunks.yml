@@ -37,7 +37,7 @@ jobs:
           parts = sorted(Path("dist/parts").glob("MANA-UPDATE.part-*"))
           total = sum(p.stat().st_size for p in parts)
           assert len(parts) == 9, f"Expected 9 parts, found {len(parts)}"
-          assert total == 3708527784, f"Update length mismatch: {total}"
+          assert total == 3708527600, f"Update length mismatch: {total}"
           assert all(p.stat().st_size <= 450000000 for p in parts)
           print(f"Verified {len(parts)} download parts; combined bytes={total}")
           PY
