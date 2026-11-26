@@ -356,10 +356,15 @@ class MainActivity : Activity() {
             12, muted, false
         ))
         content.addView(action((if (overlayGranted) "✓ " else "") + "Плавающий 3D-аватар — доступ поверх окон") {
+            getSharedPreferences("mana.settings", MODE_PRIVATE).edit()
+                .putBoolean("floating_avatar_enabled", true).apply()
             if (!overlayGranted) startActivity(Intent(
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                 Uri.parse("package:" + packageName)
-            )) else showMessage("Доступ для плавающего аватара уже включён.")
+            )) else {
+                startFloatingAvatarService()
+                showMessage("Плавающий 3D-аватар MANA включён.")
+            }
         }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
         content.addView(action((if (writeSettingsGranted) "✓ " else "") + "Управление системными настройками") {
             if (Build.VERSION.SDK_INT >= 23 && !Settings.System.canWrite(this)) {
@@ -599,6 +604,9 @@ class MainActivity : Activity() {
         })
         card.addView(action("Открыть автономное исследование MANA") {
             startActivity(Intent(this, ManaAutonomyActivity::class.java))
+        })
+        card.addView(action("Открыть MANA AutoDev — помощник разработки") {
+            startActivity(Intent(this, ManaTermuxAgentActivity::class.java))
         })
         card.addView(action("Открыть локальную память MANA") { showMemory() })
         card.addView(action("Управление файлами и карантин MANA") { startActivity(Intent(this, ManaDocumentStorageActivity::class.java)) })
