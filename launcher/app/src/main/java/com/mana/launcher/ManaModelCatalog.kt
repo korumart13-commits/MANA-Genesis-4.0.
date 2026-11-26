@@ -47,6 +47,48 @@ class ManaModelCatalog(context: Context) {
 
     fun savedModelPath(): String? = if (prefs.getBoolean(KEY_LICENSE_ACCEPTED, false)) prefs.getString(KEY_ACTIVE_PATH, null) else null
 
+    /**
+     * Copies the bundled high-capacity model into app-specific storage only after
+     * an explicit owner action. It is deliberately not auto-selected or auto-loaded.
+     */
+    fun copyBundledGemma4E4B(licenseAccepted: Boolean): File {
+        require(licenseAccepted) { "Owner must review the Gemma terms before activating this model." }
+        val target = File(directory, E4B_MODEL_FILE)
+        if (target.isFile && target.length() == E4B_MODEL_SIZE &&
+            sha256(target).equals(E4B_SHA256, ignoreCase = true)) return target
+        require(directory.usableSpace >= E4B_MODEL_SIZE + 400_000_000L) {
+            "Для встроенной модели 3,66 ГБ нужно больше свободного места во внутреннем хранилище приложения."
+        }
+        val temporary = File(directory, "$E4B_MODEL_FILE.part")
+        if (temporary.exists()) temporary.delete()
+        app.assets.open(E4B_ASSET_PATH).buffered().use { input ->
+            temporary.outputStream().buffered().use { output ->
+                val buffer = ByteArray(1024 * 1024)
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    output.write(buffer, 0, count)
+                }
+                output.flush()
+            }
+        }
+        require(temporary.length() == E4B_MODEL_SIZE) {
+            temporary.delete()
+            "Размер встроенной Gemma 4 E4B не совпал с ожидаемым."
+        }
+        val actual = sha256(temporary)
+        if (!actual.equals(E4B_SHA256, ignoreCase = true)) {
+            temporary.delete()
+            throw SecurityException("SHA-256 встроенной Gemma 4 E4B не совпал с официальным файлом.")
+        }
+        if (target.exists()) target.delete()
+        require(temporary.renameTo(target)) {
+            temporary.delete()
+            "Не удалось завершить безопасный импорт встроенной модели."
+        }
+        return target
+    }
+
     fun verifiedSavedModel(): File? {
         if (!prefs.getBoolean(KEY_LICENSE_ACCEPTED, false)) return null
         val path = savedModelPath() ?: return null
@@ -138,5 +180,9 @@ class ManaModelCatalog(context: Context) {
         private val KEY_VERIFIED_MTIME = "verified_model_mtime"
         const val MODEL_SIZE = 2_588_147_712L
         private val REQUIRED_FREE_BYTES = 3_300_000_000L
+        const val E4B_MODEL_FILE = "gemma-4-E4B-it.litertlm"
+        const val E4B_MODEL_SIZE = 3_659_530_240L
+        const val E4B_SHA256 = "0b2a8980ce155fd97673d8e820b4d29d9c7d99b8fa6806f425d969b145bd52e0"
+        const val E4B_ASSET_PATH = "models/gemma-4-E4B-it.litertlm"
     }
 }
