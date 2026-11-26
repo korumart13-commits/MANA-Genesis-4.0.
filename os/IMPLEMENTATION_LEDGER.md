@@ -135,3 +135,5 @@ MANA now exposes an owner-invoked **Open Master Games** action in the Game Intel
 
 - **Passed locally:** the exact capability-registry Kotlin source compiles with the installed Kotlin compiler; six smoke assertions passed (unknown ID, disabled sensitive capability, missing notification special access, allowed low-risk capability, disabled capability, and owner-confirmation requirement).
 - **Not run:** Android Binder/AIDL Gradle compilation, Android instrumentation tests, Soong build, and RMX5566 device tests. This environment did not provide an Android SDK/device test run. Do not mark the adapter as Android-build-verified until those checks execute.
+
+- Registered both new capability parcelables in `system/mana/brain/aidl/Android.bp`, so the Soong AIDL interface source list includes the request and response types used by the updated Binder contract.
