@@ -105,7 +105,11 @@ jobs:
           grep -F 'android:permission="com.mana.permission.BIND_BRAIN"' system/mana/services/ManaBrainService/AndroidManifest.xml
           grep -F 'checkCallingPermission(BIND_PERMISSION)' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
           grep -F 'STATE_UNAVAILABLE = "UNAVAILABLE_NO_ENGINE_BACKEND"' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
-          grep -F 'request.sensitive && request.allowCloud' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+          grep -F 'ManaBrainRequestPolicy.validate(' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+          grep -F 'sensitive && allowCloud' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainRequestPolicy.java
+          grep -F 'allowPersonalMemoryToCloud && (!allowCloud || !includePersonalMemory)' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainRequestPolicy.java
+          grep -F 'java_test_host' system/mana/services/ManaBrainService/Android.bp
+          grep -F 'acceptsMemoryExportOnlyWithBothConsents' system/mana/services/ManaBrainService/tests/src/com/mana/system/brain/ManaBrainRequestPolicyTest.java
           grep -F 'boolean allowPersonalMemoryToCloud = false;' system/mana/interfaces/src/com/mana/brain/ManaBrainRequest.aidl
           grep -F 'ENGINE_UNAVAILABLE' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
           grep -F 'Executors.newSingleThreadExecutor' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
