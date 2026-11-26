@@ -20,7 +20,12 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-    buildFeatures { buildConfig = true; compose = true }
+    buildFeatures { buildConfig = true; compose = true; aidl = true }
+    sourceSets {
+        getByName("main") {
+            aidl.srcDir("../../system/mana/interfaces/src")
+        }
+    }
 }
 
 dependencies {
