@@ -75,3 +75,7 @@ See [implementation ledger](IMPLEMENTATION_LEDGER.md), [owner requirements audit
 A new AIDL contract and transport-neutral facade now define the intended boundary between the canonical `engine/mana-brain` engine and Android clients. The facade preserves request IDs and provider provenance and delegates to the existing local-first/cloud-opt-in policy. JVM tests cover local provenance, cloud denial by default, sensitive-request denial and request validation.
 
 The protected Android Binder Service, signature/caller checks, Soong Brain library, Launcher AIDL client and Android instrumentation test sources are now present. They have not yet been built by Soong or executed on a device. The Soong runtime does not yet include LiteRT-LM; the Launcher hands off to the existing Gradle companion when no Soong provider is available.
+## Expanded product architecture
+
+- [MANA unified experience architecture](MANA_EXPERIENCE_ARCHITECTURE.md) — product identity, visual tokens, first-run setup, launcher, Control Center, notifications, settings, Brain interaction loop and UX acceptance criteria.
+- [RE645F boot-chain and EFI reference policy](BOOT_CHAIN_AND_EFI_REFERENCE_POLICY.md) — Android ARM64 boot chain evidence, why generic EFI files are not drop-in inputs, reference hierarchy and safe bring-up gates.
