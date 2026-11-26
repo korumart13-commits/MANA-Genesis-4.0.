@@ -37,8 +37,8 @@ assert not (aidl_root / "com/mana/brain/BrainResponse.aidl").exists(), "AIDL wir
 gradle_settings = (root / "launcher/settings.gradle.kts").read_text()
 binder_gradle = (root / "system/mana/android-binder/build.gradle.kts").read_text()
 assert ":system-binder" in gradle_settings
-assert \"ManaBrainBinderService.java\" in binder_gradle and \"ManaHomeActivity.java\" in binder_gradle
-assert \"../brain/aidl\" in binder_gradle
+assert "ManaBrainBinderService.java" in binder_gradle and "ManaHomeActivity.java" in binder_gradle
+assert "../brain/aidl" in binder_gradle
 gradle_app = (root / "launcher/app/build.gradle.kts").read_text()
 assert "aidl = true" in gradle_app
 assert 'rootProject.file("../system/mana/brain/aidl")' in gradle_app
@@ -64,7 +64,7 @@ assert provider is not None and provider.attrib.get(android_ns + "exported") == 
 companion_queries = [node.attrib.get(android_ns + "name") for node in companion_manifest.findall("./queries/package")]
 assert "com.mana.assistant" in companion_queries, "Provider cannot identify Assistant caller"
 
-product_packages = {line.strip().rstrip("\\\\").strip() for line in product.splitlines()}
+product_packages = {line.strip().rstrip("\\\").strip() for line in product.splitlines()}
 for app in ("ManaLauncher", "ManaAssistant", "ManaSettings", "ManaControlCenter"):
     assert app in product_packages, f"{app} is not installed in MANA product fragment"
 assert "mana.brain-java" not in product and "mana-brain-core" not in product
