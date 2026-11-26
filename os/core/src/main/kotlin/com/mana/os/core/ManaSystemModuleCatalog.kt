@@ -112,6 +112,17 @@ object ManaSystemModuleCatalog {
             ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "verified recovery and rollback; device-specific boot chain only"),
         SystemModuleDescriptor("mana.stockappbridge", "com.mana.stockappbridge", setOf("platform.hardware", "platform.security"),
             ModuleCriticality.REQUIRED, ModuleFailurePolicy.ENTER_DEGRADED, "preserve and launch OEM camera, phone, radio, sensor and device applications")
+,
+        SystemModuleDescriptor("mana.owneridentity", "com.mana.owneridentity", setOf("platform.security", "platform.storage"),
+            ModuleCriticality.REQUIRED, ModuleFailurePolicy.ENTER_DEGRADED, "owner re-authentication through Android device credentials or enrolled biometrics"),
+        SystemModuleDescriptor("mana.sleep", "com.mana.sleep", setOf("platform.security", "mana.lifemanager"),
+            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "owner-configured sleep profile and explicit Do Not Disturb access"),
+        SystemModuleDescriptor("mana.camera", "com.mana.camera", setOf("platform.security", "mana.stockappbridge"),
+            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "Android Camera intents and Camera2 only with foreground UI and explicit permission"),
+        SystemModuleDescriptor("mana.messaging", "com.mana.messaging", setOf("platform.security", "mana.contacts"),
+            ModuleCriticality.OPTIONAL, ModuleFailurePolicy.DISABLE_MODULE, "official messaging APIs and Android share intents; no private database access"),
+        SystemModuleDescriptor("mana.lifecontrolcenter", "com.mana.lifecontrolcenter", setOf("mana.brain", "mana.owneridentity", "mana.sleep", "mana.camera", "mana.messaging", "mana.gameintelligence", "mana.calltelephony"),
+            ModuleCriticality.REQUIRED, ModuleFailurePolicy.ENTER_DEGRADED, "owner-facing app-level capability hub; platform roles and permissions remain user controlled")
     )
 
     fun validate(): List<String> {
