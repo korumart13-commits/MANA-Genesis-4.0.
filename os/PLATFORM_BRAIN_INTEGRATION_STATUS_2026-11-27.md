@@ -2,80 +2,56 @@
 
 ## Implemented source components
 
-- AIDL contract: `system/mana/interfaces`.
+- Shared AIDL contracts: `system/mana/interfaces`, including the platform Brain API and app-engine backend API.
 - Android Binder service endpoint: `system/mana/services/ManaBrainService`.
-- Signature-level bind permission: `com.mana.permission.BIND_BRAIN`.
-- Repeated permission enforcement inside Binder entry points.
-- Per-request cloud and sensitive-data policy checks.
-- Separate opt-in flags for cloud use and personal-memory export.
-- Dedicated single-thread executor with a bounded 32-request queue and explicit overload response.
-- Pure Java request-policy class, Soong host-side JUnit test target, and dependency-free executable host test covering blank prompts, sensitive/cloud rejection, and independent memory-export consent.
-- Product fragment `system/mana/mana_product.mk` declares `ManaBrainService` in `PRODUCT_PACKAGES`.
-- Service endpoint fails closed with `ENGINE_UNAVAILABLE` until a real local inference backend is connected.
+- Gradle application-side `ManaEngineBridgeService` backend endpoint.
+- Signature-level bind permission: `com.mana.permission.BIND_BRAIN`, with permission checks repeated inside Binder entry points.
+- Platform service binds explicitly to `com.mana.launcher/.ManaEngineBridgeService`, negotiates protocol version 1, forwards requests and relays asynchronous results/errors.
+- Reference-counted `ManaEngineProcessOwner` shares one local model, Brain, encrypted memory and Microworld runtime between the foreground service and bridge.
+- Saved-model bootstrap runs asynchronously and only attempts a model already saved/selected locally. It does not silently download a model or accept a license.
+- Per-request cloud/sensitive-data policy checks, provider allowlist, 32,768-character prompt limit and separate consent flags for personal-memory export.
+- Dedicated bounded 32-request executor with explicit overload behavior.
+- Product fragment `system/mana/mana_product.mk` declares `ManaBrainService`.
+- Dependency-free Java host policy tests and Soong host-test source target.
 
-## Deliberately not claimed
+## Latest verification evidence
 
-The platform service is not yet a working inference host. It is not Soong-built against an AOSP checkout, not installed into a real product image, and has no target-specific SELinux service context/domain. The product fragment has not yet been included by a verified device product makefile. The Gradle app foreground service is a separate application-process prototype; no cross-process backend adapter has been implemented.
+GitHub Actions run [45909435510](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/45909435510) completed successfully:
 
-The AIDL/API and service source have source-level CI checks only. Current Gradle CI does not compile Soong modules.
+- MANA Brain and OS core tests passed.
+- Platform request-policy host tests passed.
+- AIDL, bridge, permission, ownership and AOSP-manifest source assertions passed.
+- Embedded glTF validation passed.
+- Android Gradle `:app:assembleDebug` and `:app:testDebugUnitTest` passed.
+- Source-project and debug-prototype artifacts were uploaded separately.
 
-## Required next implementation sequence
+This confirms source-level and Gradle app compilation. It does **not** confirm a Soong/AOSP build, a complete ROM, successful Binder connection on a device, or RMX5566 hardware compatibility.
 
-1. Establish a reproducible Android 16 AOSP checkout and pin its exact manifest revision.
-2. Build `mana-brain-interface` and `ManaBrainService` with Soong in that tree.
-3. Add a dedicated SELinux service type, service_contexts mapping and least-privilege rules only after checking actual AOSP policy and package identity.
-4. Implement a backend adapter that connects the platform Binder service to the single local-first MANA engine. Do not duplicate model/memory ownership between processes.
-5. Add Binder instrumentation tests for authorization, callback delivery, cancellation, sensitive/cloud rejection and separate memory-export consent.
-6. Include the service in a real product build and verify it on an emulator before any device-specific port.
-7. Only then attempt RMX5566RU product integration, once the device-source blockers in `device/RMX5566RU_SOURCE_DISCOVERY_2026-11-27.md` are cleared.
+## Integration blockers
 
-## Current test evidence
+1. The existing Soong `ManaLauncher` module is a separate minimal Java home-app stub. It does not package the Gradle Kotlin app or `ManaEngineBridgeService`.
+2. The bridge app must be packaged into the AOSP product as package `com.mana.launcher` and signed with a certificate compatible with the platform service's signature permission. The standalone debug APK is not platform-signed.
+3. `ManaBrainService` and `mana-brain-interface` have not yet been built in a full Android 16 AOSP/Soong checkout.
+4. SELinux service type, service_contexts mapping and least-privilege policy rules have not yet been integrated/tested against the actual AOSP policy tree.
+5. The product fragment has not been included by a verified device product makefile; no emulator or phone Binder instrumentation test has been run.
+6. RMX5566RU device tree, exact matching kernel source/config/DTS, vendor blobs, VINTF, partition/AVB metadata and stock restore procedure remain unverified.
 
-- The application-side service-owned engine migration passed `:brain:test`, `:core:test`, `:app:assembleDebug` and `:app:testDebugUnitTest` in workflow run 45906472269.
-- Workflow run 45907689204 completed all substantive source checks, Brain/Core tests, Android compile and app unit-test steps, and both artifact uploads; GitHub was still executing post-job cleanup at the last poll.
-- The platform service source is checked by static CI assertions, not compiled by Soong.
-- A successful Gradle build is not an AOSP/Soong build and is not a flashable ROM.
+Until those blockers are resolved, the platform service must fail closed and report backend unavailable/disconnected rather than fabricate an answer.
 
-## Binder execution hardening
+## Next implementation sequence
 
-Accepted requests are dispatched onto a dedicated single-thread executor rather than performing backend work on the Binder transaction thread. A disconnected callback is handled without crashing the service, and the executor is shut down in `onDestroy()`. Empty prompts, sensitive+cloud requests, and cloud memory export without both consents are rejected before work is queued.
+1. Determine and implement a reproducible way to package the Gradle Kotlin engine/bridge into an AOSP product with the required package identity and platform signing. Do not assume the debug APK can simply be dropped into the product.
+2. Establish an Android 16 AOSP checkout and pin its exact manifest revision.
+3. Build the AIDL interface and `ManaBrainService` with Soong; resolve compile errors from actual Soong output.
+4. Add and test the SELinux service context/domain and least-privilege access rules.
+5. Add Binder instrumentation tests for authorization, callback delivery, service death/reconnect, overload, sensitive/cloud rejection and separate memory-export consent.
+6. Verify the service and app bridge on an emulator before device integration.
+7. Continue the RMX5566RU read-only hardware/firmware audit using the newly confirmed device profile. Do not create or flash device images until exact OEM sources, blobs, VINTF and AVB/restore data are verified.
 
-Service implementation commit: `88d6cc6a707cb92898a746ccf1143c011cbec37f`.
-CI assertions for executor dispatch and lifecycle cleanup: `5fdf432eb9dc4dcd6d9fa21ffe0f7415b6f24ace`.
+## Device identity evidence
 
+The owner-provided Settings screenshots confirm model RMX5566, build `RMX5566_16.0.5.1310 (EX01)`, Android 16, realme UI 7.0, hardware revision `RMX5566_11`, kernel `5.15.197-android13-8-o-01074-gdfa4acfa411e`, Snapdragon 685, 8 GB physical RAM plus 16 GB expansion and 256 GB storage. The full inventory and safe next diagnostic steps are recorded in `device/RMX5566RU_SOURCE_DISCOVERY_2026-11-27.md`.
 
-## Request policy test coverage added
+## Release boundary
 
-The request-policy checks were extracted from the Android Service into the Android-independent
-`ManaBrainRequestPolicy` class. A Soong `java_test_host` target named
-`mana-brain-request-policy-tests` now covers null/blank prompts, sensitive cloud denial,
-missing consent combinations, valid local requests, valid cloud requests without memory export,
-and memory export with both required consents. CI checks the test target's source wiring; the
-host-side Soong test has not yet been executed because a full AOSP/Soong checkout is not available.
-
-
-The dependency-free host test is executed directly by the Gradle verification workflow using
-`javac` and `java`, so policy behavior is exercised even without an AOSP checkout. The
-Soong `java_test_host` target remains available for execution in a full AOSP tree.
-
-
-## Request policy hardening
-
-The Binder request policy now also enforces a 32,768-character prompt ceiling, rejects a cloud-provider selection on local-only requests, and validates explicit provider names against the supported set (OpenAI, Anthropic, Google/Gemini, xAI/Grok, Yandex and VK). The Binder service passes the requested provider through the policy validator before queueing work. Host tests cover oversized prompts, unknown providers, provider selection on local-only requests, and accepted provider aliases.
-
-
-## Cross-process engine bridge implemented in source
-
-- Added IManaEngineBackend and its callback to the shared AIDL interface module.
-- Added ManaEngineBridgeService to the Gradle Android application. It exposes the existing app-process engine over Binder, checks the signature permission again at each Binder entry point, validates prompt size/provider/cloud policy, and returns asynchronous results.
-- The platform ManaBrainService now binds explicitly to com.mana.launcher/.ManaEngineBridgeService, negotiates protocol version 1, forwards validated requests and returns engine results/errors to the original system client.
-- Added a reference-counted process owner so the foreground app service and remote bridge share exactly one local model, Brain, encrypted memory and Microworld runtime. Releasing one service no longer shuts down resources still held by the other.
-- Added an explicit memory-query field and passed the independent personal-memory/cloud-export consent through to the existing core request policy.
-- The Gradle app compiles the shared AIDL source directory; CI now checks the bridge contract and ownership boundaries.
-
-## Bridge integration constraints — not yet a working device integration
-
-The bridge implementation is source-complete but not yet verified by an Android build after these changes or by Soong/device tests. The Gradle application must be packaged into the AOSP product as package com.mana.launcher and signed with the same platform certificate as ManaBrainService; the current standalone debug APK does not satisfy the signature permission. The existing Soong ManaLauncher product module is a separate minimal Java home-app stub and does not yet package the Gradle Kotlin engine or ManaEngineBridgeService. The current product therefore cannot resolve the bridge endpoint until that packaging/signing integration is completed. Until then the platform service reports a disconnected/unavailable backend and does not invent output.
-
-
-The shared engine owner also now bootstraps a previously saved model asynchronously when either the foreground engine service or the platform Binder bridge acquires the runtime. It only attempts a model already saved/selected on the device; it does not download a model, accept a license, or silently fetch gigabytes. Model hash verification and LiteRT-LM initialization run off the main thread. If no approved/selected model is present, the engine reports that no local model is ready and remains fail-closed for local inference.
+A successful Gradle build produces an Android application prototype, not an AOSP ROM. The repository source archive is not a full AOSP checkout, OTA package or flashable image. No device-specific boot, vendor_boot, dtbo, vbmeta, recovery, super or OTA image is approved for creation or flashing at this stage.
