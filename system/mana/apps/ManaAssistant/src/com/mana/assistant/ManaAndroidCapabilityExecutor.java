@@ -3,6 +3,7 @@ package com.mana.assistant;
 import android.app.NotificationManager;
 import android.app.role.RoleManager;
 import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -159,15 +160,23 @@ final class ManaAndroidCapabilityExecutor {
                 || "updates.install".equals(capabilityId);
     }
 
+    private boolean hasNotificationListenerAccess() {
+        String enabled = Settings.Secure.getString(
+                context.getContentResolver(), Settings.Secure.ENABLED_NOTIFICATION_LISTENERS);
+        if (enabled == null || enabled.isEmpty()) return false;
+        for (String entry : enabled.split(":")) {
+            ComponentName component = ComponentName.unflattenFromString(entry);
+            if (component != null && context.getPackageName().equals(component.getPackageName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private Set<String> currentSpecialAccess() {
         Set<String> access = new HashSet<>();
-        if (Build.VERSION.SDK_INT >= 30) {
-            NotificationManager notifications =
-                    context.getSystemService(NotificationManager.class);
-            if (notifications != null
-                    && notifications.getEnabledNotificationListenerPackages().contains(context.getPackageName())) {
-                access.add("notification_listener");
-            }
+        if (Build.VERSION.SDK_INT >= 18 && hasNotificationListenerAccess()) {
+            access.add("notification_listener");
         }
         if (Build.VERSION.SDK_INT >= 29) {
             RoleManager roles = context.getSystemService(RoleManager.class);
