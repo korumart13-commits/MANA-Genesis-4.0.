@@ -13,6 +13,7 @@ class ManaSystemModuleCatalogTest {
 
     @Test fun dependencyOrderPlacesFoundationsBeforeFeatures() {
         val order = ManaSystemModuleCatalog.dependencyOrder()
+        assertTrue(order.indexOf("platform.kernel") < order.indexOf("platform.hardware"))
         assertTrue(order.indexOf("platform.security") < order.indexOf("mana.brain"))
         assertTrue(order.indexOf("mana.brain") < order.indexOf("mana.avatar"))
         assertTrue(order.indexOf("mana.systemui") < order.indexOf("mana.launcher"))
@@ -40,7 +41,8 @@ class ManaSystemModuleCatalogTest {
             "mana.contacts", "mana.receptionist", "mana.gameintelligence",
             "mana.launcher", "mana.systemui", "mana.settings", "mana.controlcenter",
             "mana.updater", "mana.recovery", "mana.localnode",
-            "mana.deviceecosystem", "mana.developercenter"
+            "mana.deviceecosystem", "mana.developercenter", "mana.autodev", "mana.kernellab",
+            "mana.finance", "mana.lifestudio", "mana.microuniverse", "platform.kernel"
         )
         assertTrue(ids.containsAll(required), "Missing owner-requested modules: ${required - ids}")
     }
@@ -59,6 +61,10 @@ class ManaSystemModuleCatalogTest {
         assertTrue(order.indexOf("mana.brain") < order.indexOf("mana.voice"))
         assertTrue(order.indexOf("mana.brain") < order.indexOf("mana.adaptiveintelligence"))
         assertTrue(order.indexOf("mana.updater") < order.indexOf("mana.recovery"))
+        assertTrue(order.indexOf("mana.developercenter") < order.indexOf("mana.autodev"))
+        assertTrue(order.indexOf("mana.autodev") < order.indexOf("mana.kernellab"))
+        assertTrue(order.indexOf("mana.diary") < order.indexOf("mana.lifestudio"))
+        assertTrue(order.indexOf("mana.gameintelligence") < order.indexOf("mana.microuniverse"))
     }
 
 }
