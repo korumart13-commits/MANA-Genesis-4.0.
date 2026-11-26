@@ -10,6 +10,9 @@ android {
         versionCode 1
         versionName "MANA +1"
     }
+    buildFeatures {
+        aidl = true
+    }
     sourceSets {
         main {
             manifest.srcFile "src/main/AndroidManifest.xml"
