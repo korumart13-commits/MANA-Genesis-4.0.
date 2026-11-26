@@ -9,7 +9,6 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import org.json.JSONObject
 
 /**
  * Owner-facing module registry.
@@ -137,7 +136,7 @@ class ManaExtensionCenterActivity : Activity() {
             list.addView(card, params)
         }
         val scroll = ScrollView(this).apply { addView(list) }
-        root.addView(scroll, LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
+        root.addView(scroll, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         root.addView(Button(this).apply {
             text = "Закрыть"
             setOnClickListener { finish() }
