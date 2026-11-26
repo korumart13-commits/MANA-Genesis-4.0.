@@ -36,7 +36,7 @@ assert not (aidl_root / "com/mana/brain/BrainResponse.aidl").exists(), "AIDL wir
 
 gradle_settings = (root / "launcher/settings.gradle.kts").read_text()
 binder_gradle = (root / "system/mana/android-binder/build.gradle.kts").read_text()
-assert \":system-binder\" in gradle_settings
+assert ":system-binder" in gradle_settings
 assert \"ManaBrainBinderService.java\" in binder_gradle and \"ManaHomeActivity.java\" in binder_gradle
 assert \"../brain/aidl\" in binder_gradle
 gradle_app = (root / "launcher/app/build.gradle.kts").read_text()
