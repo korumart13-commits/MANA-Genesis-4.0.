@@ -35,6 +35,15 @@ This file pins public source leads for MANA Genesis 4.0. It is a provenance reco
 - The overlay explicitly sets `oplus,dtsi_no = <25697>` and `oplus,project-id = <25697>`; it includes the Khaje QRD base, common Moscow overlay, NFC, sensor and charging fragments.
 - This is strong evidence that the OEM published a 25697 Moscow overlay in the C85/C85 Pro source family. It does not by itself prove that every device component or vendor binary matches RMX5566RU.
 
+
+### Full stock firmware research lead
+
+- RMX5566 catalog: https://solution-firmware.com/index.php?a=downloads&b=folder&id=2894
+- Listed package: `RMX5566export_11_15.0.2.900(EX01)_202601231432250000.zip`, 11.70 GB (catalog entry dated 2026-08-20).
+- A second listing identifies an RMX5566 package with Project ID 25697 and 12.00 GB size: https://solution-firmware.com/index.php?a=downloads&b=folder&id=2894
+- This is a potential stock-firmware donor for offline inspection of partition metadata, VINTF, init, firmware and proprietary libraries. The package build is not established as identical to the owner's Android 16 `RMX5566_11.F.03_2030_202610170441` build. It must not be flashed or treated as a compatible vendor image without comparing build fingerprints and partition contents.
+- The realme support update page documents its official local/recovery update process, but it does not provide a public RMX5566 service image: https://www.realme.com/ae/support/software-update
+
 ## Compatibility decision
 
 **Candidate only — not accepted for kernel/image use yet.**
