@@ -22,6 +22,8 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.mana.controlcenter.ManaShadeActivity;
+
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
