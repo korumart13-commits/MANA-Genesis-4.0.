@@ -176,13 +176,19 @@ class MainActivity : Activity() {
         window.decorView.setBackgroundColor(bg)
         contactIntelligence = ManaContactIntelligence(this)
         modelCatalog = runCatching { ManaModelCatalog(this) }.getOrNull()
-        val existingEngineRuntime = ManaEngineProcessOwner.engineRuntime()
-        localRuntime = existingEngineRuntime?.let { ManaEngineProcessOwner.localModelRuntime() }
-            ?: LocalModelRuntime(File(cacheDir, "mana-litert-cache"))
+        val existingEngineRuntime = ManaEngineProcessOwner.isInstalled()
+        localRuntime = if (existingEngineRuntime) {
+            checkNotNull(ManaEngineProcessOwner.localModelRuntime()) { "MANA local inference dependency is missing" }
+        } else {
+            LocalModelRuntime(File(cacheDir, "mana-litert-cache"))
+        }
         cloudGateway = ManaCloudGateway(this, ManaAndroidKeyProvider())
         yandexProvider = ManaYandexAiStudioProvider(this)
-        manaBrain = existingEngineRuntime?.let { ManaEngineProcessOwner.brainBridge() }
-            ?: ManaBrainBridge(localRuntime, listOf(cloudGateway, yandexProvider))
+        manaBrain = if (existingEngineRuntime) {
+            checkNotNull(ManaEngineProcessOwner.brainBridge()) { "MANA Brain dependency is missing" }
+        } else {
+            ManaBrainBridge(localRuntime, listOf(cloudGateway, yandexProvider))
+        }
         diaryService = try { ManaDiaryService(EncryptedFileManaDiaryStore(File(filesDir, "mana/diary.bin"), ManaAndroidKeyProvider())) } catch (error: Exception) {
             showMessage("Дневник пока недоступен: ${error.message}")
             null
@@ -231,14 +237,14 @@ class MainActivity : Activity() {
             showMessage("Хранилище будущих обновлений недоступно: " + error.message)
             null
         }
-        if (existingEngineRuntime == null && memoryService != null) {
+        if (!existingEngineRuntime && memoryService != null) {
             try {
                 ManaEngineProcessOwner.prepare(manaBrain, localRuntime, memoryService!!)
             } catch (error: Exception) {
                 showMessage("Не удалось подготовить MANA Engine: ${error.message}")
             }
         }
-        if (existingEngineRuntime != null || memoryService != null) {
+        if (existingEngineRuntime || memoryService != null) {
             try {
                 val engineServiceIntent = Intent(this, ManaEngineService::class.java)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
