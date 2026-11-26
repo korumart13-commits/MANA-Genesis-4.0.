@@ -21,3 +21,14 @@ The current dependency and failure-policy map is documented in [os/SYSTEM_MODULE
 Each service must declare its Android permissions, SELinux domain, Binder/API boundary, data ownership and failure behavior before it is added to a product image. No service may silently acquire root, bypass permission prompts or transmit private content to a cloud model.
 
 The catalog is architecture metadata, not proof that Android Binder services or privileged packages are already built. The launcher and assistant currently exist as ordinary product-app source modules; they are not yet compiled or included in a device image. Android `init` service declarations, package definitions and SELinux policy will be added only against a checked-out AOSP tree and verified target configuration.
+
+## Platform Binder contract
+
+The first platform-facing MANA Brain API now lives in `interfaces/`:
+- Soong module: `mana-brain-interface`.
+- AIDL entry point: `com.mana.brain.IManaBrain`.
+- Requests are asynchronous and carry explicit cloud, sensitive-data and personal-memory flags.
+- Responses identify the provider, local/cloud execution and memory-use count.
+- `ManaAssistant` declares the interface library as a static dependency.
+
+This is an API boundary only. The Android platform service implementation, Binder caller authorization, SELinux domain and connection to the service-owned Gradle runtime are not yet implemented. Do not mark the platform Brain service as available until those parts are built and tested in AOSP.
