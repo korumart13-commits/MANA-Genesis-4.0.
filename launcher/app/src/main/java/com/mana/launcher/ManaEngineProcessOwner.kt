@@ -17,6 +17,7 @@ object ManaEngineProcessOwner {
     @Volatile private var memory: ManaMemoryService? = null
     @Volatile private var cloud: ManaCloudGateway? = null
     @Volatile private var yandex: ManaYandexAiStudioProvider? = null
+    private var serviceOwners = 0
 
     fun prepare(
         brainBridge: ManaBrainBridge,
@@ -31,6 +32,33 @@ object ManaEngineProcessOwner {
             brain = brainBridge
             inference = localInference
             memory = memoryService
+        }
+    }
+
+    /**
+     * Reference-counted ownership shared by the foreground UI service and the
+     * signature-protected remote Binder endpoint. Resources are created once per process.
+     */
+    fun acquire(context: Context, keyProvider: ManaAndroidKeyProvider) {
+        synchronized(lock) {
+            if (serviceOwners == 0) {
+                try {
+                    initializeDependenciesFromService(context, keyProvider)
+                    initializeFromService(context, keyProvider)
+                } catch (error: Exception) {
+                    shutdownResourcesLocked()
+                    throw error
+                }
+            }
+            serviceOwners += 1
+        }
+    }
+
+    fun release() {
+        synchronized(lock) {
+            if (serviceOwners == 0) return
+            serviceOwners -= 1
+            if (serviceOwners == 0) shutdownResourcesLocked()
         }
     }
 
@@ -86,15 +114,20 @@ object ManaEngineProcessOwner {
 
     fun shutdown() {
         synchronized(lock) {
-            runCatching { engine?.close() }
-            engine = null
-            brain?.shutdown()
-            brain = null
-            inference?.shutdown()
-            inference = null
-            memory = null
-            cloud = null
-            yandex = null
+            serviceOwners = 0
+            shutdownResourcesLocked()
         }
+    }
+
+    private fun shutdownResourcesLocked() {
+        runCatching { engine?.close() }
+        engine = null
+        brain?.shutdown()
+        brain = null
+        inference?.shutdown()
+        inference = null
+        memory = null
+        cloud = null
+        yandex = null
     }
 }
