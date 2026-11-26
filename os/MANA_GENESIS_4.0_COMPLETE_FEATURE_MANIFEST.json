@@ -481,26 +481,32 @@
     {
       "id": "mana.owneridentity",
       "name": "Owner identity, explicit enrollment, trusted session and re-authentication",
-      "status": "architecture",
+      "status": "prototype",
       "required": true
     },
     {
       "id": "mana.sleep",
       "name": "Sleep and bedtime mode: schedule, quiet hours, wake routine and user-approved notification policy",
-      "status": "architecture",
+      "status": "prototype",
       "required": false
     },
     {
       "id": "mana.camera",
       "name": "Camera launch and user-approved capture integration through Android camera APIs/intents",
-      "status": "architecture",
+      "status": "prototype",
       "required": false
     },
     {
       "id": "mana.messaging",
       "name": "Messenger hub: open supported apps, compose/share messages and official provider integrations",
-      "status": "architecture",
+      "status": "prototype",
       "required": false
+    },
+    {
+      "id": "mana.lifecontrolcenter",
+      "name": "MANA Life Control Center: owner re-authentication, camera handoff, message sharing, game hub and sleep profile",
+      "status": "prototype",
+      "required": true
     }
   ],
   "release_gates": [
@@ -591,5 +597,6 @@
     "no_competing_personas": true,
     "no_silent_feature_removal": true,
     "no_false_system_privileges": true
-  }
+  },
+  "audit_note_2026_11_26": "MANA Control Center Activity added. Owner re-authentication uses Android device credential confirmation; camera uses ACTION_IMAGE_CAPTURE; messaging uses ACTION_SEND/ACTION_SENDTO; game integration checks Usage Access and opens OEM Game Space; sleep currently stores an MANA profile and can request DND access. These are bounded prototypes, not full OS-level integrations."
 }
