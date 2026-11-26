@@ -36,19 +36,25 @@ public final class ManaBrainBinderService extends Service {
 
     private volatile ILocalInferenceService localInference;
     private boolean localInferenceBound;
+    private final Object providerLock = new Object();
 
     private final ServiceConnection localConnection = new ServiceConnection() {
         @Override public void onServiceConnected(ComponentName name, IBinder service) {
-            localInference = ILocalInferenceService.Stub.asInterface(service);
+            synchronized (providerLock) {
+                localInference = ILocalInferenceService.Stub.asInterface(service);
+                providerLock.notifyAll();
+            }
         }
         @Override public void onServiceDisconnected(ComponentName name) {
-            localInference = null;
+            synchronized (providerLock) { localInference = null; }
         }
         @Override public void onBindingDied(ComponentName name) {
-            localInference = null;
+            synchronized (providerLock) { localInference = null; localInferenceBound = false; }
+            try { unbindService(this); } catch (IllegalArgumentException ignored) { }
         }
         @Override public void onNullBinding(ComponentName name) {
-            localInference = null;
+            synchronized (providerLock) { localInference = null; localInferenceBound = false; }
+            try { unbindService(this); } catch (IllegalArgumentException ignored) { }
         }
     };
 
@@ -90,7 +96,7 @@ public final class ManaBrainBinderService extends Service {
 
         @Override public boolean isReady() {
             enforceAuthorizedCaller();
-            ILocalInferenceService provider = localInference;
+            ILocalInferenceService provider = awaitLocalProvider();
             if (provider == null) return false;
             try { return provider.isModelReady(); }
             catch (RemoteException unavailable) { localInference = null; return false; }
@@ -104,13 +110,37 @@ public final class ManaBrainBinderService extends Service {
 
     @Override public void onCreate() {
         super.onCreate();
-        Intent provider = new Intent();
-        provider.setComponent(new ComponentName(
-                "com.mana.genesis", "com.mana.launcher.ManaLocalInferenceService"));
-        localInferenceBound = bindService(provider, localConnection, Context.BIND_AUTO_CREATE);
+        ensureLocalProviderBound();
     }
 
     @Override public IBinder onBind(Intent intent) { return binder; }
+
+    private void ensureLocalProviderBound() {
+        synchronized (providerLock) {
+            if (localInferenceBound) return;
+            Intent provider = new Intent();
+            provider.setComponent(new ComponentName(
+                    "com.mana.genesis", "com.mana.launcher.ManaLocalInferenceService"));
+            localInferenceBound = bindService(provider, localConnection, Context.BIND_AUTO_CREATE);
+        }
+    }
+
+    private ILocalInferenceService awaitLocalProvider() {
+        ensureLocalProviderBound();
+        synchronized (providerLock) {
+            long deadline = System.currentTimeMillis() + 2500L;
+            while (localInference == null && localInferenceBound) {
+                long remaining = deadline - System.currentTimeMillis();
+                if (remaining <= 0L) break;
+                try { providerLock.wait(remaining); }
+                catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+            return localInference;
+        }
+    }
 
     private void submitLocal(BrainBinderRequest request, IBrainCallback callback) {
         ILocalInferenceService provider = localInference;
