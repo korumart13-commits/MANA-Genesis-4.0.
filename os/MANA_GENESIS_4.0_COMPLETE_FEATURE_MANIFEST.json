@@ -3,7 +3,7 @@
   "product": "MANA Genesis 4.0",
   "release_channel": "com.mana.genesis.system",
   "first_release_version": "MANA +1",
-  "manifest_purpose": "Complete owner-requested target inventory; not proof that every module is currently implemented or packaged.",
+  "manifest_purpose": "Complete owner-requested target inventory; status is an implementation estimate from repository source review and CI, not proof of runtime operation on RMX5566RU.",
   "target": {
     "model": "RMX5566RU",
     "device": "RE645F",
@@ -301,7 +301,7 @@
     {
       "id": "mana.adaptiveintelligence",
       "name": "Adaptive learning and source validation",
-      "status": "architecture",
+      "status": "partial",
       "required": false
     },
     {
@@ -385,7 +385,7 @@
     {
       "id": "mana.lifemanager",
       "name": "Tasks, reminders, calendar and schedules",
-      "status": "architecture",
+      "status": "partial",
       "required": false
     },
     {
@@ -403,19 +403,19 @@
     {
       "id": "mana.contacts",
       "name": "Contact Intelligence and unknown-number context",
-      "status": "architecture",
+      "status": "partial",
       "required": false
     },
     {
       "id": "mana.receptionist",
       "name": "Smart Receptionist and conversation summaries",
-      "status": "architecture",
+      "status": "prototype",
       "required": false
     },
     {
       "id": "mana.calltelephony",
       "name": "Telephony and supported Telecom integration",
-      "status": "architecture",
+      "status": "prototype",
       "required": false
     },
     {
@@ -439,13 +439,13 @@
     {
       "id": "mana.yandex",
       "name": "Yandex official API integration",
-      "status": "architecture",
+      "status": "prototype",
       "required": false
     },
     {
       "id": "mana.vk",
       "name": "VK official API integration",
-      "status": "architecture",
+      "status": "prototype",
       "required": false
     },
     {
@@ -457,7 +457,7 @@
     {
       "id": "mana.developercenter",
       "name": "Developer Center, diagnostics and project workspace",
-      "status": "partial",
+      "status": "prototype",
       "required": false
     },
     {
@@ -477,6 +477,30 @@
       "name": "Preserve and launch stock Android/Realme camera, phone and device apps",
       "status": "architecture",
       "required": true
+    },
+    {
+      "id": "mana.owneridentity",
+      "name": "Owner identity, explicit enrollment, trusted session and re-authentication",
+      "status": "architecture",
+      "required": true
+    },
+    {
+      "id": "mana.sleep",
+      "name": "Sleep and bedtime mode: schedule, quiet hours, wake routine and user-approved notification policy",
+      "status": "architecture",
+      "required": false
+    },
+    {
+      "id": "mana.camera",
+      "name": "Camera launch and user-approved capture integration through Android camera APIs/intents",
+      "status": "architecture",
+      "required": false
+    },
+    {
+      "id": "mana.messaging",
+      "name": "Messenger hub: open supported apps, compose/share messages and official provider integrations",
+      "status": "architecture",
+      "required": false
     }
   ],
   "release_gates": [
