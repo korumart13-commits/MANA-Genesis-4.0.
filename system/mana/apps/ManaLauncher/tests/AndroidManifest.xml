@@ -1,0 +1,11 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.mana.launcher.tests">
+    <uses-permission android:name="com.mana.permission.BIND_BRAIN" />
+    <application android:label="MANA Launcher Binder Integration Tests" android:allowBackup="false">
+        <uses-library android:name="android.test.runner" />
+    </application>
+    <instrumentation
+        android:name="android.test.InstrumentationTestRunner"
+        android:targetPackage="com.mana.launcher"
+        android:label="MANA Launcher to Assistant Binder integration" />
+</manifest>
