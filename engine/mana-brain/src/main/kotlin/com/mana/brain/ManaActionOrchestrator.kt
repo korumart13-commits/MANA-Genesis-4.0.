@@ -6,13 +6,13 @@ package com.mana.brain
  * This layer never invokes shell commands or bypasses Android permissions. Concrete
  * capabilities must call documented Android APIs or authenticated system services.
  */
-enum class CapabilityRisk { LOW, MEDIUM, HIGH, CRITICAL }
+enum class ActionCapabilityRisk { LOW, MEDIUM, HIGH, CRITICAL }
 
 data class CapabilityDescriptor(
     val id: String,
     val description: String,
     val requiredPermissions: Set<String> = emptySet(),
-    val risk: CapabilityRisk = CapabilityRisk.LOW,
+    val risk: ActionCapabilityRisk = ActionCapabilityRisk.LOW,
     val ownerConfirmationRequired: Boolean = false,
     val enabled: Boolean = true
 ) {
@@ -24,7 +24,7 @@ data class CapabilityDescriptor(
 
     val requiresConfirmation: Boolean
         get() = ownerConfirmationRequired ||
-            risk == CapabilityRisk.HIGH || risk == CapabilityRisk.CRITICAL
+            risk == ActionCapabilityRisk.HIGH || risk == ActionCapabilityRisk.CRITICAL
 }
 
 data class ActionStep(
@@ -55,14 +55,14 @@ data class CapabilityOutcome(
     val message: String
 )
 
-interface ManaCapability {
+interface ExecutableManaCapability {
     val descriptor: CapabilityDescriptor
     fun isAvailable(): Boolean
     suspend fun execute(input: Map<String, String>): CapabilityOutcome
 }
 
-class CapabilityRegistry(capabilities: List<ManaCapability> = emptyList()) {
-    private val byId: Map<String, ManaCapability>
+class CapabilityRegistry(capabilities: List<ExecutableManaCapability> = emptyList()) {
+    private val byId: Map<String, ExecutableManaCapability>
 
     init {
         require(capabilities.map { it.descriptor.id }.distinct().size == capabilities.size) {
@@ -71,7 +71,7 @@ class CapabilityRegistry(capabilities: List<ManaCapability> = emptyList()) {
         byId = capabilities.associateBy { it.descriptor.id }
     }
 
-    fun find(id: String): ManaCapability? = byId[id]
+    fun find(id: String): ExecutableManaCapability? = byId[id]
 
     fun available(): List<CapabilityDescriptor> =
         byId.values.filter { it.descriptor.enabled && it.isAvailable() }
