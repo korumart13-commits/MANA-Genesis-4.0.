@@ -8,7 +8,6 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
     </queries>
-    <uses-permission android:name="com.mana.permission.BIND_BRAIN" />
     <application android:label="MANA OS"
         android:theme="@style/ManaLauncherTheme"
         android:allowBackup="false" android:supportsRtl="true">
