@@ -75,3 +75,11 @@
 - The workflow was triggered by commit `93954f072fd6394502fc892ff75afad35d7af989`; run ID `45904983646`. At the time of this update it was in progress. This is not yet a passing build.
 - The workflow's later steps are configured to run Brain/core unit tests, Android debug assembly, and app unit tests. Their outcomes must be read from the completed run before reporting build success.
 - The Activity still constructs supporting dependencies and provider adapters before starting the service. Moving all of those constructions behind a service bootstrap remains unfinished; this change hardens ownership but does not claim that the Activity is already a thin UI-only client.
+
+## Kotlin Gradle plugin conflict — diagnosis and fix
+
+- GitHub Actions run `45904983646` reached the Brain/core test step but failed before tests executed. The exact Gradle error was: the `org.jetbrains.kotlin.jvm` plugin was already on the classpath with an unknown version while the `:brain` project requested version `2.2.21` again.
+- Centralized the Kotlin JVM plugin version in `launcher/build.gradle.kts` with `apply false`, alongside the Android and Compose Kotlin plugin declarations.
+- Removed the duplicate explicit Kotlin JVM version from `engine/mana-brain/build.gradle.kts`; the included `:brain` project now resolves the version from the root build plugin classpath.
+- Fix commits: `ea263c0f429aa46402b08132d310d87b7af32ed2` and `3d5317e74530b0afb7ed491a4a2e65447117e849`.
+- New launcher workflow runs `45905181796` and `45905179029` were observed in progress after the fix. No successful test/build result is claimed until these runs complete.
