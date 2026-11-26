@@ -89,16 +89,22 @@ class ManaModelCatalog(context: Context) {
         val temporary = File(directory, "$E4B_MODEL_FILE.importing")
         if (temporary.exists()) require(temporary.delete()) { "Не удалось очистить незавершённый импорт модели." }
         try {
-            app.assets.open(E4B_MODEL_FILE).buffered().use { input ->
-                java.io.FileOutputStream(temporary).buffered().use { output ->
-                    val buffer = ByteArray(1024 * 1024)
-                    while (true) {
-                        val count = input.read(buffer)
-                        if (count < 0) break
-                        output.write(buffer, 0, count)
+            java.io.FileOutputStream(temporary).buffered().use { output ->
+                val buffer = ByteArray(1024 * 1024)
+                // The APK carries the model as bounded, uncompressed asset chunks.
+                // This avoids Android Gradle's single-huge-asset array limit.
+                val chunkCount = ((E4B_MODEL_SIZE + BUNDLED_CHUNK_SIZE - 1) / BUNDLED_CHUNK_SIZE).toInt()
+                for (index in 0 until chunkCount) {
+                    val assetName = BUNDLED_CHUNK_PREFIX + index.toString().padStart(3, '0') + ".part"
+                    app.assets.open(assetName).buffered().use { input ->
+                        while (true) {
+                            val count = input.read(buffer)
+                            if (count < 0) break
+                            output.write(buffer, 0, count)
+                        }
                     }
-                    output.flush()
                 }
+                output.flush()
             }
             require(temporary.isFile && temporary.length() == E4B_MODEL_SIZE) {
                 "Размер встроенной Gemma 4 E4B не совпал с каталогом."
@@ -243,6 +249,8 @@ class ManaModelCatalog(context: Context) {
         const val E4B_MODEL_FILE = "gemma-4-E4B-it.litertlm"
         const val E4B_MODEL_SIZE = 3_659_530_240L
         const val E4B_SHA256 = "0b2a8980ce155fd97673d8e820b4d29d9c7d99b8fa6806f425d969b145bd52e0"
+        private const val BUNDLED_CHUNK_PREFIX = "gemma4_e4b_"
+        private const val BUNDLED_CHUNK_SIZE = 128L * 1024L * 1024L
         private const val KEY_E4B_DOWNLOAD_ID = "gemma4_e4b_download_id"
         private const val KEY_E4B_LICENSE_ACCEPTED = "gemma4_e4b_license_accepted"
         private const val KEY_E4B_ACTIVE_PATH = "gemma4_e4b_active_path"
