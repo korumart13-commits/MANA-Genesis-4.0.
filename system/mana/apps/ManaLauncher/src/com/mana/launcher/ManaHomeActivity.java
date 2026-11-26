@@ -2,17 +2,13 @@ package com.mana.launcher;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
-import android.os.IBinder;
-import android.os.RemoteException;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Gravity;
@@ -31,11 +27,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
-import com.mana.brain.BrainBinderRequest;
-import com.mana.brain.BrainBinderResponse;
-import com.mana.brain.IBrainCallback;
-import com.mana.brain.IBrainService;
 
 /**
  * MANA HOME — Android HOME role implementation.
@@ -57,25 +48,6 @@ public final class ManaHomeActivity extends Activity {
     private TextView clock;
     private TextView date;
     private TextView emptyState;
-    private TextView brainStatus;
-    private EditText brainPrompt;
-    private IBrainService brainService;
-    private boolean brainBound;
-    private final ServiceConnection brainConnection = new ServiceConnection() {
-        @Override public void onServiceConnected(ComponentName name, IBinder service) {
-            brainService = IBrainService.Stub.asInterface(service);
-            try {
-                boolean ready = brainService != null && brainService.isReady();
-                brainStatus.setText(ready ? "MANA Brain готов к работе" : "Binder подключён; локальная модель откроется через MANA Genesis");
-            } catch (RemoteException error) { brainStatus.setText("MANA Brain: ошибка связи с сервисом"); }
-        }
-        @Override public void onServiceDisconnected(ComponentName name) {
-            brainService = null;
-            brainStatus.setText("MANA Brain: соединение потеряно");
-        }
-    };
-
-
     private static final class AppEntry {
         final String label;
         final String packageName;
@@ -83,22 +55,6 @@ public final class ManaHomeActivity extends Activity {
             this.label = label;
             this.packageName = packageName;
         }
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        Intent service = new Intent();
-        service.setClassName("com.mana.assistant", "com.mana.assistant.ManaBrainBinderService");
-        brainBound = bindService(service, brainConnection, Context.BIND_AUTO_CREATE);
-        if (!brainBound && brainStatus != null) brainStatus.setText("Системный Binder недоступен; можно открыть MANA Genesis");
-    }
-
-    @Override
-    protected void onStop() {
-        if (brainBound) { unbindService(brainConnection); brainBound = false; }
-        brainService = null;
-        super.onStop();
     }
 
     @Override
@@ -121,63 +77,6 @@ public final class ManaHomeActivity extends Activity {
             renderApplications(searchBox == null ? "" : searchBox.getText().toString());
             updateDateTime();
         }
-    }
-
-    private void submitBrainPrompt() {
-        String value = brainPrompt == null ? "" : brainPrompt.getText().toString().trim();
-        if (value.isEmpty()) { brainStatus.setText("Сначала напиши сообщение."); return; }
-        if (brainService == null) { forwardToCompanion(value); return; }
-        BrainBinderRequest request = new BrainBinderRequest();
-        request.requestId = UUID.randomUUID().toString();
-        request.prompt = value;
-        request.allowCloud = false;
-        request.sensitive = false;
-        request.preferredCloudProvider = null;
-        brainStatus.setText("MANA обрабатывает запрос…");
-        try {
-            brainService.submit(request, new IBrainCallback.Stub() {
-                @Override public void onResult(BrainBinderResponse response) {
-                    runOnUiThread(() -> {
-                        if (response == null) brainStatus.setText("MANA Brain не вернул ответ.");
-                        else if (response.errorCode == 1002) forwardToCompanion(value);
-                        else if (response.errorCode != 0) brainStatus.setText("MANA Brain: " + response.errorMessage + " (" + response.errorCode + ")");
-                        else brainStatus.setText((response.local ? "Локально · " : "Облако · ") + response.provider + "\n\n" + response.text);
-                    });
-                }
-            });
-        } catch (RemoteException error) { forwardToCompanion(value); }
-    }
-
-    private void forwardToCompanion(String prompt) {
-        Intent intent = new Intent();
-        intent.setClassName("com.mana.genesis", "com.mana.launcher.MainActivity");
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        intent.putExtra("com.mana.launcher.OPEN_AVATAR_FROM_SYSTEM_ASSISTANT", true);
-        intent.putExtra("com.mana.genesis.OPEN_ASSISTANT_PANEL", true);
-        intent.putExtra("com.mana.genesis.INITIAL_PROMPT", prompt);
-        try {
-            startActivity(intent);
-            brainStatus.setText("Открываю MANA Genesis с твоим запросом…");
-        } catch (Exception unavailable) {
-            brainStatus.setText("Локальная модель недоступна. Установи MANA Genesis и выбери файл .litertlm.");
-            Toast.makeText(this, "MANA Genesis companion не найден.", Toast.LENGTH_LONG).show();
-        }
-    }
-
-    private void collectApplications() {
-        allApps.clear();
-        Intent query = new Intent(Intent.ACTION_MAIN);
-        query.addCategory(Intent.CATEGORY_LAUNCHER);
-        PackageManager pm = getPackageManager();
-        List<ResolveInfo> resolved = pm.queryIntentActivities(query, PackageManager.MATCH_DEFAULT_ONLY);
-        for (ResolveInfo info : resolved) {
-            if (info.activityInfo == null) continue;
-            String packageName = info.activityInfo.packageName;
-            if (getPackageName().equals(packageName)) continue;
-            String label = String.valueOf(info.loadLabel(pm));
-            allApps.add(new AppEntry(label, packageName));
-        }
-        Collections.sort(allApps, (a, b) -> a.label.compareToIgnoreCase(b.label));
     }
 
     private void buildHome() {
@@ -206,46 +105,6 @@ public final class ManaHomeActivity extends Activity {
         root.addView(clock);
         date = text("", 14, MUTED, false);
         root.addView(date);
-
-        LinearLayout hero = new LinearLayout(this);
-        hero.setOrientation(LinearLayout.VERTICAL);
-        hero.setPadding(dp(18), dp(16), dp(18), dp(16));
-        hero.setBackground(panelBackground(BLUE, 22));
-        LinearLayout.LayoutParams heroParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        heroParams.topMargin = dp(22);
-        root.addView(hero, heroParams);
-
-        hero.addView(text("ТВОЯ MANA", 12, BLUE, true));
-        TextView welcome = text("Я рядом. Чем займёмся?", 20, TEXT, true);
-        welcome.setPadding(0, dp(7), 0, dp(12));
-        hero.addView(welcome);
-
-        brainStatus = text("MANA Brain: connecting...", 12, MUTED, false);
-        brainStatus.setPadding(0, 0, 0, dp(10));
-        hero.addView(brainStatus);
-
-        brainPrompt = new EditText(this);
-        brainPrompt.setSingleLine(false);
-        brainPrompt.setMinLines(2);
-        brainPrompt.setTextColor(TEXT);
-        brainPrompt.setHintTextColor(MUTED);
-        brainPrompt.setHint("Message for MANA");
-        brainPrompt.setPadding(dp(12), dp(10), dp(12), dp(10));
-        brainPrompt.setBackground(panelBackground(MUTED, 12));
-        hero.addView(brainPrompt, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        TextView askBrain = action("Send to MANA", true);
-        askBrain.setOnClickListener(v -> submitBrainPrompt());
-        LinearLayout.LayoutParams askParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        askParams.topMargin = dp(10);
-        hero.addView(askBrain, askParams);
-
-        TextView talk = action("Открыть MANA  →", true);
-        talk.setOnClickListener(v -> openAssistant());
-        hero.addView(talk);
 
         TextView section = text("Приложения", 20, TEXT, true);
         section.setPadding(0, dp(26), 0, dp(12));
@@ -337,9 +196,9 @@ public final class ManaHomeActivity extends Activity {
     }
 
     private void openAssistant() {
-        Intent intent = getPackageManager().getLaunchIntentForPackage("com.mana.assistant");
+        Intent intent = getPackageManager().getLaunchIntentForPackage("com.mana.genesis");
         if (intent == null) {
-            Toast.makeText(this, "Приложение MANA Assistant пока не установлено", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Приложение MANA Genesis пока не установлено", Toast.LENGTH_SHORT).show();
             return;
         }
         startActivity(intent);
