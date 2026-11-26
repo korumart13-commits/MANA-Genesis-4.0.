@@ -1,0 +1,3 @@
+<resources>
+    <string name="mana_brain_service_description">Permission-protected Binder endpoint for MANA Brain</string>
+</resources>
