@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Static contract checks for the MANA modules consumed by Android 16 Soong."""
 from pathlib import Path
-import re
 import xml.etree.ElementTree as ET
 
 root = Path(__file__).resolve().parents[1]
@@ -20,8 +19,9 @@ for dependency in ('"kotlinx-coroutines-core"', '"gson"'):
 assert '"mana.brain-java"' in assistant_bp
 assert '"mana-brain-core"' in assistant_bp
 assert 'name: "mana.brain"' in aidl_bp and 'java: {' in aidl_bp
+product_packages = {line.strip().rstrip("\\\\").strip() for line in product.splitlines()}
 for app in ("ManaLauncher", "ManaAssistant", "ManaSettings", "ManaControlCenter"):
-    assert re.search(rf"^\s+{app}\s*$", product, re.M), f"{app} is not installed in the MANA product fragment"
+    assert app in product_packages, f"{app} is not installed in the MANA product fragment"
 assert "mana.brain-java" not in product, "AIDL Java library is linked, not an installable product package"
 assert "mana-brain-core" not in product, "Brain engine is linked, not an installable product package"
 
