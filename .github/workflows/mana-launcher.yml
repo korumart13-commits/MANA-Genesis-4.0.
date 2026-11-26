@@ -17,6 +17,8 @@ on:
       - 'launcher/**'
       - 'system/mana/**'
       - 'platform/**'
+      - 'device/**'
+      - 'tools/validate_rmx5566_profile.py'
       - 'engine/mana-brain/**'
       - 'os/core/**'
       - '.github/workflows/mana-launcher.yml'
@@ -120,7 +122,12 @@ jobs:
         run: |
           python3 tools/validate_rmx5566_profile.py
           bash -n device/collect_rmx5566_readonly_audit.sh
-          ! grep -E '(^|[[:space:]])(su|fastboot|dd|flash|reboot|wipe)([[:space:]]|$)' device/collect_rmx5566_readonly_audit.sh
+          ! grep -E '(^|[[:space:]])(su|fastboot|dd|flash|reboot|wipe|setprop|mount)([[:space:]]|$)' device/collect_rmx5566_readonly_audit.sh
+          grep -F 'ro.boot.verifiedbootstate' device/collect_rmx5566_readonly_audit.sh
+          grep -F 'ro.boot.vbmeta.device_state' device/collect_rmx5566_readonly_audit.sh
+          grep -F '07_selinux_state.txt' device/collect_rmx5566_readonly_audit.sh
+          grep -F '08_vintf_availability.txt' device/collect_rmx5566_readonly_audit.sh
+          grep -F 'vendor/etc/vintf' device/collect_rmx5566_readonly_audit.sh
       - name: Execute MANA Brain request policy host tests
         run: |
           mkdir -p /tmp/mana-brain-policy-test
