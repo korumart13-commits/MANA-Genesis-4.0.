@@ -170,6 +170,65 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  android-full-apk:
+    name: Build full offline MANA APK with embedded Gemma 4 E4B
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: "platforms;android-36"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+      - name: Download pinned official Gemma 4 E4B and verify publisher hash
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p launcher/app/src/main/assets
+          curl --fail --location --retry 5 --retry-all-errors \
+            "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/2eee7ac325f20eb8c9ac1d0e972f7c84663062da/gemma-4-E4B-it.litertlm" \
+            --output "$RUNNER_TEMP/gemma-4-E4B-it.litertlm"
+          test "$(stat -c%s "$RUNNER_TEMP/gemma-4-E4B-it.litertlm")" = "3659530240"
+          echo "0b2a8980ce155fd97673d8e820b4d29d9c7d99b8fa6806f425d969b145bd52e0  $RUNNER_TEMP/gemma-4-E4B-it.litertlm" | sha256sum --check -
+          cp "$RUNNER_TEMP/gemma-4-E4B-it.litertlm" launcher/app/src/main/assets/gemma-4-E4B-it.litertlm
+      - name: Build APK with uncompressed embedded offline model
+        run: gradle -p launcher --no-daemon -PmanaBundledModel=true :app:assembleDebug :app:testDebugUnitTest
+      - name: Verify APK size, embedded model size and SHA-256
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_STORED
+          apk = Path("launcher/app/build/outputs/apk/debug/app-debug.apk")
+          expected_size = 3659530240
+          expected_sha = "0b2a8980ce155fd97673d8e820b4d29d9c7d99b8fa6806f425d969b145bd52e0"
+          assert apk.is_file(), "Full APK was not produced"
+          assert apk.stat().st_size > expected_size, f"APK is unexpectedly small: {apk.stat().st_size}"
+          with ZipFile(apk) as archive:
+              info = archive.getinfo("assets/gemma-4-E4B-it.litertlm")
+              assert info.file_size == expected_size, f"Embedded model size mismatch: {info.file_size}"
+              assert info.compress_type == ZIP_STORED, "Multi-GB model must remain uncompressed in APK"
+              digest = hashlib.sha256()
+              with archive.open(info) as source:
+                  for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                      digest.update(chunk)
+              assert digest.hexdigest() == expected_sha, f"Embedded model SHA-256 mismatch: {digest.hexdigest()}"
+          print(f"Verified full MANA APK: {apk.stat().st_size} bytes; embedded Gemma 4 E4B: {expected_size} bytes; SHA-256 OK.")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Genesis-4.0-Full-APK-Gemma4-E4B
+          path: launcher/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
   soong-source-check:
     name: MANA Android product source validation
     runs-on: ubuntu-latest
