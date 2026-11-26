@@ -46,7 +46,11 @@ Until those blockers are resolved, the platform service must fail closed and rep
 4. Add and test the SELinux service context/domain and least-privilege access rules.
 5. Add Binder instrumentation tests for authorization, callback delivery, service death/reconnect, overload, sensitive/cloud rejection and separate memory-export consent.
 6. Verify the service and app bridge on an emulator before device integration.
-7. Continue the RMX5566RU read-only hardware/firmware audit using the newly confirmed device profile. Do not create or flash device images until exact OEM sources, blobs, VINTF and AVB/restore data are verified.
+7. Continue the RMX5566RU read-only hardware/firmware audit using the newly confirmed device profile. The first owner-provided runtime audit is now documented in `device/RMX5566RU_RUNTIME_AUDIT_ANALYSIS_2026-11-27.md`. Do not create or flash device images until exact OEM sources, blobs, VINTF and AVB/restore data are verified.
+
+## Latest RMX5566 runtime audit evidence
+
+The owner-uploaded read-only archive `mana_rmx5566_audit_20261127_022142.zip` was parsed and its XML files validated for well-formedness. The full findings and archive SHA-256 are recorded in `device/RMX5566RU_RUNTIME_AUDIT_ANALYSIS_2026-11-27.md`. The archive confirms Android 16 / SDK 36, vendor API and VNDK 33, first API level 35, locked bootloader, green Verified Boot, AVB 1.2, dynamic partitions, file-based encryption, slot `_a`, and vendor manifest target FCM level 7 with SELinux policy version 33.0. Partition inventory, runtime SELinux status, kernel config, device-tree metadata and module inventory remain unknown because access was denied or the collector had a syntax defect. The collector defect was fixed in v3; rerun only if further module inventory is needed. This evidence does not establish a compatible AOSP device build.
 
 ## Device identity evidence
 
