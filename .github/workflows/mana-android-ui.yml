@@ -39,16 +39,17 @@ jobs:
           javac -source 17 -target 17 \
             -classpath "$ANDROID_HOME/platforms/android-36/android.jar" \
             -d "$RUNNER_TEMP/mana-ui-classes" \
-            $(find system/mana/apps -name '*.java' ! -name 'ManaBrainBinderService.java' ! -name 'ManaBrainBinderTest.java' ! -name 'ManaLauncherBrainIntegrationTest.java' ! -name 'ManaHomeActivity.java' ! -name 'ManaAndroidCapabilityExecutor.java' -print)
+            $(find system/mana/apps -name '*.java' ! -name 'ManaBrainBinderService.java' ! -name 'ManaBrainBinderTest.java' ! -name 'ManaLauncherBrainIntegrationTest.java' ! -name 'ManaAndroidCapabilityExecutor.java' -print)
       - name: Validate MANA product package integration
         run: |
           python3 - <<'PY'
           from pathlib import Path
           product = Path('system/mana/mana_product.mk').read_text()
-          expected = ['ManaLauncher', 'ManaAssistant', 'ManaSettings', 'ManaControlCenter']
+          expected = ['ManaLauncher', 'ManaSettings', 'ManaControlCenter']
           missing = [name for name in expected if name not in product]
           assert not missing, f'Missing MANA product packages: {missing}'
-          print('All four non-privileged MANA apps are declared in the product package list.')
+          assert 'ManaAssistant' not in product, 'AI bridge must stay outside the firmware image.'
+          print('Three MANA UI modules are declared; AI assistant/runtime stays outside the firmware image.')
           PY
       - name: Validate manifests and permission surface
         run: |
