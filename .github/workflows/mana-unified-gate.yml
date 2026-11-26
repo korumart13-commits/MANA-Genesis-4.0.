@@ -251,7 +251,7 @@ jobs:
           javac -source 17 -target 17 \
             -classpath "$ANDROID_HOME/platforms/android-36/android.jar" \
             -d "$RUNNER_TEMP/mana-ui-classes" \
-            $(find system/mana/apps -name '*.java' ! -name 'ManaBrainBinderService.java' ! -name 'ManaBrainBinderTest.java' ! -name 'ManaLauncherBrainIntegrationTest.java' ! -name 'ManaHomeActivity.java' ! -name 'ManaAndroidCapabilityExecutor.java' -print)
+            $(find system/mana/apps -name '*.java' ! -name 'ManaBrainBinderService.java' ! -name 'ManaBrainBinderTest.java' ! -name 'ManaLauncherBrainIntegrationTest.java' ! -name 'ManaAndroidCapabilityExecutor.java' -print)
       - name: Validate MANA Brain and Android 16 Soong wiring
         run: python3 tools/validate_mana_soong_wiring.py
       - name: Validate read-only Termux device audit script
@@ -281,9 +281,9 @@ jobs:
           assert "aidl_interface" in aidl_bp and 'name: "mana.brain"' in aidl_bp
           assert "IBrainService.Stub" in binder and "ManaBrainAndroidRuntime.get()" in binder
           product = Path("system/mana/mana_product.mk").read_text()
-          expected = ["ManaLauncher", "ManaAssistant", "ManaSettings", "ManaControlCenter"]
+          expected = ["ManaLauncher", "ManaSettings", "ManaControlCenter"]
           missing = [name for name in expected if name not in product]
-          assert not missing, f"Missing product packages: {missing}"
+          assert not missing, f"Missing product packages: {missing}"\n          assert "ManaAssistant" not in product, "The separate MANA AI companion must not be embedded in the firmware image"
           ns = "{http://schemas.android.com/apk/res/android}"
           manifests = sorted(Path("system/mana/apps").glob("*/AndroidManifest.xml"))
           assert len(manifests) == 4, f"Expected 4 manifests, got {len(manifests)}"
