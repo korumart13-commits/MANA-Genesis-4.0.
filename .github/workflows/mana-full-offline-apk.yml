@@ -1,0 +1,85 @@
+name: MANA Genesis 4.0 — single offline APK (chunked Gemma)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-offline-apk:
+    name: Build one APK containing MANA and Gemma 4 E4B
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: "platforms;android-36"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+      - name: Download pinned official Gemma 4 E4B and verify SHA-256
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 5 --retry-all-errors \
+            "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/2eee7ac325f20eb8c9ac1d0e972f7c84663062da/gemma-4-E4B-it.litertlm" \
+            --output "$RUNNER_TEMP/gemma-4-E4B-it.litertlm"
+          test "$(stat -c%s "$RUNNER_TEMP/gemma-4-E4B-it.litertlm")" = "3659530240"
+          echo "0b2a8980ce155fd97673d8e820b4d29d9c7d99b8fa6806f425d969b145bd52e0  $RUNNER_TEMP/gemma-4-E4B-it.litertlm" | sha256sum --check -
+      - name: Split model into bounded APK assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p launcher/app/src/main/assets
+          split --bytes=134217728 --numeric-suffixes=0 --suffix-length=3 \
+            --additional-suffix=.part "$RUNNER_TEMP/gemma-4-E4B-it.litertlm" \
+            launcher/app/src/main/assets/gemma4_e4b_
+          test "$(find launcher/app/src/main/assets -maxdepth 1 -name 'gemma4_e4b_*.part' | wc -l)" = "28"
+          du -sh launcher/app/src/main/assets
+      - name: Build single APK with embedded offline model
+        run: gradle -p launcher --no-daemon -PmanaBundledModel=true :app:assembleDebug :app:testDebugUnitTest
+      - name: Verify the APK contains every model chunk in order and exact hash
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_STORED
+          apk = Path("launcher/app/build/outputs/apk/debug/app-debug.apk")
+          expected_size = 3659530240
+          expected_hash = "0b2a8980ce155fd97673d8e820b4d29d9c7d99b8fa6806f425d969b145bd52e0"
+          assert apk.is_file(), "APK missing"
+          with ZipFile(apk) as z:
+              digest = hashlib.sha256()
+              total = 0
+              count = (expected_size + 134217728 - 1) // 134217728
+              for i in range(count):
+                  name = f"assets/gemma4_e4b_{i:03d}.part"
+                  info = z.getinfo(name)
+                  assert info.compress_type == ZIP_STORED, f"{name} unexpectedly compressed"
+                  with z.open(info) as f:
+                      while True:
+                          block = f.read(1024 * 1024)
+                          if not block: break
+                          digest.update(block)
+                          total += len(block)
+              assert total == expected_size, f"model bytes mismatch: {total}"
+              assert digest.hexdigest() == expected_hash, f"model SHA mismatch: {digest.hexdigest()}"
+          assert apk.stat().st_size > expected_size, "APK is too small to contain the model"
+          print(f"PASS: single APK {apk.stat().st_size} bytes; model {total} bytes; SHA-256 verified.")
+          PY
+      - name: Publish one complete offline APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Genesis-4.0-Full-Offline-APK-Gemma4-E4B
+          path: launcher/app/build/outputs/apk/debug/app-debug.apk
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30
