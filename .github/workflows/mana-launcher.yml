@@ -51,9 +51,21 @@ jobs:
           from pathlib import Path
           activity = Path("launcher/app/src/main/java/com/mana/launcher/MainActivity.kt").read_text()
           service = Path("launcher/app/src/main/java/com/mana/launcher/ManaEngineService.kt").read_text()
+          bridge = Path("launcher/app/src/main/java/com/mana/launcher/ManaEngineBridgeService.kt").read_text()
           owner = Path("launcher/app/src/main/java/com/mana/launcher/ManaEngineProcessOwner.kt").read_text()
-          assert "initializeDependenciesFromService(this, keys)" in service
-          assert "initializeFromService(this, keys)" in service
+          manifest = Path("launcher/app/src/main/AndroidManifest.xml").read_text()
+          assert "ManaEngineProcessOwner.acquire(this, ManaAndroidKeyProvider())" in service
+          assert "ManaEngineProcessOwner.release()" in service
+          assert "IManaEngineBackend.Stub()" in bridge
+          assert "ManaEngineProcessOwner.acquire(this, ManaAndroidKeyProvider())" in bridge
+          assert "ManaEngineProcessOwner.release()" in bridge
+          assert "checkCallingPermission(BIND_PERMISSION)" in bridge
+          assert "allowPersonalMemoryToCloud = request.allowPersonalMemoryToCloud" in bridge
+          assert 'android:permission="com.mana.permission.BIND_BRAIN"' in manifest
+          assert 'android:name=".ManaEngineBridgeService"' in manifest
+          assert "fun acquire(context: Context, keyProvider: ManaAndroidKeyProvider)" in owner
+          assert "fun release()" in owner
+          assert "if (serviceOwners == 0) shutdownResourcesLocked()" in owner
           assert "initializeFromService(" not in activity
           assert "initializeDependenciesFromService(" not in activity
           assert "LocalModelRuntime(" not in activity
@@ -111,7 +123,10 @@ jobs:
           grep -F 'android:protectionLevel="signature"' system/mana/services/ManaBrainService/AndroidManifest.xml
           grep -F 'android:permission="com.mana.permission.BIND_BRAIN"' system/mana/services/ManaBrainService/AndroidManifest.xml
           grep -F 'checkCallingPermission(BIND_PERMISSION)' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
-          grep -F 'STATE_UNAVAILABLE = "UNAVAILABLE_NO_ENGINE_BACKEND"' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+          grep -F 'STATE_DISCONNECTED = "UNAVAILABLE_ENGINE_BACKEND_DISCONNECTED"' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+          grep -F 'IManaEngineBackend.Stub.asInterface(service)' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+          grep -F 'current.think(request' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+          grep -F 'com.mana.launcher.ManaEngineBridgeService' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
           grep -F 'ManaBrainRequestPolicy.validate(' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
           grep -F 'sensitive && allowCloud' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainRequestPolicy.java
           grep -F 'allowPersonalMemoryToCloud && (!allowCloud || !includePersonalMemory)' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainRequestPolicy.java
