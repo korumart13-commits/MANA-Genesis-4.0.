@@ -11,10 +11,12 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.collect
 import java.io.File
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 /** Owns LiteRT-LM Engine and Conversation on one dedicated background thread. */
 class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntime {
     private val executor = Executors.newSingleThreadExecutor { task -> Thread(task, "MANA-LiteRT-LM") }
+    private val closed = AtomicBoolean(false)
     @Volatile private var engine: Engine? = null
     @Volatile private var conversation: Conversation? = null
     @Volatile private var loadedModel: File? = null
@@ -24,6 +26,10 @@ class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntim
     override fun modelName(): String? = loadedModel?.let { "${it.name} · ${loadedBackend ?: "unknown"}" }
 
     override fun load(modelFile: File, callback: (Result<String>) -> Unit) {
+        if (closed.get()) {
+            callback(Result.failure(IllegalStateException("MANA local inference runtime is shut down")))
+            return
+        }
         executor.execute {
             try {
                 require(modelFile.isFile && modelFile.canRead()) { "Файл модели недоступен для чтения." }
@@ -44,6 +50,10 @@ class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntim
     }
 
     override fun generate(prompt: String, onChunk: (String) -> Unit, callback: (Result<Unit>) -> Unit) {
+        if (closed.get()) {
+            callback(Result.failure(IllegalStateException("MANA local inference runtime is shut down")))
+            return
+        }
         executor.execute {
             try {
                 val active = conversation ?: error("Сначала загрузи файл модели .litertlm.")
@@ -103,5 +113,10 @@ class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntim
         }
     }
 
-    override fun shutdown() { executor.execute { closeLoaded() }; executor.shutdown() }
+    override fun shutdown() {
+        if (closed.compareAndSet(false, true)) {
+            executor.execute { closeLoaded() }
+            executor.shutdown()
+        }
+    }
 }
