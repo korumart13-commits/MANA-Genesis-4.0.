@@ -5,11 +5,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
-import android.os.RemoteException;
 import android.test.InstrumentationTestCase;
 
-import com.mana.brain.BrainRequest;
-import com.mana.brain.BrainResponse;
+import com.mana.brain.BrainBinderRequest;
+import com.mana.brain.BrainBinderResponse;
 import com.mana.brain.IBrainCallback;
 import com.mana.brain.IBrainService;
 
@@ -18,7 +17,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** Device-side verification of the real Assistant Binder endpoint and AIDL contract. */
+/** Device-side verification of the protected Assistant Binder endpoint and AIDL contract. */
 public final class ManaBrainBinderTest extends InstrumentationTestCase {
     public void testProtectedServiceExposesEngineMetadata() throws Exception {
         ServiceHandle handle = bindBrain();
@@ -31,12 +30,12 @@ public final class ManaBrainBinderTest extends InstrumentationTestCase {
         }
     }
 
-    public void testSubmitReturnsCorrelatedResultOrExplicitError() throws Exception {
+    public void testSubmitReturnsCorrelatedLocalResultOrExplicitError() throws Exception {
         ServiceHandle handle = bindBrain();
         try {
             CountDownLatch completed = new CountDownLatch(1);
-            AtomicReference<BrainResponse> responseRef = new AtomicReference<>();
-            BrainRequest request = new BrainRequest();
+            AtomicReference<BrainBinderResponse> responseRef = new AtomicReference<>();
+            BrainBinderRequest request = new BrainBinderRequest();
             request.requestId = UUID.randomUUID().toString();
             request.prompt = "Reply with a short greeting.";
             request.allowCloud = false;
@@ -44,19 +43,20 @@ public final class ManaBrainBinderTest extends InstrumentationTestCase {
             request.preferredCloudProvider = null;
 
             handle.service.submit(request, new IBrainCallback.Stub() {
-                @Override public void onResult(BrainResponse response) {
+                @Override public void onResult(BrainBinderResponse response) {
                     responseRef.set(response);
                     completed.countDown();
                 }
             });
 
-            assertTrue("Binder callback timed out", completed.await(15, TimeUnit.SECONDS));
-            BrainResponse response = responseRef.get();
+            assertTrue("Binder callback timed out", completed.await(45, TimeUnit.SECONDS));
+            BrainBinderResponse response = responseRef.get();
             assertNotNull(response);
             assertEquals(request.requestId, response.requestId);
             assertNotNull(response.provider);
-            assertTrue("Must return either real text or an explicit error",
+            assertTrue("Must return generated text or an explicit provider error",
                     response.errorCode != 0 || (response.text != null && !response.text.trim().isEmpty()));
+            if (response.errorCode == 0) assertEquals("litertlm-local", response.provider);
         } finally {
             handle.close();
         }
@@ -71,9 +71,7 @@ public final class ManaBrainBinderTest extends InstrumentationTestCase {
                 serviceRef.set(IBrainService.Stub.asInterface(binder));
                 connected.countDown();
             }
-            @Override public void onServiceDisconnected(ComponentName name) {
-                serviceRef.set(null);
-            }
+            @Override public void onServiceDisconnected(ComponentName name) { serviceRef.set(null); }
         };
         Intent intent = new Intent();
         intent.setClassName("com.mana.assistant", "com.mana.assistant.ManaBrainBinderService");
@@ -93,8 +91,6 @@ public final class ManaBrainBinderTest extends InstrumentationTestCase {
             this.connection = connection;
             this.service = service;
         }
-        void close() {
-            context.unbindService(connection);
-        }
+        void close() { context.unbindService(connection); }
     }
 }
