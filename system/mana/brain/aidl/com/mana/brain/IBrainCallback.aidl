@@ -1,8 +1,8 @@
 package com.mana.brain;
 
-import com.mana.brain.BrainResponse;
+import com.mana.brain.BrainBinderResponse;
 
 /** Callback for an asynchronous inference request. */
 oneway interface IBrainCallback {
-    void onResult(in BrainResponse response);
+    void onResult(in BrainBinderResponse response);
 }
