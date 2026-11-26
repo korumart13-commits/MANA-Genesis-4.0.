@@ -16,11 +16,15 @@ The separate `com.mana.genesis` application owns the AI agent, local model, avat
 
 ## Visual implementation plan
 
-See `os/MANA_OS_VISUAL_DESIGN_AND_ANDROID_OVERLAY_RU.md` and `system/mana/overlays/README.md`. The design combines broad usability cues from classic/modern Samsung interfaces with restrained iOS 15/iPhone 13-style spacing and translucency, using original MANA assets and layouts rather than copying proprietary artwork.
+See `os/MANA_OS_VISUAL_DESIGN_AND_ANDROID_OVERLAY_RU.md`, `os/MANA_OS_LOCKSCREEN_BOOT_AND_DEVICE_BRIDGE_RU.md` and `system/mana/overlays/README.md`. The design combines broad usability cues from classic/modern Samsung interfaces with restrained iOS 15/iPhone 13-style spacing and translucency, using original MANA assets and layouts rather than copying proprietary artwork.
 
 ## Platform integration requirements
 
 Prepare the standalone `com.mana.genesis` app to use supported Android assistant roles and public APIs. A future narrow Binder/AIDL bridge may expose purpose-specific platform functions after identity, signature, permission and SELinux validation. Keep Android permission enforcement, AppOps, SELinux, Verified Boot, AVB and audit logs enabled.
+
+## Boot, lock screen and device bridge contract
+
+The detailed target-specific contract is in `os/MANA_OS_LOCKSCREEN_BOOT_AND_DEVICE_BRIDGE_RU.md`: genuine Keyguard styling without replacing credential verification, MANA Android boot animation, OEM bootloader splash constraints, preservation of Realme/Qualcomm hardware stack, and a consent-gated authenticated Binder/HAL integration boundary for `com.mana.genesis`. No fictitious drivers or universal permission bypasses are permitted.
 
 ## Current implementation state
 
