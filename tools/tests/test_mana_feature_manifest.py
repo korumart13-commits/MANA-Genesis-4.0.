@@ -31,6 +31,16 @@ class FeatureManifestTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             module.validate(bad, self.catalog)
 
+    def test_future_updates_pipeline_and_selinux_are_required(self):
+        bad = dict(self.data)
+        bad["future_updates"] = dict(self.data["future_updates"], pipeline=["idea", "install"])
+        with self.assertRaises(ValueError):
+            module.validate(bad, self.catalog)
+        bad = dict(self.data)
+        bad["security"] = dict(self.data["security"], selinux_enforcing=False)
+        with self.assertRaises(ValueError):
+            module.validate(bad, self.catalog)
+
     def test_receptionist_settings_are_preserved(self):
         bad = dict(self.data)
         bad["receptionist"] = dict(self.data["receptionist"], auto_answer_delay_seconds=0)
