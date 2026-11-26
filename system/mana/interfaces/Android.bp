@@ -1,0 +1,9 @@
+java_library {
+    name: "mana-brain-interface",
+    srcs: ["src/**/*.aidl"],
+    aidl: {
+        local_include_dirs: ["src"],
+    },
+    sdk_version: "system_current",
+    installable: false,
+}
