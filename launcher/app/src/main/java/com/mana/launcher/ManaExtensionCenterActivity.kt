@@ -21,7 +21,7 @@ class ManaExtensionCenterActivity : Activity() {
     private val background = Color.rgb(7, 20, 38)
     private val surface = Color.rgb(16, 43, 80)
     private val accent = Color.rgb(84, 200, 245)
-    private val foreground = Color.rgb(234, 244, 255)
+    private val primaryTextColor = Color.rgb(234, 244, 255)
     private val muted = Color.rgb(145, 169, 197)
 
     private data class Module(
@@ -68,7 +68,7 @@ class ManaExtensionCenterActivity : Activity() {
         root.addView(TextView(this).apply {
             text = "MANA · ЦЕНТР МОДУЛЕЙ"
             textSize = 22f
-            setTextColor(foreground)
+            setTextColor(primaryTextColor)
             setPadding(0, 0, 0, dp(8))
         })
         root.addView(TextView(this).apply {
@@ -88,7 +88,7 @@ class ManaExtensionCenterActivity : Activity() {
             card.addView(TextView(this).apply {
                 text = module.title
                 textSize = 16f
-                setTextColor(foreground)
+                setTextColor(primaryTextColor)
             })
             card.addView(TextView(this).apply {
                 text = module.description
