@@ -90,6 +90,7 @@
     {"id":"mana.memory","name":"Encrypted local memory and conversation history","status":"partial","required":true},
     {"id":"mana.adaptiveintelligence","name":"Adaptive learning and source validation","status":"architecture","required":false},
     {"id":"mana.autodev","name":"Autonomous source editing, isolated builds, tests and candidate releases","status":"partial","required":false},
+    {"id":"mana.futureupdates","name":"Future Updates idea inbox, planning, build, test and owner approval workflow","status":"partial","required":false},
     {"id":"mana.kernellab","name":"MANA kernel patch and driver development lab","status":"blocked","required":false},
     {"id":"mana.updater","name":"Independent signed MANA update channel and rollback metadata","status":"partial","required":true},
     {"id":"mana.recovery","name":"Recovery handoff and verified restore","status":"blocked","required":true},
