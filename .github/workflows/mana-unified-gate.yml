@@ -247,6 +247,21 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.11.1"
+      - name: Enforce zero declared Android permissions and OEM handoff action
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          root = ET.parse("updates/android-bridge/app/src/main/AndroidManifest.xml").getroot()
+          assert not root.findall("uses-permission"), "Updater bridge must not request Android permissions"
+          app = root.find("application")
+          assert app is not None
+          activity = app.find("activity")
+          assert activity is not None and activity.attrib.get("{http://schemas.android.com/apk/res/android}exported") == "true"
+          source = open("updates/android-bridge/app/src/main/java/com/mana/updatebridge/UpdaterBridgeActivity.kt", encoding="utf-8").read()
+          assert 'Intent("android.settings.SYSTEM_UPDATE_SETTINGS")' in source
+          assert "Settings.ACTION_SETTINGS" in source
+          print("Updater bridge requests no permissions and uses OEM update settings handoff.")
+          PY
       - name: Build MANA +1 updater handoff
         run: gradle -p updates/android-bridge --no-daemon :app:assembleDebug
       - name: Verify APK package metadata and no declared permissions
