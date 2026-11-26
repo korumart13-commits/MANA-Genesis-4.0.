@@ -8,3 +8,13 @@ android_app {
     privileged: true,
     product_specific: true,
 }
+
+java_test_host {
+    name: "mana-brain-request-policy-tests",
+    srcs: [
+        "src/com/mana/system/brain/ManaBrainRequestPolicy.java",
+        "tests/src/com/mana/system/brain/ManaBrainRequestPolicyTest.java",
+    ],
+    libs: ["junit"],
+    test_suites: ["general-tests"],
+}
