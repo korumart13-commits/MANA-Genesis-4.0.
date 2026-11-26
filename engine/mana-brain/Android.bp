@@ -1,12 +1,17 @@
-// Android/Soong view of the canonical JVM engine.
+// Canonical MANA Brain engine compiled by the Android 16 Soong build.
+// Kotlin sources remain shared with the JVM-tested engine module.
 java_library {
     name: "mana-brain-core",
-    srcs: [
-        "src/main/kotlin/com/mana/brain/ManaBrain.kt",
-        "src/main/kotlin/com/mana/brain/ManaBrainFacade.kt",
-        "src/main/kotlin/com/mana/brain/ManaBrainAndroidRuntime.kt",
+    srcs: ["src/main/kotlin/**/*.kt"],
+    static_libs: [
+        "kotlinx-coroutines-core",
+        "gson",
     ],
     sdk_version: "current",
+    min_sdk_version: "29",
+    kotlincflags: [
+        "-Xjvm-default=all",
+    ],
     visibility: [
         "//system/mana/apps/ManaAssistant",
     ],
