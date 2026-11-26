@@ -50,7 +50,7 @@ class ManaEngineService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (!ManaEngineProcessOwner.isRunning()) {
+        if (!ManaEngineProcessOwner.isInstalled()) {
             stopSelf(startId)
             return START_NOT_STICKY
         }
