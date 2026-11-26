@@ -45,3 +45,18 @@
 
 - The updated Kotlin and manifest files were fetched back from GitHub after the commits and inspected.
 - No successful Gradle/CI build or Android device run has been confirmed. In particular, compilation of the service integration, Android 16 foreground-service behavior, model loading, and recovery after process death remain unverified.
+
+## Binder boundary — follow-up
+
+- `ManaEngineService` now returns a process-local `LocalBinder` from `onBind()`.
+- The Binder exposes only readiness and a suspend `think(...)` request method; it no longer returns the raw `ManaEngineAndroidRuntime` object.
+- `MainActivity` starts and binds to the service, retains the Binder while connected, and unbinds in `onDestroy()`.
+- Chat requests now go through `LocalBinder.think()`. The previous direct `ManaBrainBridge.respond()` fallback from the Activity was removed; if the service is not ready, the UI reports that state rather than silently bypassing the Engine.
+- The Activity no longer retrieves or stores the Engine instance from `ManaEngineProcessOwner`; it checks whether the runtime is installed only to reuse its supporting Brain/local-inference/memory dependencies during Activity recreation.
+- The Binder is local to this app process and is not an AIDL cross-process API. This is an intentional first boundary; a stable cross-process contract would require AIDL or Messenger and separate serialization/versioning.
+
+### Verification status
+- Changed service and Activity sources were written to GitHub and fetched back for inspection.
+- Static source inspection confirms the Activity chat path uses Binder and contains no direct Brain fallback.
+- No Gradle compilation, Android instrumentation test, emulator run, or physical RMX5566RU test has been confirmed.
+- The foreground service remains `START_NOT_STICKY`; process-death restoration and continuous 24/7 execution are not claimed.
