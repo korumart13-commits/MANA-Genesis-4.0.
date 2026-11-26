@@ -81,6 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist/source
+          cp dist/apk/MANA-Shell.apk dist/apk/MANA-Shell.apk
           cp firmware/README_RU.md dist/README_RU.md
           cp docs/REALME_UPDATE_COMPATIBILITY_RU.md dist/REALME_UPDATE_COMPATIBILITY_RU.md
           cp os/MANA_OS_FIRMWARE_ONLY_IMPLEMENTATION_RU.md dist/MANA_OS_FIRMWARE_ONLY_IMPLEMENTATION_RU.md
@@ -103,7 +104,7 @@ jobs:
           from zipfile import ZipFile, ZIP_DEFLATED
           import hashlib, json
           root = Path("dist")
-          apk = root / "apk/mana-shell-debug.apk"
+          apk = root / "apk/MANA-Shell.apk"
           assert apk.is_file() and apk.stat().st_size > 0
           files = []
           for p in sorted(root.rglob("*")):
