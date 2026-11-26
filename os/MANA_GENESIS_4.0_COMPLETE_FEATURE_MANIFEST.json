@@ -12,6 +12,21 @@
     "android_api": 36,
     "base_fingerprint": "realme/RMX5566RU/RE645F:16/BP2A.250605.015/V.2f025ac-8895bb-9a8318:user/release-keys",
     "preserve_stock_camera_phone_radio_sensor_display_audio_and_oem_hal": true,
+    "runtime_kernel": "5.15.197-android13-8-o-01074-gdfa4acfa411e",
+    "vendor_module_build_android": "Android 13 / SDK 33",
+    "observed_stock_driver_modules": [
+      "msm_kgsl.ko",
+      "camera.ko",
+      "qca_cld3_wlan.ko",
+      "adsp_loader_dlkm.ko",
+      "q6_dlkm.ko",
+      "oplus_sensor.ko",
+      "oplus_chg.ko",
+      "oplus_sched.ko",
+      "focaltech_fts.ko",
+      "synaptics_tcm_ts.ko"
+    ],
+    "driver_source_status": "Observed module names only; no MANA-created kernel driver source or verified binary package was found in prior project artifacts.",
     "kernel_replacement_allowed": false,
     "reason_kernel_replacement_blocked": "Exact RMX5566RU 5.15.197 OEM source, defconfig, DTS/DTBO, matching modules, vendor data and recovery/AVB route are not verified."
   },
