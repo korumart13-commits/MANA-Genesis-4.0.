@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Routes requests through MANA Brain: the configured local runtime is always attempted first.
@@ -24,6 +25,7 @@ class ManaBrainBridge(
     constructor(localRuntime: LocalInferenceRuntime, cloudProvider: InferenceProvider?) :
         this(localRuntime, listOfNotNull(cloudProvider))
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val closed = AtomicBoolean(false)
 
     suspend fun respondDetailed(
         prompt: String,
@@ -32,6 +34,7 @@ class ManaBrainBridge(
         preferredCloudProvider: String? = null,
         onChunk: (String) -> Unit = {}
     ): BrainResponse {
+        check(!closed.get()) { "MANA Brain bridge is shut down" }
         val localProvider = object : InferenceProvider {
             override val id: String = "local-runtime"
             override fun isAvailable(): Boolean = localRuntime.isReady()
@@ -87,17 +90,37 @@ class ManaBrainBridge(
         onChunk: (String) -> Unit,
         callback: (Result<Unit>) -> Unit
     ) {
-        scope.launch {
-            try {
-                respondDetailed(prompt, allowCloud, sensitive, preferredCloudProvider, onChunk)
-                callback(Result.success(Unit))
-            } catch (error: Exception) {
-                callback(Result.failure(error))
+        val completed = AtomicBoolean(false)
+        fun complete(result: Result<Unit>) {
+            if (completed.compareAndSet(false, true)) {
+                runCatching { callback(result) }
             }
+        }
+
+        if (closed.get()) {
+            complete(Result.failure(IllegalStateException("MANA Brain bridge is shut down")))
+            return
+        }
+
+        val job = scope.launch {
+            try {
+                if (closed.get()) {
+                    complete(Result.failure(IllegalStateException("MANA Brain bridge is shut down")))
+                    return@launch
+                }
+                respondDetailed(prompt, allowCloud, sensitive, preferredCloudProvider, onChunk)
+                complete(Result.success(Unit))
+            } catch (error: Exception) {
+                complete(Result.failure(error))
+            }
+        }
+        // A scope cancelled between the closed check and launch must still complete the caller.
+        job.invokeOnCompletion { cause ->
+            if (cause != null) complete(Result.failure(cause))
         }
     }
 
     fun shutdown() {
-        scope.cancel()
+        if (closed.compareAndSet(false, true)) scope.cancel()
     }
 }
