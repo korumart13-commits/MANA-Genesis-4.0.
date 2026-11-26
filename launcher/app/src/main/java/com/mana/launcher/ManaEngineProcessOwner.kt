@@ -18,6 +18,7 @@ object ManaEngineProcessOwner {
     @Volatile private var cloud: ManaCloudGateway? = null
     @Volatile private var yandex: ManaYandexAiStudioProvider? = null
     private var serviceOwners = 0
+    private var modelLoadRequested = false
 
     fun prepare(
         brainBridge: ManaBrainBridge,
@@ -59,6 +60,45 @@ object ManaEngineProcessOwner {
             if (serviceOwners == 0) return
             serviceOwners -= 1
             if (serviceOwners == 0) shutdownResourcesLocked()
+        }
+    }
+
+    /**
+     * Load only an owner-approved, previously verified model. Hash verification and model
+     * initialization run off the main thread; this method never downloads or accepts a license.
+     */
+    fun ensureSavedModelLoaded(
+        context: Context,
+        callback: ((Result<String>) -> Unit)? = null
+    ) {
+        val app = context.applicationContext
+        val local = synchronized(lock) {
+            val runtime = inference ?: return
+            if (runtime.isReady() || modelLoadRequested) return
+            modelLoadRequested = true
+            runtime
+        }
+        Thread({
+            try {
+                val catalog = ManaModelCatalog(app)
+                val model = catalog.verifiedSavedModel()
+                    ?: java.io.File(app.filesDir, "mana-models/selected-model.litertlm")
+                        .takeIf { it.isFile && it.canRead() }
+                if (model == null) {
+                    synchronized(lock) { modelLoadRequested = false }
+                    return@Thread
+                }
+                local.load(model) { result ->
+                    synchronized(lock) { modelLoadRequested = false }
+                    callback?.invoke(result)
+                }
+            } catch (error: Exception) {
+                synchronized(lock) { modelLoadRequested = false }
+                callback?.invoke(Result.failure(error))
+            }
+        }, "MANA-Model-Bootstrap").apply {
+            isDaemon = true
+            start()
         }
     }
 
@@ -129,5 +169,6 @@ object ManaEngineProcessOwner {
         memory = null
         cloud = null
         yandex = null
+        modelLoadRequested = false
     }
 }
