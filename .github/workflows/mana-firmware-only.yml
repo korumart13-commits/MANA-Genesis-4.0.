@@ -35,10 +35,12 @@ jobs:
       - name: Verify firmware-only scope
         run: |
           set -euo pipefail
-          ! grep -E -R -n 'com\\.mana\\.genesis|ManaBrain|Gemma|LiteRT' firmware/android-shell system/mana/apps
+          ! grep -E -R -n 'com\.mana\.genesis|ManaBrain|Gemma|LiteRT' firmware/android-shell system/mana/apps
           grep -F 'com.mana.launcher.ManaHomeActivity' firmware/android-shell/mana-shell/src/main/AndroidManifest.xml
           grep -F 'com.mana.settings.ManaSettingsActivity' firmware/android-shell/mana-shell/src/main/AndroidManifest.xml
           grep -F 'com.mana.controlcenter.ManaControlCenterActivity' firmware/android-shell/mana-shell/src/main/AndroidManifest.xml
+          grep -F 'aidl = true' firmware/android-shell/mana-shell/build.gradle
+          grep -F 'interface IManaSystemBridge' firmware/android-shell/mana-shell/src/main/aidl/com/mana/shell/IManaSystemBridge.aidl
       - name: Build unified MANA HOME, Settings and Control Center APK
         run: gradle -p firmware/android-shell --no-daemon clean :mana-shell:assembleDebug
       - name: Verify APK structure and package metadata
