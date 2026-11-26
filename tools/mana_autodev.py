@@ -34,10 +34,17 @@ class AutoDevError(RuntimeError):
 
 
 def run(args: list[str], cwd: Path, timeout: int = 1800) -> str:
+    safe_keys = {
+        "PATH", "HOME", "PREFIX", "JAVA_HOME", "ANDROID_HOME",
+        "ANDROID_SDK_ROOT", "GRADLE_USER_HOME", "TMPDIR", "LANG",
+        "LC_ALL", "USER", "SHELL", "TERM", "LD_LIBRARY_PATH",
+    }
+    safe_env = {key: value for key, value in os.environ.items() if key in safe_keys}
+    safe_env["GIT_TERMINAL_PROMPT"] = "0"
     result = subprocess.run(
         args, cwd=cwd, text=True, stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT, timeout=timeout, check=False,
-        env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+        env=safe_env,
     )
     if result.returncode:
         raise AutoDevError(
@@ -93,6 +100,11 @@ def main() -> int:
         raise AutoDevError("Patch file is missing or empty")
     if patch.stat().st_size > 2_000_000:
         raise AutoDevError("Patch exceeds the 2 MB safety limit")
+    patch_text = patch.read_text(encoding="utf-8")
+    if "GIT binary patch" in patch_text or "Binary files " in patch_text:
+        raise AutoDevError("Binary patch content is forbidden")
+    if re.search(r"^(?:old mode|new mode|deleted file mode|new file mode 120000) ", patch_text, re.MULTILINE):
+        raise AutoDevError("File mode changes and symlinks are forbidden")
 
     status = run(["git", "status", "--porcelain", "--untracked-files=all"], repo)
     if status.strip():
