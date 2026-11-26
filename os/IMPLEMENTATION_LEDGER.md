@@ -171,3 +171,17 @@ See also:
 - GitHub Actions run [45870151076](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/45870151076) completed successfully for commit `b60a634d9197fcce958b71d1e000d4637f2a50ca`. Its Android UI job compiled the MANA UI Java sources against the Android 16 API and passed package-integration and manifest/permission-surface checks.
 - GitHub Actions run [45870172403](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/45870172403) completed successfully for commit `d99d5c48034988149c7cc4519b2b2c67dca93cf6`. XML parsing and MANA OS branding/theme-reference checks passed.
 - These checks validate source syntax and the existing Android UI Java compile workflow. They do not constitute a full Soong build, AOSP product build, SystemUI replacement, device boot test or flashable RMX5566RU firmware.
+
+
+## Android-preserving MANA visual shell — 2026-11-26
+
+- Product direction updated: keep the current compatible Realme Android 16 base; implement MANA as the visual/system overlay layer, not a replacement Android distribution.
+- Added `os/MANA_OS_VISUAL_DESIGN_AND_ANDROID_OVERLAY_RU.md`: classic/modern Samsung-inspired ergonomics plus restrained iPhone 13/iOS 15-inspired spacing and translucency, expressed with original MANA assets. Scope covers HOME, app drawer, lock screen, Quick Settings/notifications, brightness/volume, Recents, Settings, Files and system dialogs.
+- Added `system/mana/overlays/README.md` with the exact OEM package/resource mapping required before writing SystemUI/Keyguard/Recents/Settings/Files RROs. No guessed overlay targets are added.
+- MANA Launcher now displays actual installed application icons in the app drawer and opens the standalone `com.mana.genesis` app. It no longer embeds an AI chat/Brain panel.
+- Removed the Launcher dependency on `mana.brain-java`; removed `ManaAssistant` from `PRODUCT_PACKAGES`. The firmware product fragment now includes only Launcher, Settings and Control Center. Existing OEM/system/user applications are not removed.
+- Added MANA Control Center resources to its Soong build resource path and renamed its visible label to MANA OS Control Center.
+- Source validation at commit `d69bf69351d95a02fa168e671580e0ceacebbbb0`: Java compilation passed; the package-list check failed because it still expected the deliberately excluded AI bridge. Workflow was corrected at `bc526e07eec4564b121d149327c057333f5cc95c`; rerun is queued as Actions run [45871165901](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/45871165901).
+- Branding XML validation passed at commit `d69bf69351d95a02fa168e671580e0ceacebbbb0`, run [45871108904](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/45871108904).
+- SystemUI, lock screen, Recents, factory Settings and OEM Files app have not yet been changed: exact package names, overlayable resources and OEM source must be inspected from the matching RMX5566RU firmware first.
+- This is source-level progress. It is not a full Android product build or flashable firmware.
