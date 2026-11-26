@@ -15,6 +15,7 @@ android {
         java.srcDir(file("../apps/ManaAssistant/src"))
         java.srcDir(file("../apps/ManaLauncher/src"))
         java.include("com/mana/assistant/ManaBrainBinderService.java")
+        java.include("com/mana/assistant/ManaAndroidCapabilityExecutor.java")
         java.include("com/mana/launcher/ManaHomeActivity.java")
         aidl.srcDir(file("../brain/aidl"))
     }
