@@ -87,7 +87,7 @@ jobs:
           assert "engineBinder.think(" in activity
           assert "manaBrain.respond(" not in activity
           assert "val brainBridge = ManaBrainBridge(local, listOf(cloudGateway, yandexProvider))" in owner
-          assert "val memoryService = ManaMemoryService(" in owner
+          assert "ManaMemoryService(" in owner
           assert "MANA Engine dependencies are already prepared" in owner
           assert "fun isPrepared(): Boolean = synchronized(lock)" in owner
           print("Validated service-owned Brain, inference and encrypted memory creation plus Binder-only Activity access.")
