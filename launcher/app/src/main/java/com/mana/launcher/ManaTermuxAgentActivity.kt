@@ -27,7 +27,10 @@ class ManaTermuxAgentActivity : Activity() {
         CHECK("Проверить ошибки изменений", "git diff --check", "Проверяет пробелы и конфликтные маркеры в изменённых файлах."),
         TEST("Запустить тесты MANA", "gradle -p os/core --no-daemon test && gradle -p engine/mana-brain --no-daemon test", "Запускает JVM-тесты ядра и MANA Brain. Нужны Java 17 и Gradle."),
         APK("Собрать приложение MANA", "gradle -p launcher --no-daemon :app:assembleDebug :app:testDebugUnitTest", "Собирает и тестирует APK. Нужны Java 17, Gradle и Android SDK."),
-        DEVICE_AUDIT("Проверить телефон", "bash ./device/collect_rmx5566_identity.sh", "Собирает диагностику устройства без root и записи в системные разделы.")
+        DEVICE_AUDIT("Проверить телефон", "bash ./device/collect_rmx5566_identity.sh", "Собирает диагностику устройства без root и записи в системные разделы."),
+        AUTODEV_ENGINE("Проверить изменение движка MANA", "python tools/mana_autodev.py --repo . --patch \"$HOME/.mana/autodev/incoming-engine.patch\" --track engine", "Проверяет патч движка в отдельной Git worktree, запускает тесты и создаёт локальную ветку-кандидат. Требуется заранее подготовленный патч и Python/Gradle."),
+        AUTODEV_APPS("Проверить изменение приложений и модулей", "python tools/mana_autodev.py --repo . --patch \"$HOME/.mana/autodev/incoming-apps.patch\" --track apps", "Проверяет патч приложений в изолированной копии, собирает debug APK и запускает unit-тесты. Требуется Android SDK и заранее подготовленный патч."),
+        AUTODEV_KERNEL("Проверить патч ядра MANA", "python tools/mana_autodev.py --repo . --patch \"$HOME/.mana/autodev/incoming-kernel.patch\" --track kernel", "Проверяет только review-only patchset для нового драйвера MANA. Не собирает и не прошивает ядро; точный OEM kernel source пока не подтверждён.")
     }
 
     private val prefs by lazy { getSharedPreferences("mana_termux_agent", MODE_PRIVATE) }
@@ -134,6 +137,9 @@ class ManaTermuxAgentActivity : Activity() {
         body.addView(action("Выполнить задачу", true) {
             val query = request.text.toString().trim().lowercase()
             val task = when {
+                query.contains("ядр") || query.contains("драйвер") -> Task.AUTODEV_KERNEL
+                query.contains("движ") || query.contains("self") || query.contains("саморазв") -> Task.AUTODEV_ENGINE
+                query.contains("прилож") || query.contains("модул") -> Task.AUTODEV_APPS
                 query.contains("собер") || query.contains("apk") -> Task.APK
                 query.contains("тест") -> Task.TEST
                 query.contains("ошиб") || query.contains("diff") -> Task.CHECK
@@ -149,7 +155,7 @@ class ManaTermuxAgentActivity : Activity() {
         }, LinearLayout.LayoutParams(-1, dp(54)).apply { topMargin = dp(12) })
 
         body.addView(text(
-            "Понимает запросы: «проверь проект» • «найди ошибки» • «запусти тесты» • «собери APK» • «проверь телефон».",
+            "Доступно: проверки проекта, тесты, сборка APK и проверка подготовленных патчей движка, приложений и kernel-track. Патчи должны находиться в ~/.mana/autodev/; каждый кандидат проверяется отдельно.",
             12f, muted
         ).apply { setPadding(0, dp(12), 0, dp(16)) })
         body.addView(text("ПАПКА ПРОЕКТА", 11f, accent, true))
