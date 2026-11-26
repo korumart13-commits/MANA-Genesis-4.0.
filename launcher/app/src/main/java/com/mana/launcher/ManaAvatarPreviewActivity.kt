@@ -21,7 +21,7 @@ class ManaAvatarPreviewActivity : Activity() {
         window.navigationBarColor = Color.rgb(4, 7, 14)
         window.decorView.setBackgroundColor(Color.rgb(7, 20, 38))
 
-        val avatar = ManaAvatar3DView(this, {}, { cycleExpression() }, {})
+        val avatar = ManaAvatar3DView(this, { _, _ -> }, { cycleExpression() }, { })
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), dp(12), dp(12), dp(12))
@@ -46,10 +46,12 @@ class ManaAvatarPreviewActivity : Activity() {
         val outfits = LinearLayout(this).apply { gravity = Gravity.CENTER }
         outfits.addView(control("Одежда") {
             ManaAvatar3DView.outfitIndex = (ManaAvatar3DView.outfitIndex + 1) % 3
+            persistWardrobe()
             updateStatus()
         }, LinearLayout.LayoutParams(0, dp(48), 1f))
         outfits.addView(control("Аксессуар") {
             ManaAvatar3DView.accessoryEnabled = !ManaAvatar3DView.accessoryEnabled
+            persistWardrobe()
             updateStatus()
         }, LinearLayout.LayoutParams(0, dp(48), 1f))
         root.addView(outfits, LinearLayout.LayoutParams(-1, dp(52)))
@@ -74,6 +76,13 @@ class ManaAvatarPreviewActivity : Activity() {
         setTextColor(Color.rgb(234, 244, 255))
         setBackgroundColor(Color.rgb(23, 65, 105))
         setOnClickListener { action() }
+    }
+
+    private fun persistWardrobe() {
+        getSharedPreferences("mana.settings", MODE_PRIVATE).edit()
+            .putInt("avatar_outfit_index", ManaAvatar3DView.outfitIndex)
+            .putBoolean("avatar_accessory_enabled", ManaAvatar3DView.accessoryEnabled)
+            .apply()
     }
 
     private fun cycleExpression() {
