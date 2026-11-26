@@ -36,6 +36,7 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.view.Gravity
 import android.view.MotionEvent
+import android.view.WindowInsets
 import android.view.View
 import kotlinx.coroutines.runBlocking
 import android.view.ViewGroup
@@ -160,8 +161,9 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = bg
-        window.navigationBarColor = bg
+        if (Build.VERSION.SDK_INT >= 30) window.setDecorFitsSystemWindows(false)
+        window.statusBarColor = Color.TRANSPARENT
+        window.navigationBarColor = Color.TRANSPARENT
         window.decorView.setBackgroundColor(bg)
         contactIntelligence = ManaContactIntelligence(this)
         modelCatalog = runCatching { ManaModelCatalog(this) }.getOrNull()
@@ -396,6 +398,20 @@ class MainActivity : Activity() {
             rightMargin = dp(18)
             bottomMargin = dp(76)
         })
+        if (Build.VERSION.SDK_INT >= 30) {
+            rootFrame.setOnApplyWindowInsetsListener { _, insets ->
+                val bars = insets.getInsets(WindowInsets.Type.systemBars())
+                val cutout = insets.getInsets(WindowInsets.Type.displayCutout())
+                val topInset = max(bars.top, cutout.top)
+                val bottomInset = max(bars.bottom, cutout.bottom)
+                page.setPadding(dp(20), topInset + dp(16), dp(20), bottomInset + dp(8))
+                (avatarButton.layoutParams as? FrameLayout.LayoutParams)?.let { params ->
+                    params.bottomMargin = bottomInset + dp(76)
+                    avatarButton.layoutParams = params
+                }
+                insets
+            }
+        }
         setContentView(rootFrame)
     }
 
