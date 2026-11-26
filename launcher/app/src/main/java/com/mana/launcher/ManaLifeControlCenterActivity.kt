@@ -59,7 +59,7 @@ class ManaLifeControlCenterActivity : Activity() {
     private fun button(value: String, action: () -> Unit) = Button(this).apply {
         text = value
         isAllCaps = false
-        setTextColor(foreground)
+        setTextColor(this@ManaLifeControlCenterActivity.foreground)
         setBackgroundColor(primary)
         setOnClickListener { action() }
     }
@@ -84,7 +84,7 @@ class ManaLifeControlCenterActivity : Activity() {
         body.addView(section("Мессенджеры"))
         val message = EditText(this).apply {
             hint = "Текст сообщения для отправки через выбранное приложение"
-            setTextColor(foreground)
+            setTextColor(this@ManaLifeControlCenterActivity.foreground)
             setHintTextColor(muted)
             minLines = 2
             setPadding(dp(10), dp(8), dp(10), dp(8))
