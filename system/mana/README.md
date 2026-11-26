@@ -32,3 +32,16 @@ The first platform-facing MANA Brain API now lives in `interfaces/`:
 - `ManaAssistant` declares the interface library as a static dependency.
 
 This is an API boundary only. The Android platform service implementation, Binder caller authorization, SELinux domain and connection to the service-owned Gradle runtime are not yet implemented. Do not mark the platform Brain service as available until those parts are built and tested in AOSP.
+
+
+## Android Binder service endpoint
+
+A permission-protected Soong module now provides `ManaBrainService`, an Android `Service`
+implementing `IManaBrain`. It requires the signature-level `com.mana.permission.BIND_BRAIN`
+permission and checks it again inside Binder calls. The request contract includes separate
+consent for cloud inference and personal-memory export. The service deliberately returns
+`ENGINE_UNAVAILABLE` until a real local backend adapter is integrated; it never fabricates
+answers. See [services/ManaBrainService/README.md](services/ManaBrainService/README.md).
+
+The module is source-only at this stage: it is not included in an AOSP product image, Soong-built,
+or covered by device SELinux policy yet.
