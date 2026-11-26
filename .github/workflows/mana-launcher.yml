@@ -14,6 +14,7 @@ on:
     paths:
       - 'launcher/**'
       - 'system/mana/**'
+      - 'platform/**'
       - 'engine/mana-brain/**'
       - 'os/core/**'
       - '.github/workflows/mana-launcher.yml'
