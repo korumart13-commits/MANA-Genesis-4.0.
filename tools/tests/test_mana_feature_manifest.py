@@ -36,6 +36,16 @@ class FeatureManifestTests(unittest.TestCase):
         self.assertNotIn("Runtime.exec", source)
         self.assertNotIn("su -c", source)
 
+    def test_full_apk_bundles_pinned_gemma_e4b_and_verifies_hash(self):
+        catalog = (ROOT.parent / "launcher/app/src/main/java/com/mana/launcher/ManaModelCatalog.kt").read_text()
+        gradle = (ROOT.parent / "launcher/app/build.gradle.kts").read_text()
+        workflow = (ROOT.parent / ".github/workflows/mana-launcher.yml").read_text()
+        self.assertIn("E4B_MODEL_SIZE = 3_659_530_240L", catalog)
+        self.assertIn("0b2a8980ce155fd97673d8e820b4d29d9c7d99b8fa6806f425d969b145bd52e0", catalog)
+        self.assertIn('noCompress += "litertlm"', gradle)
+        self.assertIn("gemma-4-E4B-it.litertlm", workflow)
+        self.assertIn("sha256sum --check -", workflow)
+
     def test_missing_micro_universe_is_rejected(self):
         bad = dict(self.data)
         bad["modules"] = [m for m in self.data["modules"] if m["id"] != "mana.microuniverse"]
