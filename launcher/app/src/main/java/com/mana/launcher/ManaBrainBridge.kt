@@ -13,14 +13,14 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 /**
- * Routes requests through MANA Brain: local LiteRT-LM always wins.
- * Cloud is passed as an optional provider and requires per-request consent.
+ * Routes requests through MANA Brain: the configured local runtime is always attempted first.
+ * Cloud providers are optional and require per-request consent.
  */
 class ManaBrainBridge(
-    private val localRuntime: LocalModelRuntime,
+    private val localRuntime: LocalInferenceRuntime,
     private val cloudProviders: List<InferenceProvider> = emptyList()
 ) {
-    constructor(localRuntime: LocalModelRuntime, cloudProvider: InferenceProvider?) :
+    constructor(localRuntime: LocalInferenceRuntime, cloudProvider: InferenceProvider?) :
         this(localRuntime, listOfNotNull(cloudProvider))
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -35,7 +35,7 @@ class ManaBrainBridge(
         scope.launch {
             try {
                 val localProvider = object : InferenceProvider {
-                    override val id: String = "litertlm-local"
+                    override val id: String = "local-runtime"
                     override fun isAvailable(): Boolean = localRuntime.isReady()
 
                     override suspend fun generate(prompt: String): String =
@@ -77,7 +77,6 @@ class ManaBrainBridge(
                         preferredCloudProvider = preferredCloudProvider
                     )
                 )
-                // Cloud provider currently returns a complete response, not a token stream.
                 if (!response.local) onChunk(response.text)
                 callback(Result.success(Unit))
             } catch (error: Exception) {
