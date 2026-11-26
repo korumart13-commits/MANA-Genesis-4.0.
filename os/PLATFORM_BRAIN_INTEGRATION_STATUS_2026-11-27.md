@@ -9,6 +9,7 @@
 - Per-request cloud and sensitive-data policy checks.
 - Separate opt-in flags for cloud use and personal-memory export.
 - Dedicated single-thread executor for accepted Binder requests.
+- Pure Java request-policy class and host-side JUnit test target covering blank prompts, sensitive/cloud rejection, and independent memory-export consent.
 - Product fragment `system/mana/mana_product.mk` declares `ManaBrainService` in `PRODUCT_PACKAGES`.
 - Service endpoint fails closed with `ENGINE_UNAVAILABLE` until a real local inference backend is connected.
 
@@ -41,3 +42,13 @@ Accepted requests are dispatched onto a dedicated single-thread executor rather 
 
 Service implementation commit: `88d6cc6a707cb92898a746ccf1143c011cbec37f`.
 CI assertions for executor dispatch and lifecycle cleanup: `5fdf432eb9dc4dcd6d9fa21ffe0f7415b6f24ace`.
+
+
+## Request policy test coverage added
+
+The request-policy checks were extracted from the Android Service into the Android-independent
+`ManaBrainRequestPolicy` class. A Soong `java_test_host` target named
+`mana-brain-request-policy-tests` now covers null/blank prompts, sensitive cloud denial,
+missing consent combinations, valid local requests, valid cloud requests without memory export,
+and memory export with both required consents. CI checks the test target's source wiring; the
+host-side Soong test has not yet been executed because a full AOSP/Soong checkout is not available.
