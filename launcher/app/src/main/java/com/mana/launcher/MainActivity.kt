@@ -93,6 +93,7 @@ class MainActivity : Activity() {
     private var apps: List<ResolveInfo> = emptyList()
     private val voiceRequestCode = 4107
     private val modelRequestCode = 4108
+    private val homeRoleRequestCode = 4110
     private lateinit var localRuntime: LocalModelRuntime
     private lateinit var manaBrain: ManaBrainBridge
     private lateinit var cloudGateway: ManaCloudGateway
@@ -362,6 +363,29 @@ class MainActivity : Activity() {
         content.addView(label(
             "Для них Android открывает отдельные системные экраны. Нажимай только те функции, которые действительно хочешь включить.",
             12, muted, false
+        ))
+        content.addView(action("СДЕЛАТЬ MANA ГЛАВНЫМ ЭКРАНОМ ТЕЛЕФОНА") {
+            if (Build.VERSION.SDK_INT >= 29) {
+                val roles = getSystemService(RoleManager::class.java)
+                if (roles != null && roles.isRoleAvailable(RoleManager.ROLE_HOME)) {
+                    if (roles.isRoleHeld(RoleManager.ROLE_HOME)) {
+                        showMessage("MANA уже назначена главным экраном телефона.")
+                    } else {
+                        startActivityForResult(
+                            roles.createRequestRoleIntent(RoleManager.ROLE_HOME),
+                            homeRoleRequestCode
+                        )
+                    }
+                } else {
+                    startActivity(Intent(Settings.ACTION_HOME_SETTINGS))
+                }
+            } else {
+                startActivity(Intent(Settings.ACTION_HOME_SETTINGS))
+            }
+        }, LinearLayout.LayoutParams(-1, dp(54)).apply { topMargin = dp(10) })
+        content.addView(label(
+            "Подтверди MANA в системном окне Android один раз. После назначения нажатие кнопки «Домой» будет возвращать тебя в MANA. Android не разрешает приложению назначить себя главным экраном без твоего подтверждения.",
+            11, muted, false
         ))
         content.addView(action((if (overlayGranted) "✓ " else "") + "Плавающий 3D-аватар — доступ поверх окон") {
             getSharedPreferences("mana.settings", MODE_PRIVATE).edit()
