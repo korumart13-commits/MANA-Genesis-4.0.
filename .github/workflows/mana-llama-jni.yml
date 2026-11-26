@@ -1,0 +1,51 @@
+name: MANA llama.cpp JNI — Android ARM64 build
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "os/native/llama-jni/**"
+      - "os/core/src/main/kotlin/com/mana/os/core/ManaLlamaCppConnector.kt"
+      - ".github/workflows/mana-llama-jni.yml"
+  pull_request:
+    paths:
+      - "os/native/llama-jni/**"
+      - "os/core/src/main/kotlin/com/mana/os/core/ManaLlamaCppConnector.kt"
+      - ".github/workflows/mana-llama-jni.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-arm64:
+    name: Build llama.cpp JNI (arm64-v8a)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout MANA source
+        uses: actions/checkout@v4
+
+      - name: Set up Android SDK and NDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install pinned NDK and CMake
+        run: sdkmanager "ndk;27.2.12479018" "cmake;3.22.1"
+
+      - name: Configure Android ARM64 build
+        env:
+          ANDROID_NDK_VERSION: 27.2.12479018
+        run: |
+          cmake -S os/native/llama-jni -B build/llama-jni-arm64 \
+            -DCMAKE_TOOLCHAIN_FILE="$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_PLATFORM=android-26 \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Compile JNI and pinned llama.cpp
+        run: cmake --build build/llama-jni-arm64 --parallel 2
+
+      - name: Verify native library
+        run: |
+          test -f build/llama-jni-arm64/libmana_llama_jni.so
+          file build/llama-jni-arm64/libmana_llama_jni.so
