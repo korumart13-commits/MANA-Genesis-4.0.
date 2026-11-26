@@ -3,7 +3,6 @@ android_app {
     manifest: "AndroidManifest.xml",
     resource_dirs: ["res"],
     srcs: ["src/**/*.java"],
-    static_libs: ["mana.brain-java"],
     sdk_version: "current",
     min_sdk_version: "29",
     target_sdk_version: "36",
