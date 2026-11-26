@@ -8,7 +8,7 @@
 - Repeated permission enforcement inside Binder entry points.
 - Per-request cloud and sensitive-data policy checks.
 - Separate opt-in flags for cloud use and personal-memory export.
-- Dedicated single-thread executor for accepted Binder requests.
+- Dedicated single-thread executor with a bounded 32-request queue and explicit overload response.
 - Pure Java request-policy class, Soong host-side JUnit test target, and dependency-free executable host test covering blank prompts, sensitive/cloud rejection, and independent memory-export consent.
 - Product fragment `system/mana/mana_product.mk` declares `ManaBrainService` in `PRODUCT_PACKAGES`.
 - Service endpoint fails closed with `ENGINE_UNAVAILABLE` until a real local inference backend is connected.
