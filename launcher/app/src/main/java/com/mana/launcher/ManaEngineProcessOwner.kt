@@ -2,6 +2,8 @@ package com.mana.launcher
 
 import android.content.Context
 import com.mana.os.core.ManaMemoryService
+import com.mana.os.core.EncryptedFileManaMemoryStore
+import com.mana.os.core.EncryptedFileManaDiaryStore
 
 /**
  * Process-level owner for the service-created MANA Engine and its shared dependencies.
@@ -13,6 +15,8 @@ object ManaEngineProcessOwner {
     @Volatile private var brain: ManaBrainBridge? = null
     @Volatile private var inference: LocalModelRuntime? = null
     @Volatile private var memory: ManaMemoryService? = null
+    @Volatile private var cloud: ManaCloudGateway? = null
+    @Volatile private var yandex: ManaYandexAiStudioProvider? = null
 
     fun prepare(
         brainBridge: ManaBrainBridge,
@@ -27,6 +31,29 @@ object ManaEngineProcessOwner {
             brain = brainBridge
             inference = localInference
             memory = memoryService
+        }
+    }
+
+    fun initializeDependenciesFromService(context: Context, keyProvider: ManaAndroidKeyProvider) {
+        synchronized(lock) {
+            if (brain != null && inference != null && memory != null) return
+            val app = context.applicationContext
+            val local = LocalModelRuntime(java.io.File(app.cacheDir, "mana-litert-cache"))
+            val cloudGateway = ManaCloudGateway(app, keyProvider)
+            val yandexProvider = ManaYandexAiStudioProvider(app)
+            val brainBridge = ManaBrainBridge(local, listOf(cloudGateway, yandexProvider))
+            val memoryService = ManaMemoryService(
+                EncryptedFileManaMemoryStore(
+                    EncryptedFileManaDiaryStore(
+                        java.io.File(app.filesDir, "mana/memory.bin"), keyProvider, "mana.memory.v1"
+                    )
+                )
+            )
+            inference = local
+            cloud = cloudGateway
+            yandex = yandexProvider
+            memory = memoryService
+            brain = brainBridge
         }
     }
 
@@ -53,6 +80,8 @@ object ManaEngineProcessOwner {
     fun brainBridge(): ManaBrainBridge? = brain
     fun localModelRuntime(): LocalModelRuntime? = inference
     fun memoryService(): ManaMemoryService? = memory
+    fun cloudGateway(): ManaCloudGateway? = cloud
+    fun yandexProvider(): ManaYandexAiStudioProvider? = yandex
     fun isRunning(): Boolean = engine?.health()?.state == com.mana.os.core.ManaEngineState.READY
 
     fun shutdown() {
@@ -64,6 +93,8 @@ object ManaEngineProcessOwner {
             inference?.shutdown()
             inference = null
             memory = null
+            cloud = null
+            yandex = null
         }
     }
 }
