@@ -12,6 +12,7 @@ on:
   pull_request:
     paths:
       - 'launcher/**'
+      - 'system/mana/**'
       - 'engine/mana-brain/**'
       - 'os/core/**'
       - '.github/workflows/mana-launcher.yml'
@@ -77,6 +78,19 @@ jobs:
           grep -F 'boolean sensitive = false;' system/mana/interfaces/src/com/mana/brain/ManaBrainRequest.aidl
           grep -F 'static_libs: ["mana-brain-interface"],' system/mana/apps/ManaAssistant/Android.bp
           grep -F 'This is an interface contract, not an implemented Android system service.' system/mana/interfaces/README.md
+      - name: Validate platform MANA Brain service boundary
+        run: |
+          test -f system/mana/services/ManaBrainService/Android.bp
+          test -f system/mana/services/ManaBrainService/AndroidManifest.xml
+          grep -F 'certificate: "platform"' system/mana/services/ManaBrainService/Android.bp
+          grep -F 'privileged: true' system/mana/services/ManaBrainService/Android.bp
+          grep -F 'android:protectionLevel="signature"' system/mana/services/ManaBrainService/AndroidManifest.xml
+          grep -F 'android:permission="com.mana.permission.BIND_BRAIN"' system/mana/services/ManaBrainService/AndroidManifest.xml
+          grep -F 'checkCallingPermission(BIND_PERMISSION)' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+          grep -F 'STATE_UNAVAILABLE = "UNAVAILABLE_NO_ENGINE_BACKEND"' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+          grep -F 'request.sensitive && request.allowCloud' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+          grep -F 'boolean allowPersonalMemoryToCloud = false;' system/mana/interfaces/src/com/mana/brain/ManaBrainRequest.aidl
+          grep -F 'ENGINE_UNAVAILABLE' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
       - name: Validate embedded full-body MANA glTF asset
         working-directory: .
         run: |
