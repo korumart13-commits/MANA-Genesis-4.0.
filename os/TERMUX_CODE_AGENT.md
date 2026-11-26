@@ -24,8 +24,21 @@ Every action is shown with its exact command and working directory, then require
 
 Official Termux documentation: https://github.com/termux/termux-app/wiki/RUN_COMMAND-Intent
 
+## AutoDev candidate workflow
+
+The engine now has a Brain-driven code-candidate coordinator and a separate host runner:
+- Engine: `python tools/mana_autodev.py --repo . --patch "$HOME/.mana/autodev/incoming-engine.patch" --track engine`
+- Android apps/modules: use `--track apps`; the runner builds the debug APK and runs unit tests.
+- Kernel patchset: use `--track kernel`; this is review-only and never compiles or flashes a kernel.
+
+The runner requires a clean Git checkout, creates a detached temporary worktree, applies a unified diff, enforces path allowlists, runs fixed tests/builds, and creates a local candidate branch only after success. It does not push, merge, sign releases, install APKs, create OTAs or flash the device.
+
+The current activity can validate a staged patch file but does not yet transfer generated patch bytes from the local LiteRT-LM companion into Termux automatically. That handoff and device validation are still required before the full self-development loop can be called autonomous end-to-end.
+
+Kernel candidates may add new MANA driver source files only through reviewable patchsets under `kernel/mana-patches/`, targeting new files below `drivers/misc/mana/`. Exact matching RMX5566RU OEM source is still missing, so applying or compiling such patches remains blocked. Existing kernel files, boot chain, DTS, vendor modules and partitions are not writable by this track.
+
 ## Important limitations
-- This bridge currently runs fixed checks/builds and a read-only device audit only. It does not apply AI-generated source patches to the repository.
+- The bridge runs fixed checks/builds, a read-only device audit and a gated candidate runner. The Brain-to-Termux patch transfer remains a separate integration task.
 - A future patch workflow must stage changes in a review area, show a unified diff, verify the target stays inside the selected project, make a backup/branch, and require owner approval before applying.
 - Termux must have Java/Gradle/Android SDK components needed for the selected build. A successful GitHub Actions build does not imply the same toolchain exists on the phone.
 - The bridge has not yet been tested on the owner's Realme RMX5566RU / Android 16 firmware.
