@@ -1,0 +1,66 @@
+name: MANA OS branding source validation
+
+on:
+  push:
+    branches:
+      - mana-genesis-4-rmx5566-rom-port
+    paths:
+      - 'system/mana/apps/ManaLauncher/**'
+      - 'system/mana/apps/ManaSettings/**'
+      - '.github/workflows/mana-os-branding-validation.yml'
+  pull_request:
+    paths:
+      - 'system/mana/apps/ManaLauncher/**'
+      - 'system/mana/apps/ManaSettings/**'
+      - '.github/workflows/mana-os-branding-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  branding-source-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate XML resources and manifests
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import xml.etree.ElementTree as ET
+
+          root = pathlib.Path(".")
+          files = [
+              "system/mana/apps/ManaLauncher/AndroidManifest.xml",
+              "system/mana/apps/ManaLauncher/res/values/colors.xml",
+              "system/mana/apps/ManaLauncher/res/values/styles.xml",
+              "system/mana/apps/ManaSettings/AndroidManifest.xml",
+              "system/mana/apps/ManaSettings/res/values/colors.xml",
+              "system/mana/apps/ManaSettings/res/values/styles.xml",
+          ]
+          for name in files:
+              path = root / name
+              if not path.is_file():
+                  raise SystemExit(f"MISSING: {name}")
+              ET.parse(path)
+              print(f"XML OK: {name}")
+
+          checks = {
+              "system/mana/apps/ManaLauncher/AndroidManifest.xml": [
+                  'android:label="MANA OS"',
+                  '@style/ManaLauncherTheme',
+              ],
+              "system/mana/apps/ManaSettings/AndroidManifest.xml": [
+                  'android:label="MANA OS Settings"',
+                  '@style/ManaSettingsTheme',
+              ],
+              "system/mana/apps/ManaLauncher/Android.bp": ['resource_dirs: ["res"]'],
+              "system/mana/apps/ManaSettings/Android.bp": ['resource_dirs: ["res"]'],
+          }
+          for name, needles in checks.items():
+              text = (root / name).read_text(encoding="utf-8")
+              for needle in needles:
+                  if needle not in text:
+                      raise SystemExit(f"CHECK FAILED: {name}: {needle}")
+          print("MANA OS branding source checks passed.")
+          PY
