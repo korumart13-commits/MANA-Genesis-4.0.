@@ -21,6 +21,10 @@ A C85/C85 Pro Android 16 OEM source family has now been located. The vendor/kern
 
 This is a useful lead, **not yet a safe kernel/DTBO match**: the phone's runtime kernel is 5.15.197, and the audited OEM source commit identifies a different RMX release. See [OEM_SOURCE_MATRIX.md](OEM_SOURCE_MATRIX.md) for pinned repositories, commit IDs, source evidence and the exact compatibility blockers.
 
+## MANA OS firmware-only target
+
+The product goal is the branded **MANA OS** firmware: MANA boot branding, launcher, lock screen, SystemUI, notifications, Quick Settings and Settings, plus a prepared system integration boundary for the separate `com.mana.genesis` app. The firmware does not contain the AI/avatar/memory/game agent. See [MANA OS firmware-only implementation target](../../../os/MANA_OS_FIRMWARE_ONLY_IMPLEMENTATION_RU.md) for the full scope, permission model and build gates. This is a specification, not a bootable image; all OEM/device evidence gates below still apply.
+
 ## Reproducible source workspace
 
 - [Pinned OEM source lock](oem-source-lock.json)
