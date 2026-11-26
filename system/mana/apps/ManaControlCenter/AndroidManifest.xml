@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
         android:allowBackup="false"
-        android:label="MANA Control Center"
+        android:label="MANA OS Control Center"
         android:theme="@style/ManaControlCenterTheme">
         <activity
             android:name=".ManaControlCenterActivity"
