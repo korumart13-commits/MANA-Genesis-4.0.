@@ -12,22 +12,34 @@ public final class ManaBrainRequestPolicyHostTest {
         if (!condition) throw new AssertionError(message);
     }
 
+    private static String validate(String text, boolean sensitive, boolean cloud,
+            String provider, boolean memory, boolean memoryToCloud) {
+        return ManaBrainRequestPolicy.validate(text, sensitive, cloud, provider, memory, memoryToCloud);
+    }
+
     public static void main(String[] args) {
-        expect(ManaBrainRequestPolicy.validate(null, false, false, false, false) != null,
-                "null prompt must be rejected");
-        expect(ManaBrainRequestPolicy.validate("  ", false, false, false, false) != null,
-                "blank prompt must be rejected");
-        expect(ManaBrainRequestPolicy.validate("private", true, true, false, false) != null,
-                "sensitive cloud request must be rejected");
-        expect(ManaBrainRequestPolicy.validate("hello", false, false, true, true) != null,
+        expect(validate(null, false, false, null, false, false) != null, "null prompt must be rejected");
+        expect(validate("  ", false, false, null, false, false) != null, "blank prompt must be rejected");
+        expect(validate("private", true, true, null, false, false) != null, "sensitive cloud request must be rejected");
+        expect(validate("x".repeat(ManaBrainRequestPolicy.MAX_PROMPT_CHARS + 1), false, false, null, false, false) != null,
+                "oversized prompt must be rejected");
+        expect(validate("hello", false, false, "openai", false, false) != null,
+                "cloud provider on local-only request must be rejected");
+        expect(validate("hello", false, true, "unknown-provider", false, false) != null,
+                "unknown provider must be rejected");
+        expect(validate("hello", false, true, "openai", false, false) == null,
+                "supported cloud provider must be accepted");
+        expect(validate("hello", false, true, "gemini", false, false) == null,
+                "Gemini provider alias must be accepted");
+        expect(validate("hello", false, false, null, true, true) != null,
                 "memory export without cloud consent must be rejected");
-        expect(ManaBrainRequestPolicy.validate("hello", false, true, false, true) != null,
+        expect(validate("hello", false, true, null, false, true) != null,
                 "memory export without memory consent must be rejected");
-        expect(ManaBrainRequestPolicy.validate("hello", false, false, false, false) == null,
+        expect(validate("hello", false, false, null, false, false) == null,
                 "local request must be accepted");
-        expect(ManaBrainRequestPolicy.validate("hello", false, true, false, false) == null,
+        expect(validate("hello", false, true, null, false, false) == null,
                 "cloud request without memory export must be accepted");
-        expect(ManaBrainRequestPolicy.validate("hello", false, true, true, true) == null,
+        expect(validate("hello", false, true, null, true, true) == null,
                 "memory export with both consents must be accepted");
         System.out.println("MANA Brain request policy: " + assertions + " assertions passed.");
     }
