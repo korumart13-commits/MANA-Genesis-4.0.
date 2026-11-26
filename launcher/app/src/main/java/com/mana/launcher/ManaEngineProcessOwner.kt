@@ -64,7 +64,7 @@ object ManaEngineProcessOwner {
     }
 
     /**
-     * Load only an owner-approved, previously verified model. Hash verification and model
+     * Load a previously saved/selected model. Catalog-managed models are hash-verified; model
      * initialization run off the main thread; this method never downloads or accepts a license.
      */
     fun ensureSavedModelLoaded(
