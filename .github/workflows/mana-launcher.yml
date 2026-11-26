@@ -115,6 +115,10 @@ jobs:
           grep -F 'ManaBrainRequestPolicy.validate(' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
           grep -F 'sensitive && allowCloud' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainRequestPolicy.java
           grep -F 'allowPersonalMemoryToCloud && (!allowCloud || !includePersonalMemory)' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainRequestPolicy.java
+          grep -F 'MAX_PROMPT_CHARS = 32_768' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainRequestPolicy.java
+          grep -F 'isSupportedProvider(preferredCloudProvider)' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainRequestPolicy.java
+          grep -F 'request.preferredCloudProvider' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+          grep -F 'rejectsOversizedPrompt' system/mana/services/ManaBrainService/tests/src/com/mana/system/brain/ManaBrainRequestPolicyTest.java
           grep -F 'java_test_host' system/mana/services/ManaBrainService/Android.bp
           grep -F 'acceptsMemoryExportOnlyWithBothConsents' system/mana/services/ManaBrainService/tests/src/com/mana/system/brain/ManaBrainRequestPolicyTest.java
           grep -F 'boolean allowPersonalMemoryToCloud = false;' system/mana/interfaces/src/com/mana/brain/ManaBrainRequest.aidl
