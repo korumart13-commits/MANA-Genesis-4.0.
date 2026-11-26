@@ -26,8 +26,9 @@ assert "mana.brain-java" not in product, "AIDL Java library is linked, not an in
 assert "mana-brain-core" not in product, "Brain engine is linked, not an installable product package"
 
 tile_manifest = ET.parse(root / "system/mana/apps/ManaControlCenter/AndroidManifest.xml").getroot()
-android_ns = "{http://schemas.android.com/apk/res/android}"
-tile = tile_manifest.find("./application/service[@android:permission='android.permission.BIND_QUICK_SETTINGS_TILE']", {"android": android_ns})
+android_uri = "http://schemas.android.com/apk/res/android"
+android_ns = "{" + android_uri + "}"
+tile = tile_manifest.find("./application/service[@android:permission='android.permission.BIND_QUICK_SETTINGS_TILE']", {"android": android_uri})
 assert tile is not None, "MANA Quick Settings tile is not declared with the platform bind permission"
 assert "android.service.quicksettings.action.QS_TILE" in [x.attrib.get(android_ns + "name") for x in tile.findall("intent-filter/action")]
 
