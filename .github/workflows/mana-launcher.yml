@@ -116,8 +116,11 @@ jobs:
           assert root.find("remote").attrib["fetch"] == "https://github.com/"
           print("Validated immutable MANA source snapshot in AOSP local manifest.")
           PY
-      - name: Validate owner-confirmed RMX5566 device profile
-        run: python3 tools/validate_rmx5566_profile.py
+      - name: Validate owner-confirmed RMX5566 device profile and safe Termux collector
+        run: |
+          python3 tools/validate_rmx5566_profile.py
+          bash -n device/collect_rmx5566_readonly_audit.sh
+          ! grep -E '(^|[[:space:]])(su|fastboot|dd|flash|reboot|wipe)([[:space:]]|$)' device/collect_rmx5566_readonly_audit.sh
       - name: Execute MANA Brain request policy host tests
         run: |
           mkdir -p /tmp/mana-brain-policy-test
