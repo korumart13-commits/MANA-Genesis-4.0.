@@ -32,3 +32,17 @@ The AIDL/API and service source have only source-level CI checks. Current Gradle
 - The application-side service-owned engine migration passed `:brain:test`, `:core:test`, `:app:assembleDebug` and `:app:testDebugUnitTest` in workflow run 45906472269.
 - The later platform Binder service source changes are under a new CI run; they are not covered by that earlier Android build.
 - A successful Gradle build is not an AOSP/Soong build and is not a flashable ROM.
+
+
+## Binder execution hardening update
+
+The platform service now dispatches accepted requests onto a dedicated single-thread executor rather
+than performing backend work on the Binder transaction thread. It handles a disconnected callback
+without crashing the service and shuts down the executor in `onDestroy()`. Request validation
+remains fail-closed: empty prompts, sensitive+cloud requests, and cloud memory export without both
+consents are rejected before work is queued.
+
+Source commit: `88d6cc6a707cb92898a746ccf1143c011cbec37f`.
+CI assertions for executor dispatch and lifecycle cleanup are in
+`5fdf432eb9dc4dcd6d9fa21ffe0f7415b6f24ace`; the corresponding workflow is running at the time
+of this update. This is source-level validation only, not a Soong compile or device test.
