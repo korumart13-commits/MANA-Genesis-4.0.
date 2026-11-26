@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 private class TestCapability(
     override val descriptor: CapabilityDescriptor,
     private val outcome: CapabilityOutcome = CapabilityOutcome(true, true, "verified")
-) : ManaCapability {
+) : ExecutableManaCapability {
     var calls = 0
     override fun isAvailable() = true
     override suspend fun execute(input: Map<String, String>): CapabilityOutcome {
@@ -27,7 +27,7 @@ class ManaActionExecutorTest {
     @Test
     fun highRiskActionRequiresOwnerApproval() = runBlocking {
         val capability = TestCapability(
-            CapabilityDescriptor("send-message", "Send a message", risk = CapabilityRisk.HIGH)
+            CapabilityDescriptor("send-message", "Send a message", risk = ActionCapabilityRisk.HIGH)
         )
         val audit = TestAudit()
         val executor = ManaActionExecutor(
