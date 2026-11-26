@@ -164,8 +164,7 @@ class ManaLifeControlCenterActivity : Activity() {
             render()
         })
         body.addView(button("Отключить ежедневное расписание") {
-            prefs.edit().putBoolean(ManaSleepScheduler.KEY_ENABLED, false).apply()
-            ManaSleepScheduler.cancel(this)
+            ManaSleepScheduler.disable(this)
             toast("Расписание сна отключено.")
             render()
         })
