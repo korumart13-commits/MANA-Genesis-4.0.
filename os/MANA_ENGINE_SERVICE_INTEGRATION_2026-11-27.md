@@ -66,3 +66,12 @@
 - Dependency reuse now checks the prepared runtime state, not only whether Engine initialization has completed. This prevents a recreated Activity from allocating replacement Brain/local-inference dependencies during the interval between service startup and Engine initialization.
 - Service startup is requested only after the process owner reports that all required dependencies are prepared.
 - Follow-up source read-back confirmed there are no remaining Activity calls to `ManaEngineProcessOwner.engineRuntime()`, no direct `engine.think()` calls, and no direct `manaBrain.respond()` fallback in the chat submission path. Requests use the Binder API.
+
+## Dependency ownership guard and CI follow-up
+
+- `ManaEngineProcessOwner.prepare()` now refuses to replace already-prepared Brain, local inference, or memory dependencies. This prevents a second caller from silently overwriting process-owned resources and leaking the original executors/providers.
+- `isPrepared()` now evaluates the three dependency references while holding the same process lock used by `prepare()` and `shutdown()`.
+- The `mana-launcher.yml` workflow now includes a static regression check for the service-owned Engine startup path, Binder-only Activity chat path, absence of the direct Brain fallback, and the process-owner replacement guard.
+- The workflow was triggered by commit `93954f072fd6394502fc892ff75afad35d7af989`; run ID `45904983646`. At the time of this update it was in progress. This is not yet a passing build.
+- The workflow's later steps are configured to run Brain/core unit tests, Android debug assembly, and app unit tests. Their outcomes must be read from the completed run before reporting build success.
+- The Activity still constructs supporting dependencies and provider adapters before starting the service. Moving all of those constructions behind a service bootstrap remains unfinished; this change hardens ownership but does not claim that the Activity is already a thin UI-only client.
