@@ -36,15 +36,17 @@ class FeatureManifestTests(unittest.TestCase):
         self.assertNotIn("Runtime.exec", source)
         self.assertNotIn("su -c", source)
 
-    def test_full_apk_bundles_pinned_gemma_e4b_and_verifies_hash(self):
+    def test_apk_downloads_pinned_gemma_e4b_separately_and_verifies_hash(self):
         catalog = (ROOT.parent / "launcher/app/src/main/java/com/mana/launcher/ManaModelCatalog.kt").read_text()
         gradle = (ROOT.parent / "launcher/app/build.gradle.kts").read_text()
         workflow = (ROOT.parent / ".github/workflows/mana-launcher.yml").read_text()
         self.assertIn("E4B_MODEL_SIZE = 3_659_530_240L", catalog)
         self.assertIn("0b2a8980ce155fd97673d8e820b4d29d9c7d99b8fa6806f425d969b145bd52e0", catalog)
-        self.assertIn('noCompress += "litertlm"', gradle)
-        self.assertIn("gemma-4-E4B-it.litertlm", workflow)
-        self.assertIn("sha256sum --check -", workflow)
+        self.assertIn("enqueueGemma4E4B", catalog)
+        self.assertIn("verifyCompletedGemma4E4BDownload", catalog)
+        self.assertNotIn('noCompress += "litertlm"', gradle)
+        self.assertNotIn("gemma-4-E4B-it.litertlm", workflow)
+        self.assertIn("Large LiteRT-LM models are downloaded separately", gradle)
 
     def test_device_intelligence_activity_and_port_blueprint_are_registered(self):
         source = (ROOT.parent / "launcher/app/src/main/java/com/mana/launcher/ManaDeviceIntelligenceActivity.kt").read_text()
@@ -58,6 +60,18 @@ class FeatureManifestTests(unittest.TestCase):
         self.assertIn("MANA_Device_Port_Blueprint.zip", source)
         self.assertIn("binary_firmware_generated", source)
         self.assertIn("androidx.core.content.FileProvider", manifest)
+
+
+    def test_installed_apps_are_reused_and_avatar_wallpaper_is_autonomous(self):
+        self.assertTrue(self.data["global_product_rules"]["no_duplicate_installed_apps"])
+        self.assertIn("Use the installed Realme camera", self.data["installed_app_integration"]["camera"])
+        self.assertTrue(self.data["installed_app_integration"]["never_clone_or_replace_existing_apps"])
+        wallpaper = self.data["avatar_presence_and_wallpaper"]["wallpaper_autopilot"]
+        self.assertTrue(wallpaper["enabled_by_owner_once"])
+        self.assertTrue(wallpaper["mana_may_choose_and_change_wallpaper_without_per_change_confirmation"])
+        self.assertTrue(wallpaper["owner_can_pause_resume_or_disable_at_any_time"])
+        presence = self.data["avatar_presence_and_wallpaper"]["visible_on_phone_screen"]
+        self.assertTrue(presence["floating_avatar_overlay"])
 
     def test_missing_micro_universe_is_rejected(self):
         bad = dict(self.data)
