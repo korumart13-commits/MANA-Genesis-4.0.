@@ -134,6 +134,7 @@
             android:name=".ManaTermuxAgentActivity"
             android:exported="false"
             android:label="MANA AutoDev" />
+        <activity android:name=".ManaSystemAdaptationActivity" android:exported="false" android:label="Адаптация MANA к системе телефона" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
