@@ -95,12 +95,12 @@ class MainActivity : Activity() {
     private var memoryService: ManaMemoryService? = null
     private var adaptiveKnowledgeService: com.mana.os.core.ManaAdaptiveKnowledgeService? = null
     private var futureUpdateService: ManaFutureUpdateService? = null
-    private var manaEngineRuntime: ManaEngineAndroidRuntime? = null
+    private var manaEngineBinder: ManaEngineService.LocalBinder? = null
     private var manaEngineBound = false
     private val manaEngineConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as? ManaEngineService.LocalBinder ?: return
-            manaEngineRuntime = binder.engineRuntime()
+            manaEngineBinder = binder
             modelStatus?.text = if (binder.isReady()) {
                 "MANA Engine подключён и готов."
             } else {
@@ -109,12 +109,12 @@ class MainActivity : Activity() {
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
-            manaEngineRuntime = null
+            manaEngineBinder = null
             modelStatus?.text = "Связь со службой MANA Engine потеряна."
         }
 
         override fun onBindingDied(name: ComponentName?) {
-            manaEngineRuntime = null
+            manaEngineBinder = null
             modelStatus?.text = "Соединение со службой MANA Engine завершилось."
             if (manaEngineBound) {
                 runCatching { unbindService(this) }
@@ -1346,12 +1346,12 @@ class MainActivity : Activity() {
         useCloudForNextPrompt = false
 
         fun submit(allowCloud: Boolean, preferredProvider: String? = null) {
-            val engine = manaEngineRuntime
-            if (engine != null && engine.health().state == com.mana.os.core.ManaEngineState.READY) {
+            val engineBinder = manaEngineBinder
+            if (engineBinder != null && engineBinder.isReady()) {
                 Thread({
                     try {
                         val response = runBlocking {
-                            engine.think(
+                            engineBinder.think(
                                 text = effectivePrompt,
                                 allowCloud = allowCloud,
                                 sensitive = sensitive,
@@ -1375,6 +1375,9 @@ class MainActivity : Activity() {
                 }, "MANA-Engine-Request").start()
                 return
             }
+
+            chatOutput?.append("\n\nСлужба MANA Engine ещё не готова. Повтори запрос через несколько секунд.")
+            return
 
             val generated = StringBuilder()
             manaBrain.respond(
