@@ -31,13 +31,31 @@ class ManaEngineAndroidRuntime(
     keyProvider: ManaAndroidKeyProvider
 ) : AutoCloseable {
     private val appContext = context.applicationContext
-    private val microworld = ManaMicroworldService(
-        EncryptedFileMicroworldStore(
-            File(appContext.filesDir, "mana/microworld.bin"),
-            keyProvider,
-            "mana.microworld.v1"
-        )
-    )
+    private val microworld = run {
+        val worldFile = File(appContext.filesDir, "mana/microworld.bin")
+        try {
+            ManaMicroworldService(
+                EncryptedFileMicroworldStore(
+                    worldFile,
+                    keyProvider,
+                    "mana.microworld.v1"
+                )
+            )
+        } catch (error: Exception) {
+            val recoveryCopy = runCatching {
+                ManaEncryptedDataRecovery.preserve(
+                    worldFile,
+                    File(appContext.filesDir, "mana/recovery"),
+                    "microworld"
+                )
+            }.getOrNull()
+            val detail = recoveryCopy?.name ?: "recovery-copy-unavailable"
+            throw IllegalStateException(
+                "MANA Microworld could not be opened. Original data was not modified; recovery: $detail",
+                error
+            )
+        }
+    }
     private val security = ManaSecurityService()
     private val hydra = ManaHydraRegistry(security)
     private val shogun = ManaShogun(hydra)
