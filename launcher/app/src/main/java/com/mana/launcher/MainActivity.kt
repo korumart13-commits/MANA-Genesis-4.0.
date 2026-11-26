@@ -294,93 +294,104 @@ class MainActivity : Activity() {
      * MANA can request declared permissions and open user-confirmed special-access screens,
      * but cannot silently grant permissions or obtain privileged/root access.
      */
+    /**
+     * Simple first-run wizard: one action requests all declared runtime permissions
+     * that are relevant to the current build. Android still owns every grant decision.
+     */
     private fun showPermissionSetup() {
         showingDrawer = false
         getSharedPreferences("mana.settings", MODE_PRIVATE).edit()
             .putBoolean("permission_setup_open", true).apply()
         search.setText("")
         content.removeAllViews()
-        content.addView(label("ПЕРВЫЙ ЗАПУСК MANA", 23, textColor, true))
-        content.addView(label("Выдай доступы сейчас. Android покажет системные окна подтверждения. Уже разрешённые пункты будут отмечены автоматически.", 13, muted, false))
 
-        fun status(granted: Boolean, available: Boolean = true): String =
-            when { !available -> "Недоступно на этой версии Android"; granted -> "Разрешено"; else -> "Не разрешено" }
-
-        fun addPermission(title: String, detail: String, permission: String, minSdk: Int = 1) {
-            val available = Build.VERSION.SDK_INT >= minSdk
-            val granted = available && checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(14), dp(12), dp(14), dp(12))
-                background = rounded(panelRaised, 16)
-            }
-            row.addView(label(title, 15, textColor, true))
-            row.addView(label(detail, 11, muted, false))
-            row.addView(label(status(granted, available), 12, if (granted) accentSoft else muted, true))
-            if (available && !granted) {
-                row.addView(action("Запросить разрешение") {
-                    requestPermissions(arrayOf(permission), permissionSetupRequestCode)
-                })
-            }
-            content.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        val runtimePermissions = listOf(
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.READ_CONTACTS,
+            Manifest.permission.CAMERA,
+            Manifest.permission.CALL_PHONE,
+            Manifest.permission.READ_CALL_LOG
+        ) + (if (Build.VERSION.SDK_INT >= 33) listOf(Manifest.permission.POST_NOTIFICATIONS) else emptyList()) +
+            (if (Build.VERSION.SDK_INT >= 31) listOf(Manifest.permission.BLUETOOTH_CONNECT) else emptyList())
+        val grantedCount = runtimePermissions.distinct().count {
+            checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
         }
-
-        addPermission("Микрофон", "Голосовое управление и распознавание речи", Manifest.permission.RECORD_AUDIO)
-        addPermission("Контакты", "Определение знакомых контактов для телефонного помощника", Manifest.permission.READ_CONTACTS)
-        addPermission("Уведомления", "Сообщения MANA о состоянии и вызовах", Manifest.permission.POST_NOTIFICATIONS, 33)
-        addPermission("Bluetooth", "Подключённые устройства и аксессуары", Manifest.permission.BLUETOOTH_CONNECT, 31)
-        addPermission("Телефонные вызовы", "Функции телефонного интерфейса MANA", Manifest.permission.CALL_PHONE)
-        addPermission("Журнал вызовов", "Дополнительная информация для журнала и анализа вызовов", Manifest.permission.READ_CALL_LOG)
-
-        content.addView(label("СПЕЦИАЛЬНЫЕ ДОСТУПЫ", 16, accentSoft, true).apply {
-            setPadding(0, dp(16), 0, dp(4))
-        })
         val overlayGranted = Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(this)
-        addSetupAction("Поверх других приложений", "Для плавающего аватара MANA", if (overlayGranted) "Разрешено" else "Открыть системные настройки") {
-            if (!overlayGranted) startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
-        }
-        val usageGranted = try {
-            val appOps = getSystemService(android.app.AppOpsManager::class.java)
-            appOps.checkOpNoThrow("android:get_usage_stats", android.os.Process.myUid(), packageName) == android.app.AppOpsManager.MODE_ALLOWED
-        } catch (_: Exception) { false }
-        addSetupAction("Статистика использования", "Для функций анализа активности приложений; доступ можно не выдавать", if (usageGranted) "Разрешено" else "Открыть системные настройки") {
-            startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-        }
+        val writeSettingsGranted = Build.VERSION.SDK_INT < 23 || Settings.System.canWrite(this)
         val roleManager = if (Build.VERSION.SDK_INT >= 29) getSystemService(RoleManager::class.java) else null
         val assistantGranted = roleManager?.isRoleHeld(RoleManager.ROLE_ASSISTANT) == true
-        addSetupAction("Роль цифрового ассистента", "Позволяет назначить MANA системным помощником", if (assistantGranted) "Назначено" else "Выбрать MANA") {
-            if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_ASSISTANT)) {
-                startActivityForResult(roleManager.createRequestRoleIntent(RoleManager.ROLE_ASSISTANT), assistantRoleRequestCode)
-            } else showMessage("Роль ассистента не поддерживается этой прошивкой.")
-        }
-        val screeningGranted = roleManager?.isRoleHeld(RoleManager.ROLE_CALL_SCREENING) == true
-        addSetupAction("Распознавание вызовов", "Необязательная роль для фильтрации неизвестных вызовов", if (screeningGranted) "Назначено" else "Выбрать MANA") {
-            if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
-                startActivityForResult(roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING), callScreeningRoleRequestCode)
-            } else showMessage("Роль распознавания вызовов недоступна.")
-        }
 
-        content.addView(label("Android не позволяет приложению самостоятельно выдать себе все права. Здесь перечислены разрешения, объявленные MANA; отдельные системные и привилегированные права недоступны обычному APK.", 11, muted, false).apply {
-            setPadding(0, dp(12), 0, dp(8))
-        })
-        content.addView(action("ЗАПРОСИТЬ ВСЕ ДОСТУПНЫЕ РАЗРЕШЕНИЯ") {
-            val requested = mutableListOf<String>()
+        content.addView(label("ДОБРО ПОЖАЛОВАТЬ В MANA", 23, textColor, true))
+        content.addView(label(
+            "MANA уже установлена. Настрой основные доступы одной кнопкой — Android покажет системные подтверждения, а выданные права сохранятся автоматически.",
+            13, muted, false
+        ))
+
+        val welcome = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+            background = rounded(panelRaised, 20)
+        }
+        welcome.addView(label("ТВОЯ MANA УЖЕ ЗДЕСЬ", 12, accent, true))
+        welcome.addView(label("Аватар, голосовой вход и основные экраны входят в приложение с первой установки. Нажми на аватар, чтобы открыть помощника.", 14, textColor, false))
+        content.addView(welcome, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
+
+        content.addView(label(
+            "ОБЫЧНЫЕ РАЗРЕШЕНИЯ  •  " + grantedCount + " ИЗ " + runtimePermissions.distinct().size,
+            14, accentSoft, true
+        ).apply { setPadding(0, dp(16), 0, dp(4)) })
+        content.addView(label(
+            "Микрофон, контакты, камера/фонарик, телефонные функции, уведомления и Bluetooth.",
+            12, muted, false
+        ))
+        content.addView(action("РАЗРЕШИТЬ ВСЕ ДОСТУПНЫЕ ПРАВА") {
             requestAllAvailableRuntimePermissions()
-        }, LinearLayout.LayoutParams(-1, dp(50)).apply { topMargin = dp(12) })
-        content.addView(action("ЗАВЕРШИТЬ НАСТРОЙКУ И ОТКРЫТЬ MANA") {
+        }, LinearLayout.LayoutParams(-1, dp(54)).apply { topMargin = dp(10) })
+
+        content.addView(label("СПЕЦИАЛЬНЫЕ ДОСТУПЫ", 14, accentSoft, true).apply {
+            setPadding(0, dp(18), 0, dp(4))
+        })
+        content.addView(label(
+            "Для них Android открывает отдельные системные экраны. Нажимай только те функции, которые действительно хочешь включить.",
+            12, muted, false
+        ))
+        content.addView(action((if (overlayGranted) "✓ " else "") + "Плавающий 3D-аватар — доступ поверх окон") {
+            if (!overlayGranted) startActivity(Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:" + packageName)
+            )) else showMessage("Доступ для плавающего аватара уже включён.")
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
+        content.addView(action((if (writeSettingsGranted) "✓ " else "") + "Управление системными настройками") {
+            if (Build.VERSION.SDK_INT >= 23 && !Settings.System.canWrite(this)) {
+                startActivity(Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:" + packageName)))
+            } else showMessage("Доступ к изменению настроек уже включён.")
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+        content.addView(action((if (assistantGranted) "✓ " else "") + "Назначить MANA цифровым ассистентом") {
+            requestAssistantRole()
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+        content.addView(action("Статистика использования приложений — необязательно") {
+            startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+
+        content.addView(label(
+            "Важно: одно нажатие запускает запрос всех обычных разрешений, но Android сам показывает и контролирует подтверждения. Доступ к звонкам, уведомлениям и другим чувствительным данным не будет включён скрытно.",
+            11, muted, false
+        ).apply { setPadding(0, dp(14), 0, dp(8)) })
+        content.addView(action("ГОТОВО — ОТКРЫТЬ MANA") {
             getSharedPreferences("mana.settings", MODE_PRIVATE).edit()
                 .putBoolean("first_run_setup_complete", true)
                 .putBoolean("permission_setup_open", false).apply()
             showHome()
-        }, LinearLayout.LayoutParams(-1, dp(50)).apply { topMargin = dp(8) })
+        }, LinearLayout.LayoutParams(-1, dp(54)).apply { topMargin = dp(8) })
+
         rootFrame.removeAllViews()
-        rootFrame.addView(page)
+        rootFrame.addView(page, FrameLayout.LayoutParams(-1, -1))
+        // Keep the avatar visible even while the first-run setup screen is open.
+        rootFrame.addView(avatarButton, FrameLayout.LayoutParams(dp(66), dp(66), Gravity.END or Gravity.BOTTOM).apply {
+            rightMargin = dp(18)
+            bottomMargin = dp(76)
+        })
         setContentView(rootFrame)
-        val prefs = getSharedPreferences("mana.settings", MODE_PRIVATE)
-        if (!prefs.getBoolean("permission_batch_requested", false)) {
-            prefs.edit().putBoolean("permission_batch_requested", true).apply()
-            content.post { requestAllAvailableRuntimePermissions() }
-        }
     }
 
     private fun requestAllAvailableRuntimePermissions() {
