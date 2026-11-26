@@ -11,19 +11,25 @@ components to the single MANA Brain runtime.
 - `ManaBrainResponse` reports the text, provider, whether inference was local and memory-use count.
 - The Soong module `mana-brain-interface` compiles the contract for platform-side clients.
 
-## Security requirements for the eventual service
+## Security requirements
 
-- The service must be non-exported by default or protected by a signature-level permission.
-- It must enforce Binder caller identity and permission checks before accepting requests.
-- It must never accept a caller-provided principal as proof of identity.
-- Cloud access must default to off and require explicit per-request consent.
-- Sensitive requests must remain local; personal memory must not be sent to cloud without separate consent.
-- Requests must be asynchronous; do not run inference on Binder's main transaction thread.
+- The current service endpoint is protected by the signature-level permission
+  `com.mana.permission.BIND_BRAIN`.
+- Binder entry points repeat the permission check and never trust caller-supplied identity.
+- Cloud access defaults to off and requires explicit per-request consent.
+- Sensitive requests must remain local.
+- Personal-memory cloud export requires separate explicit consent in addition to cloud and
+  personal-memory inclusion flags.
+- Requests are asynchronous; inference must not run on Binder's main transaction thread.
 - Errors must not leak API keys, private prompts, memory contents or filesystem paths.
 
 ## Integration status
 
-This is an interface contract, not an implemented Android system service. The Gradle application
-service remains the currently tested process owner; the platform service adapter and privileged
-product integration are subsequent work. No inference is faked by this interface and no AOSP ROM
-build is claimed.
+The AIDL contract is implemented by the permission-protected Android Service endpoint in
+`system/mana/services/ManaBrainService`. That endpoint deliberately returns
+`ENGINE_UNAVAILABLE` until a real local inference backend adapter is connected. It does not
+fabricate model output or forward prompts to a cloud provider.
+
+The Gradle application service remains the currently tested process owner. Cross-process backend
+integration, Soong build validation, SELinux service context/domain and device-image testing remain
+subsequent work. No AOSP ROM build or device runtime test is claimed.
