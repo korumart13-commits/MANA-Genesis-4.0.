@@ -64,6 +64,7 @@ public final class ManaBrainService extends Service {
                     request.text,
                     request.sensitive,
                     request.allowCloud,
+                    request.preferredCloudProvider,
                     request.includePersonalMemory,
                     request.allowPersonalMemoryToCloud);
             if (validationError != null) {
