@@ -2,4 +2,4 @@
 AOSP_MANIFEST_URL=https://android.googlesource.com/platform/manifest
 AOSP_MANIFEST_TAG=android-16.0.0_r4
 AOSP_MANIFEST_COMMIT=15128c9e27cfa599c48d294babd39286ee8f1426
-AOSP_RELEASE=Android 16 QPR2
+AOSP_RELEASE="Android 16 QPR2"
