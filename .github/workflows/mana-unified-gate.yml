@@ -62,6 +62,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
       - name: Test patch path allowlists, traversal rejection and kernel patch policy
         run: python -m unittest discover -s tools/tests -p 'test_mana_autodev.py' -v
       - name: Syntax-check self-development tools
@@ -70,6 +77,22 @@ jobs:
         run: |
           python3 tools/validate_mana_feature_manifest.py
           python -m unittest discover -s tools/tests -p 'test_mana_feature_manifest.py' -v
+      - name: Exercise the real isolated candidate worktree and engine test runner
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/mana-autodev-smoke.patch" <<'PATCH'
+          diff --git a/engine/mana-brain/src/main/kotlin/com/mana/brain/ManaAutoDevSmoke.kt b/engine/mana-brain/src/main/kotlin/com/mana/brain/ManaAutoDevSmoke.kt
+          new file mode 100644
+          --- /dev/null
+          +++ b/engine/mana-brain/src/main/kotlin/com/mana/brain/ManaAutoDevSmoke.kt
+          @@ -0,0 +1,4 @@
+          +package com.mana.brain
+          +
+          +internal object ManaAutoDevSmoke {
+          +    const val STATUS = "candidate"
+          +}
+          PATCH
+          python tools/mana_autodev.py --repo . --patch "$RUNNER_TEMP/mana-autodev-smoke.patch" --track engine --output-dir "$RUNNER_TEMP/mana-autodev-candidates"
 
   core-tests:
     name: MANA OS Core tests
