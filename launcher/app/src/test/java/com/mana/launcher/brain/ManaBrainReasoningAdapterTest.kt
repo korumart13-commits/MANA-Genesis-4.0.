@@ -1,7 +1,7 @@
 package com.mana.launcher.brain
 
-import com.mana.ai.InferenceProvider
-import com.mana.ai.ManaBrain
+import com.mana.brain.InferenceProvider
+import com.mana.brain.ManaBrain
 import com.mana.os.core.ManaReasoningRequest
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
