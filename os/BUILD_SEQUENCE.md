@@ -12,7 +12,7 @@ This sequence targets a complete MANA-owned operating system with Android APK co
 
 ## Workstream B — Android platform and reproducible source
 
-- Pin a supported Android 16 AOSP manifest and toolchain as the framework/API compatibility base; MANA owns the product identity and selected platform services.
+- Pin the official AOSP Android 16 QPR2 manifest tag `android-16.0.0_r4` (peeled manifest commit `15128c9e27cfa599c48d294babd39286ee8f1426`) in `aosp/manifest.lock`; CI verifies the upstream tag identity. See `aosp/README.md` for the clean source-sync procedure. This pin check is not a full AOSP sync or build.
 - Preserve ART, package manager, Binder, Android framework APIs and permission/security contracts needed by third-party APKs.
 - Establish reproducible repo sync and source integrity checks in CI.
 - Record the exact AOSP revision and all external project revisions.
