@@ -36,17 +36,21 @@ class FeatureManifestTests(unittest.TestCase):
         self.assertNotIn("Runtime.exec", source)
         self.assertNotIn("su -c", source)
 
-    def test_apk_downloads_pinned_gemma_e4b_separately_and_verifies_hash(self):
+    def test_full_apk_can_embed_pinned_gemma_e4b_and_keeps_download_fallback(self):
         catalog = (ROOT.parent / "launcher/app/src/main/java/com/mana/launcher/ManaModelCatalog.kt").read_text()
         gradle = (ROOT.parent / "launcher/app/build.gradle.kts").read_text()
-        workflow = (ROOT.parent / ".github/workflows/mana-launcher.yml").read_text()
+        workflow = (ROOT.parent / ".github/workflows/mana-unified-gate.yml").read_text()
         self.assertIn("E4B_MODEL_SIZE = 3_659_530_240L", catalog)
         self.assertIn("0b2a8980ce155fd97673d8e820b4d29d9c7d99b8fa6806f425d969b145bd52e0", catalog)
         self.assertIn("enqueueGemma4E4B", catalog)
         self.assertIn("verifyCompletedGemma4E4BDownload", catalog)
-        self.assertNotIn('noCompress += "litertlm"', gradle)
-        self.assertNotIn("gemma-4-E4B-it.litertlm", workflow)
-        self.assertIn("Large LiteRT-LM models are downloaded separately", gradle)
+        self.assertIn("installBundledGemma4E4B", catalog)
+        self.assertIn('noCompress += "litertlm"', gradle)
+        self.assertIn('buildConfigField("boolean", "MANA_BUNDLED_MODEL"', gradle)
+        self.assertIn("manaBundledModel=true", workflow)
+        self.assertIn("gemma-4-E4B-it.litertlm", workflow)
+        self.assertIn("sha256sum --check", workflow)
+        self.assertIn("MANA-Genesis-4.0-Full-APK-Gemma4-E4B", workflow)
 
     def test_device_intelligence_activity_and_port_blueprint_are_registered(self):
         source = (ROOT.parent / "launcher/app/src/main/java/com/mana/launcher/ManaDeviceIntelligenceActivity.kt").read_text()
