@@ -287,17 +287,13 @@ jobs:
   package-source:
     name: Create one unified MANA source archive
     runs-on: ubuntu-latest
-    needs: [core-tests, brain-tests, android-prototype, soong-source-check, autodev-policy-tests, realme-update-bridge]
+    needs: [core-tests, brain-tests, android-prototype, soong-source-check, autodev-policy-tests]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: MANA-Genesis-4.0-Android-Companion-APK
           path: dist/android-companion
-      - uses: actions/download-artifact@v4
-        with:
-          name: MANA-Realme-MANA-Plus-1-Updater-Bridge-APK
-          path: dist/realme-update-bridge
       - name: Download and verify the complete offline Gemma 4 E2B model
         shell: bash
         run: |
@@ -356,18 +352,16 @@ jobs:
           cat > dist/BUILD_STATUS.txt <<'EOF'
           MANA Genesis 4.0 — release contents
           - UNIFIED_SOURCE.zip: all tracked project source, docs and workflows (sensitive build-local files excluded).
-          - UPDATE_PACKAGE.zip: MANA companion APK, Realme updater handoff APK, full offline Gemma 4 E2B weights and Apache-2.0 license text.
+          - UPDATE_PACKAGE.zip: one MANA companion APK, full offline Gemma 4 E2B weights, unified project source archive, feature manifest, architecture and Apache-2.0 license text.
           - android-companion/app-debug.apk: debug Android companion; not a firmware installer.
-          - realme-update-bridge/app-debug.apk: permission-free handoff to the OEM system-update settings; it does not install a MANA ROM or bypass OEM signature checks.
-          - ROM_STATUS.txt: explicit device/ROM readiness limitation.
+                    - ROM_STATUS.txt: explicit device/ROM readiness limitation.
           - SHA256SUMS.txt: checksums for source, APKs, model, update package and complete bundle.
           AOSP source modules and JVM/Android prototypes are not equivalent to a bootable device ROM.
           Device-specific RMX5566RU validation is still required.
           EOF
           sha256sum dist/MANA_Genesis_4.0_UNIFIED_SOURCE.zip > dist/SHA256SUMS.txt
           sha256sum dist/android-companion/app-debug.apk >> dist/SHA256SUMS.txt
-          sha256sum dist/realme-update-bridge/app-debug.apk >> dist/SHA256SUMS.txt
-          python3 - <<'PY'
+                    python3 - <<'PY'
           import hashlib, json
           from pathlib import Path
           root = Path("dist")
@@ -380,8 +374,7 @@ jobs:
           payloads = []
           for rel, kind in (
               ("android-companion/app-debug.apk", "companion_apk"),
-              ("realme-update-bridge/app-debug.apk", "companion_apk"),
-              ("local-model/gemma-4-E2B-it.litertlm", "model_bundle"),
+                            ("local-model/gemma-4-E2B-it.litertlm", "model_bundle"),
           ):
               p = root / rel
               payloads.append({
@@ -397,14 +390,14 @@ jobs:
               "target": {"model": "RMX5566RU", "device": "RE645F", "android_api": 36},
               "base_fingerprint": "realme/RMX5566RU/RE645F:16/BP2A.250605.015/V.2f025ac-8895bb-9a8318:user/release-keys",
               "payloads": payloads,
-              "install_mode": "manual APK installation plus bundled offline model import",
+              "install_mode": "single unified ZIP; install the MANA app once, then import the bundled local model from the extracted package", 
               "is_oem_ota": False,
               "is_flashable_rom": False,
               "installs_firmware": False,
               "status": "offline_ai_preview_bundle_not_system_update",
               "limitations": [
                   "Debug companion APK is not a privileged/system app.",
-              "Bundled Gemma 4 E2B weights must be imported into the app after APK installation.",
+              "Bundled Gemma 4 E2B weights are inside this same update ZIP and must be imported into the app after APK installation; Android does not permit a ZIP to silently install an APK and grant permissions.",
               "Gemma 4 E2B has not been benchmarked on the target RMX5566RU; local inference performance is not guaranteed.",
                   "Updater bridge only opens Realme system update settings.",
                   "No RMX5566RU flashable system image is included.",
@@ -424,18 +417,18 @@ jobs:
           (root / "MANA_UPDATE_INFO.json").write_text(json.dumps(update, indent=2) + chr(10), encoding="utf-8")
           (root / "MANA_UPDATE_README_RU.txt").write_text(chr(10).join([
               "MANA Genesis 4.0 — единый локальный пакет компонентов",
-              "Внутри: Android APK MANA с LiteRT-LM runtime, APK-переходник Realme, Gemma 4 E2B (2,588,147,712 байт), полный исходный архив проекта, полный текст Apache-2.0, архитектурный документ и полный каталог согласованных функций MANA.",
+              "Внутри одного ZIP: единственный основной APK MANA с LiteRT-LM runtime, Gemma 4 E2B (2,588,147,712 байт), полный исходный архив всех модулей проекта, полный текст Apache-2.0, архитектурный документ и полный каталог согласованных функций MANA.",
               "1. Распакуй единый ZIP в память телефона. В нём есть и готовые APK, и веса модели, и полный архив исходников.",
               "2. Установи android-companion/app-debug.apk и открой MANA.",
               "3. На первом запуске нажми «Сделать MANA главным экраном телефона» и подтверди системный выбор MANA как HOME. Это одноразовое действие владельца.",
               "4. Открой выбор локальной модели и импортируй local-model/gemma-4-E2B-it.litertlm из распакованной папки.",
               "5. Дождись завершения проверки размера и SHA-256 и загрузки локального runtime. После успешной активации генерация может работать без интернета.",
               "6. После перезагрузки Android запускает лёгкую проверку MANA через BOOT_COMPLETED; модель не загружается в память автоматически до открытия MANA, чтобы не перегружать телефон.",
-              "7. realme-update-bridge/app-debug.apk только открывает настройки штатного обновления Realme; он не прошивает устройство.",
+              
               "Оставь несколько гигабайт свободной памяти. Реальная скорость и устойчивость Gemma 4 E2B на RMX5566RU ещё не подтверждены тестом на самом телефоне.",
               "MANA_FEATURE_MANIFEST.json содержит полный перечень согласованных направлений и модулей; некоторые из них пока являются прототипами или спецификациями, а не завершёнными системными службами.",
               "Облачные провайдеры не включены по умолчанию; для них нужны собственные API-ключи и отдельное согласие.",
-              "MANA становится главным пользовательским экраном после одноразового подтверждения роли HOME. Android/Realme остаётся технической платформой; этот пакет не заменяет системные разделы и не является OEM OTA.",
+              "Это единый пакет MANA, а не набор разрозненных загрузок. MANA становится главным пользовательским экраном после одноразового подтверждения роли HOME. Android/Realme остаётся технической платформой; пакет не заменяет системные разделы и не является OEM OTA.",
               "Перед установкой APK разреши установку из выбранного источника Android."
           ]) + chr(10), encoding="utf-8")
           PY
@@ -443,7 +436,7 @@ jobs:
           sha256sum dist/MANA_UPDATE_README_RU.txt >> dist/SHA256SUMS.txt
           sha256sum dist/MANA_FEATURE_MANIFEST.json >> dist/SHA256SUMS.txt
           sha256sum dist/MANA_ARCHITECTURE_RU.md >> dist/SHA256SUMS.txt
-          (cd dist && zip -q MANA_Genesis_4.0_UPDATE_PACKAGE.zip MANA_UPDATE_INFO.json MANA_UPDATE_README_RU.txt MANA_FEATURE_MANIFEST.json MANA_ARCHITECTURE_RU.md MODEL_LICENSE_APACHE-2.0.txt android-companion/app-debug.apk realme-update-bridge/app-debug.apk)
+          (cd dist && zip -q MANA_Genesis_4.0_UPDATE_PACKAGE.zip MANA_UPDATE_INFO.json MANA_UPDATE_README_RU.txt MANA_FEATURE_MANIFEST.json MANA_ARCHITECTURE_RU.md MODEL_LICENSE_APACHE-2.0.txt android-companion/app-debug.apk)
           python3 - <<'PY'
           from zipfile import ZipFile, ZIP_STORED
           with ZipFile("dist/MANA_Genesis_4.0_UPDATE_PACKAGE.zip", "a", compression=ZIP_STORED, allowZip64=True) as archive:
@@ -456,7 +449,7 @@ jobs:
           sha256sum dist/local-model/gemma-4-E2B-it.litertlm >> dist/SHA256SUMS.txt
           sha256sum dist/MODEL_LICENSE_APACHE-2.0.txt >> dist/SHA256SUMS.txt
           sha256sum dist/MANA_Genesis_4.0_UPDATE_PACKAGE.zip >> dist/SHA256SUMS.txt
-          (cd dist && zip -q MANA_Genesis_4.0_COMPLETE_BUNDLE.zip MANA_Genesis_4.0_UNIFIED_SOURCE.zip MANA_Genesis_4.0_UPDATE_PACKAGE.zip MANA_UPDATE_INFO.json MANA_UPDATE_README_RU.txt ROM_STATUS.txt BUILD_STATUS.txt SHA256SUMS.txt android-companion/app-debug.apk realme-update-bridge/app-debug.apk)
+          (cd dist && zip -q MANA_Genesis_4.0_COMPLETE_BUNDLE.zip MANA_Genesis_4.0_UNIFIED_SOURCE.zip MANA_Genesis_4.0_UPDATE_PACKAGE.zip MANA_UPDATE_INFO.json MANA_UPDATE_README_RU.txt ROM_STATUS.txt BUILD_STATUS.txt SHA256SUMS.txt android-companion/app-debug.apk)
           sha256sum dist/MANA_Genesis_4.0_COMPLETE_BUNDLE.zip >> dist/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
