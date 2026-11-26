@@ -1,7 +1,7 @@
 package com.mana.launcher.brain
 
-import com.mana.ai.BrainRequest
-import com.mana.ai.ManaBrain
+import com.mana.brain.BrainRequest
+import com.mana.brain.ManaBrain
 import com.mana.os.core.ManaReasoningPort
 import com.mana.os.core.ManaReasoningRequest
 import com.mana.os.core.ManaReasoningResult
