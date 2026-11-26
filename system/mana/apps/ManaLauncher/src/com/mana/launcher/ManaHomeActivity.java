@@ -107,6 +107,17 @@ public final class ManaHomeActivity extends Activity {
         date = text("", 14, MUTED, false);
         root.addView(date);
 
+        TextView quickTitle = text("Быстрый доступ", 15, TEXT, true);
+        quickTitle.setPadding(0, dp(18), 0, dp(8));
+        root.addView(quickTitle);
+        LinearLayout quickRow = new LinearLayout(this);
+        quickRow.setOrientation(LinearLayout.HORIZONTAL);
+        quickRow.setGravity(Gravity.CENTER_VERTICAL);
+        quickRow.addView(shortcut("Панель", ManaShadeActivity.class), new LinearLayout.LayoutParams(0, dp(52), 1f));
+        quickRow.addView(shortcut("Настройки", null), new LinearLayout.LayoutParams(0, dp(52), 1f));
+        quickRow.addView(shortcut("Блокировка", ManaLockScreenPreviewActivity.class), new LinearLayout.LayoutParams(0, dp(52), 1f));
+        root.addView(quickRow);
+
         TextView section = text("Приложения", 20, TEXT, true);
         section.setPadding(0, dp(26), 0, dp(12));
         root.addView(section);
@@ -236,6 +247,22 @@ public final class ManaHomeActivity extends Activity {
         Date now = new Date();
         clock.setText(DateFormat.getTimeInstance(DateFormat.SHORT, Locale.getDefault()).format(now));
         date.setText(DateFormat.getDateInstance(DateFormat.FULL, Locale.getDefault()).format(now));
+    }
+
+    private View shortcut(String label, Class<?> destination) {
+        TextView view = action(label, false);
+        view.setTextSize(12);
+        view.setPadding(dp(5), dp(10), dp(5), dp(10));
+        view.setOnClickListener(v -> {
+            Intent intent = destination == null
+                    ? new Intent(this, com.mana.settings.ManaSettingsActivity.class)
+                    : new Intent(this, destination);
+            startActivity(intent);
+        });
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, dp(52), 1f);
+        p.setMargins(dp(3), 0, dp(3), 0);
+        view.setLayoutParams(p);
+        return view;
     }
 
     private TextView action(String value, boolean primary) {
