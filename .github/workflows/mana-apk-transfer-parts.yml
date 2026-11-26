@@ -1,0 +1,37 @@
+name: Split full MANA APK for phone transfer
+on:
+  push:
+    branches:
+      - mana-genesis-4-rmx5566-rom-port
+    paths:
+      - .github/workflows/mana-apk-transfer-parts.yml
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: read
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download verified full APK artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 45856525889 -R "${{ github.repository }}" -n MANA-Genesis-4.0-Full-Offline-APK-Gemma4-E4B -D incoming
+          mkdir extracted
+          unzip -q incoming/*.zip -d extracted
+          APK="$(find extracted -type f -name '*.apk' -print -quit)"
+          test -n "$APK"
+          mkdir parts
+          split -b 450000000 --numeric-suffixes=0 --suffix-length=2 "$APK" parts/MANA-Genesis-4.0.apk.part-
+          sha256sum "$APK" | tee parts/SHA256SUMS.txt
+          printf '%s\n' "$(basename "$APK")" > parts/APK_FILENAME.txt
+          printf '%s\n' "$(stat -c%s "$APK")" > parts/APK_SIZE.txt
+      - name: Publish transfer parts individually
+        uses: actions/upload-artifact@v4
+        with:
+          path: parts/*
+          pattern: MANA-Genesis-4.0.apk.part-*
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30
