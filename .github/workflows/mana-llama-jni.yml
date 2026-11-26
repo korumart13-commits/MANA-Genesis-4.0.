@@ -21,23 +21,40 @@ jobs:
   android-arm64:
     name: Build llama.cpp JNI (arm64-v8a)
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      ANDROID_NDK_VERSION: 27.2.12479018
     steps:
       - name: Checkout MANA source
         uses: actions/checkout@v4
 
-      - name: Set up Android SDK and NDK
-        uses: android-actions/setup-android@v3
+      - name: Set up Java for Android SDK tools
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Verify Android SDK command-line tools
+        run: |
+          test -x "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --version
 
       - name: Install pinned NDK and CMake
-        run: sdkmanager "ndk;27.2.12479018" "cmake;3.22.1"
+        run: |
+          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" "platforms;android-35" \
+            "ndk;$ANDROID_NDK_VERSION" "cmake;3.22.1"
+          test -f "$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" || \
+            test -f "$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION/build/cmake/android.toolchain.cmake"
 
       - name: Configure Android ARM64 build
-        env:
-          ANDROID_NDK_VERSION: 27.2.12479018
         run: |
+          NDK_PATH="$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION"
           cmake -S os/native/llama-jni -B build/llama-jni-arm64 \
-            -DCMAKE_TOOLCHAIN_FILE="$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION/build/cmake/android.toolchain.cmake" \
+            -DCMAKE_TOOLCHAIN_FILE="$NDK_PATH/build/cmake/android.toolchain.cmake" \
             -DANDROID_ABI=arm64-v8a \
             -DANDROID_PLATFORM=android-26 \
             -DCMAKE_BUILD_TYPE=Release
