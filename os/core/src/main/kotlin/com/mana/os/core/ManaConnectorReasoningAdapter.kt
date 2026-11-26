@@ -49,11 +49,15 @@ class ManaConnectorReasoningAdapter(
                 ))
         }
 
-        val selected = router.choose(
-            candidates = eligible,
-            sensitive = request.sensitive,
-            cloudAllowed = request.allowCloud && !request.sensitive
-        ) ?: error("No authorized MANA reasoning provider is available")
+        val selected = request.preferredCloudProvider
+            ?.takeIf { request.allowCloud && !request.sensitive }
+            ?.let { preferred -> eligible.firstOrNull { it.connectorId == preferred } }
+            ?: router.choose(
+                candidates = eligible,
+                sensitive = request.sensitive,
+                cloudAllowed = request.allowCloud && !request.sensitive
+            )
+            ?: error("No authorized MANA reasoning provider is available")
 
         return try {
             invoke(selected, request)
