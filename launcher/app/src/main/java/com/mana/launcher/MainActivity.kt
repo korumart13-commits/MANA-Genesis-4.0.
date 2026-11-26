@@ -12,6 +12,7 @@ import io.github.sceneview.node.ModelNode
 
 import android.app.Activity
 import android.Manifest
+import android.content.ActivityNotFoundException
 import android.content.pm.PackageManager
 import android.content.pm.PermissionInfo
 import android.app.AlertDialog
