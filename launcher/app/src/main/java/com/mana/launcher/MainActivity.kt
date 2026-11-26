@@ -1247,6 +1247,11 @@ class MainActivity : Activity() {
                     }
                     require(copied > 0L) { "Файл модели пуст." }
                     val hash = digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
+                    if (copied == ManaModelCatalog.MODEL_SIZE) {
+                        require(hash.equals(ManaModelCatalog.SHA256, ignoreCase = true)) {
+                            "SHA-256 Gemma 4 E2B не совпал с опубликованным значением. Модель не будет активирована."
+                        }
+                    }
                     Files.move(temp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
                     File(directory, "selected-model.sha256").writeText("$hash  selected-model.litertlm\n")
                 } finally {
