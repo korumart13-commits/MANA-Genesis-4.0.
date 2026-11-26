@@ -21,7 +21,7 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { buildConfig = true; compose = true; aidl = true }
-    androidResources { noCompress += "litertlm" }
+    androidResources { noCompress += listOf("litertlm", "part") }
     // Keep multi-GB LiteRT-LM assets uncompressed so the full offline APK can carry the verified model.
     // Compile the exact AIDL contract also consumed by the Android 16 Soong product.
     sourceSets.getByName("main").aidl.srcDir(rootProject.file("../system/mana/brain/aidl"))
