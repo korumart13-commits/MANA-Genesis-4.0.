@@ -127,6 +127,8 @@ def main() -> int:
             run(["git", "apply", "--check", str(patch)], worktree)
             run(["git", "apply", "--whitespace=error", str(patch)], worktree)
             changed = run(["git", "diff", "--name-only", base], worktree).splitlines()
+            untracked = run(["git", "ls-files", "--others", "--exclude-standard"], worktree).splitlines()
+            changed = sorted(set(changed + untracked))
             validate_paths(args.track, changed)
 
             if args.track == "kernel":
