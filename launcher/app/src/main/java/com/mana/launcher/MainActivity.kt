@@ -176,8 +176,8 @@ class MainActivity : Activity() {
         window.decorView.setBackgroundColor(bg)
         contactIntelligence = ManaContactIntelligence(this)
         modelCatalog = runCatching { ManaModelCatalog(this) }.getOrNull()
-        val existingEngineRuntime = ManaEngineProcessOwner.isInstalled()
-        localRuntime = if (existingEngineRuntime) {
+        val hasPreparedRuntime = ManaEngineProcessOwner.isPrepared()
+        localRuntime = if (hasPreparedRuntime) {
             checkNotNull(ManaEngineProcessOwner.localModelRuntime()) { "MANA local inference dependency is missing" }
         } else {
             LocalModelRuntime(File(cacheDir, "mana-litert-cache"))
@@ -237,14 +237,14 @@ class MainActivity : Activity() {
             showMessage("Хранилище будущих обновлений недоступно: " + error.message)
             null
         }
-        if (!existingEngineRuntime && memoryService != null) {
+        if (!hasPreparedRuntime && memoryService != null) {
             try {
                 ManaEngineProcessOwner.prepare(manaBrain, localRuntime, memoryService!!)
             } catch (error: Exception) {
                 showMessage("Не удалось подготовить MANA Engine: ${error.message}")
             }
         }
-        if (existingEngineRuntime || memoryService != null) {
+        if (ManaEngineProcessOwner.isPrepared()) {
             try {
                 val engineServiceIntent = Intent(this, ManaEngineService::class.java)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
