@@ -13,6 +13,7 @@ android {
         targetSdk = 35
         versionCode = 6
         versionName = "4.0.5"
+        buildConfigField("boolean", "MANA_BUNDLED_MODEL", providers.gradleProperty("manaBundledModel").orNull == "true" ? "true" : "false")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -20,10 +21,8 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { buildConfig = true; compose = true; aidl = true }
-    val includeBundledModel = providers.gradleProperty("manaBundledModel").orNull == "true"
-    buildConfigField("boolean", "MANA_BUNDLED_MODEL", includeBundledModel.toString())
     androidResources { noCompress += "litertlm" }
-    // Large LiteRT-LM models are downloaded separately on owner request; never embed multi-GB assets in the APK.
+    // Keep multi-GB LiteRT-LM assets uncompressed so the full offline APK can carry the verified model.
     // Compile the exact AIDL contract also consumed by the Android 16 Soong product.
     sourceSets.getByName("main").aidl.srcDir(rootProject.file("../system/mana/brain/aidl"))
 }
