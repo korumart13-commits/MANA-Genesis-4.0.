@@ -121,7 +121,23 @@
     ],
     "primary_renderer": "native OpenGL ES renderer shared by home screen, full-screen preview and floating overlay",
     "asset_fallback": "procedural renderer remains visible if optional glTF loading fails",
-    "wardrobe_preferences_persist": true
+    "wardrobe_preferences_persist": true,
+    "image_generation": {
+      "entrypoint": "MANA Diary > Avatar Studio",
+      "preserve_identity": true,
+      "mutable": [
+        "outfits",
+        "accessories",
+        "poses",
+        "backgrounds",
+        "expressions"
+      ],
+      "generate_new_images": true,
+      "save_to_gallery": "owner_selected_export",
+      "set_wallpaper": "Android WallpaperManager with explicit owner confirmation",
+      "no_duplicate_camera_app": true,
+      "camera_access": "launch stock Realme camera through supported Android intents/APIs only"
+    }
   },
   "receptionist": {
     "character": "playful",
@@ -182,7 +198,8 @@
     "boot_initialization_worker": true,
     "background_activity_launch": "not_attempted; Android background launch restrictions respected",
     "boot_model_loading": "deferred until MANA foreground use or owner request to avoid loading multi-GB model during boot",
-    "user_confirmation_required_for_home_role": true
+    "user_confirmation_required_for_home_role": true,
+    "stock_camera_behavior": "MANA launches and hands off to the existing Realme camera; it does not package or create a second camera application."
   },
   "update_delivery": {
     "channel": "com.mana.genesis.system",
@@ -491,12 +508,6 @@
       "required": false
     },
     {
-      "id": "mana.camera",
-      "name": "Camera launch and user-approved capture integration through Android camera APIs/intents",
-      "status": "prototype",
-      "required": false
-    },
-    {
       "id": "mana.messaging",
       "name": "Messenger hub: open supported apps, compose/share messages and official provider integrations",
       "status": "prototype",
@@ -513,6 +524,18 @@
       "name": "MANA Device Intelligence: device inventory, hardware/build report and device-specific ROM port blueprint generator",
       "status": "prototype",
       "required": true
+    },
+    {
+      "id": "mana.stockcamerabridge",
+      "name": "Интеграция со штатной камерой Realme через Android Camera Intent/API; без дублирующего приложения и собственного экрана камеры",
+      "status": "prototype",
+      "required": true
+    },
+    {
+      "id": "mana.avatarstudio",
+      "name": "MANA Avatar Studio в Дневнике: генерация новых образов постоянного аватара, сохранение в галерею и установка выбранного изображения на обои",
+      "status": "architecture",
+      "required": false
     }
   ],
   "release_gates": [
@@ -604,7 +627,7 @@
     "no_silent_feature_removal": true,
     "no_false_system_privileges": true
   },
-  "audit_note_2026_11_26": "The MANA Control Center now includes Android credential re-authentication, camera launch, share/SMS handoff, game session usage-access helper, Realme Game Space launch, and a daily bedtime/wake alarm scheduler with inexact fallback when exact-alarm access is not granted. These remain app-level integrations; they do not make MANA a privileged OS or full camera/messenger/game controller. Full standalone launcher APK workflow now fetches the pinned Gemma 4 E4B 3.66 GB LiteRT-LM model at build time, verifies its exact byte size and SHA-256, and packages it uncompressed as an APK asset. The owner must explicitly import/activate it; it is not loaded at boot. This does not turn the APK into a flashable ROM. MANA Device Intelligence Activity added to the launcher: it collects Android-exposed build, ABI, RAM, storage, display, battery, camera, sensor and system-feature data, then generates a ZIP with a device report and explicitly incomplete ROM port templates. It does not produce a flashable ROM binary or write firmware partitions.",
+  "audit_note_2026_11_26": "The MANA Control Center now includes Android credential re-authentication, camera launch, share/SMS handoff, game session usage-access helper, Realme Game Space launch, and a daily bedtime/wake alarm scheduler with inexact fallback when exact-alarm access is not granted. These remain app-level integrations; they do not make MANA a privileged OS or full camera/messenger/game controller. Full standalone launcher APK workflow now fetches the pinned Gemma 4 E4B 3.66 GB LiteRT-LM model at build time, verifies its exact byte size and SHA-256, and packages it uncompressed as an APK asset. The owner must explicitly import/activate it; it is not loaded at boot. This does not turn the APK into a flashable ROM. MANA Device Intelligence Activity added to the launcher: it collects Android-exposed build, ABI, RAM, storage, display, battery, camera, sensor and system-feature data, then generates a ZIP with a device report and explicitly incomplete ROM port templates. It does not produce a flashable ROM binary or write firmware partitions. Owner clarification: do not create a duplicate camera app or camera UI. Keep only integration with the installed Realme camera through supported Android intents/APIs. Add MANA Avatar Studio inside the encrypted Diary: generate new images of the same stable avatar identity with changeable outfits/accessories/poses/backgrounds, save owner-selected images to the gallery, and offer wallpaper setting through Android WallpaperManager with explicit owner confirmation. This is a planned architecture item until generator/provider and UI are implemented and tested.",
   "local_model_package": {
     "bundled_model": "Gemma 4 E4B IT LiteRT-LM",
     "file": "gemma-4-E4B-it.litertlm",
