@@ -17,6 +17,13 @@ import android.os.IBinder
 class ManaEngineService : Service() {
     override fun onCreate() {
         super.onCreate()
+        try {
+            ManaEngineProcessOwner.initializeFromService(this, ManaAndroidKeyProvider())
+        } catch (error: Exception) {
+            android.util.Log.e("MANA", "Unable to initialize MANA Engine in service", error)
+            stopSelf()
+            return
+        }
         val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             manager.createNotificationChannel(
