@@ -206,7 +206,6 @@ class MainActivity : Activity() {
             showMessage("Планировщик пока недоступен: ${error.message}")
             null
         }
-        memoryService = ManaEngineProcessOwner.memoryService()
         adaptiveKnowledgeService = try {
             com.mana.os.core.ManaAdaptiveKnowledgeService(
                 com.mana.os.core.EncryptedFileManaAdaptiveKnowledgeStore(
