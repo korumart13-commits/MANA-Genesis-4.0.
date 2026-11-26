@@ -236,7 +236,7 @@ class MainActivity : Activity() {
         showHome()
         openAvatarIfRequested(intent)
         val savedModel = modelCatalog?.verifiedSavedModel() ?: File(filesDir, "mana-models/selected-model.litertlm")
-        if (savedModel.isFile) {
+        if (savedModel.isFile && !localRuntime.isReady()) {
             localRuntime.load(savedModel) { result ->
                 runOnUiThread {
                     result.onSuccess { name -> modelStatus?.text = "Локальная модель готова: $name" }
@@ -1577,8 +1577,12 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
-        // MANA Engine, Brain and local inference are owned by ManaEngineService,
-        // so Activity recreation must not terminate the shared runtime.
+        // The service owns shared components while active. If initialization never
+        // transferred ownership, release the Activity-created inference resources here.
+        if (!ManaEngineProcessOwner.isInstalled()) {
+            if (::manaBrain.isInitialized) manaBrain.shutdown()
+            if (::localRuntime.isInitialized) localRuntime.shutdown()
+        }
         manaEngineRuntime = null
         ManaAvatar3DView.isSpeaking = false
         ManaAvatarState.isSpeaking = false
