@@ -1,24 +1,22 @@
 # MANA OS — firmware application modules
 
-This directory contains the firmware-facing UI and narrow system integration modules. It does **not** contain the autonomous MANA AI product.
+This directory contains firmware-facing UI modules only. The autonomous MANA AI remains a separate application.
 
 ## Packages
 
-- **ManaLauncher** (`com.mana.launcher`): MANA OS HOME activity. Its Android label is **MANA OS** and it now has the first dark-navy/cyan resource theme.
-- **ManaAssistant** (`com.mana.assistant`): optional system entry-point/Binder boundary for the separate MANA app. It must remain a thin bridge, not a second AI agent or local model runtime.
-- **ManaSettings** (`com.mana.settings`): MANA OS settings hub. Its Android label is **MANA OS Settings** and it shares the initial MANA palette.
-- **ManaControlCenter** (`com.mana.controlcenter`): current safe quick-access hub. It is not yet a replacement for privileged Android SystemUI or Quick Settings.
+- **ManaLauncher** (`com.mana.launcher`): MANA OS HOME, custom home surface, searchable app drawer and installed-app icons. Existing OEM/system/user apps are not removed. MANA opens the separate `com.mana.genesis` app.
+- **ManaSettings** (`com.mana.settings`): MANA OS settings hub and navigation to Android-owned settings pages.
+- **ManaControlCenter** (`com.mana.controlcenter`): MANA-styled quick-access hub and optional Quick Settings tile. It does not yet replace the platform notification shade.
+- **ManaAssistant** (`com.mana.assistant`): source-only prototype, excluded from the firmware product package list until it is refactored into a thin system bridge with no AI runtime.
 
 ## Product integration
 
-Include `system/mana/mana_product.mk` from the eventual verified Android 16 device product makefile to add the modules to `PRODUCT_PACKAGES`. No valid RMX5566RU product makefile exists yet, so the fragment is not currently consumed by a device build.
+`system/mana/mana_product.mk` adds only Launcher, Settings and Control Center. The future verified Android 16 product makefile may include this fragment. It does not remove any Realme/OEM package or installed application.
 
 ## Separate MANA application
 
-The standalone application package is expected to be `com.mana.genesis`. Its agent runtime, local model, avatar, voice, personality, memory, learning, micro-world, messaging workflows and game/Minecraft capabilities remain outside this firmware directory. The firmware may expose supported Android roles and a small authenticated platform bridge; it must not duplicate those app features.
+The standalone app package is `com.mana.genesis`. Its local model, avatar, voice, personality, memory, learning, micro-world, messaging workflows and game/Minecraft capabilities remain outside this firmware directory. The firmware prepares the shell and supported Android integration points without duplicating the agent.
 
 ## Current limits
 
-All four Soong modules are currently declared as non-privileged product apps. Do not mark them privileged or add permission allowlists until the exact package, signing certificate, requested permissions, target partition and security policy are verified. The current Settings and Control Center modules open Android-owned settings pages; they do not yet replace platform Settings/SystemUI.
-
-No AOSP product build or RMX5566RU device test is claimed by the presence of these source files.
+The MANA Launcher/Settings/Control Center modules have source-level MANA themes. Android SystemUI, Keyguard, Recents, stock Settings internals and OEM File Manager still require exact RMX5566RU package/resource mapping before overlays can be written safely. No guessed overlays are added. No complete device build or flashable ROM is claimed.
