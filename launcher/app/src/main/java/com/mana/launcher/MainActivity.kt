@@ -292,8 +292,8 @@ class MainActivity : Activity() {
         loadApps()
         if (::content.isInitialized && !showingDrawer) {
             val prefs = getSharedPreferences("mana.settings", MODE_PRIVATE)
-            if (prefs.getBoolean("first_run_setup_complete", false)) showHome()
-            else if (prefs.getBoolean("permission_setup_open", false)) showPermissionSetup()
+            if (prefs.getBoolean("permission_setup_open", false)) showPermissionSetup()
+            else if (prefs.getBoolean("first_run_setup_complete", false)) showHome()
         }
         val avatarEnabled = getSharedPreferences("mana.settings", MODE_PRIVATE)
             .getBoolean("floating_avatar_enabled", false)
