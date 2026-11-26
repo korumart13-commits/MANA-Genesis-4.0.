@@ -52,6 +52,28 @@ If Mozilla Gecko is the intended engine, MANA should integrate the supported Gec
 
 If "Geeko" refers to a different engine already developed in another branch/archive, integrate that exact source after locating and auditing it; do not replace it with Gecko by guesswork.
 
+## Selected local inference runtime
+
+**Selected runtime: Google LiteRT-LM for Android (Kotlin API).** This is the model-execution engine that runs the local LLM on the phone. It is distinct from Shogun MANA (the orchestrator) and from the project-owned MANA Engine (the integration/control layer).
+
+The current repository already contains a concrete Android integration:
+- Dependency: `com.google.ai.edge.litertlm:litertlm-android:0.16.1` in `launcher/app/build.gradle.kts`.
+- Runtime adapter: `launcher/app/src/main/java/com/mana/launcher/LocalModelRuntime.kt`.
+- The adapter creates LiteRT-LM `Engine` and `Conversation`, streams generated messages, attempts GPU first and falls back to CPU, and owns lifecycle on a dedicated background thread.
+- `ManaBrainBridge.kt` routes local inference through this adapter before considering any permitted cloud provider.
+
+This means LiteRT-LM is not merely a proposal in a setup note: the Android prototype has a real adapter in source. However, source presence does not prove a successful build, successful model load, stable GPU operation, or acceptable speed on RMX5566RU. Those must be tested on the target device.
+
+### RMX5566RU backend policy
+
+The verified target is Qualcomm SM6225 / Adreno 610. Use CPU as the guaranteed compatibility baseline. Keep GPU as an optional acceleration attempt and automatically fall back to CPU if initialization or inference fails. Do not assume Qualcomm NPU support: no compatible NPU delegate or target-specific model compilation has been verified for this phone.
+
+A second runtime such as llama.cpp may be evaluated as an optional adapter for GGUF model compatibility, but it is not the selected primary runtime. Its published OpenCL Android verification currently names newer Snapdragon/Adreno devices; its documentation warns that phone-class Adreno 6xx devices may have outdated drivers/compilers. Therefore do not promise Adreno 610 GPU acceleration from llama.cpp without a device test.
+
+### Model and release pinning
+
+Keep model weights separate from the OS source and install them only through an explicit owner-controlled model manager. Pin runtime and model versions in the build, verify publisher checksums, record model license/terms, and run memory, latency, thermal and battery benchmarks before selecting a default model. Do not use a floating `latest.release` dependency for a reproducible firmware build.
+
 ## Inference and provider policy
 
 - Local inference is preferred and is the offline path.
