@@ -59,3 +59,8 @@ The owner-provided Settings screenshots confirm model RMX5566, build `RMX5566_16
 ## Release boundary
 
 A successful Gradle build produces an Android application prototype, not an AOSP ROM. The repository source archive is not a full AOSP checkout, OTA package or flashable image. No device-specific boot, vendor_boot, dtbo, vbmeta, recovery, super or OTA image is approved for creation or flashing at this stage.
+
+
+## Packaging route decision — 2026-11-27
+
+A concrete AOSP packaging route is documented in [AOSP_BRAIN_BRIDGE_PACKAGING_PLAN_2026-11-27.md](AOSP_BRAIN_BRIDGE_PACKAGING_PLAN_2026-11-27.md). The selected boundary is a reproducible Gradle release APK imported into the full AOSP product using `android_app_import`, then platform-signed by Soong. This is preferred over pretending the current minimal Java Soong launcher contains the Kotlin/Compose/LiteRT bridge. The import/signing behavior must be validated against the pinned AOSP branch, followed by package certificate inspection and emulator Binder tests. No full AOSP checkout is present yet, so this remains a documented implementation route, not a completed integration.
