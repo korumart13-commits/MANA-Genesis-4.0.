@@ -57,6 +57,8 @@ jobs:
   autodev-policy-tests:
     name: Test MANA isolated self-development and kernel patch gates
     runs-on: ubuntu-latest
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -71,8 +73,15 @@ jobs:
           gradle-version: "8.10.2"
       - name: Test patch path allowlists, traversal rejection and kernel patch policy
         run: python -m unittest discover -s tools/tests -p 'test_mana_autodev.py' -v
-      - name: Syntax-check self-development tools
-        run: python -m py_compile tools/mana_autodev.py tools/validate_mana_kernel_patch.py
+      - name: Syntax-check self-development tools without creating repository cache files
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+          for name in ("tools/mana_autodev.py", "tools/validate_mana_kernel_patch.py", "tools/validate_mana_feature_manifest.py"):
+              ast.parse(Path(name).read_text(encoding="utf-8"), filename=name)
+          print("AutoDev and manifest tools have valid Python syntax.")
+          PY
       - name: Validate complete owner-requested module inventory
         run: |
           python3 tools/validate_mana_feature_manifest.py
