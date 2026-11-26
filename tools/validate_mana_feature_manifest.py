@@ -13,7 +13,7 @@ CATALOG = ROOT / "os/core/src/main/kotlin/com/mana/os/core/ManaSystemModuleCatal
 REQUIRED = {
     "platform.android16", "platform.kernel", "platform.hardware", "platform.security",
     "platform.storage", "mana.systemcore", "mana.brain", "mana.localruntime",
-    "mana.modelmanager", "mana.memory", "mana.autodev", "mana.updater", "mana.recovery",
+    "mana.modelmanager", "mana.memory", "mana.autodev", "mana.futureupdates", "mana.updater", "mana.recovery",
     "mana.systemui", "mana.launcher", "mana.settings", "mana.controlcenter",
     "mana.stockappbridge", "mana.avatar", "mana.avatar3d", "mana.voice",
     "mana.diary", "mana.lifemanager", "mana.lifestudio", "mana.finance",
