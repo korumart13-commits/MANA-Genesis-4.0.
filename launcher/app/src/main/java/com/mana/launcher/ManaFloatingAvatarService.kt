@@ -11,37 +11,16 @@ import android.os.IBinder
 import android.provider.Settings
 import android.view.Gravity
 import android.view.WindowManager
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.LifecycleService
-import androidx.lifecycle.setViewTreeLifecycleOwner
-import io.github.sceneview.SceneView
-import io.github.sceneview.SurfaceType
-import io.github.sceneview.rememberEngine
-import io.github.sceneview.rememberModelInstance
-import io.github.sceneview.rememberModelLoader
-import io.github.sceneview.node.ModelNode
 
 /**
- * Persistent, owner-enabled floating glTF avatar. The model is rendered by SceneView/Filament;
- * the overlay never captures keyboard focus or injects input into the foreground app.
+ * Owner-enabled floating MANA avatar using the same native OpenGL renderer as the home screen.
+ * The overlay is non-focusable and does not capture keyboard input from other apps.
  */
 class ManaFloatingAvatarService : LifecycleService() {
     private lateinit var windowManager: WindowManager
-    private var avatarView: ComposeView? = null
+    private var avatarView: ManaAvatar3DView? = null
     private lateinit var params: WindowManager.LayoutParams
-    private var dragged = false
 
     override fun onCreate() {
         super.onCreate()
@@ -62,63 +41,20 @@ class ManaFloatingAvatarService : LifecycleService() {
             x = dp(12)
             y = dp(120)
         }
-        val avatarAsset = ManaAvatarAssetSelector.assetName(this)
-        val compose = ComposeView(this).apply {
-            setViewTreeLifecycleOwner(this@ManaFloatingAvatarService)
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                val engine = rememberEngine()
-                val modelLoader = rememberModelLoader(engine)
-                val isSpeaking = ManaAvatarState.isSpeaking
-                val expression = ManaAvatarState.expressionIndex
-                val animationName = when { isSpeaking -> "Speaking"; expression == 1 -> "Happy"; expression == 2 -> "Playful"; else -> "Idle" }
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(26.dp))
-                        .background(Color.Transparent)
-                        .pointerInput(Unit) {
-                            detectDragGestures(
-                                onDragStart = { dragged = false },
-                                onDragEnd = { if (dragged) snapToEdge() },
-                                onDragCancel = { if (dragged) snapToEdge() },
-                                onDrag = { change, amount ->
-                                    dragged = true
-                                    change.consume()
-                                    params.x = (params.x + amount.x.toInt()).coerceAtLeast(0)
-                                    params.y = (params.y + amount.y.toInt()).coerceAtLeast(0)
-                                    try { avatarView?.let { windowManager.updateViewLayout(it, params) } }
-                                    catch (_: IllegalArgumentException) { }
-                                }
-                            )
-                        }
-                        .pointerInput(Unit) {
-                            detectTapGestures(onTap = { openAssistant() })
-                        }
-                ) {
-                    SceneView(
-                        modifier = Modifier.fillMaxSize(),
-                        surfaceType = SurfaceType.TextureSurface,
-                        engine = engine,
-                        modelLoader = modelLoader,
-                        isOpaque = false
-                    ) {
-                        rememberModelInstance(modelLoader, avatarAsset)?.let { instance ->
-                            ModelNode(
-                                modelInstance = instance,
-                                scaleToUnits = 2.25f,
-                                autoAnimate = false,
-                                animationName = animationName,
-                                animationLoop = true
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        avatarView = compose
+        val view = ManaAvatar3DView(
+            this,
+            onDrag = { dx, dy ->
+                params.x = (params.x + dx.toInt()).coerceAtLeast(0)
+                params.y = (params.y + dy.toInt()).coerceAtLeast(0)
+                try { avatarView?.let { windowManager.updateViewLayout(it, params) } }
+                catch (_: IllegalArgumentException) { }
+            },
+            onTap = { openAssistant() },
+            onDragEnd = { snapToEdge() }
+        )
+        avatarView = view
         try {
-            windowManager.addView(compose, params)
+            windowManager.addView(view, params)
         } catch (_: SecurityException) {
             avatarView = null
             stopSelf()
@@ -186,10 +122,9 @@ class ManaFloatingAvatarService : LifecycleService() {
 
     override fun onDestroy() {
         avatarView?.let {
-            try {
-                windowManager.removeView(it)
-                it.disposeComposition()
-            } catch (_: IllegalArgumentException) { }
+            try { windowManager.removeView(it) }
+            catch (_: IllegalArgumentException) { }
+            it.onDetachedFromWindow()
         }
         avatarView = null
         super.onDestroy()
