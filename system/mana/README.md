@@ -1,29 +1,27 @@
-# MANA OS system layer — firmware only
+# MANA OS system layer — Android-preserving firmware shell
 
-**Product scope:** branded Android/Realme-derived firmware and platform integration for the later standalone MANA application.
+**Base decision:** keep the existing compatible Realme Android 16 platform. MANA OS is its branded visual/system-integration layer; do not replace Android, kernel, radio or OEM hardware stack unless exact device evidence makes that unavoidable.
 
-MANA OS owns the operating-system experience: boot branding, launcher, lock screen, SystemUI, notifications, Quick Settings, Settings, product identity, platform policy and documented system interfaces. The standalone MANA AI application owns the agent, model, avatar, voice/personality, micro-world, memory, learning, game automation and user-facing autonomous behavior.
+MANA OS owns the user-facing shell: MANA launcher, app drawer, theme resources, Settings presentation, Control Center design, and later OEM/SystemUI/Keyguard/Recents/Files overlays. It preserves the stock Android/OEM packages and all user-installed apps.
+
+The separate `com.mana.genesis` application owns the AI agent, local model, avatar, voice/personality, memory, micro-world, learning, messaging and game automation. The firmware must not package a duplicate AI runtime.
 
 ## Firmware modules
 
-- `ManaLauncher`: HOME activity and MANA OS home-screen shell.
-- `ManaSettings`: MANA OS settings entry point and system settings navigation.
-- `ManaControlCenter`: current safe control/settings hub; eventual full Quick Settings/SystemUI replacement requires AOSP platform integration.
-- `ManaAssistant`: optional thin system integration/entry-point boundary for the separate MANA app. It is not the autonomous agent and must not package the local model, avatar, memory, game agent or learning loop.
-- `ManaBrainService` / Binder contracts: only a narrow, authenticated OS-to-app interface when needed; no duplicate agent runtime in the firmware.
+- `ManaLauncher`: HOME launcher and MANA OS home/app drawer. It enumerates installed launchable apps and uses their actual app icons. It is designed to be selected through Android's HOME role; the OEM launcher remains installed.
+- `ManaSettings`: MANA-branded settings hub and navigation into Android's protected settings pages.
+- `ManaControlCenter`: MANA-styled quick-access hub and optional user-added Quick Settings tile. It is not yet a replacement for the real SystemUI notification shade.
+- `ManaAssistant`: source-only prototype for a future narrow platform bridge; it is deliberately excluded from `PRODUCT_PACKAGES` until it is reduced to an authenticated OS-to-app interface with no AI runtime.
+- `ManaBrain` source modules: not included in the firmware product image; reserved for the standalone MANA application/runtime work.
 
-## Explicitly out of firmware scope
+## Visual implementation plan
 
-Do not add an LLM, local model weights, witch/avatar persona, micro-world, voice identity, agent memory, internet-learning engine, messaging agent, autonomous game/Minecraft bot or self-development agent to the firmware. Those belong to the separate MANA app.
+See `os/MANA_OS_VISUAL_DESIGN_AND_ANDROID_OVERLAY_RU.md` and `system/mana/overlays/README.md`. The design combines broad usability cues from classic/modern Samsung interfaces with restrained iOS 15/iPhone 13-style spacing and translucency, using original MANA assets and layouts rather than copying proprietary artwork.
 
 ## Platform integration requirements
 
-- Prepare the standalone package identity `com.mana.genesis` as a potential default assistant through supported Android roles and VoiceInteractionService contracts.
-- If the exact app build and signing identity are verified, consider product preinstallation and narrowly scoped privileged permissions using partition-matched allowlists.
-- Expose only documented, purpose-specific Binder/AIDL APIs. Validate UID, package, signing certificate, capability and current grant at the system boundary.
-- Keep Android permission enforcement, AppOps, SELinux, Verified Boot, AVB and audit logs enabled.
-- Never grant permissions by pretending a runtime or special-access grant has occurred.
+Prepare the standalone `com.mana.genesis` app to use supported Android assistant roles and public APIs. A future narrow Binder/AIDL bridge may expose purpose-specific platform functions after identity, signature, permission and SELinux validation. Keep Android permission enforcement, AppOps, SELinux, Verified Boot, AVB and audit logs enabled.
 
 ## Current implementation state
 
-The Soong source modules for Launcher, Assistant, Settings and Control Center exist. The Launcher and Settings now have MANA dark-navy/cyan resources and theme references. These modules have not yet been integrated into a verified RMX5566RU product build. The device tree and OEM inputs remain incomplete; this directory is not a flashable ROM.
+Launcher and Settings have MANA dark-navy/cyan resources and theme references; Control Center has a matching theme. The Launcher now displays actual installed application icons and opens the standalone `com.mana.genesis` app. The firmware product fragment includes Launcher, Settings and Control Center only; it does not include ManaAssistant or MANA Brain runtime. These are source changes, not a complete RMX5566RU firmware build.
