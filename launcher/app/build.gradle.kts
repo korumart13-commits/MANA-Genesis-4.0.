@@ -20,6 +20,8 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { buildConfig = true; compose = true; aidl = true }
+    // Keep the bundled multi-GB LiteRT-LM model uncompressed for direct memory-mapped access after import.
+    androidResources { noCompress += "litertlm" }
     // Compile the exact AIDL contract also consumed by the Android 16 Soong product.
     sourceSets.getByName("main").aidl.srcDir(rootProject.file("../system/mana/brain/aidl"))
 }
