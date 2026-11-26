@@ -24,3 +24,10 @@
 - Source files and manifest were read back from GitHub after commits.
 - No Gradle build, Android lint, emulator test, or physical-device test has yet been confirmed for this service integration.
 - The repository workflow is configured to run `:brain:test`, `:core:test`, `:app:assembleDebug`, and `:app:testDebugUnitTest` on relevant pushes. A successful run must be checked before calling this integration build-verified.
+
+## Follow-up hardening
+
+- The process owner exposes the same Engine, Brain, local inference, and encrypted memory instances to a recreated Activity; this avoids creating a duplicate runtime when Android recreates the launcher Activity while the started service remains alive.
+- A previously loaded local model is not loaded a second time on Activity recreation.
+- Local inference shutdown is now idempotent, and Activity cleanup releases Brain/inference only when ownership was not transferred to the service.
+- These follow-up changes are source-level changes only; no build or runtime test has been confirmed.
