@@ -23,7 +23,6 @@ class ManaExtensionCenterActivity : Activity() {
     private val accent = Color.rgb(84, 200, 245)
     private val foreground = Color.rgb(234, 244, 255)
     private val muted = Color.rgb(145, 169, 197)
-    private val prefs by lazy { getSharedPreferences("mana.extensions.v1", MODE_PRIVATE) }
 
     private data class Module(
         val id: String,
@@ -48,7 +47,7 @@ class ManaExtensionCenterActivity : Activity() {
         Module("integrations", "Yandex и VK", "Подключения через настроенные официальные интеграции.", State.BUILT_IN),
         Module("devices", "Часы, наушники и автомобиль", "Bluetooth-интеграции в пределах разрешений Android.", State.BUILT_IN),
         Module("device_tools", "Управление телефоном", "Только поддерживаемые Android API и выданные владельцем разрешения.", State.BUILT_IN),
-        Module("wallpaper", "Автоматические обои", "Автовыбор и смена обоев — модуль ещё требует реализации.", State.PLANNED),
+        Module("wallpaper", "Автоматические обои", "Локальные абстрактные обои и ежедневная смена по желанию владельца.", State.BUILT_IN),
         Module("game_intelligence", "Game Intelligence", "Игровой помощник и обучение игровым сценариям — модуль ещё требует реализации.", State.PLANNED),
         Module("minecraft", "Minecraft Bridge", "Интеграция через официальный Script API — модуль ещё требует реализации.", State.PLANNED),
         Module("micro_universe", "MANA Micro-Universe", "Единое пространство мастерской, библиотеки знаний и игровых зон — модуль ещё требует реализации.", State.PLANNED),
@@ -101,35 +100,29 @@ class ManaExtensionCenterActivity : Activity() {
                 gravity = Gravity.CENTER_VERTICAL
                 orientation = LinearLayout.HORIZONTAL
             }
-            val enabled = prefs.getBoolean(module.id, module.state == State.BUILT_IN)
             row.addView(TextView(this).apply {
                 text = when (module.state) {
-                    State.BUILT_IN -> if (enabled) "Включён" else "Выключен"
+                    State.BUILT_IN -> "Код включён в приложение · проверь работу на телефоне"
                     State.PLANNED -> "Ожидает реализации"
                 }
                 textSize = 12f
-                setTextColor(if (module.state == State.BUILT_IN && enabled) accent else muted)
+                setTextColor(if (module.state == State.BUILT_IN) accent else muted)
             }, LinearLayout.LayoutParams(0, dp(40), 1f))
             val action = Button(this).apply {
-                text = if (module.state == State.PLANNED) "Подробнее" else if (enabled) "Выключить" else "Включить"
-                isEnabled = module.state == State.BUILT_IN
+                text = "Статус"
                 setOnClickListener {
-                    prefs.edit().putBoolean(module.id, !prefs.getBoolean(module.id, true)).apply()
-                    render()
-                }
-            }
-            row.addView(action)
-            if (module.state == State.PLANNED) {
-                action.isEnabled = true
-                action.text = "Статус"
-                action.setOnClickListener {
+                    val message = if (module.state == State.BUILT_IN)
+                        "Исходный код этого модуля включён в проект. Реальная работа зависит от доступов Android, подключённых сервисов и проверки на устройстве."
+                    else
+                        "Этот модуль сохранён в плане MANA Genesis 4.0, но рабочая реализация ещё не включена в сборку."
                     AlertDialog.Builder(this@ManaExtensionCenterActivity)
                         .setTitle(module.title)
-                        .setMessage("Этот модуль сохранён в плане MANA Genesis 4.0, но его рабочая реализация ещё не включена в сборку. Он не будет показан как готовая функция.")
+                        .setMessage(message)
                         .setPositiveButton("Понятно", null)
                         .show()
                 }
             }
+            row.addView(action)
             card.addView(row)
             val params = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             params.bottomMargin = dp(10)
