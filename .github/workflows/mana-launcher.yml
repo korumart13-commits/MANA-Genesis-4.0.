@@ -94,6 +94,13 @@ jobs:
           assert root.find("remote").attrib["fetch"] == "https://github.com/"
           print("Validated immutable MANA source snapshot in AOSP local manifest.")
           PY
+      - name: Execute MANA Brain request policy host tests
+        run: |
+          mkdir -p /tmp/mana-brain-policy-test
+          javac -d /tmp/mana-brain-policy-test \
+            system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainRequestPolicy.java \
+            system/mana/services/ManaBrainService/tests/host/ManaBrainRequestPolicyHostTest.java
+          java -cp /tmp/mana-brain-policy-test com.mana.system.brain.ManaBrainRequestPolicyHostTest
       - name: Validate platform MANA Brain service boundary
         run: |
           test -f system/mana/services/ManaBrainService/Android.bp
