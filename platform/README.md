@@ -23,3 +23,22 @@ Do not add a product lunch target until the exact RMX5566RU/RE645F device tree, 
 ## Build outputs
 
 The OS build pipeline will eventually build Android platform targets and MANA system packages, not a separate launcher APK. Image packaging and signing remain disabled until the device's partition and AVB metadata are verified.
+
+
+## MANA repository attachment
+
+A local repo manifest is provided at `platform/local_manifests/mana.xml`. It pins this MANA source
+repository to a specific Git commit and places it at `vendor/mana/genesis` in the AOSP checkout.
+
+After initializing the official Android 16 AOSP manifest, copy the local manifest into the checkout:
+
+```sh
+mkdir -p .repo/local_manifests
+cp vendor/mana/genesis/platform/local_manifests/mana.xml .repo/local_manifests/mana.xml
+repo sync -c -j"$(nproc)" --no-tags
+```
+
+The product configuration fragment is at
+`vendor/mana/genesis/system/mana/mana_product.mk`. It must be included by a verified product
+makefile only after the actual AOSP checkout and product target exist. This manifest attachment
+does not create a device target, supply proprietary blobs, or make the product flashable.
