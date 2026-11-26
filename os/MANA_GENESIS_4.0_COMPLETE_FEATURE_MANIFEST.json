@@ -78,6 +78,38 @@
     "integration": ["MANA Brain", "Contact Intelligence", "Life Manager"],
     "availability_condition": "only where Android Telecom role, carrier and legal rules permit"
   },
+  "adaptive_intelligence": {
+    "background_learning_on_start": true,
+    "source_validation": true,
+    "local_knowledge_base": true,
+    "resource_aware_scheduling": true,
+    "learning_reports_viewer": true,
+    "network_research_requires_opt_in": true
+  },
+  "future_updates": {
+    "voice_and_text_idea_capture": true,
+    "pipeline": ["idea", "plan", "development", "build", "test", "signed_candidate", "owner_approval", "install"],
+    "safe_self_update": true,
+    "failed_candidate_rollback": true,
+    "code_changes_require_isolated_tests": true
+  },
+  "security": {
+    "selinux_enforcing": true,
+    "verified_boot_preserved": true,
+    "runtime_permissions_visible_and_revocable": true,
+    "sensitive_data_not_sent_to_cloud_without_explicit_consent": true,
+    "no_embedded_provider_secrets": true,
+    "no_silent_system_partition_or_boot_chain_mutation": true
+  },
+  "system_integration": {
+    "custom_launcher": true,
+    "system_ui": true,
+    "settings": true,
+    "control_center_quick_settings": true,
+    "boot_branding": "MANA",
+    "stock_camera_phone_and_oem_hardware_apps_preserved": true,
+    "avatar_power_button_summon_only_when_supported": true
+  },
   "game_intelligence": {
     "autonomy": "high",
     "worlds": ["installed_android_games", "Minecraft_Bedrock"],
