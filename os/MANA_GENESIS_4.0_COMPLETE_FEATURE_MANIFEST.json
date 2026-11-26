@@ -487,7 +487,7 @@
     {
       "id": "mana.sleep",
       "name": "Sleep and bedtime mode: schedule, quiet hours, wake routine and user-approved notification policy",
-      "status": "prototype",
+      "status": "partial",
       "required": false
     },
     {
@@ -598,5 +598,5 @@
     "no_silent_feature_removal": true,
     "no_false_system_privileges": true
   },
-  "audit_note_2026_11_26": "MANA Control Center Activity added. Owner re-authentication uses Android device credential confirmation; camera uses ACTION_IMAGE_CAPTURE; messaging uses ACTION_SEND/ACTION_SENDTO; game integration checks Usage Access and opens OEM Game Space; sleep currently stores an MANA profile and can request DND access. These are bounded prototypes, not full OS-level integrations."
+  "audit_note_2026_11_26": "The MANA Control Center now includes Android credential re-authentication, camera launch, share/SMS handoff, game session usage-access helper, Realme Game Space launch, and a daily bedtime/wake alarm scheduler with inexact fallback when exact-alarm access is not granted. These remain app-level integrations; they do not make MANA a privileged OS or full camera/messenger/game controller."
 }
