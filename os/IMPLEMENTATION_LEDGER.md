@@ -110,3 +110,12 @@ This increment creates the shared safe action boundary for future integration of
 ## Realme Master Games bridge — 2026-11-26
 
 MANA now exposes an owner-invoked **Open Master Games** action in the Game Intelligence section. The bridge checks for the two observed Realme/ColorOS package IDs and launches the installed app through `PackageManager.getLaunchIntentForPackage`. Package visibility is declared for Android 11+. No hidden OEM APIs, root, input injection, or silent performance changes are used. This is an integration entry point, not yet a remote-control API for Game Space. A direct OEM control API has not been identified; performance controls remain owned by Realme Game Space and Android's supported game-mode mechanisms.
+
+
+## 2026-11-26 incremental implementation note
+
+- Added `ManaCapabilityRegistry` to the canonical `mana-brain-core` source set. It provides a declarative Brain-to-OS capability boundary and fail-closed decisions for unknown, disabled, unsupported, missing-permission, missing-special-access and unconfirmed-sensitive actions.
+- Added initial capability descriptors for app launch, opening supported settings, notification listener access, contacts read, answering calls through the dialer role, and signed MANA update installation.
+- Added JVM tests for unknown capabilities, Android runtime permissions, Android special access, owner confirmation, disabled/unsupported capabilities and duplicate IDs.
+- Added `os/MANA_BRAIN_OS_CONTROL_CONTRACT.md` describing the Brain → OS → device execution model and the required Android platform adapter.
+- These new sources are committed but their tests have **not yet been run in CI or Soong**. No device-side capability adapter, complete SystemUI replacement, AOSP image, or RMX5566RU ROM is claimed by this change.
