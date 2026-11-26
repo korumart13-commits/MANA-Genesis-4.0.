@@ -99,6 +99,12 @@ class MainActivity : Activity() {
     private val manaEngineConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as? ManaEngineService.LocalBinder ?: return
+            if (!binder.isInitialized()) {
+                showMessage("MANA Engine не смог запуститься. Проверь журнал устройства; интерфейс не будет подключаться к незапущенному ядру.")
+                runCatching { unbindService(this) }
+                manaEngineBound = false
+                return
+            }
             manaEngineBinder = binder
             localRuntime = binder.localModelRuntime()
             cloudGateway = binder.cloudGateway()
