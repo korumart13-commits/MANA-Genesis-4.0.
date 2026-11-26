@@ -20,10 +20,10 @@ class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntim
     @Volatile private var loadedModel: File? = null
     @Volatile private var loadedBackend: String? = null
 
-    fun isReady(): Boolean = conversation != null && loadedModel?.isFile == true
-    fun modelName(): String? = loadedModel?.let { "${it.name} · ${loadedBackend ?: "unknown"}" }
+    override fun isReady(): Boolean = conversation != null && loadedModel?.isFile == true
+    override fun modelName(): String? = loadedModel?.let { "${it.name} · ${loadedBackend ?: "unknown"}" }
 
-    fun load(modelFile: File, callback: (Result<String>) -> Unit) {
+    override fun load(modelFile: File, callback: (Result<String>) -> Unit) {
         executor.execute {
             try {
                 require(modelFile.isFile && modelFile.canRead()) { "Файл модели недоступен для чтения." }
@@ -43,7 +43,7 @@ class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntim
         }
     }
 
-    fun generate(prompt: String, onChunk: (String) -> Unit, callback: (Result<Unit>) -> Unit) {
+    override fun generate(prompt: String, onChunk: (String) -> Unit, callback: (Result<Unit>) -> Unit) {
         executor.execute {
             try {
                 val active = conversation ?: error("Сначала загрузи файл модели .litertlm.")
@@ -103,5 +103,5 @@ class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntim
         }
     }
 
-    fun shutdown() { executor.execute { closeLoaded() }; executor.shutdown() }
+    override fun shutdown() { executor.execute { closeLoaded() }; executor.shutdown() }
 }
