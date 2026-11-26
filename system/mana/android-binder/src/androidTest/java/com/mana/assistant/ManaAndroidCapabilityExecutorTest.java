@@ -70,7 +70,7 @@ public final class ManaAndroidCapabilityExecutorTest {
 
         ManaCapabilityResponse response = executor.execute(request);
 
-        assertTrue(response.allowed);
+        assertFalse(response.allowed);
         assertFalse(response.executed);
         assertEquals("UNSUPPORTED_SETTINGS_PAGE", response.denialReason);
         assertNotNull(response.message);
