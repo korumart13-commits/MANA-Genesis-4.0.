@@ -66,6 +66,9 @@ jobs:
           assert "fun acquire(context: Context, keyProvider: ManaAndroidKeyProvider)" in owner
           assert "fun release()" in owner
           assert "if (serviceOwners == 0) shutdownResourcesLocked()" in owner
+          assert "fun ensureSavedModelLoaded(" in owner
+          assert "ManaEngineProcessOwner.ensureSavedModelLoaded(this)" in bridge
+          assert "MANA-Model-Bootstrap" in owner
           assert "initializeFromService(" not in activity
           assert "initializeDependenciesFromService(" not in activity
           assert "LocalModelRuntime(" not in activity
