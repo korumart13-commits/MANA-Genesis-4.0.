@@ -94,7 +94,8 @@ class ManaEngineAndroidRuntime(
         sensitive: Boolean = false,
         preferredCloudProvider: String? = null,
         includePersonalMemory: Boolean = true,
-        memoryQuery: String = text
+        memoryQuery: String = text,
+        allowPersonalMemoryToCloud: Boolean = false
     ) = runtime.think(
         ManaEngineRequest(
             text = text,
@@ -103,7 +104,7 @@ class ManaEngineAndroidRuntime(
             preferredCloudProvider = preferredCloudProvider,
             includePersonalMemory = includePersonalMemory,
             memoryQuery = memoryQuery,
-            allowPersonalMemoryToCloud = false
+            allowPersonalMemoryToCloud = allowPersonalMemoryToCloud
         )
     )
 
