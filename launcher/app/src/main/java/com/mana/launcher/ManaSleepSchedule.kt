@@ -30,6 +30,17 @@ object ManaSleepScheduler {
         cancelOne(context, false)
     }
 
+    fun disable(context: Context) {
+        cancel(context)
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_ENABLED, false).putBoolean("sleep_mode", false).apply()
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (manager.isNotificationPolicyAccessGranted) {
+            val previous = prefs.getInt("previous_interruption_filter", NotificationManager.INTERRUPTION_FILTER_ALL)
+            runCatching { manager.setInterruptionFilter(previous) }
+        }
+    }
+
     private fun scheduleOne(context: Context, bedtime: Boolean, hour: Int, minute: Int) {
         val alarm = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val pending = pendingIntent(context, bedtime)
