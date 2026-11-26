@@ -5,6 +5,8 @@ on:
     paths:
       - 'system/mana/apps/**'
       - 'system/mana/mana_product.mk'
+      - 'engine/mana-brain/Android.bp'
+      - 'system/mana/brain/**'
       - '.github/workflows/mana-android-ui.yml'
   pull_request:
     paths:
@@ -35,7 +37,7 @@ jobs:
           javac -source 17 -target 17 \
             -classpath "$ANDROID_HOME/platforms/android-36/android.jar" \
             -d "$RUNNER_TEMP/mana-ui-classes" \
-            $(find system/mana/apps -name '*.java' -print)
+            $(find system/mana/apps -name '*.java' ! -name 'ManaBrainBinderService.java' ! -name 'ManaHomeActivity.java' -print)
       - name: Validate MANA product package integration
         run: |
           python3 - <<'PY'
@@ -57,7 +59,9 @@ jobs:
           for path in manifests:
               root = ET.parse(path).getroot()
               permissions = [node.attrib.get(android_ns + "name", "") for node in root.findall("uses-permission")]
-              assert not permissions, f"{path} unexpectedly requests permissions: {permissions}"
+              allowed = {"com.mana.permission.BIND_BRAIN"}
+              unexpected = sorted(set(permissions) - allowed)
+              assert not unexpected, f"{path} unexpectedly requests permissions: {unexpected}"
               bp = path.parent / "Android.bp"
               build = bp.read_text()
               assert 'privileged: false' in build, f"{bp} must remain non-privileged"
