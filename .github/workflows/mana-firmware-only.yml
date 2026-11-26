@@ -81,7 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist/source
-          cp dist/apk/MANA-Shell.apk dist/apk/MANA-Shell.apk
+          cp dist/apk/mana-shell-debug.apk dist/apk/MANA-Shell.apk
           cp firmware/README_RU.md dist/README_RU.md
           cp docs/REALME_UPDATE_COMPATIBILITY_RU.md dist/REALME_UPDATE_COMPATIBILITY_RU.md
           cp os/MANA_OS_FIRMWARE_ONLY_IMPLEMENTATION_RU.md dist/MANA_OS_FIRMWARE_ONLY_IMPLEMENTATION_RU.md
@@ -121,7 +121,7 @@ jobs:
               "is_oem_ota": False,
               "is_flashable_rom": False,
               "writes_system_partitions": False,
-              "installable_apk": "apk/mana-shell-debug.apk",
+              "installable_apk": "apk/MANA-Shell.apk",
               "sha256": hashlib.sha256(apk.read_bytes()).hexdigest(),
               "future_ai_package_extension": "com.mana.genesis",
               "limitations": [
@@ -137,10 +137,10 @@ jobs:
                   z.write(p, p.relative_to(root))
           package = root / "MANA_Genesis_4.0_FIRMWARE_UI_UPDATE.zip"
           digest = hashlib.sha256(package.read_bytes()).hexdigest()
-          (root / "SHA256SUMS.txt").write_text(f"{digest}  {package.name}\n{hashlib.sha256(apk.read_bytes()).hexdigest()}  apk/mana-shell-debug.apk\n", encoding="utf-8")
+          (root / "SHA256SUMS.txt").write_text(f"{digest}  {package.name}\n{hashlib.sha256(apk.read_bytes()).hexdigest()}  apk/MANA-Shell.apk\n", encoding="utf-8")
           with ZipFile(package) as z:
               assert z.testzip() is None
-              assert "apk/mana-shell-debug.apk" in z.namelist()
+              assert "apk/MANA-Shell.apk" in z.namelist()
               assert "source/apps/ManaLauncher/Android.bp" in z.namelist()
           print(f"Created {package} ({package.stat().st_size} bytes), SHA-256 {digest}")
           PY
