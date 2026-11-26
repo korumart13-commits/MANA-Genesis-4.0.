@@ -72,6 +72,12 @@ public final class ManaSettingsActivity extends Activity {
         integration.addView(text("Системная оболочка сохраняет архитектурную точку расширения для будущего приложения MANA: роли Android, проверяемый системный интерфейс и экран полномочий. Никакие дополнительные права сейчас не запрашиваются и не выдаются.", 13, MUTED, false), params(-1, -2, 0, 8));
         root.addView(integration, params(-1, -2, 0, 18));
 
+        section(root, "ЭКРАНЫ MANA", "Предпросмотр будущей панели и блокировки");
+        addActionCard(root, "Панель MANA", "Быстрые действия и дизайн центра уведомлений", () ->
+                startActivity(new Intent(this, com.mana.controlcenter.ManaShadeActivity.class)));
+        addActionCard(root, "Экран блокировки MANA", "Предпросмотр оформления; штатная защита Android не меняется", () ->
+                startActivity(new Intent(this, com.mana.launcher.ManaLockScreenPreviewActivity.class)));
+
         section(root, "ПЕРСОНАЛИЗАЦИЯ", "Внешний вид и поведение");
         action(root, "Обои и стиль", "Оформление рабочего стола Android", Settings.ACTION_DISPLAY_SETTINGS);
         action(root, "Уведомления", "Каналы и уведомления приложений", Settings.ACTION_APP_NOTIFICATION_SETTINGS);
