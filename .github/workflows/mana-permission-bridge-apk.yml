@@ -1,4 +1,4 @@
-name: MANA first-run permission bridge APK
+name: MANA Genesis 4.0 launcher APK
 on:
   workflow_dispatch:
   push:
@@ -30,7 +30,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MANA-Genesis-4.0-Permission-Bridge-debug
+          name: MANA-Genesis-4.0-Launcher-Preview-2
           path: updates/android-bridge/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
