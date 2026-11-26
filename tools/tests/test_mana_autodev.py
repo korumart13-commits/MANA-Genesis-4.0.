@@ -45,6 +45,15 @@ class AutoDevPolicyTests(unittest.TestCase):
             with self.subTest(path=path), self.assertRaises(autodev.AutoDevError):
                 autodev.validate_paths("engine", [path])
 
+    def test_binary_and_symlink_patches_are_rejected(self):
+        for patch in (
+            "GIT binary patch\\nliteral 10\\n",
+            "diff --git a/foo.kt b/foo.kt\\nnew file mode 120000\\n",
+            "diff --git a/foo.kt b/foo.kt\\nold mode 100644\\nnew mode 100755\\n",
+        ):
+            with self.subTest(patch=patch), self.assertRaises(autodev.AutoDevError):
+                autodev.validate_patch_text(patch)
+
     def test_kernel_patch_may_only_add_new_mana_driver_files(self):
         good = """diff --git a/drivers/misc/mana/core.c b/drivers/misc/mana/core.c
 new file mode 100644
