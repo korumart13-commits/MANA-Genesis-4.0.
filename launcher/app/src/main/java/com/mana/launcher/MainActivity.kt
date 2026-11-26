@@ -722,14 +722,14 @@ class MainActivity : Activity() {
     }
 
     /** Always-on-device procedural 3D renderer: no glTF/Filament load is required for the main avatar. */
-    private fun createAvatarSceneView(): View {
+    private fun createAvatarSceneView(onTap: () -> Unit = { toggleAvatarPanel() }): View {
         return ManaAvatar3DView(
             this,
             onDrag = { _, _ -> },
-            onTap = { toggleAvatarPanel() },
+            onTap = onTap,
             onDragEnd = { }
         ).apply {
-            contentDescription = "3D-аватар MANA"
+            contentDescription = "3D-аватар MANA. Коснись, чтобы поговорить."
         }
     }
 
@@ -834,11 +834,7 @@ class MainActivity : Activity() {
             elevation = dp(22).toFloat()
         }
         val top = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
-        top.addView(AvatarView(this).apply {
-            contentDescription = "Коснуться аватара, чтобы поговорить с MANA"
-            isClickable = true
-            setOnClickListener { startVoiceInput() }
-        }, LinearLayout.LayoutParams(dp(52), dp(52)))
+        top.addView(createAvatarSceneView { startVoiceInput() }, LinearLayout.LayoutParams(dp(88), dp(116)))
         val titleBlock = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), 0, 0, 0)
