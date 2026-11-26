@@ -42,6 +42,7 @@ object ManaEngineProcessOwner {
         }
     }
 
+    fun isPrepared(): Boolean = brain != null && inference != null && memory != null
     fun isInstalled(): Boolean = engine != null
     fun engineRuntime(): ManaEngineAndroidRuntime? = engine
     fun brainBridge(): ManaBrainBridge? = brain
