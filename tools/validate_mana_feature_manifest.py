@@ -54,6 +54,8 @@ def validate(data: dict, catalog_text: str) -> None:
         raise ValueError("Device target identity mismatch")
     if target.get("kernel_replacement_allowed") is not False:
         raise ValueError("Unverified OEM kernel must remain protected")
+    if not target.get("observed_stock_driver_modules") or not target.get("driver_source_status"):
+        raise ValueError("Stock driver preservation provenance is incomplete")
     if data.get("first_release_version") != "MANA +1":
         raise ValueError("First MANA release must use the independent MANA +1 label")
     receptionist = data.get("receptionist", {})
