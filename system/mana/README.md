@@ -29,3 +29,12 @@ The detailed target-specific contract is in `os/MANA_OS_LOCKSCREEN_BOOT_AND_DEVI
 ## Current implementation state
 
 Launcher and Settings have MANA dark-navy/cyan resources and theme references; Control Center has a matching theme. The Launcher now displays actual installed application icons and opens the standalone `com.mana.genesis` app. The firmware product fragment includes Launcher, Settings and Control Center only; it does not include ManaAssistant or MANA Brain runtime. These are source changes, not a complete RMX5566RU firmware build.
+
+
+## Device Bridge and SELinux contract
+
+See `system/mana/device-bridge/README_RU.md`. The bridge is a separate, authenticated Binder/AIDL system boundary, not an unrestricted root/shell. It starts only after Android userspace and permission services are ready; failure must never block Keyguard or user login. The contract is designed only: no production service, Soong integration, target SELinux domain or RMX5566RU device validation is claimed. No new kernel driver is added without exact 5.15.197 source, matching DTS/DTBO, HAL/VINTF and reproducible hardware evidence.
+
+## Realme OTA release gate
+
+See `os/MANA_OS_REALME_OTA_RELEASE_GATE_RU.md`. A normal ZIP or bootanimation archive is not an installable Realme OTA. No update ZIP is to be labelled flashable until exact RMX5566RU base firmware, supported signing path, payload metadata, device build, AVB/A/B and stock restore are verified.
