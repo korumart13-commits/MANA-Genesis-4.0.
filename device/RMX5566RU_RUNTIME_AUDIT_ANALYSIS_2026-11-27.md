@@ -75,3 +75,24 @@ The collector defect in the module-inventory subsection is a script bug and shou
 ## Release gate
 
 This audit is evidence for device research only. It does not authorize or enable a flashable ROM, recovery, boot, vendor_boot, dtbo, vbmeta, super, or OTA package. No device image should be built for flashing until the exact source, blobs, VINTF match, partition/AVB chain and tested stock recovery path are established.
+
+
+## Expanded public-source search — 2026-11-27
+
+A further public-web/GitHub search was performed using the exact model/device identifiers and the SoC/kernel family. Results:
+
+- No publicly indexed exact `RMX5566`, `RMX5566RU` or `RE645F` device tree or OEM kernel source was found in this pass.
+- Public SM6225 repositories do exist for Xiaomi devices such as `spes` and generic Xiaomi SM6225 common trees. These are different OEM devices, with different partition maps, panel/camera/sensor configuration, init/fstab, vendor blobs and signing/boot chain. They are **reference material only**, not a safe starting device tree to copy and flash.
+- Search results also identify Android 16 / LineageOS 23.2 SM6225 5.15 HAL support repositories. This shows the SoC family has active Android 16 userspace/HAL work, but does not establish RMX5566 board compatibility.
+- The realme C85 public model listing associates RMX5566 with RE645F, Snapdragon 685/SM6225 family and Android 16 observations. This corroborates the owner-provided runtime identity, but is third-party metadata rather than OEM source.
+
+Sources reviewed:
+- https://www.deviceinfo.app/devices/realme/c85/
+- https://github.com/topics/sm6225
+- https://github.com/xiaomi-6225-AD/android_device_xiaomi_sm6225-common
+- https://github.com/knyplaygrnd/android_device_xiaomi_spes
+- https://source.android.com/docs/core/architecture/kernel/android-common
+
+### Decision after expanded search
+
+Do not import Xiaomi/Motorola SM6225 device trees or their vendor blobs into the RMX5566 target. Keep the current device port marked **BLOCKED: exact OEM device source and firmware artifacts not located**. Continue Android-independent MANA Brain, app, platform service and build-system work. The next meaningful device-source path is the OEM kernel-source release portal / official stock firmware package, followed by extracting metadata from the matching stock images under a legally and technically controlled process. No firmware package or binary should be assumed compatible based only on the marketing name or SoC.
