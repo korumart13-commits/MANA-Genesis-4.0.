@@ -47,45 +47,61 @@ class ManaModelCatalog(context: Context) {
 
     fun savedModelPath(): String? = if (prefs.getBoolean(KEY_LICENSE_ACCEPTED, false)) prefs.getString(KEY_ACTIVE_PATH, null) else null
 
-    /**
-     * Copies the bundled high-capacity model into app-specific storage only after
-     * an explicit owner action. It is deliberately not auto-selected or auto-loaded.
-     */
-    fun copyBundledGemma4E4B(licenseAccepted: Boolean): File {
-        require(licenseAccepted) { "Owner must review the Gemma terms before activating this model." }
+    /** Downloads the high-capacity model only after explicit owner consent. */
+    fun enqueueGemma4E4B(licenseAccepted: Boolean): Long {
+        require(licenseAccepted) { "Owner must review the Gemma terms before downloading this model." }
+        prefs.edit().putBoolean(KEY_E4B_LICENSE_ACCEPTED, true).apply()
         val target = File(directory, E4B_MODEL_FILE)
-        if (target.isFile && target.length() == E4B_MODEL_SIZE &&
-            sha256(target).equals(E4B_SHA256, ignoreCase = true)) return target
-        require(directory.usableSpace >= E4B_MODEL_SIZE + 400_000_000L) {
-            "Для встроенной модели 3,66 ГБ нужно больше свободного места во внутреннем хранилище приложения."
+        if (target.isFile && target.length() == E4B_MODEL_SIZE && sha256(target).equals(E4B_SHA256, true)) {
+            prefs.edit().putString(KEY_E4B_ACTIVE_PATH, target.absolutePath).apply()
+            return -1L
         }
-        val temporary = File(directory, "$E4B_MODEL_FILE.part")
-        if (temporary.exists()) temporary.delete()
-        app.assets.open(E4B_ASSET_PATH).buffered().use { input ->
-            temporary.outputStream().buffered().use { output ->
-                val buffer = ByteArray(1024 * 1024)
-                while (true) {
-                    val count = input.read(buffer)
-                    if (count < 0) break
-                    output.write(buffer, 0, count)
-                }
-                output.flush()
-            }
+        if (target.exists()) require(target.delete()) { "Не удалось удалить повреждённую модель E4B." }
+        require(directory.usableSpace >= E4B_MODEL_SIZE + 500_000_000L) {
+            "Для Gemma 4 E4B требуется не менее 4,16 ГБ свободного места."
         }
-        require(temporary.length() == E4B_MODEL_SIZE) {
-            temporary.delete()
-            "Размер встроенной Gemma 4 E4B не совпал с ожидаемым."
+        val request = DownloadManager.Request(Uri.parse(E4B_MODEL_URL))
+            .setTitle("MANA · Gemma 4 E4B")
+            .setDescription("Официальная локальная модель LiteRT-LM, 3,66 ГБ. Загрузка только по Wi-Fi.")
+            .setMimeType("application/octet-stream")
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            .setAllowedOverMetered(false)
+            .setAllowedOverRoaming(false)
+            .setDestinationInExternalFilesDir(app, Environment.DIRECTORY_DOWNLOADS, E4B_MODEL_FILE)
+        val id = manager.enqueue(request)
+        prefs.edit().putLong(KEY_E4B_DOWNLOAD_ID, id).apply()
+        return id
+    }
+
+    /** Returns null while the E4B download is still running; verifies exact size and SHA-256. */
+    fun verifyCompletedGemma4E4BDownload(): File? {
+        if (!prefs.getBoolean(KEY_E4B_LICENSE_ACCEPTED, false)) return null
+        val target = File(directory, E4B_MODEL_FILE)
+        val id = prefs.getLong(KEY_E4B_DOWNLOAD_ID, -1L)
+        if (id < 0L) {
+            if (target.isFile && target.length() == E4B_MODEL_SIZE && sha256(target).equals(E4B_SHA256, true)) return target
+            return null
         }
-        val actual = sha256(temporary)
-        if (!actual.equals(E4B_SHA256, ignoreCase = true)) {
-            temporary.delete()
-            throw SecurityException("SHA-256 встроенной Gemma 4 E4B не совпал с официальным файлом.")
+        val cursor = manager.query(DownloadManager.Query().setFilterById(id))
+        val status: Int
+        val reason: Int
+        cursor.use {
+            if (!it.moveToFirst()) return null
+            status = it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+            reason = it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
         }
-        if (target.exists()) target.delete()
-        require(temporary.renameTo(target)) {
-            temporary.delete()
-            "Не удалось завершить безопасный импорт встроенной модели."
+        if (status == DownloadManager.STATUS_PENDING || status == DownloadManager.STATUS_RUNNING || status == DownloadManager.STATUS_PAUSED) return null
+        if (status != DownloadManager.STATUS_SUCCESSFUL) {
+            prefs.edit().remove(KEY_E4B_DOWNLOAD_ID).apply()
+            throw IllegalStateException("Загрузка Gemma 4 E4B не завершилась (код $reason). Проверь Wi-Fi и свободное место.")
         }
+        require(target.isFile && target.length() == E4B_MODEL_SIZE) { "Размер Gemma 4 E4B не совпал с ожидаемым." }
+        if (!sha256(target).equals(E4B_SHA256, true)) {
+            target.delete()
+            prefs.edit().remove(KEY_E4B_DOWNLOAD_ID).apply()
+            throw SecurityException("SHA-256 Gemma 4 E4B не совпал. Файл удалён.")
+        }
+        prefs.edit().putString(KEY_E4B_ACTIVE_PATH, target.absolutePath).remove(KEY_E4B_DOWNLOAD_ID).apply()
         return target
     }
 
@@ -180,9 +196,12 @@ class ManaModelCatalog(context: Context) {
         private val KEY_VERIFIED_MTIME = "verified_model_mtime"
         const val MODEL_SIZE = 2_588_147_712L
         private val REQUIRED_FREE_BYTES = 3_300_000_000L
+        const val E4B_MODEL_URL = "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/2eee7ac325f20eb8c9ac1d0e972f7c84663062da/gemma-4-E4B-it.litertlm"
         const val E4B_MODEL_FILE = "gemma-4-E4B-it.litertlm"
         const val E4B_MODEL_SIZE = 3_659_530_240L
         const val E4B_SHA256 = "0b2a8980ce155fd97673d8e820b4d29d9c7d99b8fa6806f425d969b145bd52e0"
-        const val E4B_ASSET_PATH = "models/gemma-4-E4B-it.litertlm"
+        private const val KEY_E4B_DOWNLOAD_ID = "gemma4_e4b_download_id"
+        private const val KEY_E4B_LICENSE_ACCEPTED = "gemma4_e4b_license_accepted"
+        private const val KEY_E4B_ACTIVE_PATH = "gemma4_e4b_active_path"
     }
 }
