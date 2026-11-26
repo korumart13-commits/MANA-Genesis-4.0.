@@ -2,7 +2,6 @@ package com.mana.launcher
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.platform.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import io.github.sceneview.SceneView
@@ -625,7 +624,6 @@ class MainActivity : Activity() {
     private fun createAvatarSceneView(): View {
         val asset = ManaAvatarAssetSelector.assetName(this)
         return ComposeView(this).apply {
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 val engine = rememberEngine()
                 val modelLoader = rememberModelLoader(engine)
