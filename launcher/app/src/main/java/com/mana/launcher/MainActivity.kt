@@ -184,7 +184,7 @@ class MainActivity : Activity() {
         }
         cloudGateway = ManaCloudGateway(this, ManaAndroidKeyProvider())
         yandexProvider = ManaYandexAiStudioProvider(this)
-        manaBrain = if (existingEngineRuntime) {
+        manaBrain = if (hasPreparedRuntime) {
             checkNotNull(ManaEngineProcessOwner.brainBridge()) { "MANA Brain dependency is missing" }
         } else {
             ManaBrainBridge(localRuntime, listOf(cloudGateway, yandexProvider))
