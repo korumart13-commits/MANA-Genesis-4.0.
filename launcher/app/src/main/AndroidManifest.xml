@@ -31,6 +31,9 @@
             <action android:name="android.speech.RecognitionService" />
         </intent>
     </queries>
+    <queries>
+        <package android:name="com.mana.assistant" />
+    </queries>
     <application
         android:allowBackup="false"
         android:label="MANA Genesis"
@@ -38,6 +41,9 @@
         android:usesCleartextTraffic="false">
         <uses-native-library android:name="libvndksupport.so" android:required="false"/>
         <uses-native-library android:name="libOpenCL.so" android:required="false"/>
+        <service
+            android:name=".ManaLocalInferenceService"
+            android:exported="true" />
         <service
             android:name=".ManaVoiceInteractionService"
             android:permission="android.permission.BIND_VOICE_INTERACTION"
