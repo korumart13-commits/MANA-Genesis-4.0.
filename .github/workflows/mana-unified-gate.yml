@@ -309,6 +309,8 @@ jobs:
           test "$(stat -c%s dist/local-model/gemma-4-E2B-it.litertlm)" = "2588147712"
           echo "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c  dist/local-model/gemma-4-E2B-it.litertlm" | sha256sum --check -
           cp models/APACHE-2.0-LICENSE.txt dist/MODEL_LICENSE_APACHE-2.0.txt
+          cp os/MANA_GENESIS_4.0_COMPLETE_FEATURE_MANIFEST.json dist/MANA_FEATURE_MANIFEST.json
+          cp docs/MANA_ARCHITECTURE_RU.md dist/MANA_ARCHITECTURE_RU.md
       - name: Package all current MANA source modules
         shell: bash
         run: |
@@ -407,19 +409,24 @@ jobs:
                   "Updater bridge only opens Realme system update settings.",
                   "No RMX5566RU flashable system image is included.",
                   "No OEM signing or bootloader bypass is included."
-              ]
+              ],
+              "feature_manifest": {
+                  "file": "MANA_FEATURE_MANIFEST.json",
+                  "module_count": len(json.loads(Path("os/MANA_GENESIS_4.0_COMPLETE_FEATURE_MANIFEST.json").read_text(encoding="utf-8"))["modules"]),
+                  "note": "Owner-requested feature inventory; individual entries may be prototypes or specifications rather than completed system services."
+              }
           }
           (root / "MANA_UPDATE_INFO.json").write_text(json.dumps(update, indent=2) + chr(10), encoding="utf-8")
           (root / "MANA_UPDATE_README_RU.txt").write_text(chr(10).join([
               "MANA Genesis 4.0 — единый локальный пакет компонентов",
-              "Внутри: Android APK MANA с LiteRT-LM runtime, APK-переходник Realme, Gemma 4 E2B (2,588,147,712 байт), полный текст Apache-2.0 и метаданные с SHA-256.",
+              "Внутри: Android APK MANA с LiteRT-LM runtime, APK-переходник Realme, Gemma 4 E2B (2,588,147,712 байт), полный текст Apache-2.0, архитектурный документ и полный каталог согласованных функций MANA.",
               "1. Распакуй ZIP в память телефона.",
               "2. Установи android-companion/app-debug.apk и открой MANA.",
               "3. В MANA открой выбор локальной модели и импортируй local-model/gemma-4-E2B-it.litertlm.",
               "4. Дождись сообщения об успешной загрузке локальной модели. После этого генерация работает без интернета.",
               "5. realme-update-bridge/app-debug.apk только открывает настройки штатного обновления Realme; он не прошивает устройство.",
               "Оставь несколько гигабайт свободной памяти. Реальная скорость и устойчивость Gemma 4 E2B на RMX5566RU ещё не подтверждены тестом на самом телефоне.",
-              "Каталог функций содержит все ранее согласованные направления MANA, но некоторые системные модули пока являются прототипами или спецификациями, а не завершёнными системными службами.",
+              "MANA_FEATURE_MANIFEST.json содержит полный перечень согласованных направлений и модулей; некоторые из них пока являются прототипами или спецификациями, а не завершёнными системными службами.",
               "Облачные провайдеры не включены по умолчанию; для них нужны собственные API-ключи и отдельное согласие.",
               "Это пакет пользовательских компонентов MANA, не прошивка и не OTA. Он не заменяет Realme UI, не разблокирует загрузчик и не меняет системные разделы.",
               "Перед установкой APK разреши установку из выбранного источника Android."
@@ -427,7 +434,9 @@ jobs:
           PY
           sha256sum dist/MANA_UPDATE_INFO.json >> dist/SHA256SUMS.txt
           sha256sum dist/MANA_UPDATE_README_RU.txt >> dist/SHA256SUMS.txt
-          (cd dist && zip -q MANA_Genesis_4.0_UPDATE_PACKAGE.zip MANA_UPDATE_INFO.json MANA_UPDATE_README_RU.txt MODEL_LICENSE_APACHE-2.0.txt android-companion/app-debug.apk realme-update-bridge/app-debug.apk)
+          sha256sum dist/MANA_FEATURE_MANIFEST.json >> dist/SHA256SUMS.txt
+          sha256sum dist/MANA_ARCHITECTURE_RU.md >> dist/SHA256SUMS.txt
+          (cd dist && zip -q MANA_Genesis_4.0_UPDATE_PACKAGE.zip MANA_UPDATE_INFO.json MANA_UPDATE_README_RU.txt MANA_FEATURE_MANIFEST.json MANA_ARCHITECTURE_RU.md MODEL_LICENSE_APACHE-2.0.txt android-companion/app-debug.apk realme-update-bridge/app-debug.apk)
           python3 - <<'PY'
           from zipfile import ZipFile, ZIP_STORED
           with ZipFile("dist/MANA_Genesis_4.0_UPDATE_PACKAGE.zip", "a", compression=ZIP_STORED, allowZip64=True) as archive:
