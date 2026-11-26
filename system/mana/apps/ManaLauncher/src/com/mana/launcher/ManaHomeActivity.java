@@ -145,6 +145,22 @@ public final class ManaHomeActivity extends Activity {
         });
     }
 
+    private void collectApplications() {
+        allApps.clear();
+        Intent query = new Intent(Intent.ACTION_MAIN);
+        query.addCategory(Intent.CATEGORY_LAUNCHER);
+        List<ResolveInfo> activities = getPackageManager().queryIntentActivities(query, 0);
+        for (ResolveInfo info : activities) {
+            if (info.activityInfo == null || info.activityInfo.packageName == null) continue;
+            String packageName = info.activityInfo.packageName;
+            CharSequence loadedLabel = info.loadLabel(getPackageManager());
+            String label = loadedLabel == null ? packageName : loadedLabel.toString();
+            allApps.add(new AppEntry(label, packageName));
+        }
+        Collections.sort(allApps, (left, right) ->
+                left.label.compareToIgnoreCase(right.label));
+    }
+
     private void renderApplications(String filter) {
         if (appGrid == null) return;
         appGrid.removeAllViews();
