@@ -22,7 +22,11 @@ The device audit previously surfaced these stock module names (the list is an in
 - Audio DSP: adsp_loader_dlkm.ko, q6_dlkm.ko
 - Sensors: oplus_sensor.ko
 - Charging/power: oplus_chg.ko, oplus_sched.ko
-- Touch: device-specific touch-controller modules (exact filenames and hashes still need extraction)
+- Touch: `focaltech_fts.ko`, `synaptics_tcm_ts.ko`
+
+## Source provenance warning
+
+The previous project audit did not identify any MANA-created driver source files or a compiled MANA driver package. The names above are stock modules observed on the device; `modules.load` and `modules.dep` were not readable, and exact binary hashes/source paths were not supplied. Do not call these MANA drivers or assume they can be rebuilt from their names.
 
 ## Preservation strategy
 
