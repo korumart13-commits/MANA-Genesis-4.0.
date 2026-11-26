@@ -666,14 +666,17 @@
   },
   "audit_note_2026_11_26": "The MANA Control Center now includes Android credential re-authentication, camera launch, share/SMS handoff, game session usage-access helper, Realme Game Space launch, and a daily bedtime/wake alarm scheduler with inexact fallback when exact-alarm access is not granted. These remain app-level integrations; they do not make MANA a privileged OS or full camera/messenger/game controller. Full standalone launcher APK workflow now fetches the pinned Gemma 4 E4B 3.66 GB LiteRT-LM model at build time, verifies its exact byte size and SHA-256, and packages it uncompressed as an APK asset. The owner must explicitly import/activate it; it is not loaded at boot. This does not turn the APK into a flashable ROM. MANA Device Intelligence Activity added to the launcher: it collects Android-exposed build, ABI, RAM, storage, display, battery, camera, sensor and system-feature data, then generates a ZIP with a device report and explicitly incomplete ROM port templates. It does not produce a flashable ROM binary or write firmware partitions. Owner clarification: do not create a duplicate camera app or camera UI. Keep only integration with the installed Realme camera through supported Android intents/APIs. Add MANA Avatar Studio inside the encrypted Diary: generate new images of the same stable avatar identity with changeable outfits/accessories/poses/backgrounds, save owner-selected images to the gallery, and offer wallpaper setting through Android WallpaperManager with explicit owner confirmation. This is a planned architecture item until generator/provider and UI are implemented and tested. Permanent owner rule: do not duplicate any app already installed on the phone. Integrate with existing Realme/Android camera, dialer, messaging, gallery, calendar, clock, file and media apps through supported interfaces. Keep unique MANA-native intelligence and orchestration. Restore the full original MANA concept inventory, including MANA Brain/OS, launcher, system UI, lock screen, notifications, permissions hub, Diary, Life Manager, Contacts Intelligence, Smart Receptionist, Yandex/VK, Game Intelligence/Minecraft, micro-universe, device ecosystem, self-development/AutoDev, update/recovery and device adaptation. The avatar must be visible on screen as a movable floating presence. Avatar Studio belongs in the Diary; after the owner enables wallpaper autopilot once, MANA may generate/select and change avatar wallpapers autonomously without asking on every change, with pause/disable and wallpaper history.",
   "local_model_package": {
-    "bundled_model": "Gemma 4 E4B IT LiteRT-LM",
+    "model": "Gemma 4 E4B IT LiteRT-LM",
     "file": "gemma-4-E4B-it.litertlm",
     "size_bytes": 3659530240,
     "sha256": "0b2a8980ce155fd97673d8e820b4d29d9c7d99b8fa6806f425d969b145bd52e0",
     "source_revision": "2eee7ac325f20eb8c9ac1d0e972f7c84663062da",
-    "license": "Apache-2.0",
-    "activation": "owner-consented import; never auto-load at boot",
-    "target_device_benchmark": "not yet measured on RMX5566RU"
+    "license": "Gemma terms; owner must review and accept before download",
+    "delivery": "separate owner-initiated Android DownloadManager download over Wi-Fi; not embedded in APK",
+    "integrity": "exact file size and SHA-256 verified before activation",
+    "activation": "owner-consented download and explicit activation; never auto-load at boot",
+    "target_device_benchmark": "not yet measured on RMX5566RU",
+    "reason_not_embedded": "Gradle/APK asset compression fails on a multi-gigabyte single asset; keep the APK installable and download the model separately."
   },
   "global_product_rules": {
     "preserve_all_owner_approved_ideas": true,
