@@ -37,6 +37,7 @@
         </intent>
         <package android:name="com.mana.assistant" />
     </queries>
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <application
         android:allowBackup="false"
         android:label="MANA"
@@ -147,6 +148,7 @@
         <activity android:name=".ManaSystemAdaptationActivity" android:exported="false" android:label="Адаптация MANA к системе телефона" />
         <activity android:name=".ManaLifeControlCenterActivity" android:exported="false" android:label="MANA Control Center" />
         <activity android:name=".ManaDeviceIntelligenceActivity" android:exported="false" android:label="MANA Device Intelligence" />
+        <activity android:name=".ManaInstallerActivity" android:exported="false" android:label="MANA Installer" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
