@@ -2,9 +2,8 @@ package com.mana.os.core
 
 import java.io.File
 import java.nio.file.Files
-import java.security.Key
-import java.time.Instant
 import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
@@ -12,7 +11,7 @@ import kotlin.test.assertFails
 class ManaMicroworldPersistenceTest {
     private class TestKeys : ManaSecretKeyProvider {
         private val key = KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
-        override fun getOrCreate(alias: String): Key = key
+        override fun getOrCreate(alias: String): SecretKey = key
     }
 
     @Test
