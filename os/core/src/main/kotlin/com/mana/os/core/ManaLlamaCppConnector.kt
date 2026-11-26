@@ -31,6 +31,8 @@ class JniManaLlamaCppRuntime : ManaLlamaCppRuntime {
 
     override fun releaseModel(modelHandle: Long) = nativeReleaseModel(modelHandle)
 
+    init { loadLibrary() }
+
     companion object {
         @Volatile private var loaded = false
 
