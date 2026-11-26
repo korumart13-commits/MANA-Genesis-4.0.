@@ -7,7 +7,7 @@ import com.mana.os.core.EncryptedFileManaDiaryStore
 
 /**
  * Process-level owner for the service-created MANA Engine and its shared dependencies.
- * Only ManaEngineService is allowed to construct/start the Engine runtime.
+ * The foreground service and signature-protected Binder bridge share one reference-counted owner.
  */
 object ManaEngineProcessOwner {
     private val lock = Any()
