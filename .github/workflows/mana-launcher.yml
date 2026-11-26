@@ -4,11 +4,15 @@ on:
   push:
     paths:
       - 'launcher/**'
+      - 'engine/mana-brain/**'
+      - 'os/core/**'
       - '.github/workflows/mana-launcher.yml'
       - 'tools/validate_mana_gltf.py'
   pull_request:
     paths:
       - 'launcher/**'
+      - 'engine/mana-brain/**'
+      - 'os/core/**'
       - '.github/workflows/mana-launcher.yml'
   workflow_dispatch:
 
@@ -29,16 +33,23 @@ jobs:
           packages: 'platforms;android-36'
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.9'
-      - name: Verify Android Brain mirror matches tested engine source
+          gradle-version: '8.10.2'
+      - name: Verify canonical MANA Brain module is included
         working-directory: .
-        run: diff -u engine/mana-brain/src/main/kotlin/com/mana/brain/ManaBrain.kt launcher/app/src/main/java/com/mana/brain/ManaBrain.kt
+        run: |
+          grep -F 'include(":app", ":core", ":brain")' launcher/settings.gradle.kts
+          grep -F 'project(":brain").projectDir = file("../engine/mana-brain")' launcher/settings.gradle.kts
+          grep -F 'implementation(project(":brain"))' launcher/app/build.gradle.kts
+          test ! -e launcher/app/src/main/java/com/mana/brain/ManaBrain.kt
       - name: Validate embedded full-body MANA glTF asset
         working-directory: .
         run: |
           for model in launcher/app/src/main/assets/mana_avatar_genesis*.gltf; do
             python3 tools/validate_mana_gltf.py "$model"
           done
-      - name: Compile launcher and LiteRT-LM prototype
+      - name: Test canonical MANA Brain and OS core
+        working-directory: launcher
+        run: gradle --no-daemon :brain:test :core:test
+      - name: Compile Android launcher and test app
         working-directory: launcher
         run: gradle --no-daemon :app:assembleDebug :app:testDebugUnitTest
