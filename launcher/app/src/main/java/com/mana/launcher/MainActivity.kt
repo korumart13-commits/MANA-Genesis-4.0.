@@ -398,6 +398,7 @@ class MainActivity : Activity() {
         val candidates = listOf(
             Manifest.permission.RECORD_AUDIO,
             Manifest.permission.READ_CONTACTS,
+            Manifest.permission.CAMERA,
             Manifest.permission.CALL_PHONE,
             Manifest.permission.READ_CALL_LOG
         ) + (if (Build.VERSION.SDK_INT >= 33) listOf(Manifest.permission.POST_NOTIFICATIONS) else emptyList()) +
