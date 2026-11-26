@@ -17,7 +17,6 @@ import com.mana.brain.ManaCapabilityRegistry;
 import com.mana.brain.ManaCapabilityRequest;
 import com.mana.brain.ManaCapabilityResponse;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -71,7 +70,7 @@ final class ManaAndroidCapabilityExecutor {
         CapabilityContext gate = new CapabilityContext(
                 grantedPermissions,
                 grantedAccess,
-                request.ownerConfirmed,
+                false, // Binder-supplied booleans are not proof of owner consent.
                 isSupported(request.capabilityId),
                 enabled);
         CapabilityDecision decision = registry.evaluate(request.capabilityId, gate);
