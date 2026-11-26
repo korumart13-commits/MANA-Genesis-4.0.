@@ -64,3 +64,5 @@ jobs:
                       raise SystemExit(f"CHECK FAILED: {name}: {needle}")
           print("MANA OS branding source checks passed.")
           PY
+
+# Trigger validation on the committed MANA OS branding baseline.
