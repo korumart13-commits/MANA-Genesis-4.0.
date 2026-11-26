@@ -83,6 +83,8 @@ jobs:
           mkdir -p dist/source
           cp dist/apk/mana-shell-debug.apk dist/apk/MANA-Shell.apk
           cp firmware/README_RU.md dist/README_RU.md
+          cp firmware/MANA_DESIGN_AND_BRIDGE_RU.md dist/MANA_DESIGN_AND_BRIDGE_RU.md
+          cp -a firmware/android-shell dist/source/
           cp docs/REALME_UPDATE_COMPATIBILITY_RU.md dist/REALME_UPDATE_COMPATIBILITY_RU.md
           cp os/MANA_OS_FIRMWARE_ONLY_IMPLEMENTATION_RU.md dist/MANA_OS_FIRMWARE_ONLY_IMPLEMENTATION_RU.md
           cp device/RMX5566RU_TARGET_PROFILE.md dist/RMX5566RU_TARGET_PROFILE.md
@@ -125,10 +127,11 @@ jobs:
               "sha256": hashlib.sha256(apk.read_bytes()).hexdigest(),
               "future_ai_package_extension": "com.mana.genesis",
               "limitations": [
-                  "MANA Shell is a user-space HOME launcher and settings/control-center hub, not a privileged SystemUI replacement.",
+                  "MANA Shell includes HOME, settings, a separate shade design preview and a lock-screen design preview; these do not replace privileged SystemUI or Keyguard.",
                   "Android requires owner confirmation to install the APK and select the HOME role.",
                   "Realme OEM system partitions remain unchanged.",
-                  "A complete RMX5566RU ROM requires exact matching device tree, kernel, vendor, partition, AVB and recovery inputs."
+                  "The future Brain bridge exposes only signature-protected UI navigation; it does not grant privileged device control.",
+          "A complete RMX5566RU ROM requires exact matching device tree, kernel, vendor, partition, AVB and recovery inputs."
               ]
           }
           (root / "MANA_UPDATE_INFO.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
