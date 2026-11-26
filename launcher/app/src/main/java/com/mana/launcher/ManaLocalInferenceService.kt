@@ -123,7 +123,7 @@ class ManaLocalInferenceService : Service() {
     }
 
     override fun onDestroy() {
-        if (::runtime.isInitialized) runtime.shutdown()
+        runtime.shutdown()
         super.onDestroy()
     }
 
