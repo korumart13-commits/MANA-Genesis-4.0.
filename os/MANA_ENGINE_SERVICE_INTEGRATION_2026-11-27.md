@@ -108,3 +108,18 @@ This section supersedes earlier paragraphs above that described Activity-side pr
 - Added the missing `uiInitialized` field in commit `e1e25257967e456107412dfd2a44e22446028711`.
 - Follow-up Gradle run `45906472269` is validating that correction. Static ownership checks and glTF validation have passed; Brain/core tests are running, and Android compilation has not yet completed.
 - The previous compile failure is not being represented as a successful build. A fresh passing Android compile is required before this service integration can be marked build-verified.
+
+## Verified Android application build after service migration
+
+- Workflow run: [45906472269](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/45906472269)
+- Commit: `e1e25257967e456107412dfd2a44e22446028711`
+- Passed: canonical Brain module check, service-ownership static checks, glTF validation, `:brain:test`, `:core:test`, `:app:assembleDebug`, `:app:testDebugUnitTest`, source bundle packaging and debug-prototype artifact upload.
+- This validates the Android application source and unit-test build after moving Brain/local model/memory ownership to the foreground service.
+- It does not validate Soong/AOSP compilation, device runtime behavior, privileged system service integration, or a flashable ROM.
+
+## Platform Binder contract added
+
+- Added `system/mana/interfaces` with `IManaBrain`, asynchronous callback, request and response AIDL parcelables.
+- Added Soong module `mana-brain-interface` and linked it as a static dependency of the platform `ManaAssistant` product app.
+- Request defaults are local-first: cloud is disabled, sensitive is false and personal memory is not included unless explicitly requested.
+- Added contract-level CI assertions. The contract is not yet a running platform service; Binder caller enforcement, the Android service adapter and actual runtime connection remain required.
