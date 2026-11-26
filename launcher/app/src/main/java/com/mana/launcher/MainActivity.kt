@@ -756,6 +756,7 @@ class MainActivity : Activity() {
             "Yandex и VK" to { startActivity(Intent(this, ManaIntegrationSettingsActivity::class.java)) },
             "Часы, наушники и автомобиль" to { startActivity(Intent(this, ManaDevicesActivity::class.java)) },
             "Скачать локальную модель" to { downloadOfficialModel() },
+            "Центр модулей и расширений" to { startActivity(Intent(this, ManaExtensionCenterActivity::class.java)) },
             "Назначить MANA ассистентом" to { requestAssistantRole() }
         )
         AlertDialog.Builder(this)
