@@ -26,3 +26,10 @@ The Android Service/Binder endpoint exists in source, but it is not yet a functi
 ## Request bounds
 
 The platform endpoint limits prompts to 32,768 characters. Explicit cloud-provider names are allowlisted (OpenAI, Anthropic, Google/Gemini, xAI/Grok, Yandex and VK); a provider cannot be selected when the request is local-only. These checks happen before the request enters the bounded worker queue.
+
+
+## Cross-process backend bridge
+
+ManaBrainService binds to the explicit com.mana.launcher/.ManaEngineBridgeService AIDL endpoint. The app-side bridge delegates to the existing process-owned ManaEngineAndroidRuntime; it does not construct a second model or memory store. Both services use the signature permission com.mana.permission.BIND_BRAIN, and the app-side Binder endpoint repeats permission and request-policy checks. If the endpoint is absent, protocol-incompatible, or not signed with the matching platform key, the platform service fails closed with an unavailable/disconnected state.
+
+This is an implemented source-level integration, not yet a verified AOSP product integration. The current Soong ManaLauncher module is a separate minimal home-app stub and does not package the Gradle Kotlin engine bridge. The Gradle debug APK is not platform-signed. A product packaging/signing solution and Soong/device verification are still required.
