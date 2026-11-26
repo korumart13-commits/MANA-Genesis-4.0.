@@ -9,6 +9,7 @@ This Soong product module provides the Android-side Binder endpoint for the MANA
 - Binder entry points repeat the permission check; caller identity is not accepted from request data.
 - The API rejects sensitive + cloud requests.
 - Personal-memory cloud export requires explicit cloud and personal-memory consent flags.
+- Request validation is extracted into a pure Java policy class with a host-side JUnit test target.
 - Accepted requests are dispatched away from the Binder transaction thread.
 - The service fails closed with `ENGINE_UNAVAILABLE` until a real local inference backend is connected. It does not generate fake answers or forward prompts to a cloud provider.
 
