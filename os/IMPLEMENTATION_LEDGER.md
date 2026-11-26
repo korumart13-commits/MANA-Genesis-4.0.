@@ -185,3 +185,15 @@ See also:
 - Branding XML validation passed at commit `d69bf69351d95a02fa168e671580e0ceacebbbb0`, run [45871108904](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/45871108904).
 - SystemUI, lock screen, Recents, factory Settings and OEM Files app have not yet been changed: exact package names, overlayable resources and OEM source must be inspected from the matching RMX5566RU firmware first.
 - This is source-level progress. It is not a full Android product build or flashable firmware.
+
+
+## 2026-11-26 — lock screen, boot identity and device integration scope
+
+| Area | Status | Evidence / remaining work |
+|---|---|---|
+| Lock screen design contract | Designed only | Added `os/MANA_OS_LOCKSCREEN_BOOT_AND_DEVICE_BRIDGE_RU.md` with MANA clock, wallpaper, notification/media card, AOD and accessibility requirements. Actual Keyguard overlay is blocked on exact RMX5566RU SystemUI/Keyguard resource extraction and on-device verification. |
+| MANA Android boot animation | Designed only | Spec distinguishes Android userspace boot animation from the earlier bootloader/AVB splash. No finished bootanimation.zip or product installation rule is present yet. |
+| Realme/Qualcomm hardware preservation | Defined | Update is additive over the exact stock Android 16 firmware; preserve existing kernel, vendor HALs, firmware, apps and data. |
+| MANA Device Bridge | Architecture defined; implementation pending | Spec defines authenticated, consent-gated Binder/AIDL APIs and reuse of existing HALs. No new kernel driver is claimed or added without a demonstrated missing capability and matching source/device interfaces. |
+| Flashable RMX5566RU update | Blocked | No complete target-specific proprietary inputs, validated Keyguard/SystemUI overlays, boot animation asset or OTA. ROM_READY remains false. |
+
