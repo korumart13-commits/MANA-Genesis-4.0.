@@ -28,8 +28,7 @@ run_case() {
     export PATH="$TMP/bin:$PATH" HOME="$TMP/home"
     export MOCK_MODEL=RMX5566RU MOCK_DEVICE=RE645F MOCK_API=36
     export MOCK_PLATFORM=bengal MOCK_LOCKED=1 MOCK_VBOOT=green
-    while (($#)); do export "$1"; shift; done
-    bash "$SCRIPT" >/dev/null
+    env "$@" bash "$SCRIPT" >/dev/null
   )
   local report
   report="$(find "$TMP/home" -name 'MANA_RMX5566RU_PREFLIGHT_*.txt' -print -quit)"
