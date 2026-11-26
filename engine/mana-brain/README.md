@@ -10,13 +10,13 @@ This is the first independently testable Kotlin/JVM core for MANA Genesis 4.0.
 - Provider identity and local/cloud origin are returned with every response.
 
 ## Not yet implemented
-- LiteRT-LM runtime adapter and model loading.
+- A LiteRT-LM Android runtime adapter exists in `launcher/app/src/main/java/com/mana/launcher/LocalModelRuntime.kt`; model loading is implemented in the Android prototype, but target-device validation is pending.
 - Token streaming, cancellation, context window management and prompt templates.
 - Encrypted persistent memory and user-approved memory lifecycle.
 - Android service/UI integration.
 - Cloud vendor adapters and credential storage.
 
-No model weights are included. This module is an orchestration core, not a trained model and not yet an executable on-device assistant.
+No model weights are included. This module is the portable orchestration core, not a trained model. The Android prototype supplies the LiteRT-LM adapter and UI-side bridge; the complete MANA OS system-service integration and RMX5566RU device validation remain pending.
 
 ## Build
 Run with Gradle 8.10+ and JDK 17:
