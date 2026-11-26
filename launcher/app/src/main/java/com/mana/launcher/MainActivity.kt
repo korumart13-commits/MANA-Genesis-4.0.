@@ -680,7 +680,7 @@ class MainActivity : Activity() {
             "Планировщик жизни" to { showLifeManager() },
             "Локальная память" to { showMemory() },
             "Smart Receptionist" to { showReceptionist() },
-            "Будущие обновления" to { showFutureUpdates() },
+            "Будущие обновления" to { showFutureUpdates() },\n            "Адаптация MANA к системе телефона" to { startActivity(Intent(this, ManaSystemAdaptationActivity::class.java)) },
             "Adaptive Intelligence" to { startActivity(Intent(this, ManaAdaptiveLearningActivity::class.java)) },
             "Автономное исследование" to { startActivity(Intent(this, ManaAutonomyActivity::class.java)) },
             "AutoDev" to { startActivity(Intent(this, ManaTermuxAgentActivity::class.java)) },
