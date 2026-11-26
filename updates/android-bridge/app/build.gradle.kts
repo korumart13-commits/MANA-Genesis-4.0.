@@ -9,8 +9,8 @@ android {
         applicationId = "com.mana.updatebridge"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "MANA +1"
+        versionCode = 2
+        versionName = "MANA Genesis 4.0 Preview 2"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
