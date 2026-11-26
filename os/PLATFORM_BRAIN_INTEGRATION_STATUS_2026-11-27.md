@@ -64,3 +64,11 @@ A successful Gradle build produces an Android application prototype, not an AOSP
 ## Packaging route decision — 2026-11-27
 
 A concrete AOSP packaging route is documented in [AOSP_BRAIN_BRIDGE_PACKAGING_PLAN_2026-11-27.md](AOSP_BRAIN_BRIDGE_PACKAGING_PLAN_2026-11-27.md). The selected boundary is a reproducible Gradle release APK imported into the full AOSP product using `android_app_import`, then platform-signed by Soong. This is preferred over pretending the current minimal Java Soong launcher contains the Kotlin/Compose/LiteRT bridge. The import/signing behavior must be validated against the pinned AOSP branch, followed by package certificate inspection and emulator Binder tests. No full AOSP checkout is present yet, so this remains a documented implementation route, not a completed integration.
+
+## Follow-up verification — 2026-11-27 (run 45912386792)
+
+The newer launcher workflow is still running at the time of this update: [run 45912386792](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/45912386792), commit `e7135773149790ecfe2e759844a4fa0999bb2294`. Its source assertions, Brain/core tests, glTF validation, Android launcher compilation and app unit tests have completed successfully. The unsigned release-APK build is currently in progress; source-bundle and artifact-upload steps have not yet completed. Do not describe the release APK as available until the workflow reports success and the artifact is present.
+
+A fresh recursive repository-tree inspection found no tracked SELinux policy files or privileged-permission allowlist files (no `service_contexts`, `file_contexts`, `sepolicy` or `privapp-permissions` paths). This confirms blocker 4 is still open. No speculative allow rules have been added: the correct service type, domain, contexts and least-privilege rules must be derived and tested against the exact Android 16 AOSP policy checkout, not guessed from the OEM vendor policy version.
+
+The staging workflow is a preparation tool only. It does not create an AOSP checkout, resolve product integration, generate platform signing keys, build a ROM, or authorize flashing.
