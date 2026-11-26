@@ -1,18 +1,23 @@
 package com.mana.assistant;
 
 import android.app.Service;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.RemoteException;
 
+import com.mana.brain.BrainBinderRequest;
+import com.mana.brain.BrainBinderResponse;
 import com.mana.brain.BrainCall;
 import com.mana.brain.BrainCompletion;
-import com.mana.brain.BrainRequest;
-import com.mana.brain.BrainResponse;
 import com.mana.brain.IBrainCallback;
 import com.mana.brain.IBrainService;
+import com.mana.brain.ILocalInferenceCallback;
+import com.mana.brain.ILocalInferenceService;
 import com.mana.brain.ManaBrainAndroidRuntime;
 
 import java.util.concurrent.ArrayBlockingQueue;
@@ -20,7 +25,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-/** Signature-protected Binder adapter over the canonical Kotlin MANA Brain engine. */
+/** Signature-protected system Binder endpoint with a real LiteRT-LM companion-process bridge. */
 public final class ManaBrainBinderService extends Service {
     public static final String BIND_PERMISSION = "com.mana.permission.BIND_BRAIN";
     public static final int ERROR_INVALID_REQUEST = 1000;
@@ -28,6 +33,24 @@ public final class ManaBrainBinderService extends Service {
     public static final int ERROR_INTERNAL = 1003;
     public static final int ERROR_BUSY = 1004;
     private static final int MAX_PROMPT_CHARS = 32768;
+
+    private volatile ILocalInferenceService localInference;
+    private boolean localInferenceBound;
+
+    private final ServiceConnection localConnection = new ServiceConnection() {
+        @Override public void onServiceConnected(ComponentName name, IBinder service) {
+            localInference = ILocalInferenceService.Stub.asInterface(service);
+        }
+        @Override public void onServiceDisconnected(ComponentName name) {
+            localInference = null;
+        }
+        @Override public void onBindingDied(ComponentName name) {
+            localInference = null;
+        }
+        @Override public void onNullBinding(ComponentName name) {
+            localInference = null;
+        }
+    };
 
     // Inference never runs on a Binder pool thread. The bounded queue prevents memory exhaustion.
     private final ThreadPoolExecutor inferenceExecutor = new ThreadPoolExecutor(
@@ -37,7 +60,7 @@ public final class ManaBrainBinderService extends Service {
 
     private final IBrainService.Stub binder = new IBrainService.Stub() {
         @Override
-        public void submit(BrainRequest request, IBrainCallback callback) {
+        public void submit(BrainBinderRequest request, IBrainCallback callback) {
             enforceAuthorizedCaller();
             if (callback == null) return;
             if (request == null || request.requestId == null
@@ -50,41 +73,15 @@ public final class ManaBrainBinderService extends Service {
                         ERROR_INVALID_REQUEST, "Request is missing required fields or exceeds limits.");
                 return;
             }
-
-            final BrainCall call;
-            try {
-                call = new BrainCall(request.requestId, request.prompt, request.allowCloud,
-                        request.sensitive, request.preferredCloudProvider);
-            } catch (IllegalArgumentException invalid) {
-                sendError(callback, request.requestId, ERROR_INVALID_REQUEST, "Request validation failed.");
+            if (request.allowCloud || request.sensitive) {
+                // The system Binder endpoint is local-only until an independently reviewed
+                // cloud-consent contract is implemented. Never silently forward cloud requests.
+                sendError(callback, request.requestId, ERROR_INFERENCE_UNAVAILABLE,
+                        "This Binder endpoint currently accepts local inference only.");
                 return;
             }
-
             try {
-                inferenceExecutor.execute(() -> ManaBrainAndroidRuntime.get().submit(call,
-                        new BrainCompletion() {
-                            @Override
-                            public void onComplete(com.mana.brain.BrainResult result, Throwable error) {
-                                if (error != null || result == null) {
-                                    int code = error instanceof IllegalStateException
-                                            ? ERROR_INFERENCE_UNAVAILABLE : ERROR_INTERNAL;
-                                    String message = code == ERROR_INFERENCE_UNAVAILABLE
-                                            ? "No permitted inference provider is currently available."
-                                            : "MANA Brain could not complete this request.";
-                                    sendError(callback, request.requestId, code, message);
-                                    return;
-                                }
-                                BrainResponse response = new BrainResponse();
-                                response.requestId = result.getRequestId();
-                                response.text = result.getText();
-                                response.provider = result.getProvider();
-                                response.local = result.getLocal();
-                                response.errorCode = 0;
-                                response.errorMessage = null;
-                                try { callback.onResult(response); }
-                                catch (RemoteException ignored) { /* Client disconnected. */ }
-                            }
-                        }));
+                inferenceExecutor.execute(() -> submitLocal(request, callback));
             } catch (RejectedExecutionException overloaded) {
                 sendError(callback, request.requestId, ERROR_BUSY,
                         "MANA Brain is busy. Retry after the active requests finish.");
@@ -93,7 +90,10 @@ public final class ManaBrainBinderService extends Service {
 
         @Override public boolean isReady() {
             enforceAuthorizedCaller();
-            return ManaBrainAndroidRuntime.get().isReady();
+            ILocalInferenceService provider = localInference;
+            if (provider == null) return false;
+            try { return provider.isModelReady(); }
+            catch (RemoteException unavailable) { localInference = null; return false; }
         }
 
         @Override public String getEngineVersion() {
@@ -102,13 +102,56 @@ public final class ManaBrainBinderService extends Service {
         }
     };
 
-    @Override public IBinder onBind(Intent intent) {
-        // Android enforces the signature-level service permission before returning the binder.
-        return binder;
+    @Override public void onCreate() {
+        super.onCreate();
+        Intent provider = new Intent();
+        provider.setComponent(new ComponentName(
+                "com.mana.genesis", "com.mana.launcher.ManaLocalInferenceService"));
+        localInferenceBound = bindService(provider, localConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override public IBinder onBind(Intent intent) { return binder; }
+
+    private void submitLocal(BrainBinderRequest request, IBrainCallback callback) {
+        ILocalInferenceService provider = localInference;
+        if (provider == null) {
+            sendError(callback, request.requestId, ERROR_INFERENCE_UNAVAILABLE,
+                    "MANA Genesis local inference provider is not installed or not bound.");
+            return;
+        }
+        try {
+            provider.generate(request.requestId, request.prompt, new ILocalInferenceCallback.Stub() {
+                @Override public void onComplete(String requestId, String text, int errorCode, String errorMessage) {
+                    if (errorCode != 0 || text == null || text.trim().isEmpty()) {
+                        sendError(callback, requestId, errorCode == 0 ? ERROR_INTERNAL : errorCode,
+                                errorMessage == null ? "Local inference returned no text." : errorMessage);
+                        return;
+                    }
+                    BrainBinderResponse response = new BrainBinderResponse();
+                    response.requestId = requestId;
+                    response.text = text;
+                    response.provider = "litertlm-local";
+                    response.local = true;
+                    response.errorCode = 0;
+                    response.errorMessage = null;
+                    try { callback.onResult(response); }
+                    catch (RemoteException ignored) { /* Client disconnected. */ }
+                }
+            });
+        } catch (RemoteException unavailable) {
+            localInference = null;
+            sendError(callback, request.requestId, ERROR_INFERENCE_UNAVAILABLE,
+                    "MANA Genesis local inference provider disconnected.");
+        }
     }
 
     @Override public void onDestroy() {
         inferenceExecutor.shutdownNow();
+        if (localInferenceBound) {
+            try { unbindService(localConnection); } catch (IllegalArgumentException ignored) { }
+            localInferenceBound = false;
+        }
+        localInference = null;
         super.onDestroy();
     }
 
@@ -121,15 +164,13 @@ public final class ManaBrainBinderService extends Service {
         }
         for (String packageName : packages) {
             if (getPackageManager().checkSignatures(getPackageName(), packageName)
-                    == PackageManager.SIGNATURE_MATCH) {
-                return;
-            }
+                    == PackageManager.SIGNATURE_MATCH) return;
         }
         throw new SecurityException("Binder caller signature does not match the MANA service signer.");
     }
 
     private void sendError(IBrainCallback callback, String requestId, int code, String message) {
-        BrainResponse response = new BrainResponse();
+        BrainBinderResponse response = new BrainBinderResponse();
         response.requestId = requestId;
         response.provider = "none";
         response.local = false;
