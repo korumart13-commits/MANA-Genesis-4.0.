@@ -32,8 +32,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-import com.mana.brain.BrainRequest;
-import com.mana.brain.BrainResponse;
+import com.mana.brain.BrainBinderRequest;
+import com.mana.brain.BrainBinderResponse;
 import com.mana.brain.IBrainCallback;
 import com.mana.brain.IBrainService;
 
@@ -127,7 +127,7 @@ public final class ManaHomeActivity extends Activity {
         String value = brainPrompt == null ? "" : brainPrompt.getText().toString().trim();
         if (value.isEmpty()) { brainStatus.setText("Сначала напиши сообщение."); return; }
         if (brainService == null) { forwardToCompanion(value); return; }
-        BrainRequest request = new BrainRequest();
+        BrainRequest request = new BrainBinderRequest();
         request.requestId = UUID.randomUUID().toString();
         request.prompt = value;
         request.allowCloud = false;
@@ -136,7 +136,7 @@ public final class ManaHomeActivity extends Activity {
         brainStatus.setText("MANA обрабатывает запрос…");
         try {
             brainService.submit(request, new IBrainCallback.Stub() {
-                @Override public void onResult(BrainResponse response) {
+                @Override public void onResult(BrainBinderResponse response) {
                     runOnUiThread(() -> {
                         if (response == null) brainStatus.setText("MANA Brain не вернул ответ.");
                         else if (response.errorCode == 1002) forwardToCompanion(value);
