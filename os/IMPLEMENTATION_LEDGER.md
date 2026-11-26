@@ -197,3 +197,13 @@ See also:
 | MANA Device Bridge | Architecture defined; implementation pending | Spec defines authenticated, consent-gated Binder/AIDL APIs and reuse of existing HALs. No new kernel driver is claimed or added without a demonstrated missing capability and matching source/device interfaces. |
 | Flashable RMX5566RU update | Blocked | No complete target-specific proprietary inputs, validated Keyguard/SystemUI overlays, boot animation asset or OTA. ROM_READY remains false. |
 
+
+
+## 2026-11-26 — Device Bridge / OTA release clarification
+
+- **Device Bridge:** Designed only. Added the explicit Binder authentication, capability allowlist, consent, audit, SELinux, startup/fail-open-to-login and HAL reuse contract at `system/mana/device-bridge/README_RU.md`. This is not a built system service. Existing Android companion device-action controls remain a separate public-API prototype and do not provide unrestricted firmware control.
+- **SELinux:** Enforcing is mandatory. No permissive domains or guessed allow rules were added.
+- **Driver:** No new driver added. The candidate 5.15.180 source does not match the observed 5.15.197 runtime kernel. Existing Realme/Qualcomm drivers and HALs remain the required base.
+- **Boot / lock screen:** MANA Android userspace boot animation assets are generated and validated by workflow 45872690164. This does not replace bootloader splash and is not yet installed in a target firmware. Genuine OEM Keyguard integration remains designed/blocked on exact target resource mapping.
+- **Realme OTA:** Added `os/MANA_OS_REALME_OTA_RELEASE_GATE_RU.md`. A signed, installable Realme OTA is blocked: exact base package, supported OEM signing route, complete device tree/vendor/kernel match and restore evidence are missing. No ZIP is claimed to be an update package.
+- **ROM_READY:** false. No flashable package generated.
