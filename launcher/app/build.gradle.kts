@@ -13,7 +13,7 @@ android {
         targetSdk = 35
         versionCode = 6
         versionName = "4.0.5"
-        buildConfigField("boolean", "MANA_BUNDLED_MODEL", providers.gradleProperty("manaBundledModel").orNull == "true" ? "true" : "false")
+        buildConfigField("boolean", "MANA_BUNDLED_MODEL", (providers.gradleProperty("manaBundledModel").orNull == "true").toString())
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
