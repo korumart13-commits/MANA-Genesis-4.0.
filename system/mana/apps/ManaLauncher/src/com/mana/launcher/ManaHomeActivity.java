@@ -127,7 +127,7 @@ public final class ManaHomeActivity extends Activity {
         String value = brainPrompt == null ? "" : brainPrompt.getText().toString().trim();
         if (value.isEmpty()) { brainStatus.setText("Сначала напиши сообщение."); return; }
         if (brainService == null) { forwardToCompanion(value); return; }
-        BrainRequest request = new BrainBinderRequest();
+        BrainBinderRequest request = new BrainBinderRequest();
         request.requestId = UUID.randomUUID().toString();
         request.prompt = value;
         request.allowCloud = false;
