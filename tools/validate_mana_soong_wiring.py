@@ -54,6 +54,8 @@ assistant_manifest = ET.parse(root / 'system/mana/apps/ManaAssistant/AndroidMani
 assistant_queries = [node.attrib.get(android_ns + 'name') for node in assistant_manifest.findall('./queries/package')]
 assert 'com.mana.genesis' in assistant_queries, 'Assistant cannot see companion provider package'
 launcher_manifest = ET.parse(root / 'system/mana/apps/ManaLauncher/AndroidManifest.xml').getroot()
+launcher_queries = [node.attrib.get(android_ns + 'name') for node in launcher_manifest.findall('./queries/package')]
+assert 'com.mana.assistant' in launcher_queries, 'Launcher cannot see Assistant package'
 assert 'com.mana.permission.BIND_BRAIN' in [
     node.attrib.get(android_ns + 'name') for node in launcher_manifest.findall('uses-permission')
 ], 'Launcher does not request protected Binder permission'
