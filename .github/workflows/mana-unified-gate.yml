@@ -283,7 +283,8 @@ jobs:
           product = Path("system/mana/mana_product.mk").read_text()
           expected = ["ManaLauncher", "ManaSettings", "ManaControlCenter"]
           missing = [name for name in expected if name not in product]
-          assert not missing, f"Missing product packages: {missing}"\n          assert "ManaAssistant" not in product, "The separate MANA AI companion must not be embedded in the firmware image"
+          assert not missing, f"Missing product packages: {missing}"
+          assert "ManaAssistant" not in product, "The separate MANA AI companion must not be embedded in the firmware image"
           ns = "{http://schemas.android.com/apk/res/android}"
           manifests = sorted(Path("system/mana/apps").glob("*/AndroidManifest.xml"))
           assert len(manifests) == 4, f"Expected 4 manifests, got {len(manifests)}"
