@@ -134,6 +134,7 @@ jobs:
       - run: gradle -p engine/mana-brain --no-daemon clean test
 
   android-prototype:
+    if: ${{ false }} # AI companion is deferred; current release is firmware UI only.
     name: Android launcher, avatar and LiteRT-LM source build
     runs-on: ubuntu-latest
     steps:
@@ -350,6 +351,7 @@ jobs:
           retention-days: 30
 
   package-source:
+    if: ${{ false }} # No AI APK or model is packaged in the firmware-only release.
     name: Create one unified MANA source archive
     runs-on: ubuntu-latest
     needs: [core-tests, brain-tests, android-prototype, soong-source-check, autodev-policy-tests]
