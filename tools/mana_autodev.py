@@ -56,7 +56,7 @@ def run(args: list[str], cwd: Path, timeout: int = 1800) -> str:
 def validate_patch_text(patch_text: str) -> None:
     if "GIT binary patch" in patch_text or "Binary files " in patch_text:
         raise AutoDevError("Binary patch content is forbidden")
-    if re.search(r"^(?:old mode|new mode|deleted file mode|new file mode 120000) ", patch_text, re.MULTILINE):
+    if re.search(r"^(?:old mode|new mode|deleted file mode) |^new file mode 120000(?:\\s|$)", patch_text, re.MULTILINE):
         raise AutoDevError("File mode changes and symlinks are forbidden")
 
 
