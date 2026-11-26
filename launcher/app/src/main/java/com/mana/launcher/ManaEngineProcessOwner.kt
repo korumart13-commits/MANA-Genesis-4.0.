@@ -8,22 +8,30 @@ object ManaEngineProcessOwner {
     private val lock = Any()
     @Volatile private var engine: ManaEngineAndroidRuntime? = null
     @Volatile private var brain: ManaBrainBridge? = null
-    @Volatile private var inference: LocalInferenceRuntime? = null
+    @Volatile private var inference: LocalModelRuntime? = null
+    @Volatile private var memoryService: com.mana.os.core.ManaMemoryService? = null
 
     fun install(
         engineRuntime: ManaEngineAndroidRuntime,
         brainBridge: ManaBrainBridge,
-        localInference: LocalInferenceRuntime
+        localInference: LocalModelRuntime,
+        memory: com.mana.os.core.ManaMemoryService
     ) {
         synchronized(lock) {
             check(engine == null) { "MANA Engine process owner is already initialized" }
             engine = engineRuntime
             brain = brainBridge
             inference = localInference
+            memoryService = memory
         }
     }
 
     fun isInstalled(): Boolean = engine != null
+
+    fun engineRuntime(): ManaEngineAndroidRuntime? = engine
+    fun brainBridge(): ManaBrainBridge? = brain
+    fun localModelRuntime(): LocalModelRuntime? = inference
+    fun memoryService(): com.mana.os.core.ManaMemoryService? = memoryService
 
     fun isRunning(): Boolean = engine?.health()?.state == com.mana.os.core.ManaEngineState.READY
 
@@ -35,6 +43,7 @@ object ManaEngineProcessOwner {
             brain = null
             inference?.shutdown()
             inference = null
+            memoryService = null
         }
     }
 }
