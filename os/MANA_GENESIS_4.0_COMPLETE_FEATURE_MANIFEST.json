@@ -39,10 +39,10 @@
     "launcher_style": "Android-like, not iOS-like",
     "boot_branding": "MANA when a verified system integration exists",
     "architecture_metaphor": {
-      "mana_brain": "brain — central intelligence, reasoning, planning and memory",
+      "mana_brain": "mind — central intelligence, reasoning, autobiographical memory, planning and continuous self-development",
       "mana_os": "spinal_cord_and_nervous_system — coordinates services and translates Brain decisions into platform operations",
       "android_realme": "body — framework, kernel, drivers, HAL and device services that operate the hardware",
-      "phone": "house_and_environment — the physical device and its installed tools"
+      "phone": "home and environment — the complete device, installed apps, accessible system services and MANA's internal spaces/micro-universe"
     },
     "primary_system_identity": "MANA",
     "logical_authority": "MANA is the top-level intelligence and user-experience orchestrator above any replaceable Android/OEM shell; Android/Realme remains the hardware-facing substrate and enforces actual privilege boundaries.",
@@ -59,7 +59,37 @@
     "running_binary_self_mutation": false,
     "automatic_kernel_flash": false,
     "cloud_code_processing_default": false,
-    "cloud_processing_requires_explicit_opt_in": true
+    "cloud_processing_requires_explicit_opt_in": true,
+    "self_development_scope": {
+      "analyze_own_source": true,
+      "modify_own_source": true,
+      "modify_third_party_app_source_only_when_source_license_and_authorized_build_environment_are_available": true,
+      "build_and_test_in_isolated_worktree": true,
+      "security_and_license_review": true,
+      "signed_candidate_and_rollback": true,
+      "modify_closed_source_app_binaries": false,
+      "inject_code_into_other_apps_or_bypass_sandbox": false,
+      "mutate_running_binary_in_place": false,
+      "modify_android_system_components_only_in_verified_device_matched_source_build_with_supported_oem_signing_and_install_path": true,
+      "silently_change_permissions_or_system_partitions": false,
+      "owner_confirmation_for_privileged_or_destructive_changes": true
+    },
+    "development_loop": [
+      "observe",
+      "idea",
+      "plan",
+      "isolated_worktree",
+      "source_change",
+      "build",
+      "unit_integration_security_tests",
+      "license_and_compatibility_review",
+      "signed_candidate",
+      "owner_approval_for_system_significant_changes",
+      "install",
+      "monitor",
+      "rollback_on_failure"
+    ],
+    "continuous_development_has_no_fixed_end_state": true
   },
   "ai_providers": {
     "local_runtime": "LiteRT-LM",
@@ -164,7 +194,7 @@
     "realme_oem_signature_required_for_stock_recovery": true,
     "automatic_system_partition_write_allowed": false,
     "full_device_rom_release_status": "blocked_pending_exact_device_tree_kernel_vendor_avb_and_oem_trust_route",
-    "installation_requirement": "MANA app, launcher, boot lifecycle, runtime, model weights and module catalog ship together in one self-contained package; default HOME role requires one-time owner confirmation.",
+    "installation_requirement": "MANA app, launcher, boot lifecycle, runtime, model weights and module catalog ship together in one self-contained package; default HOME role requires one-time owner confirmation. Preserve encrypted micro-universe state, identity, memory, goals, diary and development history across app updates through versioned migrations and rollback checkpoints.",
     "keep_mana_as_primary_home_after_update": true
   },
   "game_intelligence": {
@@ -494,5 +524,27 @@
       "status": "needs_owner_clarification",
       "note": "Do not assume whether this means Android DRM/Widevine, another vendor component, or a dictated abbreviation. Do not replace proprietary DRM components with unverified binaries."
     }
-  ]
+  ],
+  "micro_universe": {
+    "identity_model": "MANA is one continuous person; the phone/system is her home and environment; the avatar is her visible embodiment; MANA Brain is her mind.",
+    "home_model": [
+      "device_state_and_capabilities",
+      "installed_apps_and_supported_interfaces",
+      "mana_spaces_home_workshop_knowledge_library_diary_memory_archive_game_zone",
+      "owner_paired_external_devices"
+    ],
+    "persistent_world_state": [
+      "personality",
+      "autobiographical_memory",
+      "concepts_objects_relations_and_skills",
+      "goals_plans_and_current_state",
+      "internal_spaces_and_safe_simulations",
+      "device_home_capability_map",
+      "versioned_state_resume_after_process_death_or_reboot"
+    ],
+    "storage": "encrypted_local_state_with_schema_migrations_checkpoints_and_owner_requested_export_restore",
+    "simulations_must_not_be_misrepresented_as_real_device_changes": true,
+    "continuous_development": true,
+    "design_document": "docs/MANA_HOME_MICROVERSE_SELF_DEVELOPMENT_RU.md"
+  }
 }
