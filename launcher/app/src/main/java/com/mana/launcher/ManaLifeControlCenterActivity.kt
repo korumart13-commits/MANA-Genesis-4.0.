@@ -34,7 +34,7 @@ class ManaLifeControlCenterActivity : Activity() {
     private val surface = Color.rgb(16, 43, 80)
     private val primary = Color.rgb(23, 101, 168)
     private val accent = Color.rgb(84, 200, 245)
-    private val foreground = Color.rgb(234, 244, 255)
+    private val textPrimary = Color.rgb(234, 244, 255)
     private val muted = Color.rgb(145, 169, 197)
     private val requestOwnerAuth = 7401
 
@@ -47,7 +47,7 @@ class ManaLifeControlCenterActivity : Activity() {
 
     private fun dp(value: Int) = (value * resources.displayMetrics.density + 0.5f).toInt()
 
-    private fun label(value: String, size: Float = 14f, color: Int = foreground, bold: Boolean = false) =
+    private fun label(value: String, size: Float = 14f, color: Int = textPrimary, bold: Boolean = false) =
         TextView(this).apply {
             text = value
             textSize = size
@@ -59,7 +59,7 @@ class ManaLifeControlCenterActivity : Activity() {
     private fun button(value: String, action: () -> Unit) = Button(this).apply {
         text = value
         isAllCaps = false
-        setTextColor(this@ManaLifeControlCenterActivity.foreground)
+        setTextColor(this@ManaLifeControlCenterActivity.textPrimary)
         setBackgroundColor(primary)
         setOnClickListener { action() }
     }
@@ -70,7 +70,7 @@ class ManaLifeControlCenterActivity : Activity() {
             setPadding(dp(18), dp(24), dp(18), dp(24))
             setBackgroundColor(navy)
         }
-        body.addView(label("MANA CONTROL CENTER", 25f, foreground, true))
+        body.addView(label("MANA CONTROL CENTER", 25f, textPrimary, true))
         body.addView(label("Управление личностью, камерой, сообщениями, звонками, играми и режимом сна.", 13f, muted))
         body.addView(section("Личность владельца"))
         body.addView(label(ownerStatus(), 13f, accent))
@@ -84,7 +84,7 @@ class ManaLifeControlCenterActivity : Activity() {
         body.addView(section("Мессенджеры"))
         val message = EditText(this).apply {
             hint = "Текст сообщения для отправки через выбранное приложение"
-            setTextColor(this@ManaLifeControlCenterActivity.foreground)
+            setTextColor(this@ManaLifeControlCenterActivity.textPrimary)
             setHintTextColor(muted)
             minLines = 2
             setPadding(dp(10), dp(8), dp(10), dp(8))
