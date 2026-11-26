@@ -40,7 +40,7 @@
         android:label="MANA"
         android:icon="@mipmap/ic_mana"
         android:roundIcon="@mipmap/ic_mana"
-        android:theme="@android:style/Theme.Material.NoActionBar"
+        android:theme="@style/ManaOneUiTheme"
         android:usesCleartextTraffic="false">
         <uses-native-library android:name="libvndksupport.so" android:required="false"/>
         <uses-native-library android:name="libOpenCL.so" android:required="false"/>
