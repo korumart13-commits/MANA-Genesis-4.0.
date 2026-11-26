@@ -1,38 +1,52 @@
 package com.mana.launcher
 
+import android.content.Context
+import com.mana.os.core.ManaMemoryService
+
 /**
- * Owns the single MANA Engine instance for the lifetime of ManaEngineService,
- * rather than tying it to a launcher Activity recreation.
+ * Process-level owner for the service-created MANA Engine and its shared dependencies.
+ * Only ManaEngineService is allowed to construct/start the Engine runtime.
  */
 object ManaEngineProcessOwner {
     private val lock = Any()
     @Volatile private var engine: ManaEngineAndroidRuntime? = null
     @Volatile private var brain: ManaBrainBridge? = null
     @Volatile private var inference: LocalModelRuntime? = null
-    @Volatile private var memoryService: com.mana.os.core.ManaMemoryService? = null
+    @Volatile private var memory: ManaMemoryService? = null
 
-    fun install(
-        engineRuntime: ManaEngineAndroidRuntime,
+    fun prepare(
         brainBridge: ManaBrainBridge,
         localInference: LocalModelRuntime,
-        memory: com.mana.os.core.ManaMemoryService
+        memoryService: ManaMemoryService
     ) {
         synchronized(lock) {
-            check(engine == null) { "MANA Engine process owner is already initialized" }
-            engine = engineRuntime
+            check(engine == null) { "MANA Engine is already running" }
             brain = brainBridge
             inference = localInference
-            memoryService = memory
+            memory = memoryService
+        }
+    }
+
+    fun initializeFromService(context: Context, keyProvider: ManaAndroidKeyProvider): ManaEngineAndroidRuntime {
+        synchronized(lock) {
+            engine?.let { return it }
+            val brainBridge = checkNotNull(brain) { "MANA Brain dependencies were not prepared" }
+            val memoryService = checkNotNull(memory) { "MANA memory service was not prepared" }
+            val runtime = ManaEngineAndroidRuntime(context.applicationContext, brainBridge, memoryService, keyProvider)
+            val health = runtime.start()
+            engine = runtime
+            if (health.state != com.mana.os.core.ManaEngineState.READY) {
+                android.util.Log.w("MANA", "Engine started with limited health: ${health.lastFailure ?: health.state.name}")
+            }
+            return runtime
         }
     }
 
     fun isInstalled(): Boolean = engine != null
-
     fun engineRuntime(): ManaEngineAndroidRuntime? = engine
     fun brainBridge(): ManaBrainBridge? = brain
     fun localModelRuntime(): LocalModelRuntime? = inference
-    fun memoryService(): com.mana.os.core.ManaMemoryService? = memoryService
-
+    fun memoryService(): ManaMemoryService? = memory
     fun isRunning(): Boolean = engine?.health()?.state == com.mana.os.core.ManaEngineState.READY
 
     fun shutdown() {
@@ -43,7 +57,7 @@ object ManaEngineProcessOwner {
             brain = null
             inference?.shutdown()
             inference = null
-            memoryService = null
+            memory = null
         }
     }
 }
