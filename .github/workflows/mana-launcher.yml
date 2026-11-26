@@ -108,6 +108,9 @@ jobs:
           grep -F 'request.sensitive && request.allowCloud' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
           grep -F 'boolean allowPersonalMemoryToCloud = false;' system/mana/interfaces/src/com/mana/brain/ManaBrainRequest.aidl
           grep -F 'ENGINE_UNAVAILABLE' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+          grep -F 'Executors.newSingleThreadExecutor' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+          grep -F 'requests.execute' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+          grep -F 'requests.shutdownNow()' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
       - name: Validate embedded full-body MANA glTF asset
         working-directory: .
         run: |
