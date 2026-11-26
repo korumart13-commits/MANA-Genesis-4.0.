@@ -17,8 +17,17 @@ import android.os.Binder
  */
 class ManaEngineService : Service() {
     inner class LocalBinder : Binder() {
-        fun engineRuntime(): ManaEngineAndroidRuntime? = ManaEngineProcessOwner.engineRuntime()
         fun isReady(): Boolean = ManaEngineProcessOwner.isRunning()
+        suspend fun think(
+            text: String,
+            allowCloud: Boolean = false,
+            sensitive: Boolean = false,
+            preferredCloudProvider: String? = null,
+            includePersonalMemory: Boolean = true,
+            memoryQuery: String = text
+        ) = checkNotNull(ManaEngineProcessOwner.engineRuntime()) { "MANA Engine is not initialized" }.think(
+            text, allowCloud, sensitive, preferredCloudProvider, includePersonalMemory, memoryQuery
+        )
     }
 
     private val localBinder = LocalBinder()
