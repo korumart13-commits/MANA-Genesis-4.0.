@@ -81,3 +81,14 @@ Implemented a dedicated `ModelArtifactIntegrity` verifier for the Gemma 4 E2B mo
 ## Release build investigation — 2026-11-27
 
 The earlier release build did not fail during Kotlin compilation or APK packaging; it failed at `:app:lintVitalAnalyzeRelease`. The logged exception is an AndroidX Lifecycle custom lint detector crash (`NonNullableMutableLiveDataDetector`) with a Kotlin Analysis API binary incompatibility while analyzing `LocalModelRuntime.kt`. Lifecycle runtime dependencies were aligned from 2.8.7 to stable 2.11.1 to test whether the newer detector resolves the incompatibility. This is a targeted dependency correction, not a bypass: release lint remains enabled. The result is pending CI verification.
+
+
+## Encrypted persistence recovery module — 2026-11-27
+
+Added ManaEncryptedDataRecovery in the Android app layer. If the encrypted memory or Microworld store cannot be opened during startup, the runtime now attempts to preserve a byte-for-byte encrypted copy under the app-private filesDir/mana/recovery directory. The source file is never deleted, decrypted, replaced, or rewritten by this recovery path. Copies are uniquely named, bounded to 64 MiB, fsynced, and verified against the source with SHA-256 before being accepted. If preservation fails, startup still fails closed and the original remains untouched.
+
+Unit tests cover unchanged source bytes, exact copied bytes/digest, distinct recovery copies, and rejection of invalid labels/missing sources. This is a preservation mechanism, not a decryption or restore UI: recovery still requires the original Keystore key to become available or an owner-directed recovery procedure. No automatic key replacement or silent empty-memory reset is allowed.
+
+## Android build-toolchain correction — 2026-11-27
+
+The Lifecycle 2.11.1 trial was rejected by CI before Kotlin compilation: its transitive Compose runtime artifact requires compileSdk 37 and AGP 9.1+, while this project is intentionally still on compileSdk 36 and AGP 8.7.3. The dependency set was moved to Lifecycle 2.10.0 as a compatibility candidate. The next CI run must confirm AAR metadata, lint, compilation, tests and release packaging; no release APK is claimed yet.
