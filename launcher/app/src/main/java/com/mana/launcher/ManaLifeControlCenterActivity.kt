@@ -109,7 +109,7 @@ class ManaLifeControlCenterActivity : Activity() {
         body.addView(label("Полный интерфейс звонков требует добровольного назначения MANA приложением телефона. Автоответ и разговор с абонентом ограничены Android Telecom и не считаются проверенными без теста на устройстве.", 12f, muted))
 
         body.addView(section("Игры"))
-        body.addView(label("Текущая игра: ${foregroundPackage() ?: "не определена (нужен доступ к статистике использования)"}", 13f, accent))
+        body.addView(label("Последнее обнаруженное приложение: ${foregroundPackage() ?: "не определено (нужен доступ к статистике использования)"}", 13f, accent))
         body.addView(button("Разрешить обнаружение активной игры") {
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
         })
@@ -213,6 +213,8 @@ class ManaLifeControlCenterActivity : Activity() {
         if (enabled) {
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (manager.isNotificationPolicyAccessGranted) {
+                val previous = manager.currentInterruptionFilter
+                prefs.edit().putInt("previous_interruption_filter", previous).apply()
                 runCatching { manager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE) }
                     .onFailure { toast("Не удалось включить системный режим тишины.") }
             } else {
@@ -226,7 +228,8 @@ class ManaLifeControlCenterActivity : Activity() {
         } else {
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (manager.isNotificationPolicyAccessGranted) {
-                runCatching { manager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL) }
+                val previous = prefs.getInt("previous_interruption_filter", NotificationManager.INTERRUPTION_FILTER_ALL)
+                runCatching { manager.setInterruptionFilter(previous) }
             }
         }
         render()
