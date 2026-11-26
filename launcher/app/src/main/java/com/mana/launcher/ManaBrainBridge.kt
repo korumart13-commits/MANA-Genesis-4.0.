@@ -1,6 +1,7 @@
 package com.mana.launcher
 
 import com.mana.brain.BrainRequest
+import com.mana.brain.BrainResponse
 import com.mana.brain.InferenceProvider
 import com.mana.brain.ManaBrain
 import kotlinx.coroutines.CoroutineScope
@@ -24,6 +25,60 @@ class ManaBrainBridge(
         this(localRuntime, listOfNotNull(cloudProvider))
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    suspend fun respondDetailed(
+        prompt: String,
+        allowCloud: Boolean = false,
+        sensitive: Boolean = false,
+        preferredCloudProvider: String? = null,
+        onChunk: (String) -> Unit = {}
+    ): BrainResponse {
+        val localProvider = object : InferenceProvider {
+            override val id: String = "local-runtime"
+            override fun isAvailable(): Boolean = localRuntime.isReady()
+
+            override suspend fun generate(prompt: String): String =
+                suspendCancellableCoroutine { continuation ->
+                    val output = StringBuilder()
+                    localRuntime.generate(
+                        prompt,
+                        onChunk = { chunk ->
+                            output.append(chunk)
+                            onChunk(chunk)
+                        },
+                        callback = { result ->
+                            result.fold(
+                                onSuccess = {
+                                    if (continuation.isActive) continuation.resume(output.toString())
+                                },
+                                onFailure = { error ->
+                                    if (continuation.isActive) continuation.resumeWithException(error)
+                                }
+                            )
+                        }
+                    )
+                }
+        }
+        val personaCloudProviders = cloudProviders.map { provider ->
+            object : InferenceProvider {
+                override val id: String get() = provider.id
+                override fun isAvailable(): Boolean = provider.isAvailable()
+                override suspend fun generate(prompt: String): String = provider.generate(
+                    ManaPersona.SYSTEM_PROMPT + "\n\nЗапрос владельца:\n" + prompt
+                )
+            }
+        }
+        val response = ManaBrain(localProvider, personaCloudProviders).respond(
+            BrainRequest(
+                prompt = prompt,
+                allowCloud = allowCloud,
+                sensitive = sensitive,
+                preferredCloudProvider = preferredCloudProvider
+            )
+        )
+        if (!response.local) onChunk(response.text)
+        return response
+    }
+
     fun respond(
         prompt: String,
         allowCloud: Boolean = false,
@@ -34,50 +89,7 @@ class ManaBrainBridge(
     ) {
         scope.launch {
             try {
-                val localProvider = object : InferenceProvider {
-                    override val id: String = "local-runtime"
-                    override fun isAvailable(): Boolean = localRuntime.isReady()
-
-                    override suspend fun generate(prompt: String): String =
-                        suspendCancellableCoroutine { continuation ->
-                            val output = StringBuilder()
-                            localRuntime.generate(
-                                prompt,
-                                onChunk = { chunk ->
-                                    output.append(chunk)
-                                    onChunk(chunk)
-                                },
-                                callback = { result ->
-                                    result.fold(
-                                        onSuccess = {
-                                            if (continuation.isActive) continuation.resume(output.toString())
-                                        },
-                                        onFailure = { error ->
-                                            if (continuation.isActive) continuation.resumeWithException(error)
-                                        }
-                                    )
-                                }
-                            )
-                        }
-                }
-                val personaCloudProviders = cloudProviders.map { provider ->
-                    object : InferenceProvider {
-                        override val id: String get() = provider.id
-                        override fun isAvailable(): Boolean = provider.isAvailable()
-                        override suspend fun generate(prompt: String): String = provider.generate(
-                            ManaPersona.SYSTEM_PROMPT + "\n\nЗапрос владельца:\n" + prompt
-                        )
-                    }
-                }
-                val response = ManaBrain(localProvider, personaCloudProviders).respond(
-                    BrainRequest(
-                        prompt = prompt,
-                        allowCloud = allowCloud,
-                        sensitive = sensitive,
-                        preferredCloudProvider = preferredCloudProvider
-                    )
-                )
-                if (!response.local) onChunk(response.text)
+                respondDetailed(prompt, allowCloud, sensitive, preferredCloudProvider, onChunk)
                 callback(Result.success(Unit))
             } catch (error: Exception) {
                 callback(Result.failure(error))
