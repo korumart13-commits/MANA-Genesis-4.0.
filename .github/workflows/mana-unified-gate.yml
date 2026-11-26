@@ -84,7 +84,7 @@ jobs:
           gradle-version: "8.11.1"
       - name: Ensure Android app consumes the single tested MANA Brain module
         run: |
-          grep -F 'include(":app", ":core", ":brain")' launcher/settings.gradle.kts
+          grep -F 'include(":app", ":core", ":brain", ":system-binder")' launcher/settings.gradle.kts
           grep -F 'project(":brain").projectDir = file("../engine/mana-brain")' launcher/settings.gradle.kts
           grep -F 'implementation(project(":brain"))' launcher/app/build.gradle.kts
           test ! -f launcher/app/src/main/java/com/mana/brain/ManaBrain.kt
@@ -95,7 +95,7 @@ jobs:
           done
       - name: Build Android prototype and run unit tests
         working-directory: launcher
-        run: gradle --no-daemon :app:assembleDebug :app:testDebugUnitTest
+        run: gradle --no-daemon :system-binder:assembleDebug :app:assembleDebug :app:testDebugUnitTest
       - name: Publish Android companion APK
         uses: actions/upload-artifact@v4
         with:
