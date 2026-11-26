@@ -1590,7 +1590,6 @@ class MainActivity : Activity() {
             runCatching { unbindService(manaEngineConnection) }
             manaEngineBound = false
         }
-        manaEngineRuntime = null
         // The service owns shared components while active. If initialization never
         // transferred ownership, release the Activity-created inference resources here.
         if (!ManaEngineProcessOwner.isInstalled() && !ManaEngineProcessOwner.isPrepared()) {
