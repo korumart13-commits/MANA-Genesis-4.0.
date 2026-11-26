@@ -69,6 +69,34 @@ class ManaCapabilityRegistryTest {
     }
 
     @Test
+    fun notificationListenerRequiresAndroidSpecialAccess() {
+        val denied = registry.evaluate(
+            "device.notifications.read",
+            CapabilityContext(
+                grantedPermissions = emptySet(),
+                ownerConfirmed = false,
+                deviceSupportsCapability = true,
+                enabled = true
+            )
+        )
+        val allowed = registry.evaluate(
+            "device.notifications.read",
+            CapabilityContext(
+                grantedPermissions = emptySet(),
+                grantedAccess = setOf("notification_listener"),
+                ownerConfirmed = false,
+                deviceSupportsCapability = true,
+                enabled = true
+            )
+        )
+        assertEquals(
+            CapabilityDecision.Denied(DenialReason.MISSING_SPECIAL_ACCESS),
+            denied
+        )
+        assertIs<CapabilityDecision.Allowed>(allowed)
+    }
+
+    @Test
     fun duplicateCapabilityIdsAreRejected() {
         val item = ManaCapability("apps.launch", "Launch an app")
         kotlin.test.assertFailsWith<IllegalArgumentException> {
