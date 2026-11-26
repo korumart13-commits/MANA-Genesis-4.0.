@@ -48,13 +48,22 @@ jobs:
           activity = Path("launcher/app/src/main/java/com/mana/launcher/MainActivity.kt").read_text()
           service = Path("launcher/app/src/main/java/com/mana/launcher/ManaEngineService.kt").read_text()
           owner = Path("launcher/app/src/main/java/com/mana/launcher/ManaEngineProcessOwner.kt").read_text()
-          assert "ManaEngineProcessOwner.initializeFromService(this, ManaAndroidKeyProvider())" in service
+          assert "initializeDependenciesFromService(this, keys)" in service
+          assert "initializeFromService(this, keys)" in service
           assert "initializeFromService(" not in activity
+          assert "initializeDependenciesFromService(" not in activity
+          assert "LocalModelRuntime(" not in activity
+          assert "ManaBrainBridge(" not in activity
+          assert "ManaMemoryService(" not in activity
+          assert "binder.localModelRuntime()" in activity
+          assert "binder.memoryService()" in activity
           assert "engineBinder.think(" in activity
           assert "manaBrain.respond(" not in activity
+          assert "val brainBridge = ManaBrainBridge(local, listOf(cloudGateway, yandexProvider))" in owner
+          assert "val memoryService = ManaMemoryService(" in owner
           assert "MANA Engine dependencies are already prepared" in owner
           assert "fun isPrepared(): Boolean = synchronized(lock)" in owner
-          print("Validated service-owned Engine startup, Binder chat boundary, and guarded process dependency ownership.")
+          print("Validated service-owned Brain, inference and encrypted memory creation plus Binder-only Activity access.")
           PY
       - name: Validate embedded full-body MANA glTF asset
         working-directory: .
