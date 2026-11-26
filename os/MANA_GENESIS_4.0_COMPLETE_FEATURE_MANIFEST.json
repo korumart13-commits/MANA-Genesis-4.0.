@@ -551,16 +551,28 @@
       "required": true
     },
     {
-      "id": "mana.stockcamerabridge",
-      "name": "Интеграция со штатной камерой Realme через Android Camera Intent/API; без дублирующего приложения и собственного экрана камеры",
+      "id": "mana.camera",
+      "name": "Интеграция со штатной камерой Realme через Android Camera Intent/API; без отдельного приложения или дублирующего экрана камеры",
       "status": "prototype",
       "required": true
     },
     {
       "id": "mana.avatarstudio",
-      "name": "MANA Avatar Studio в Дневнике: генерация новых образов постоянного аватара, сохранение в галерею и установка выбранного изображения на обои",
+      "name": "MANA Avatar Studio в Дневнике: генерация образов постоянного аватара, экспорт в галерею и выбор обоев",
       "status": "architecture",
       "required": false
+    },
+    {
+      "id": "mana.wallpaperautopilot",
+      "name": "Автоматическая смена обоев MANA по выбору MANA после однократного включения владельцем",
+      "status": "architecture",
+      "required": false
+    },
+    {
+      "id": "mana.avatarpresence",
+      "name": "Плавающий экранный аватар MANA поверх поддерживаемых экранов",
+      "status": "prototype",
+      "required": true
     }
   ],
   "release_gates": [
