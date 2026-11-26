@@ -41,6 +41,21 @@ jobs:
           grep -F 'project(":brain").projectDir = file("../engine/mana-brain")' launcher/settings.gradle.kts
           grep -F 'implementation(project(":brain"))' launcher/app/build.gradle.kts
           test ! -e launcher/app/src/main/java/com/mana/brain/ManaBrain.kt
+      - name: Validate MANA Engine service ownership boundaries
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          activity = Path("launcher/app/src/main/java/com/mana/launcher/MainActivity.kt").read_text()
+          service = Path("launcher/app/src/main/java/com/mana/launcher/ManaEngineService.kt").read_text()
+          owner = Path("launcher/app/src/main/java/com/mana/launcher/ManaEngineProcessOwner.kt").read_text()
+          assert "ManaEngineProcessOwner.initializeFromService(this, ManaAndroidKeyProvider())" in service
+          assert "initializeFromService(" not in activity
+          assert "engineBinder.think(" in activity
+          assert "manaBrain.respond(" not in activity
+          assert "MANA Engine dependencies are already prepared" in owner
+          assert "fun isPrepared(): Boolean = synchronized(lock)" in owner
+          print("Validated service-owned Engine startup, Binder chat boundary, and guarded process dependency ownership.")
+          PY
       - name: Validate embedded full-body MANA glTF asset
         working-directory: .
         run: |
