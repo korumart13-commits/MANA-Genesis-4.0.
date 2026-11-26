@@ -682,6 +682,7 @@ class MainActivity : Activity() {
             "Smart Receptionist" to { showReceptionist() },
             "Будущие обновления" to { showFutureUpdates() },
             "Адаптация MANA к системе телефона" to { startActivity(Intent(this, ManaSystemAdaptationActivity::class.java)) },
+            "MANA Control Center" to { startActivity(Intent(this, ManaLifeControlCenterActivity::class.java)) },
             "Adaptive Intelligence" to { startActivity(Intent(this, ManaAdaptiveLearningActivity::class.java)) },
             "Автономное исследование" to { startActivity(Intent(this, ManaAutonomyActivity::class.java)) },
             "AutoDev" to { startActivity(Intent(this, ManaTermuxAgentActivity::class.java)) },
