@@ -507,6 +507,12 @@
       "name": "MANA Life Control Center: owner re-authentication, camera handoff, message sharing, game hub and sleep profile",
       "status": "prototype",
       "required": true
+    },
+    {
+      "id": "mana.deviceintelligence",
+      "name": "MANA Device Intelligence: device inventory, hardware/build report and device-specific ROM port blueprint generator",
+      "status": "prototype",
+      "required": true
     }
   ],
   "release_gates": [
@@ -598,7 +604,7 @@
     "no_silent_feature_removal": true,
     "no_false_system_privileges": true
   },
-  "audit_note_2026_11_26": "The MANA Control Center now includes Android credential re-authentication, camera launch, share/SMS handoff, game session usage-access helper, Realme Game Space launch, and a daily bedtime/wake alarm scheduler with inexact fallback when exact-alarm access is not granted. These remain app-level integrations; they do not make MANA a privileged OS or full camera/messenger/game controller. Full standalone launcher APK workflow now fetches the pinned Gemma 4 E4B 3.66 GB LiteRT-LM model at build time, verifies its exact byte size and SHA-256, and packages it uncompressed as an APK asset. The owner must explicitly import/activate it; it is not loaded at boot. This does not turn the APK into a flashable ROM.",
+  "audit_note_2026_11_26": "The MANA Control Center now includes Android credential re-authentication, camera launch, share/SMS handoff, game session usage-access helper, Realme Game Space launch, and a daily bedtime/wake alarm scheduler with inexact fallback when exact-alarm access is not granted. These remain app-level integrations; they do not make MANA a privileged OS or full camera/messenger/game controller. Full standalone launcher APK workflow now fetches the pinned Gemma 4 E4B 3.66 GB LiteRT-LM model at build time, verifies its exact byte size and SHA-256, and packages it uncompressed as an APK asset. The owner must explicitly import/activate it; it is not loaded at boot. This does not turn the APK into a flashable ROM. MANA Device Intelligence Activity added to the launcher: it collects Android-exposed build, ABI, RAM, storage, display, battery, camera, sensor and system-feature data, then generates a ZIP with a device report and explicitly incomplete ROM port templates. It does not produce a flashable ROM binary or write firmware partitions.",
   "local_model_package": {
     "bundled_model": "Gemma 4 E4B IT LiteRT-LM",
     "file": "gemma-4-E4B-it.litertlm",
