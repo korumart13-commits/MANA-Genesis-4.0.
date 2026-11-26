@@ -1,8 +1,10 @@
 aidl_interface {
     name: "mana.brain",
     srcs: [
-        "com/mana/brain/BrainRequest.aidl",
-        "com/mana/brain/BrainResponse.aidl",
+        "com/mana/brain/BrainBinderRequest.aidl",
+        "com/mana/brain/ILocalInferenceCallback.aidl",
+        "com/mana/brain/ILocalInferenceService.aidl",
+        "com/mana/brain/BrainBinderResponse.aidl",
         "com/mana/brain/IBrainService.aidl",
         "com/mana/brain/IBrainCallback.aidl",
     ],
