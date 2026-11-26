@@ -106,6 +106,23 @@ class ManaEngineRuntimeTest {
         assertTrue(reasoner.lastRequest!!.allowCloud)
     }
 
+    @Test fun personalMemoryMayReachCloudOnlyWithSeparateExplicitConsent() {
+        val reasoner = FakeReasoner()
+        val fixture = fixture(reasoner)
+        fixture.memory.remember("preference", "разрешённая личная заметка", DataSensitivity.PERSONAL)
+        fixture.engine.start()
+        runSuspend {
+            fixture.engine.think(ManaEngineRequest(
+                "вопрос",
+                allowCloud = true,
+                includePersonalMemory = true,
+                allowPersonalMemoryToCloud = true
+            ))
+        }
+        assertTrue(reasoner.lastRequest!!.allowCloud)
+        assertTrue(reasoner.lastRequest!!.prompt.contains("разрешённая личная заметка"))
+    }
+
     @Test fun sensitiveRequestsCannotUseCloudEvenWhenCallerRequestsIt() {
         val reasoner = FakeReasoner()
         val fixture = fixture(reasoner)
