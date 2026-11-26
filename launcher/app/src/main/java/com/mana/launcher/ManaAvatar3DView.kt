@@ -47,6 +47,9 @@ class ManaAvatar3DView(
         setRenderer(AvatarRenderer())
         renderMode = RENDERMODE_WHEN_DIRTY
         isClickable = true
+        val avatarPrefs = context.getSharedPreferences("mana.settings", Context.MODE_PRIVATE)
+        outfitIndex = avatarPrefs.getInt("avatar_outfit_index", 0).coerceIn(0, 2)
+        accessoryEnabled = avatarPrefs.getBoolean("avatar_accessory_enabled", true)
     }
 
     override fun onAttachedToWindow() {
@@ -164,6 +167,9 @@ class ManaAvatar3DView(
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
             GLES20.glUseProgram(program)
             sphere.bind(aPosition, aNormal)
+            // Keep the renderer synchronized with the single MANA avatar state.
+            expressionIndex = ManaAvatarState.expressionIndex
+            isSpeaking = ManaAvatarState.isSpeaking
             val t = (System.nanoTime() - startTime) / 1_000_000_000f
             val bob = sin(t * 1.45f) * 0.035f
             val sway = sin(t * 0.82f) * 2.2f
