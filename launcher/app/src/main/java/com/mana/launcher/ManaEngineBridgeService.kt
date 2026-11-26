@@ -67,12 +67,12 @@ class ManaEngineBridgeService : Service() {
                     callback.onResult(result.text, result.provider, result.local, result.memoryItemsUsed)
                 } catch (cancelled: CancellationException) {
                     throw cancelled
+                } catch (error: RemoteException) {
+                    android.util.Log.w(TAG, "MANA Brain client disconnected before callback", error)
                 } catch (error: Exception) {
                     runCatching {
                         callback.onError("ENGINE_ERROR", error.message ?: error.javaClass.simpleName)
                     }
-                } catch (error: RemoteException) {
-                    android.util.Log.w(TAG, "MANA Brain client disconnected before callback", error)
                 }
             }
         }
