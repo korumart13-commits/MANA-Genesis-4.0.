@@ -171,6 +171,7 @@ jobs:
           retention-days: 30
 
   android-full-apk:
+    if: ${{ false }} # A 3.66 GB model is distributed in the single ZIP64 update package; APK asset packing exceeds Android Gradle's array limit.
     name: Build full offline MANA APK with embedded Gemma 4 E4B
     runs-on: ubuntu-latest
     steps:
@@ -479,7 +480,7 @@ jobs:
           (root / "MANA_UPDATE_INFO.json").write_text(json.dumps(update, indent=2) + chr(10), encoding="utf-8")
           (root / "MANA_UPDATE_README_RU.txt").write_text(chr(10).join([
               "MANA Genesis 4.0 — единый локальный пакет компонентов",
-              "Внутри одного ZIP: единственный основной APK MANA с LiteRT-LM runtime, Gemma 4 E4B (2,588,147,712 байт), полный исходный архив всех модулей проекта, полный текст Apache-2.0, архитектурный документ и полный каталог согласованных функций MANA.",
+              "Внутри одного ZIP: единственный основной APK MANA с LiteRT-LM runtime, Gemma 4 E4B (3,659,530,240 байт), полный исходный архив всех модулей проекта, полный текст Apache-2.0, архитектурный документ и полный каталог согласованных функций MANA.",
               "УСТАНОВКА БЕЗ ЛИШНИХ ЗАГРУЗОК: нужен только этот один ZIP. Не скачивай APK, модель и исходники по отдельности.",
               "1. Сохрани ZIP на телефоне и выбери «Извлечь» / «Распаковать» один раз. Все компоненты уже внутри.",
               "2. Открой папку android-companion и нажми app-debug.apk. Android покажет штатное подтверждение установки — его нельзя безопасно пропустить.",
