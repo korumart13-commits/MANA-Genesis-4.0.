@@ -1,0 +1,32 @@
+plugins { id "com.android.application" }
+
+android {
+    namespace "com.mana.shell"
+    compileSdk 36
+    defaultConfig {
+        applicationId "com.mana.shell"
+        minSdk 29
+        targetSdk 36
+        versionCode 1
+        versionName "MANA +1"
+    }
+    sourceSets {
+        main {
+            manifest.srcFile "src/main/AndroidManifest.xml"
+            java.srcDirs = [
+                "../../../system/mana/apps/ManaLauncher/src",
+                "../../../system/mana/apps/ManaSettings/src",
+                "../../../system/mana/apps/ManaControlCenter/src"
+            ]
+            res.srcDirs = [
+                "../../../system/mana/apps/ManaLauncher/res",
+                "../../../system/mana/apps/ManaSettings/res",
+                "../../../system/mana/apps/ManaControlCenter/res"
+            ]
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
