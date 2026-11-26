@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.SET_WALLPAPER" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Runtime permission for CameraManager torch access; request only when the owner enables torch control. -->
     <uses-permission android:name="android.permission.CAMERA" />
@@ -135,6 +136,7 @@
         <activity android:name=".ManaDocumentStorageActivity" android:exported="false" />
         <activity android:name=".ManaDevicesActivity" android:exported="false" />
         <activity android:name=".ManaExtensionCenterActivity" android:exported="false" android:label="MANA Extension Center" />
+        <activity android:name=".ManaWallpaperActivity" android:exported="false" android:label="MANA Wallpapers" />
         <activity android:name=".ManaFutureUpdatesActivity" android:exported="false" />
         <activity android:name=".ManaAdaptiveLearningActivity" android:exported="false" />
         <activity android:name=".ManaAutonomyActivity" android:exported="false" android:label="MANA Autonomous Research" />
