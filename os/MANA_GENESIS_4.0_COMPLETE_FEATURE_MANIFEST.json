@@ -110,6 +110,17 @@
     "stock_camera_phone_and_oem_hardware_apps_preserved": true,
     "avatar_power_button_summon_only_when_supported": true
   },
+  "update_delivery": {
+    "channel": "com.mana.genesis.system",
+    "first_version": "MANA +1",
+    "standalone_permission_free_oem_settings_bridge": "updates/android-bridge",
+    "bridge_behavior": "opens android.settings.SYSTEM_UPDATE_SETTINGS and falls back to Settings",
+    "bridge_is_oem_ota": false,
+    "bridge_installs_firmware": false,
+    "realme_oem_signature_required_for_stock_recovery": true,
+    "automatic_system_partition_write_allowed": false,
+    "full_device_rom_release_status": "blocked_pending_exact_device_tree_kernel_vendor_avb_and_oem_trust_route"
+  },
   "game_intelligence": {
     "autonomy": "high",
     "worlds": ["installed_android_games", "Minecraft_Bedrock"],
