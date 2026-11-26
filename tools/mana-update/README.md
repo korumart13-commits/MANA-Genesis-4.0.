@@ -1,19 +1,20 @@
-# MANA Update — Android bootstrapper prototype
+# MANA Installer — Android APK component installer
 
-This is a user-launched, transparent Android bootstrapper prototype. It is designed to minimize interaction while respecting Android and OEM security boundaries.
+## What works
+- Reads device manufacturer, model, Android API/release and build locally at launch.
+- Lets the user select an APK through Android's Storage Access Framework.
+- Calculates SHA-256 in a background worker and compares it with the expected 64-character hash supplied by the user.
+- Refuses to launch installation if the hash does not match.
+- If Android's per-source install permission is not enabled, opens the relevant Android settings page.
+- Hands the selected APK to Android's package installer with a read-only content URI grant. Android controls the final install/replace confirmation.
 
-## Current behavior
-- Reads manufacturer, brand, model, Android release/API and build fingerprint locally.
-- Shows a single preflight result and checks whether the device matches the configured test target (matching is informational; it does not block unrelated OPPO devices).
-- Does not request contacts, SMS, call logs, location, microphone, accessibility, device-admin, VPN, root or usage permissions.
-- Does not silently install APKs, change system partitions, run shell commands, alter SELinux, unlock the bootloader or bypass AVB.
-- Contains no firmware payload yet; therefore it cannot update the OS or install a system bridge.
+## Important trust note
+A matching hash proves only that the file matches the hash value entered. Obtain the APK and its SHA-256 from the same trusted publisher over an authenticated channel. Do not trust a hash sent by an unknown person or hosted beside an untrusted APK.
 
-## One-confirmation goal
-The app performs read-only checks automatically at launch. A single explicit user action can open Android's system installer for a separately supplied, verified APK. Android's own confirmation remains mandatory. A Realme/OPPO OTA must be delivered through an OEM-supported updater and accepted signature; an ordinary APK cannot impersonate that mechanism.
+## What it does not do
+- It does not flash firmware, write system/vendor/boot partitions, unlock bootloader, gain root, bypass AVB/SELinux, or silently install apps.
+- It does not contain the MANA Genesis AI runtime, a Device Bridge system service, or an OPPO/realme OTA payload.
+- It cannot guarantee that an arbitrary APK is compatible with the phone. Android performs package signature and compatibility checks.
 
 ## Build
-GitHub Actions workflow `MANA Update Android prototype` builds a debug APK and publishes it as an artifact. Debug APK is for testing only, not a firmware update.
-
-## Next required inputs for a real OTA
-Exact OPPO test-device model/build, OEM OTA package format, matching firmware baseline, accepted signing path, partition/update-engine metadata and recovery procedure. Do not reuse RMX5566RU firmware on an unrelated OPPO device.
+GitHub Actions workflow `.github/workflows/mana-update-android.yml` builds a debug APK artifact named `MANA-Update-Android-debug`.
