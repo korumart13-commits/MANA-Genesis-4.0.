@@ -490,11 +490,11 @@ class MainActivity : Activity() {
     }
 
     private fun openSpecialAccess(action: String, data: Uri? = null) {
-        val intent = Intent(action).apply {
-            if (data != null) this.data = data
-            if (resolveActivity(packageManager) == null) throw ActivityNotFoundException(action)
-        }
-        runCatching { startActivity(intent) }.onFailure {
+        runCatching {
+            val intent = Intent(action).apply { if (data != null) this.data = data }
+            if (intent.resolveActivity(packageManager) == null) throw ActivityNotFoundException(action)
+            startActivity(intent)
+        }.onFailure {
             showMessage("Этот экран специальных разрешений недоступен на прошивке realme: ${it.message ?: action}")
         }
     }
