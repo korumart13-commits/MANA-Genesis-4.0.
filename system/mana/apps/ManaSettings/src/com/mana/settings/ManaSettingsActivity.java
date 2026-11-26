@@ -66,10 +66,11 @@ public final class ManaSettingsActivity extends Activity {
         action(root, "Батарея", "Энергосбережение и расход заряда", Settings.ACTION_BATTERY_SAVER_SETTINGS);
         action(root, "Приложения", "Установленные приложения и их настройки", Settings.ACTION_MANAGE_ALL_APPLICATIONS_SETTINGS);
 
-        section(root, "MANA BRAIN", "Интеллект, память и взаимодействие");
-        action(root, "Открыть MANA", "Чат, аватар и голосовой помощник", "com.mana.genesis", "com.mana.launcher.MainActivity");
-        action(root, "Разрешения MANA", "Открыть системную страницу разрешений", Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:com.mana.genesis"));
-        action(root, "Конфиденциальность", "Панель безопасности и приватности Android", Settings.ACTION_SECURITY_SETTINGS);
+        section(root, "ИНТЕГРАЦИЯ MANA", "Подготовка системной платформы для отдельного приложения-помощника в будущем");
+        LinearLayout integration = card();
+        integration.addView(text("MANA Brain пока не устанавливается в этом выпуске", 16, TEXT, true));
+        integration.addView(text("Системная оболочка сохраняет архитектурную точку расширения для будущего приложения MANA: роли Android, проверяемый системный интерфейс и экран полномочий. Никакие дополнительные права сейчас не запрашиваются и не выдаются.", 13, MUTED, false), params(-1, -2, 0, 8));
+        root.addView(integration, params(-1, -2, 0, 18));
 
         section(root, "ПЕРСОНАЛИЗАЦИЯ", "Внешний вид и поведение");
         action(root, "Обои и стиль", "Оформление рабочего стола Android", Settings.ACTION_DISPLAY_SETTINGS);
