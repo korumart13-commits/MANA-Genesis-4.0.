@@ -25,10 +25,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p extracted parts
+          mkdir -p parts
           find incoming -type f -maxdepth 3 -print
-          unzip -q incoming/*.zip -d extracted
-          APK="$(find extracted -type f -name '*.apk' -print -quit)"
+          APK="$(find incoming -type f -name '*.apk' -print -quit)"
           test -n "$APK"
           split -b 450000000 --numeric-suffixes=0 --suffix-length=2 "$APK" parts/MANA-Genesis-4.0.apk.part-
           sha256sum "$APK" | tee parts/SHA256SUMS.txt
