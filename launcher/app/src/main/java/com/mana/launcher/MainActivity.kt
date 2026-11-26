@@ -1,8 +1,21 @@
 package com.mana.launcher
 
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.platform.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import io.github.sceneview.SceneView
+import io.github.sceneview.SurfaceType
+import io.github.sceneview.rememberEngine
+import io.github.sceneview.rememberModelInstance
+import io.github.sceneview.rememberModelLoader
+import io.github.sceneview.node.ModelNode
+
 import android.app.Activity
 import android.Manifest
 import android.content.pm.PackageManager
+import android.content.pm.PermissionInfo
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -400,19 +413,29 @@ class MainActivity : Activity() {
     }
 
     private fun requestAllAvailableRuntimePermissions() {
-        val candidates = listOf(
-            Manifest.permission.RECORD_AUDIO,
-            Manifest.permission.READ_CONTACTS,
-            Manifest.permission.CAMERA,
-            Manifest.permission.CALL_PHONE,
-            Manifest.permission.READ_CALL_LOG
-        ) + (if (Build.VERSION.SDK_INT >= 33) listOf(Manifest.permission.POST_NOTIFICATIONS) else emptyList()) +
-            (if (Build.VERSION.SDK_INT >= 31) listOf(Manifest.permission.BLUETOOTH_CONNECT) else emptyList())
-        val requested = candidates.distinct().filter {
-            checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+        // Request every declared Android dangerous/runtime permission in one system request.
+        // Special app access (overlay and WRITE_SETTINGS) is intentionally handled separately.
+        val requestedByApp = if (Build.VERSION.SDK_INT >= 33) {
+            packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(PackageManager.GET_PERMISSIONS.toLong())).requestedPermissions
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS).requestedPermissions
+        }.orEmpty()
+
+        val pending = requestedByApp.distinct().filter { permission ->
+            val dangerous = runCatching {
+                val info = packageManager.getPermissionInfo(permission, 0)
+                (info.protectionLevel and PermissionInfo.PROTECTION_MASK_BASE) == PermissionInfo.PROTECTION_DANGEROUS
+            }.getOrDefault(false)
+            dangerous && checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED
         }
-        if (requested.isNotEmpty()) requestPermissions(requested.toTypedArray(), permissionSetupRequestCode)
-        else showMessage("Все обычные разрешения из списка уже выданы. Проверь специальные доступы ниже.")
+
+        if (pending.isNotEmpty()) {
+            requestPermissions(pending.toTypedArray(), permissionSetupRequestCode)
+        } else {
+            showMessage("Все доступные обычные разрешения уже выданы. Остались только специальные доступы, которые подтверждаются в настройках Android.")
+            showPermissionSetup()
+        }
     }
 
     private fun addSetupAction(title: String, detail: String, state: String, run: () -> Unit) {
@@ -541,148 +564,133 @@ class MainActivity : Activity() {
         showingDrawer = false
         search.setText("")
         content.removeAllViews()
-        content.addView(label("Добро пожаловать", 24, textColor, true))
-        content.addView(label("Я рядом. Нажми на мой аватар, чтобы открыть MANA.", 13, muted, false))
 
-        val runtimeCard = LinearLayout(this).apply {
+        val hero = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(14), dp(12), dp(14), dp(12))
-            background = rounded(panel, 16)
+            setPadding(dp(18), dp(16), dp(18), dp(18))
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                intArrayOf(Color.rgb(23, 82, 139), Color.rgb(16, 43, 80), Color.rgb(7, 20, 38))
+            ).apply { cornerRadius = dp(26).toFloat() }
         }
-        runtimeCard.addView(label("ДИАГНОСТИКА КОМПОНЕНТОВ MANA", 11, accentSoft, true))
-        runtimeCard.addView(label(runtimeStatusText(), 12, textColor, false))
-        runtimeCard.addView(action("Обновить диагностику") {
-            runtimeCard.getChildAt(1).let { (it as? TextView)?.text = runtimeStatusText() }
+        hero.addView(label("MANA GENESIS", 11, accent, true))
+        hero.addView(label("Я здесь.", 28, textColor, true).apply {
+            setPadding(0, dp(3), 0, 0)
         })
-        content.addView(runtimeCard, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+        hero.addView(label(
+            "Твой единый помощник. Онлайн и офлайн.",
+            12, accentSoft, false
+        ).apply { setPadding(0, dp(2), 0, dp(5)) })
 
-        val card = LinearLayout(this).apply {
+        val avatarScene = createAvatarSceneView()
+        hero.addView(avatarScene, LinearLayout.LayoutParams(-1, dp(258)))
+        avatarScene.setOnClickListener { toggleAvatarPanel() }
+
+        val talk = action("Поговорить с Маной") { toggleAvatarPanel() }.apply {
+            textSize = 14f
+            setTextColor(textColor)
+            background = rounded(panelRaised, 18)
+            setPadding(dp(12), dp(13), dp(12), dp(13))
+        }
+        hero.addView(talk, LinearLayout.LayoutParams(-1, dp(50)))
+        content.addView(hero, LinearLayout.LayoutParams(-1, -2))
+
+        content.addView(label("БЫСТРЫЙ ДОСТУП", 11, accentSoft, true).apply {
+            setPadding(dp(2), dp(22), 0, dp(8))
+        })
+        val favoriteNames = listOf("телефон", "phone", "камера", "camera", "сообщ", "message", "настрой")
+        val favorites = apps.filter { app ->
+            val name = app.loadLabel(packageManager).toString().lowercase(Locale.getDefault())
+            favoriteNames.any(name::contains)
+        }.distinctBy { it.activityInfo.packageName }.take(4)
+        if (favorites.isNotEmpty()) renderGrid(favorites)
+        else content.addView(label("Системные приложения появятся здесь автоматически.", 12, muted, false))
+
+        val moduleCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(18), dp(18), dp(18))
-            background = rounded(panelRaised, 22)
+            setPadding(dp(16), dp(15), dp(16), dp(15))
+            background = rounded(panel, 22)
         }
-        card.addView(label("MANA ASSISTANT", 11, accentSoft, true))
-        card.addView(label("Твой телефон. Твои правила.", 19, textColor, true))
-        card.addView(action("Управление функциями телефона") {
-            startActivity(Intent(this, ManaDeviceControlsActivity::class.java))
-        })
-        card.addView(action(if (getSharedPreferences("mana.settings", MODE_PRIVATE).getBoolean("floating_avatar_enabled", false)) "Выключить плавающий 3D-аватар" else "Включить плавающий 3D-аватар") { requestFloatingAvatar() })
-        card.addView(action("Открыть полноценную 3D-модель MANA") {
-            startActivity(Intent(this, ManaAvatarPreviewActivity::class.java))
-        })
-        card.addView(action("Сменить наряд MANA") {
-            val preferences = getSharedPreferences("mana.settings", MODE_PRIVATE)
-            val next = (preferences.getInt("avatar_outfit_index", 0) + 1) % 3
-            preferences.edit().putInt("avatar_outfit_index", next).apply()
-            ManaAvatar3DView.outfitIndex = next
-            refreshFloatingAvatarStyle()
-            showMessage("Наряд аватара изменён. Лицо и голос остались прежними.")
-        })
-        card.addView(action("Переключить аксессуар аватара") {
-            val preferences = getSharedPreferences("mana.settings", MODE_PRIVATE)
-            val enabled = !preferences.getBoolean("avatar_accessory_enabled", true)
-            preferences.edit().putBoolean("avatar_accessory_enabled", enabled).apply()
-            ManaAvatar3DView.accessoryEnabled = enabled
-            refreshFloatingAvatarStyle()
-            showMessage(if (enabled) "Аксессуар включён." else "Аксессуар скрыт.")
-        })
-        card.addView(action("Сменить выражение лица MANA") {
-            val next = (ManaAvatarState.expressionIndex + 1) % 3
-            ManaAvatarState.expressionIndex = next
-            ManaAvatar3DView.expressionIndex = next
-            showMessage("Выражение лица изменено.")
-        })
-        card.addView(action("Назначить MANA системным ассистентом") { requestAssistantRole() })
-        card.addView(label("После назначения жест или долгое нажатие питания откроет MANA только если прошивка realme передаёт его выбранному ассистенту.", 11, muted, false))
-        card.addView(action("Открыть зашифрованный дневник MANA") { showDiary() })
-        card.addView(action("Открыть MANA Life Manager") { showLifeManager() })
-        card.addView(action("Открыть MANA Future Updates") {
-            startActivity(Intent(this, ManaFutureUpdatesActivity::class.java))
-        })
-        card.addView(action("Открыть MANA Adaptive Intelligence") {
-            startActivity(Intent(this, ManaAdaptiveLearningActivity::class.java))
-        })
-        card.addView(action("Открыть автономное исследование MANA") {
-            startActivity(Intent(this, ManaAutonomyActivity::class.java))
-        })
-        card.addView(action("Открыть MANA AutoDev — помощник разработки") {
-            startActivity(Intent(this, ManaTermuxAgentActivity::class.java))
-        })
-        card.addView(action("Открыть локальную память MANA") { showMemory() })
-        card.addView(action("Управление файлами и карантин MANA") { startActivity(Intent(this, ManaDocumentStorageActivity::class.java)) })
-        card.addView(action("Идеи и будущие обновления MANA") { showFutureUpdates() })
-        card.addView(action("Настроить облачный резерв ИИ") { showCloudSettings() })
-        card.addView(action("Использовать облачную модель для следующего сообщения") {
-            if (cloudGateway.isAvailable() || yandexProvider.isAvailable()) {
-                useCloudForNextPrompt = true
-                showMessage("Следующее сообщение предложит выбрать облачного провайдера. Отправка произойдёт только после отдельного подтверждения.")
-            } else {
-                showMessage("Сначала настрой и включи облачного провайдера.")
-            }
-        })
-        card.addView(action("Настроить Yandex AI Studio и VK") { startActivity(Intent(this, ManaIntegrationSettingsActivity::class.java)) })
-        card.addView(action("Устройства MANA • часы, наушники, автомобиль") { startActivity(Intent(this, ManaDevicesActivity::class.java)) })
-        card.addView(action("Скачать официальную локальную Gemma 4 E2B (2,59 ГБ)") { downloadOfficialModel() })
-        card.addView(action("Открыть Smart Receptionist") { showReceptionist() })
-        card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Локальный ИИ: выбери .litertlm-модель в окне MANA.", 12, muted, false))
-        val p = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(19) }
-        content.addView(card, p)
+        moduleCard.addView(label("ТВОЯ MANA", 11, accent, true))
+        moduleCard.addView(label("Память, дневник, планы и управление устройством собраны в одном месте.", 14, textColor, false)
+            .apply { setPadding(0, dp(5), 0, dp(10)) })
+        moduleCard.addView(action("Открыть функции MANA") { showAllManaModules() })
+        content.addView(moduleCard, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(18) })
 
-        content.addView(label("Избранное", 18, textColor, true).apply {
-            setPadding(0, dp(23), 0, dp(9))
-        })
-        val favorites = apps.filter {
-            val n = it.loadLabel(packageManager).toString().lowercase(Locale.getDefault())
-            listOf("phone", "camera", "settings", "chrome", "messages", "телефон", "камера", "настройки", "сообщ").any(n::contains)
-        }.take(8)
-        renderGrid(favorites)
-        content.addView(label("MANA GAME INTELLIGENCE", 18, textColor, true).apply {
-            setPadding(0, dp(23), 0, dp(7))
-        })
-        val realmeGameSpace = ManaRealmeGameSpaceBridge(this)
-        val installedGameSpace = realmeGameSpace.findInstalled()
-        content.addView(label(
-            installedGameSpace?.let { "Мастер игр найден: ${it.label} (${it.packageName})" }
-                ?: "Мастер игр Realme не найден среди поддерживаемых системных пакетов.",
-            12, if (installedGameSpace != null) accentSoft else muted, false
-        ))
-        content.addView(action("Открыть Мастер игр Realme") {
-            if (!realmeGameSpace.open()) {
-                showMessage("Мастер игр не найден или его запуск запрещён системой. Проверь, что приложение Realme «Мастер игр» установлено.")
-            }
-        }, LinearLayout.LayoutParams(-1, dp(42)))
         val games = apps.filter { it.activityInfo.applicationInfo.category == android.content.pm.ApplicationInfo.CATEGORY_GAME }
-        if (games.isEmpty()) {
-            content.addView(label("Игры появятся здесь после установки. MANA сможет работать с ними через поддерживаемые игровые адаптеры.", 12, muted, false))
-        } else {
-            content.addView(label("${games.size} игр в списке приложений", 12, muted, false))
-            renderGrid(games.take(8))
+        if (games.isNotEmpty()) {
+            content.addView(label("ИГРЫ", 11, accentSoft, true).apply {
+                setPadding(dp(2), dp(20), 0, dp(8))
+            })
+            renderGrid(games.take(4))
         }
-        content.addView(label("Запуск игр доступен сейчас. Управление игровым миром подключается только через официальные API или разрешённый серверный мост.", 11, muted, false).apply {
-            setPadding(0, dp(8), 0, dp(5))
+        content.addView(label("MANA OS 4.0 • ANDROID 16 BASE", 10, muted, false).apply {
+            gravity = Gravity.CENTER
+            setPadding(0, dp(22), 0, dp(5))
         })
-        content.addView(action("Разрешить обнаружение активной игры") {
-            startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-        }, LinearLayout.LayoutParams(-1, dp(42)))
-        content.addView(action("Проверить текущую игру") {
-            val monitor = ManaGameSessionMonitor(this)
-            if (!monitor.hasUsageAccess()) {
-                showMessage("Сначала разреши MANA доступ к статистике использования приложений.")
-            } else {
-                val activePackage = monitor.foregroundPackage()
-                val activeGame = games.firstOrNull { it.activityInfo.packageName == activePackage }
-                showMessage(
-                    if (activeGame != null) "Сейчас запущена игра: ${activeGame.loadLabel(packageManager)}"
-                    else "Активная игра не обнаружена. Пакет переднего приложения: ${activePackage ?: "не определён"}"
-                )
+    }
+
+    /** Full-body animated MANA model is part of the first installed screen, not a later add-on. */
+    private fun createAvatarSceneView(): View {
+        val asset = ManaAvatarAssetSelector.assetName(this)
+        return ComposeView(this).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                val engine = rememberEngine()
+                val modelLoader = rememberModelLoader(engine)
+                val expression = ManaAvatarState.expressionIndex
+                val animationName = when {
+                    ManaAvatarState.isSpeaking -> "Speaking"
+                    expression == 1 -> "Happy"
+                    expression == 2 -> "Playful"
+                    else -> "Idle"
+                }
+                SceneView(
+                    modifier = Modifier.fillMaxSize(),
+                    surfaceType = SurfaceType.TextureSurface,
+                    engine = engine,
+                    modelLoader = modelLoader,
+                    isOpaque = false
+                ) {
+                    rememberModelInstance(modelLoader, asset)?.let { instance ->
+                        ModelNode(
+                            modelInstance = instance,
+                            scaleToUnits = 2.25f,
+                            autoAnimate = false,
+                            animationName = animationName,
+                            animationLoop = true
+                        )
+                    }
+                }
             }
-        }, LinearLayout.LayoutParams(-1, dp(42)))
-        content.addView(action("Открыть MANA Companion для Minecraft Bedrock") {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/workflows/mana-minecraft-pack.yml")))
-        }, LinearLayout.LayoutParams(-1, dp(42)))
-        content.addView(label("Полный список приложений — во вкладке «Приложения».", 12, muted, false).apply {
-            setPadding(0, dp(17), 0, 0)
-        })
+        }
+    }
+
+    private fun showAllManaModules() {
+        val entries = listOf(
+            "Управление телефоном" to { startActivity(Intent(this, ManaDeviceControlsActivity::class.java)) },
+            "Плавающий 3D-аватар" to { requestFloatingAvatar() },
+            "Полноэкранная 3D-модель" to { startActivity(Intent(this, ManaAvatarPreviewActivity::class.java)) },
+            "Дневник MANA" to { showDiary() },
+            "Планировщик жизни" to { showLifeManager() },
+            "Локальная память" to { showMemory() },
+            "Smart Receptionist" to { showReceptionist() },
+            "Будущие обновления" to { showFutureUpdates() },
+            "Adaptive Intelligence" to { startActivity(Intent(this, ManaAdaptiveLearningActivity::class.java)) },
+            "Автономное исследование" to { startActivity(Intent(this, ManaAutonomyActivity::class.java)) },
+            "AutoDev" to { startActivity(Intent(this, ManaTermuxAgentActivity::class.java)) },
+            "Файлы и карантин" to { startActivity(Intent(this, ManaDocumentStorageActivity::class.java)) },
+            "Облачные модели" to { showCloudSettings() },
+            "Yandex и VK" to { startActivity(Intent(this, ManaIntegrationSettingsActivity::class.java)) },
+            "Часы, наушники и автомобиль" to { startActivity(Intent(this, ManaDevicesActivity::class.java)) },
+            "Скачать локальную модель" to { downloadOfficialModel() },
+            "Назначить MANA ассистентом" to { requestAssistantRole() }
+        )
+        AlertDialog.Builder(this)
+            .setTitle("Функции MANA")
+            .setItems(entries.map { it.first }.toTypedArray()) { _, index -> entries[index].second.invoke() }
+            .setNegativeButton("Закрыть", null)
+            .show()
     }
 
     private fun showDrawer() {
