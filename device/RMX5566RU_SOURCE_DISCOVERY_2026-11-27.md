@@ -77,6 +77,28 @@ Collect, where Android permits:
 
 Do not upload personal identifiers, serial numbers, IMEI, Android ID, Wi-Fi identifiers, account data or tokens. Redact those fields before sharing diagnostics.
 
+
+### Phone-side collection without a computer
+
+A read-only Termux collector is provided at `device/collect_rmx5566_readonly_audit.sh`. It reads only approved build properties, kernel information, visible block/partition names, SELinux enforcement state and readable VINTF files. It does not request root, unlock the bootloader, change settings, write partitions or flash anything.
+
+On the phone:
+
+1. Install/open Termux and allow storage access only if you want the report saved in Downloads.
+2. Run:
+
+```sh
+pkg update
+pkg install curl
+curl -fL "https://raw.githubusercontent.com/korumart13-commits/MANA-Genesis-4.0./main/device/collect_rmx5566_readonly_audit.sh" -o rmx5566_audit.sh
+bash rmx5566_audit.sh
+```
+
+3. Find `rmx5566_readonly_audit.txt` in Downloads (or Termux home if shared storage is unavailable).
+4. Review it before sharing. Do not share Android ID, serial, IMEI, MAC addresses, account information or tokens if they appear in any manually added output.
+
+Some Android builds deny access to VINTF or block-device paths to ordinary apps. A `NOT_READABLE` result is expected on some devices and is not a reason to root the phone.
+
 ## Required artifacts to unblock device ROM work
 
 1. OEM kernel source release and exact commit mapped to RMX5566/RMX5566RU and the current firmware fingerprint.
