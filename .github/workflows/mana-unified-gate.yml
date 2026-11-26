@@ -354,14 +354,14 @@ jobs:
           - UNIFIED_SOURCE.zip: all tracked project source, docs and workflows (sensitive build-local files excluded).
           - UPDATE_PACKAGE.zip: one MANA companion APK, full offline Gemma 4 E2B weights, unified project source archive, feature manifest, architecture and Apache-2.0 license text.
           - android-companion/app-debug.apk: debug Android companion; not a firmware installer.
-                    - ROM_STATUS.txt: explicit device/ROM readiness limitation.
+          - ROM_STATUS.txt: explicit device/ROM readiness limitation.
           - SHA256SUMS.txt: checksums for source, APKs, model, update package and complete bundle.
           AOSP source modules and JVM/Android prototypes are not equivalent to a bootable device ROM.
           Device-specific RMX5566RU validation is still required.
           EOF
           sha256sum dist/MANA_Genesis_4.0_UNIFIED_SOURCE.zip > dist/SHA256SUMS.txt
           sha256sum dist/android-companion/app-debug.apk >> dist/SHA256SUMS.txt
-                    python3 - <<'PY'
+          python3 - <<'PY'
           import hashlib, json
           from pathlib import Path
           root = Path("dist")
@@ -374,7 +374,7 @@ jobs:
           payloads = []
           for rel, kind in (
               ("android-companion/app-debug.apk", "companion_apk"),
-                            ("local-model/gemma-4-E2B-it.litertlm", "model_bundle"),
+              ("local-model/gemma-4-E2B-it.litertlm", "model_bundle"),
           ):
               p = root / rel
               payloads.append({
@@ -399,7 +399,6 @@ jobs:
                   "Debug companion APK is not a privileged/system app.",
               "Bundled Gemma 4 E2B weights are inside this same update ZIP and must be imported into the app after APK installation; Android does not permit a ZIP to silently install an APK and grant permissions.",
               "Gemma 4 E2B has not been benchmarked on the target RMX5566RU; local inference performance is not guaranteed.",
-                  "Updater bridge only opens Realme system update settings.",
                   "No RMX5566RU flashable system image is included.",
                   "No OEM signing or bootloader bypass is included."
               ],
