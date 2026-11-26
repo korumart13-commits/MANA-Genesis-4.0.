@@ -5,6 +5,7 @@ on:
     paths:
       - 'launcher/**'
       - 'system/mana/**'
+      - 'platform/**'
       - 'engine/mana-brain/**'
       - 'os/core/**'
       - '.github/workflows/mana-launcher.yml'
@@ -78,6 +79,20 @@ jobs:
           grep -F 'boolean sensitive = false;' system/mana/interfaces/src/com/mana/brain/ManaBrainRequest.aidl
           grep -F 'static_libs: ["mana-brain-interface"],' system/mana/apps/ManaAssistant/Android.bp
           grep -F 'ENGINE_UNAVAILABLE' system/mana/interfaces/README.md
+      - name: Validate pinned AOSP MANA local manifest
+        run: |
+          python3 - <<'PY'
+          import re
+          import xml.etree.ElementTree as ET
+          root = ET.parse("platform/local_manifests/mana.xml").getroot()
+          project = root.find("project")
+          assert project is not None
+          assert project.attrib["name"] == "korumart13-commits/MANA-Genesis-4.0."
+          assert project.attrib["path"] == "vendor/mana/genesis"
+          assert re.fullmatch(r"[0-9a-f]{40}", project.attrib["revision"])
+          assert root.find("remote").attrib["fetch"] == "https://github.com/"
+          print("Validated immutable MANA source snapshot in AOSP local manifest.")
+          PY
       - name: Validate platform MANA Brain service boundary
         run: |
           test -f system/mana/services/ManaBrainService/Android.bp
