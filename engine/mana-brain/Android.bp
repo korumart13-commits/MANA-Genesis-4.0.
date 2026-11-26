@@ -9,6 +9,7 @@ java_library {
     ],
     sdk_version: "current",
     min_sdk_version: "29",
+    kotlin_lang_version: "2",
     kotlincflags: [
         "-Xjvm-default=all",
     ],
