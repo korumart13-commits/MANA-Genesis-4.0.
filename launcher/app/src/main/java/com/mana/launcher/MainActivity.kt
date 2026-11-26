@@ -792,6 +792,11 @@ class MainActivity : Activity() {
         overlay.addView(action("Выбрать локальную модель (.litertlm)") { chooseModelFile() }.apply {
             setPadding(0, dp(10), 0, dp(10))
         })
+        overlay.addView(action("Встроенная Gemma 4 E4B • 3,66 ГБ") {
+            activateBundledGemma4E4B()
+        }.apply {
+            setPadding(0, dp(10), 0, dp(10))
+        })
         overlay.addView(action("Каталог Gemma 4 E2B • около 2,58 ГБ") {
             AlertDialog.Builder(this)
                 .setTitle("Локальная модель MANA")
@@ -1484,6 +1489,51 @@ class MainActivity : Activity() {
             "секретный ключ", "private key", "social security"
         )
         return markers.any(value::contains)
+    }
+
+    private fun activateBundledGemma4E4B() {
+        AlertDialog.Builder(this)
+            .setTitle("Встроенная локальная модель Gemma 4 E4B")
+            .setMessage(
+                "В APK включена модель размером 3,66 ГБ. Перед импортом MANA проверит свободное место и SHA-256. " +
+                    "Модель не запускается автоматически при старте телефона. На другом устройстве Android опубликован пик CPU-памяти около 3,28 ГБ; " +
+                    "на realme RMX5566RU производительность и совместимость не измерены. Для 8 ГБ физической RAM E2B может оказаться безопаснее. " +
+                    "Прочитай лицензию Apache 2.0 и условия Gemma. Продолжая, ты подтверждаешь, что ознакомился с условиями."
+            )
+            .setNegativeButton("Отмена", null)
+            .setNeutralButton("Условия Gemma") { _, _ ->
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://ai.google.dev/gemma/terms")))
+            }
+            .setPositiveButton("Принять и импортировать") { _, _ ->
+                val catalog = modelCatalog
+                if (catalog == null) {
+                    showMessage("Хранилище моделей Android недоступно.")
+                    return@setPositiveButton
+                }
+                modelStatus?.text = "Проверка и импорт Gemma 4 E4B…"
+                Thread {
+                    try {
+                        val file = catalog.copyBundledGemma4E4B(licenseAccepted = true)
+                        localRuntime.load(file) { result ->
+                            runOnUiThread {
+                                result.onSuccess { name ->
+                                    modelStatus?.text = "Gemma 4 E4B активна: $name"
+                                    showMessage("Gemma 4 E4B импортирована и подключена к MANA Brain. На этом устройстве следи за нагревом и свободной памятью.")
+                                }.onFailure { error ->
+                                    modelStatus?.text = "Gemma 4 E4B не запустилась: ${error.message}"
+                                    showMessage("Модель сохранена, но LiteRT-LM не смог её запустить: ${error.message}")
+                                }
+                            }
+                        }
+                    } catch (error: Exception) {
+                        runOnUiThread {
+                            modelStatus?.text = "Импорт Gemma 4 E4B не пройден."
+                            showMessage("Не удалось проверить или импортировать модель: ${error.message}")
+                        }
+                    }
+                }.start()
+            }
+            .show()
     }
 
     private fun downloadOfficialModel() {
