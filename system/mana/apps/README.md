@@ -1,41 +1,24 @@
-# MANA Genesis 4.0 — Android application sources
+# MANA OS — firmware application modules
 
-This directory contains the first Android-framework-facing source modules for the MANA product image.
+This directory contains the firmware-facing UI and narrow system integration modules. It does **not** contain the autonomous MANA AI product.
 
 ## Packages
 
-- **ManaLauncher** (com.mana.launcher): HOME activity, MANA branding, launches the MANA assistant and lists installed launchable apps.
-- **ManaAssistant** (com.mana.assistant): MANA-branded assistant and signature-protected Binder host. It delegates requests to the canonical Kotlin Brain core and fails closed when no Soong inference provider is registered.
-- **ManaSettings** (com.mana.settings): MANA-branded settings hub that opens Android settings panels for network, Bluetooth, display, sound, battery, app permissions and MANA's own permissions.
-- **ManaControlCenter** (com.mana.controlcenter): MANA-branded quick-access hub for Android Wi-Fi, Bluetooth, mobile network, display, sound, battery, location and notification settings.
+- **ManaLauncher** (`com.mana.launcher`): MANA OS HOME activity. Its Android label is **MANA OS** and it now has the first dark-navy/cyan resource theme.
+- **ManaAssistant** (`com.mana.assistant`): optional system entry-point/Binder boundary for the separate MANA app. It must remain a thin bridge, not a second AI agent or local model runtime.
+- **ManaSettings** (`com.mana.settings`): MANA OS settings hub. Its Android label is **MANA OS Settings** and it shares the initial MANA palette.
+- **ManaControlCenter** (`com.mana.controlcenter`): current safe quick-access hub. It is not yet a replacement for privileged Android SystemUI or Quick Settings.
 
-## Build integration
+## Product integration
 
-All four are Soong android_app product modules. Include system/mana/mana_product.mk from the eventual verified Android 16 product makefile to add them to PRODUCT_PACKAGES.
+Include `system/mana/mana_product.mk` from the eventual verified Android 16 device product makefile to add the modules to `PRODUCT_PACKAGES`. No valid RMX5566RU product makefile exists yet, so the fragment is not currently consumed by a device build.
 
-They remain non-privileged product apps: no platform certificate, root access, hidden API, privileged permission or direct radio toggle is assumed. Settings and Control Center open Android's own protected settings panels; they do not pretend to be the privileged Quick Settings/SystemUI implementation.
+## Separate MANA application
 
-## Remaining integration gates
+The standalone application package is expected to be `com.mana.genesis`. Its agent runtime, local model, avatar, voice, personality, memory, learning, micro-world, messaging workflows and game/Minecraft capabilities remain outside this firmware directory. The firmware may expose supported Android roles and a small authenticated platform bridge; it must not duplicate those app features.
 
-- Exact AOSP checkout and verified RMX5566RU/RE645F product and device tree.
-- Packaging a LiteRT-LM InferenceProvider and verified Gson/kotlinx-coroutines Soong dependencies so inference can run entirely inside the product image.
-- SystemUI/Quick Settings replacement with correct platform signing and SELinux policy; the current Control Center is a safe settings launcher, not a replacement for Android SystemUI.
-- Real Android product build and on-device validation.
-- OEM kernel source, matching DTS/DTBO, vendor modules, VINTF/HAL and verified recovery/rollback path before any flashable image is attempted.
+## Current limits
 
-These are integrated source modules intended for the future MANA product image. No firmware flash is initiated by this workflow.
+All four Soong modules are currently declared as non-privileged product apps. Do not mark them privileged or add permission allowlists until the exact package, signing certificate, requested permissions, target partition and security policy are verified. The current Settings and Control Center modules open Android-owned settings pages; they do not yet replace platform Settings/SystemUI.
 
-## MANA Brain Binder boundary (new)
-
-The product declares `mana.brain-java`; ManaAssistant statically links the generated AIDL and `mana-brain-core` libraries. The core Soong module compiles the existing Kotlin ManaBrain and ManaBrainFacade sources.
-
-The Binder endpoint, signature-level permission, caller UID/package/signature validation, bounded inference executor, Launcher client and Android instrumentation test sources have now been added. The Soong runtime still has no packaged LiteRT-LM provider; when it reports inference unavailable, Launcher forwards the original prompt to the existing com.mana.genesis companion app, which contains the Gradle LiteRT-LM runtime. The Binder service is therefore a real transport over the canonical routing core, but Soong-local inference is not yet operational.
-
-
-### Brain Binder integration boundary
-
-`ManaAssistant` now hosts a signature-protected Binder service and links
-`mana.brain-java`. The service delegates to the canonical Kotlin/JVM engine compiled as the
-Soong mana-brain-core library. It fails closed when no inference provider is
-registered. The Launcher submits through AIDL and forwards unavailable requests
-to the existing com.mana.genesis companion, which contains the LiteRT-LM runtime.
+No AOSP product build or RMX5566RU device test is claimed by the presence of these source files.
