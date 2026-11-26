@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'launcher/**'
+      - 'system/mana/**'
       - 'engine/mana-brain/**'
       - 'os/core/**'
       - '.github/workflows/mana-launcher.yml'
@@ -67,6 +68,15 @@ jobs:
           assert "fun isPrepared(): Boolean = synchronized(lock)" in owner
           print("Validated service-owned Brain, inference and encrypted memory creation plus Binder-only Activity access.")
           PY
+      - name: Validate platform MANA Brain Binder contract
+        run: |
+          test -f system/mana/interfaces/Android.bp
+          grep -F 'name: "mana-brain-interface"' system/mana/interfaces/Android.bp
+          grep -F 'void think(in ManaBrainRequest request, IManaBrainCallback callback);' system/mana/interfaces/src/com/mana/brain/IManaBrain.aidl
+          grep -F 'boolean allowCloud = false;' system/mana/interfaces/src/com/mana/brain/ManaBrainRequest.aidl
+          grep -F 'boolean sensitive = false;' system/mana/interfaces/src/com/mana/brain/ManaBrainRequest.aidl
+          grep -F 'static_libs: ["mana-brain-interface"],' system/mana/apps/ManaAssistant/Android.bp
+          grep -F 'This is an interface contract, not an implemented Android system service.' system/mana/interfaces/README.md
       - name: Validate embedded full-body MANA glTF asset
         working-directory: .
         run: |
