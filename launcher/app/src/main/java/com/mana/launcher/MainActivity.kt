@@ -858,6 +858,13 @@ class MainActivity : Activity() {
         overlay.addView(action("Выбрать локальную модель (.litertlm)") { chooseModelFile() }.apply {
             setPadding(0, dp(10), 0, dp(10))
         })
+        if (BuildConfig.MANA_BUNDLED_MODEL) {
+            overlay.addView(action("Установить встроенную Gemma 4 E4B • 3,66 ГБ") {
+                installBundledGemma4E4B()
+            }.apply {
+                setPadding(0, dp(10), 0, dp(10))
+            })
+        }
         overlay.addView(action("Загрузить Gemma 4 E4B • 3,66 ГБ") {
             downloadGemma4E4B()
         }.apply {
@@ -1555,6 +1562,48 @@ class MainActivity : Activity() {
             "секретный ключ", "private key", "social security"
         )
         return markers.any(value::contains)
+    }
+
+    private fun installBundledGemma4E4B() {
+        val catalog = modelCatalog ?: run { showMessage("Хранилище модели Android недоступно."); return }
+        AlertDialog.Builder(this)
+            .setTitle("Встроенная Gemma 4 E4B")
+            .setMessage(
+                "В этом APK находится официальная модель Gemma 4 E4B LiteRT-LM размером 3,66 ГБ. " +
+                    "MANA скопирует её в своё хранилище и проверит точный размер и SHA-256. " +
+                    "Потребуется около 4,16 ГБ свободного места дополнительно. " +
+                    "Модель не запускается автоматически при старте. На RMX5566RU её скорость и устойчивость ещё не проверены. " +
+                    "Ознакомься с условиями Gemma перед импортом."
+            )
+            .setNegativeButton("Отмена", null)
+            .setNeutralButton("Условия Gemma") { _, _ ->
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://ai.google.dev/gemma/terms")))
+            }
+            .setPositiveButton("Принимаю и установить") { _, _ ->
+                modelStatus?.text = "Копирую и проверяю встроенную Gemma 4 E4B…"
+                Thread {
+                    try {
+                        val file = catalog.installBundledGemma4E4B(licenseAccepted = true)
+                        localRuntime.load(file) { result ->
+                            runOnUiThread {
+                                result.onSuccess { name ->
+                                    modelStatus?.text = "Встроенная Gemma 4 E4B активна: $name"
+                                    showMessage("Gemma 4 E4B проверена и подключена. Следи за нагревом и свободной памятью.")
+                                }.onFailure { error ->
+                                    modelStatus?.text = "Модель проверена, но не запустилась: ${error.message}"
+                                    showMessage("LiteRT-LM не смог запустить Gemma 4 E4B: ${error.message}")
+                                }
+                            }
+                        }
+                    } catch (error: Exception) {
+                        runOnUiThread {
+                            modelStatus?.text = "Импорт Gemma 4 E4B не завершён."
+                            showMessage("Не удалось установить встроенную модель: ${error.message}")
+                        }
+                    }
+                }.start()
+            }
+            .show()
     }
 
     private fun downloadGemma4E4B() {
