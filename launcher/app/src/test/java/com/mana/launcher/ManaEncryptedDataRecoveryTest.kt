@@ -51,6 +51,9 @@ class ManaEncryptedDataRecoveryTest {
             assertThrows(IllegalArgumentException::class.java) {
                 ManaEncryptedDataRecovery.preserve(source, File(root, "recovery"), "../memory")
             }
+            assertThrows(IllegalArgumentException::class.java) {
+                ManaEncryptedDataRecovery.preserve(source, File(root, "recovery"), "memory")
+            }
             source.writeText("payload")
             assertThrows(IllegalArgumentException::class.java) {
                 ManaEncryptedDataRecovery.preserve(source, File(root, "recovery"), "../memory")
