@@ -7,6 +7,9 @@ on:
       - ".github/workflows/mana-full-offline-apk.yml"
       - "launcher/app/build.gradle.kts"
       - "launcher/app/src/main/java/com/mana/launcher/ManaModelCatalog.kt"
+      - "launcher/app/src/main/java/com/mana/launcher/MainActivity.kt"
+      - "launcher/app/src/main/java/com/mana/launcher/ManaExtensionCenterActivity.kt"
+      - "launcher/app/src/main/AndroidManifest.xml"
   workflow_dispatch:
 
 permissions:
