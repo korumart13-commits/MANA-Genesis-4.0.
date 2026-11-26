@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="mana_background">#071426</color>
+    <color name="mana_surface">#102B50</color>
+    <color name="mana_primary">#1765A8</color>
+    <color name="mana_accent">#54C8F5</color>
+    <color name="mana_text">#EAF4FF</color>
+    <color name="mana_secondary">#91A9C5</color>
+</resources>
