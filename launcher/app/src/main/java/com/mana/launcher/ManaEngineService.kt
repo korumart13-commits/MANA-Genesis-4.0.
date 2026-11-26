@@ -9,12 +9,20 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.os.Binder
 
 /**
  * Keeps the already initialized MANA Engine alive independently of MainActivity.
  * This is an app-level foreground service, not a privileged Android system daemon.
  */
 class ManaEngineService : Service() {
+    inner class LocalBinder : Binder() {
+        fun engineRuntime(): ManaEngineAndroidRuntime? = ManaEngineProcessOwner.engineRuntime()
+        fun isReady(): Boolean = ManaEngineProcessOwner.isRunning()
+    }
+
+    private val localBinder = LocalBinder()
+
     override fun onCreate() {
         super.onCreate()
         val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -62,7 +70,7 @@ class ManaEngineService : Service() {
         return START_NOT_STICKY
     }
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    override fun onBind(intent: Intent?): IBinder = localBinder
 
     override fun onDestroy() {
         ManaEngineProcessOwner.shutdown()
