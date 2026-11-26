@@ -94,7 +94,7 @@ jobs:
           new file mode 100644
           --- /dev/null
           +++ b/engine/mana-brain/src/main/kotlin/com/mana/brain/ManaAutoDevSmoke.kt
-          @@ -0,0 +1,4 @@
+          @@ -0,0 +1,5 @@
           +package com.mana.brain
           +
           +internal object ManaAutoDevSmoke {
