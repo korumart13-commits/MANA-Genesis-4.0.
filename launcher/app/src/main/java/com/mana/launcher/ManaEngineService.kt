@@ -17,6 +17,7 @@ import android.os.Binder
  */
 class ManaEngineService : Service() {
     inner class LocalBinder : Binder() {
+        fun isInitialized(): Boolean = ManaEngineProcessOwner.isPrepared() && ManaEngineProcessOwner.isInstalled()
         fun isReady(): Boolean = ManaEngineProcessOwner.isRunning()
         fun localModelRuntime(): LocalModelRuntime = checkNotNull(ManaEngineProcessOwner.localModelRuntime())
         fun memoryService(): com.mana.os.core.ManaMemoryService? = ManaEngineProcessOwner.memoryService()
