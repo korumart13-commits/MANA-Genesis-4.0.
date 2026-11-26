@@ -56,3 +56,13 @@ Battery endurance cannot be measured from source code or CI. It requires install
 
 ## Release rule
 Do not label any module “working” solely because it appears in the menu, manifest, source tree or architecture. Mark it working only after build, automated tests and target-device smoke tests pass.
+
+
+## Changes made after the initial audit
+- Fixed the literal escaped newline in the launcher module list and corrected the text-color reference in the system adaptation screen.
+- Added `ManaLifeControlCenterActivity` and registered it in the app manifest and launcher menu.
+- The new hub provides Android device-credential re-authentication, camera launch through `ACTION_IMAGE_CAPTURE`, message handoff through `ACTION_SEND` / `ACTION_SENDTO`, call UI handoff, Usage Access settings and Realme Game Space launch, plus a user-controlled MANA sleep profile.
+- When DND access is granted, sleep mode stores and restores the prior interruption filter rather than blindly forcing all notifications back on.
+- Added a feature-manifest validator requirement and a static test for the new activity and safe public API handoffs.
+
+These additions are **prototypes**. They do not provide continuous biometric surveillance, reading private messenger databases, a full camera application, autonomous gameplay, a scheduled sleep/wake alarm, or a complete conversational telephone agent. Those require additional implementation and target-device validation.
