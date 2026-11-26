@@ -363,8 +363,6 @@ jobs:
           Device-specific RMX5566RU validation is still required.
           EOF
           sha256sum dist/MANA_Genesis_4.0_UNIFIED_SOURCE.zip > dist/SHA256SUMS.txt
-          sha256sum dist/MANA_UPDATE_INFO.json >> dist/SHA256SUMS.txt
-          sha256sum dist/MANA_UPDATE_README_RU.txt >> dist/SHA256SUMS.txt
           sha256sum dist/android-companion/app-debug.apk >> dist/SHA256SUMS.txt
           sha256sum dist/realme-update-bridge/app-debug.apk >> dist/SHA256SUMS.txt
           python3 - <<'PY'
@@ -423,6 +421,8 @@ jobs:
               "Перед установкой APK проверьте совместимость и разрешите установку из выбранного источника."
           ]) + chr(10), encoding="utf-8")
           PY
+          sha256sum dist/MANA_UPDATE_INFO.json >> dist/SHA256SUMS.txt
+          sha256sum dist/MANA_UPDATE_README_RU.txt >> dist/SHA256SUMS.txt
           (cd dist && zip -q MANA_Genesis_4.0_UPDATE_PACKAGE.zip MANA_UPDATE_INFO.json MANA_UPDATE_README_RU.txt MODEL_LICENSE_APACHE-2.0.txt android-companion/app-debug.apk realme-update-bridge/app-debug.apk)
           python3 - <<'PY'
           from zipfile import ZipFile, ZIP_STORED
