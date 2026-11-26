@@ -19,6 +19,19 @@ class FeatureManifestTests(unittest.TestCase):
     def test_complete_owner_manifest_matches_catalog(self):
         module.validate(self.data, self.catalog)
 
+    def test_life_control_center_is_registered_and_uses_public_android_handoffs(self):
+        source = (ROOT.parent / "launcher/app/src/main/java/com/mana/launcher/ManaLifeControlCenterActivity.kt").read_text()
+        manifest = (ROOT.parent / "launcher/app/src/main/AndroidManifest.xml").read_text()
+        launcher = (ROOT.parent / "launcher/app/src/main/java/com/mana/launcher/MainActivity.kt").read_text()
+        self.assertIn("ManaLifeControlCenterActivity", manifest)
+        self.assertIn("ManaLifeControlCenterActivity", launcher)
+        self.assertIn("MediaStore.ACTION_IMAGE_CAPTURE", source)
+        self.assertIn("Intent.ACTION_SEND", source)
+        self.assertIn("createConfirmDeviceCredentialIntent", source)
+        self.assertIn("ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS", source)
+        self.assertNotIn("Runtime.exec", source)
+        self.assertNotIn("su -c", source)
+
     def test_missing_micro_universe_is_rejected(self):
         bad = dict(self.data)
         bad["modules"] = [m for m in self.data["modules"] if m["id"] != "mana.microuniverse"]
