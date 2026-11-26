@@ -353,8 +353,61 @@ jobs:
           sha256sum dist/MANA_Genesis_4.0_UNIFIED_SOURCE.zip > dist/SHA256SUMS.txt
           sha256sum dist/android-companion/app-debug.apk >> dist/SHA256SUMS.txt
           sha256sum dist/realme-update-bridge/app-debug.apk >> dist/SHA256SUMS.txt
-          (cd dist && zip -q MANA_Genesis_4.0_COMPLETE_BUNDLE.zip MANA_Genesis_4.0_UNIFIED_SOURCE.zip ROM_STATUS.txt BUILD_STATUS.txt SHA256SUMS.txt android-companion/app-debug.apk realme-update-bridge/app-debug.apk)
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          root = Path("dist")
+          payloads = []
+          for rel, kind in (
+              ("android-companion/app-debug.apk", "companion_apk"),
+              ("realme-update-bridge/app-debug.apk", "companion_apk"),
+          ):
+              p = root / rel
+              payloads.append({
+                  "file": rel,
+                  "kind": kind,
+                  "size": p.stat().st_size,
+                  "sha256": hashlib.sha256(p.read_bytes()).hexdigest(),
+              })
+          update = {
+              "format": "MANA-Genesis-4.0-userspace-preview",
+              "release": "MANA +1",
+              "version_code": 1,
+              "target": {"model": "RMX5566RU", "device": "RE645F", "android_api": 36},
+              "base_fingerprint": "realme/RMX5566RU/RE645F:16/BP2A.250605.015/V.2f025ac-8895bb-9a8318:user/release-keys",
+              "payloads": payloads,
+              "install_mode": "manual Android APK installation for preview only",
+              "is_oem_ota": False,
+              "is_flashable_rom": False,
+              "installs_firmware": False,
+              "status": "preview_bundle_not_system_update",
+              "limitations": [
+                  "Debug companion APK is not a privileged/system app.",
+                  "Updater bridge only opens Realme system update settings.",
+                  "No RMX5566RU flashable system image is included.",
+                  "No OEM signing or bootloader bypass is included."
+              ]
+          }
+          (root / "MANA_UPDATE_INFO.json").write_text(json.dumps(update, indent=2) + "\\n", encoding="utf-8")
+          (root / "MANA_UPDATE_README_RU.txt").write_text(
+              "MANA Genesis 4.0 — предварительный пакет компонентов\\n"
+              "Это пакет APK для тестирования пользовательского слоя MANA, не прошивка и не OTA.\\n"
+              "Не устанавливает Android/Realme firmware, не разблокирует загрузчик и не меняет системные разделы.\\n"
+              "Updater Bridge только открывает штатные настройки обновления Realme.\\n"
+              "Перед установкой APK проверьте совместимость и разрешите установку из выбранного источника.\\n",
+              encoding="utf-8"
+          )
+          PY
+          (cd dist && zip -q MANA_Genesis_4.0_UPDATE_PACKAGE.zip MANA_UPDATE_INFO.json MANA_UPDATE_README_RU.txt android-companion/app-debug.apk realme-update-bridge/app-debug.apk)
+          sha256sum dist/MANA_Genesis_4.0_UPDATE_PACKAGE.zip >> dist/SHA256SUMS.txt
+          (cd dist && zip -q MANA_Genesis_4.0_COMPLETE_BUNDLE.zip MANA_Genesis_4.0_UNIFIED_SOURCE.zip MANA_Genesis_4.0_UPDATE_PACKAGE.zip MANA_UPDATE_INFO.json MANA_UPDATE_README_RU.txt ROM_STATUS.txt BUILD_STATUS.txt SHA256SUMS.txt android-companion/app-debug.apk realme-update-bridge/app-debug.apk)
           sha256sum dist/MANA_Genesis_4.0_COMPLETE_BUNDLE.zip >> dist/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Genesis-4.0-Update-Package
+          path: dist/MANA_Genesis_4.0_UPDATE_PACKAGE.zip
+          if-no-files-found: error
+          retention-days: 30
       - uses: actions/upload-artifact@v4
         with:
           name: MANA-Genesis-4.0-unified-source
