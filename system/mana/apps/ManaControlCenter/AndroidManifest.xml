@@ -3,7 +3,7 @@
     <application
         android:allowBackup="false"
         android:label="MANA Control Center"
-        android:theme="@android:style/Theme.Material.NoActionBar">
+        android:theme="@style/ManaControlCenterTheme">
         <activity
             android:name=".ManaControlCenterActivity"
             android:exported="true">
