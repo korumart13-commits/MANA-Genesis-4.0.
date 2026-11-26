@@ -757,6 +757,7 @@ class MainActivity : Activity() {
             "Часы, наушники и автомобиль" to { startActivity(Intent(this, ManaDevicesActivity::class.java)) },
             "Скачать локальную модель" to { downloadOfficialModel() },
             "Центр модулей и расширений" to { startActivity(Intent(this, ManaExtensionCenterActivity::class.java)) },
+            "Живые обои MANA" to { startActivity(Intent(this, ManaWallpaperActivity::class.java)) },
             "Назначить MANA ассистентом" to { requestAssistantRole() }
         )
         AlertDialog.Builder(this)
