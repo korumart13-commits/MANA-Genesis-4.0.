@@ -80,24 +80,18 @@ Do not upload personal identifiers, serial numbers, IMEI, Android ID, Wi-Fi iden
 
 ### Phone-side collection without a computer
 
-A read-only Termux collector is provided at `device/collect_rmx5566_readonly_audit.sh`. It reads only approved build properties, kernel information, visible block/partition names, SELinux enforcement state and readable VINTF files. It does not request root, unlock the bootloader, change settings, write partitions or flash anything.
+The enhanced read-only Termux collector is `device/collect_rmx5566_readonly_audit.sh`. Version 2 collects a whitelist of non-personal build properties, kernel and command-line metadata, partition names/sizes where readable, SELinux state, readable VINTF XML, device-tree metadata and kernel-module inventory. It creates a ZIP archive in Termux home.
 
 On the phone:
 
-1. Install/open Termux and allow storage access only if you want the report saved in Downloads.
-2. Run:
-
 ```sh
 pkg update
-pkg install curl
+pkg install curl zip
 curl -fL "https://raw.githubusercontent.com/korumart13-commits/MANA-Genesis-4.0./main/device/collect_rmx5566_readonly_audit.sh" -o rmx5566_audit.sh
 bash rmx5566_audit.sh
 ```
 
-3. Find `rmx5566_readonly_audit.txt` in Downloads (or Termux home if shared storage is unavailable).
-4. Review it before sharing. Do not share Android ID, serial, IMEI, MAC addresses, account information or tokens if they appear in any manually added output.
-
-Some Android builds deny access to VINTF or block-device paths to ordinary apps. A `NOT_READABLE` result is expected on some devices and is not a reason to root the phone.
+The script prints the full archive path, similar to `~/mana_rmx5566_audit_YYYYMMDD_HHMMSS.zip`. Attach that ZIP here after reviewing it. The script does not request root, unlock the bootloader, read partition contents, mount filesystems, change properties or flash anything. Some paths may be inaccessible to ordinary apps; this is expected and should remain marked unknown rather than bypassed.
 
 ## Required artifacts to unblock device ROM work
 
