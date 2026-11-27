@@ -31,11 +31,13 @@ class ManaEngineeringAutomationTest {
         override suspend fun dispatchPatch(
             branch: String,
             patch: String,
-            expectedHeadSha: String
+            expectedHeadSha: String,
+            clientRunId: String
         ): GitHubWorkflowRun {
             assertEquals("chatgpt/mana-asi-rmx5566-one-action-setup", branch)
             assertTrue(patch.contains("diff --git"))
             assertEquals("a".repeat(40), expectedHeadSha)
+            assertTrue(clientRunId.isNotBlank())
             dispatches++
             return GitHubWorkflowRun(
                 dispatches.toLong(), expectedHeadSha, "queued", null,
