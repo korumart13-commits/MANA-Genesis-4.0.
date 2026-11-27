@@ -95,26 +95,23 @@ The project must preserve the full MANA product requirements in `docs/MASTER_PRO
 
 ## Binder integration test and Soong execution handoff — 2026-11-27
 
-- Added a real device-side instrumentation test module:
-  `system/mana/services/ManaBrainService/tests/integration`.
+- Extended the canonical device-side instrumentation test module:
+  `system/mana/tests/ManaBrainBinderIntegration`.
   It binds to the exported platform `ManaBrainService`, verifies the signature permission
   and AIDL protocol, waits for the app-owned `ManaEngineBridgeService` backend to connect,
   then sends a local-only request and requires a backend callback. A disconnected backend
   is a test failure; a truthful model-not-ready/inference diagnostic is acceptable.
-- Added Soong module `mana-brain-binder-integration-tests` and
-  `tools/run_mana_aosp_binder_integration.sh`. The runner builds
+- The existing Soong module `ManaBrainBinderIntegrationTests` now also checks the signature permission,
+  protocol handshake, backend connection and asynchronous local-only request callback. The existing
+  guarded runner is `tools/run_mana_soong_integration.sh`. The runner builds
   `mana-brain-interface`, `ManaBrainService`, staged `ManaLauncher` and the integration
-  test using `m`, then runs `atest` only against a connected image where both MANA
+  test using `m`, then optionally runs `atest` against a connected image where both MANA
   services are already installed. It contains no flashing, unlock, wipe or partition-write
   operation.
 - Added CI static checks and shell syntax validation for the instrumentation module/runner.
   These checks prove the test contract is present, not that Soong compiled it or that Binder
   worked on a device.
-- The latest Actions snapshot at the time of this commit shows runs
-  `45916530147` (launcher Gradle source verification),
-  `45916526548` (MANA Soong/Binder integration contract), and source bundle runs
-  `45916523943`, `45916520940`, `45916519072`, `45916515469`, `45916513838`
-  still in progress. Do not mark them successful until GitHub reports completed/success.
+- The earlier Soong/Binder contract run `45916543920` failed because its workflow expected the test to reference a constant rather than the explicit action string; the assertion was corrected. Contract runs `45916526548` and `45916548420` completed successfully, while the latest post-fix run is to be checked separately. Launcher/source bundle runs continue independently.
 - No full AOSP Android 16 checkout or verified lunch target is available in this repository
   workspace. Therefore the actual Soong module build, APK platform-certificate equality
   check, SELinux integration, Tradefed Binder run and product boot remain unexecuted.
