@@ -21,10 +21,10 @@ MANA Genesis 4.0 remains a full Android 16 AOSP-derived ROM project. The reposit
 
 ## CI evidence and current verification
 
-- Source archive workflow has repeatedly completed successfully; latest verified source bundle before this document is run `45914680576` for commit `0b73650c98521769fda4d7e220b932b5012a026d`.
-- Earlier app CI run `45914267885`: MANA Brain/Core tests passed; Android debug assembly and app unit tests passed; unsigned release APK failed at `lintVitalAnalyzeRelease` because the AndroidX Lifecycle lint detector crashed (`IncompatibleClassChangeError` / `NegativeArraySizeException`). Lint was not disabled.
-- Toolchain candidate upgraded to Android Gradle Plugin 8.13.2 and Gradle 8.13 to align with compileSdk 36 and refresh lint APIs. Official compatibility: AGP 8.13 supports API 36.1 and requires Gradle 8.13. This candidate is not yet considered verified.
-- Current workflow `45914698793` is running against commit `a82205fc8dcec2e77e6c0135720b7a05c2f2951a`; the later run for the documentation-only commit may follow. Do not claim release APK success until the current run completes and the artifact is present.
+- App CI run `45914698793` completed successfully for commit `a82205fc8dcec2e77e6c0135720b7a05c2f2951a`. Canonical Brain/Core tests, Android debug assembly, app unit tests, release lint (`lintVitalAnalyzeRelease` / `lintVitalRelease`) and unsigned `assembleRelease` all passed. Lint remains enabled.
+- The AGP 8.13.2 / Gradle 8.13 toolchain change resolved the previously observed Lifecycle lint-detector crash in this CI run.
+- Verified artifacts from run `45914698793`: source project ZIP `15161902217` (17,462,443 bytes; expires 2026-12-27); debug prototype ZIP `15161708101` (49,707,561 bytes; expires 2026-12-11); unsigned release APK ZIP `15161513522` (45,822,738 bytes; expires 2026-12-11). These are GitHub Actions artifacts, not ROM images. The release artifact is unsigned and still requires AOSP platform signing/product integration.
+- The separate source-bundle workflow `45914717027` also completed successfully; it packages tracked source files only.
 
 ## Device-specific ROM blockers
 
@@ -46,12 +46,12 @@ MANA Genesis 4.0 remains a full Android 16 AOSP-derived ROM project. The reposit
 
 ## Next engineering sequence
 
-1. Complete AGP 8.13.2/Gradle 8.13 CI, including unit tests, debug APK, release lint and unsigned release artifact.
-2. Verify release APK manifest/package, SHA-256 and provenance; do not treat it as a ROM.
-3. Validate AOSP `android_app_import` platform signing and `ManaBrainService` Soong build in a real Android 16 source checkout.
-4. Add exact SELinux service contexts/domain and least-privilege Binder rules against the real AOSP policy tree; then emulator-test authorization, callbacks, reconnect, overload and consent boundaries.
+1. Inspect the successful unsigned release artifact: APK manifest/package identity, signing state, SHA-256 and provenance. Do not treat it as a ROM.
+2. Replace the Java-only `ManaLauncher` Soong stub with a correctly staged Gradle release APK import (`android_app_import`) while retaining the platform Binder service as a separately signed component; validate certificate and privileged-permission assumptions in a real Android 16 AOSP checkout.
+3. Build the AIDL interface, `ManaBrainService`, imported launcher APK and product inclusion in a real AOSP tree; then add exact SELinux service contexts/domain and least-privilege Binder rules against that tree.
+4. Emulator-test authorization, callbacks, reconnect, overload and consent boundaries before any device integration.
 5. Continue read-only RMX5566 audit and exact OEM source/firmware discovery. Keep unknown fields unknown; do not infer partition layouts.
-6. Only after matching OEM sources and recovery are available, create the RMX5566 product/device tree, build and test images, generate checksums and prepare a signed recovery/OTA package.
+6. Only after matching OEM sources and a tested restore path are available, create the RMX5566 product/device tree, build and test images, generate checksums and prepare a signed recovery/OTA package.
 
 ## Release naming rules
 
