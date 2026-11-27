@@ -14,7 +14,7 @@ on:
       - ".github/workflows/mana-engineering-pipeline.yml"
   workflow_dispatch:
     inputs:
-      task_id:
+      client_run_id:
         description: "Unique MANA engineering task ID used to correlate this run."
         required: true
         type: string
