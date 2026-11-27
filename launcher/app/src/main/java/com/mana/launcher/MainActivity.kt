@@ -488,6 +488,9 @@ class MainActivity : Activity() {
         card.addView(action("Открыть локальную память MANA") { showMemory() })
         card.addView(action("Управление файлами и карантин MANA") { startActivity(Intent(this, ManaDocumentStorageActivity::class.java)) })
         card.addView(action("Идеи и будущие обновления MANA") { showFutureUpdates() })
+        card.addView(action("MANA Engineering Lab • совместная разработка с GPT") {
+            startActivity(Intent(this, ManaEngineeringActivity::class.java))
+        })
         card.addView(action("Настроить облачный резерв ИИ") { showCloudSettings() })
         card.addView(action("Использовать облачную модель для следующего сообщения") {
             if (cloudGateway.isAvailable() || yandexProvider.isAvailable()) {
