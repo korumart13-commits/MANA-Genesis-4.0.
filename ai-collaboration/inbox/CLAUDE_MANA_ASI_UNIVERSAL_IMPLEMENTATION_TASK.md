@@ -1,29 +1,36 @@
-# Задание: реализовать универсальную MANA ASI и one-action app setup
+# Задание: завершить MANA Genesis 4.0 для одного аппарата и one-action setup
 
-Прочитать:
-- docs/MANA_ASI_UNIVERSAL_ARCHITECTURE_RU.md
-- device/RMX5566RU_TARGET_PROFILE.md
-- docs/PROJECT_EXECUTION_STATUS_2026-11-27.md
-- CLAUDE.md и docs/AI_COLLABORATION_PROTOCOL_RU.md
+Главный источник требований: `docs/MANA_ASI_UNIVERSAL_ARCHITECTURE_RU.md` (название файла сохранено для ссылок, но содержание теперь строго RMX5566RU-specific).
 
-## Цель
-Развивать MANA ASI как универсальную Android 8+ архитектуру. RMX5566RU/RE645F — первый тестовый аппарат, не единственная целевая модель.
+Цель: один основной APK MANA для **realme RMX5566RU / RE645F, Android 16, Snapdragon 685/SM6225**. Не разрабатывать универсальную поддержку Android 12+ и не заявлять совместимость с другими моделями.
 
-## Работы
-1. Провести аудит текущего APK, minSdk, manifest permissions, first-boot setup, device profiler, WorkManager и подписывания артефактов.
-2. Спроектировать/реализовать capability registry и OEM-independent feature adapters. Использовать публичные Android API; учитывать API 26+.
-3. Создать тестируемый first-run orchestrator: inventory → capability resolution → owner consent → component integrity verification → setup report.
-4. Разделить установку обычного APK и привилегированную системную интеграцию. Не симулировать системные права.
-5. Добавить тесты на границы API, отсутствие разрешений, OEM-ограничения, offline first boot, прерывание/повтор запуска и проверку подписанных компонентов.
-6. Подготовить device test matrix для Samsung, Xiaomi/Redmi, realme, Huawei, Honor, Meizu, Fly и generic AOSP; отдельно перечислить физические модели и прошивки, которые реально проверены.
-7. Проверить, что Deadman находится вне полномочий Brain и fail-closed.
-8. Сборку и тесты выполнять в CI; отчёт должен отделять PASS от NOT TESTED.
+## Обязательное пользовательское поведение
+
+После штатной установки APK владелец нажимает одну кнопку **«ЗАПУСТИТЬ MANA»**. Один запуск автоматически выполняет всю настройку, которую Android разрешает обычному приложению: аппаратная диагностика, проверка ресурсов и модели, локальное хранилище/память, запуск Brain, голос/аватар, app-level модули, разрешённые интеграции, фоновые задачи, отчёт. Оркестратор идемпотентен, сохраняет прогресс и безопасно возобновляется после сбоя. Не заставлять пользователя вручную настраивать каждый модуль или копировать команды.
+
+Системные подтверждения Android, установка APK, выдача специальных разрешений, вход в сторонние аккаунты, платные операции, разблокировка загрузчика и прошивка остаются штатными действиями владельца. Не обещать обход этих границ.
+
+## Реализация
+
+1. Проверить текущий Gradle app и launcher, сделать один реальный главный экран и связать кнопку с полным first-run coordinator; не оставлять кнопки-заглушки.
+2. Сверить device profile и все проверки строго с RMX5566RU/RE645F, Android 16 build RMX5566_16.0.5.1310 (EX01), SM6225/bengal, ARM64. Исключить C85 5G/Dimensity 6300.
+3. Собрать inventory: API/build/fingerprint/ABI/RAM/storage/battery/thermal/available services; точные поля, которые Android не разрешает читать, отмечать unknown.
+4. Интегрировать локальную LiteRT-LM модель, автоматическую проверку и безопасную подготовку весов; проверить реальную загрузку на RMX5566RU, не только модельные JVM mocks.
+5. Реализовать зашифрованную персистентную память, task journal, recovery/resume, capability registry для функций этого устройства.
+6. Подключить русский voice I/O, 3D avatar, navy UI, Diary, Future Updates, Adaptive Learning, Smart Receptionist, Contact Intelligence, Life Manager, Yandex/VK, Game Intelligence/Minecraft и wearable/car adapters — сохранять все требования из полной спецификации. Интеграции аккаунтов опциональны и не требуют ключей для базового запуска.
+7. Довести GitHub Actions loop: workflow на default branch только после одобрения владельца; реальные dispatch/status/log/retry тесты; секреты не логировать; до 2 повторов; никаких auto-merge/flash.
+8. APK updates: подписывание, SHA-256, staged rollout, health check, rollback. Не считать APK updater прошивочным OTA.
+9. Firmware bring-up только при наличии exact device tree, kernel/DTS/DTBO, vendor blobs, VINTF/HAL, partition map, AVB chain и verified recovery. Никаких guessed blobs/partitions или чужих образов.
+10. CI: JVM unit/integration, Gradle Android compile/package/signature, emulator smoke, затем физический RMX5566RU install/runtime tests. Разделять результаты по уровню доказательства.
 
 ## Не делать
-Не создавать вирус, exploit chain, privilege escalation, stealth persistence, self-propagation, credential theft или защитный bypass. Не обещать silent install, отключение Android confirmation dialogs, автоматическое получение root/Device Owner, отключение AVB или прошивку без штатного подтверждения.
 
-## Требуемый результат
-- Изменения в отдельной ветке и Pull Request; main не менять напрямую.
-- Конкретные файлы/классы/тесты, CI run IDs, APK artifact и SHA-256.
-- Явный список незакрытых блокеров.
-- Не выдавать документацию за реализацию и APK за ROM.
+- Не расширять целевой релиз на любые Android 12+ устройства.
+- Не использовать C85 5G / Dimensity 6300 device tree.
+- Не выдавать mock/UI/документацию за интеграцию.
+- Не выполнять скрытую эскалацию привилегий, обход системных экранов, malware, stealth persistence или самораспространение.
+- Не менять main и не мержить PR без отдельного одобрения владельца.
+
+## Definition of Done
+
+Единый подписанный APK, установленный и реально запущенный на RMX5566RU; одна кнопка запускает все доступные app-level настройки и безопасно возобновляет незавершённые шаги; локальный Brain и модель фактически работают; ключевые модули имеют runtime evidence; отчёт о блокерах честный. Полная прошивка/OTA — отдельный этап и не объявляется готовой без физического boot/rollback теста.
