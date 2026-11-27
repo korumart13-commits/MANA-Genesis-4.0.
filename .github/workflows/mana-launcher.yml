@@ -26,6 +26,7 @@ on:
       - 'engine/mana-brain/**'
       - 'os/core/**'
       - '.github/workflows/mana-launcher.yml'
+      - 'tools/validate_mana_installer_contract.py'
   workflow_dispatch:
 
 permissions:
