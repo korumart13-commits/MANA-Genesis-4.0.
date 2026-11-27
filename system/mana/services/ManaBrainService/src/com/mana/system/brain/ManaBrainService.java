@@ -60,10 +60,17 @@ public final class ManaBrainService extends Service {
             IManaEngineBackend candidate = IManaEngineBackend.Stub.asInterface(service);
             try {
                 if (candidate != null && candidate.getProtocolVersion() == PROTOCOL_VERSION) {
-                    backend = candidate;
-                    Log.i(TAG, "Connected to the single MANA Engine backend.");
-                    backendRebindAttempts = 0;
-                    mainHandler.removeCallbacks(backendRebind);
+                    String engineState = candidate.getEngineState();
+                    if ("READY".equals(engineState) || "READY_NO_LOCAL_MODEL".equals(engineState)) {
+                        backend = candidate;
+                        Log.i(TAG, "Connected to the ready MANA Engine backend: " + engineState);
+                        backendRebindAttempts = 0;
+                        mainHandler.removeCallbacks(backendRebind);
+                    } else {
+                        backend = null;
+                        Log.w(TAG, "MANA Engine backend is not ready yet: " + engineState);
+                        scheduleBackendRebind();
+                    }
                 } else {
                     backend = null;
                     Log.e(TAG, "MANA Engine backend protocol mismatch.");
