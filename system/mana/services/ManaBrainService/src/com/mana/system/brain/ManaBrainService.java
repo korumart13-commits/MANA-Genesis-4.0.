@@ -38,6 +38,7 @@ public final class ManaBrainService extends Service {
     private static final int MAX_BACKEND_REBIND_ATTEMPTS = 5;
     private static final long BACKEND_REBIND_BASE_MS = 2_000L;
     private static final long BACKEND_REBIND_MAX_MS = 60_000L;
+    private static final long BACKEND_CONNECT_TIMEOUT_MS = 15_000L;
 
     @SuppressWarnings("FieldCanBeLocal")
     private final ThreadPoolExecutor requests = new ThreadPoolExecutor(
@@ -54,9 +55,17 @@ public final class ManaBrainService extends Service {
     private boolean backendBindingRequested;
     private int backendRebindAttempts;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final Runnable backendConnectTimeout = () -> {
+        if (backend == null && backendBindingRequested) {
+            Log.w(TAG, "Timed out waiting for MANA Engine backend Binder connection.");
+            scheduleBackendRebind();
+        }
+    };
+
     private final ServiceConnection backendConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
+            mainHandler.removeCallbacks(backendConnectTimeout);
             IManaEngineBackend candidate = IManaEngineBackend.Stub.asInterface(service);
             try {
                 if (candidate != null && candidate.getProtocolVersion() == PROTOCOL_VERSION) {
@@ -86,12 +95,15 @@ public final class ManaBrainService extends Service {
         @Override
         public void onServiceDisconnected(ComponentName name) {
             backend = null;
-            Log.w(TAG, "MANA Engine backend disconnected.");
+            Log.w(TAG, "MANA Engine backend disconnected; waiting briefly for system reconnection.");
+            mainHandler.removeCallbacks(backendConnectTimeout);
+            mainHandler.postDelayed(backendConnectTimeout, BACKEND_CONNECT_TIMEOUT_MS);
         }
 
         @Override
         public void onBindingDied(ComponentName name) {
             backend = null;
+            mainHandler.removeCallbacks(backendConnectTimeout);
             Log.e(TAG, "MANA Engine backend binding died; scheduling a bounded rebind.");
             scheduleBackendRebind();
         }
@@ -99,12 +111,14 @@ public final class ManaBrainService extends Service {
         @Override
         public void onNullBinding(ComponentName name) {
             backend = null;
+            mainHandler.removeCallbacks(backendConnectTimeout);
             Log.e(TAG, "MANA Engine backend returned a null Binder; scheduling a bounded rebind.");
             scheduleBackendRebind();
         }
     };
 
     private final Runnable backendRebind = () -> {
+        mainHandler.removeCallbacks(backendConnectTimeout);
         if (backendBindingRequested) {
             try {
                 unbindService(backendConnection);
@@ -225,7 +239,10 @@ public final class ManaBrainService extends Service {
         try {
             backendBindingRequested = bindService(
                     backendIntent, backendConnection, BIND_AUTO_CREATE);
-            if (!backendBindingRequested) {
+            if (backendBindingRequested) {
+                mainHandler.removeCallbacks(backendConnectTimeout);
+                mainHandler.postDelayed(backendConnectTimeout, BACKEND_CONNECT_TIMEOUT_MS);
+            } else {
                 Log.w(TAG, "MANA Engine backend service is not currently resolvable.");
                 scheduleBackendRebind();
             }
@@ -266,6 +283,7 @@ public final class ManaBrainService extends Service {
     @Override
     public void onDestroy() {
         mainHandler.removeCallbacks(backendRebind);
+        mainHandler.removeCallbacks(backendConnectTimeout);
         requests.shutdownNow();
         backend = null;
         if (backendBindingRequested) {
