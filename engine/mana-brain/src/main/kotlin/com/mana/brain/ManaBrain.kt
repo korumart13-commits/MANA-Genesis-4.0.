@@ -32,12 +32,16 @@ interface InferenceProvider {
 
 class ManaBrain(
     private val localProvider: InferenceProvider,
-    private val cloudProviders: List<InferenceProvider> = emptyList()
+    private val cloudProviders: List<InferenceProvider> = emptyList(),
+    private val localTimeoutMs: Long = DEFAULT_LOCAL_TIMEOUT_MS,
+    private val cloudTimeoutMs: Long = DEFAULT_CLOUD_TIMEOUT_MS
 ) {
     constructor(localProvider: InferenceProvider, cloudProvider: InferenceProvider?) :
         this(localProvider, listOfNotNull(cloudProvider))
 
     init {
+        require(localTimeoutMs > 0) { "Local inference timeout must be positive" }
+        require(cloudTimeoutMs > 0) { "Cloud inference timeout must be positive" }
         require(cloudProviders.map { canonicalProviderId(it.id) }.distinct().size == cloudProviders.size) {
             "Cloud provider identifiers must be unique after alias normalization"
         }
@@ -47,7 +51,9 @@ class ManaBrain(
         var localFailure: Exception? = null
         if (localProvider.isAvailable()) {
             try {
-                val localText = localProvider.generate(request.prompt)
+                val localText = withTimeoutOrNull(localTimeoutMs) {
+                    localProvider.generate(request.prompt)
+                } ?: throw InferenceTimeoutException("Local inference exceeded its time limit.")
                 require(localText.isNotBlank()) { "Local inference returned an empty response." }
                 return BrainResponse(
                     text = localText,
@@ -86,7 +92,9 @@ class ManaBrain(
             )
 
         return BrainResponse(
-            text = cloud.generate(request.prompt),
+            text = withTimeoutOrNull(cloudTimeoutMs) {
+                cloud.generate(request.prompt)
+            } ?: throw InferenceTimeoutException("Cloud inference exceeded its time limit."),
             provider = canonicalProviderId(cloud.id),
             local = false
         )
@@ -100,6 +108,11 @@ class ManaBrain(
             else -> id
         }
     }
+    companion object {
+        const val DEFAULT_LOCAL_TIMEOUT_MS = 90_000L
+        const val DEFAULT_CLOUD_TIMEOUT_MS = 60_000L
+    }
 }
 
 class InferenceUnavailableException(message: String) : IllegalStateException(message)
+class InferenceTimeoutException(message: String) : IllegalStateException(message)
