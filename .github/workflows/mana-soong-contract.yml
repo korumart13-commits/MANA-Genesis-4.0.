@@ -51,10 +51,11 @@ jobs:
           assert "UNAVAILABLE_ENGINE_BACKEND_DISCONNECTED" in test
           assert "brain.think(request" in test
           assert "IManaBrainCallback.Stub()" in test
-          assert "ENGINE_UNAVAILABLE" in test
           assert '"READY".equals(state)' in test
           assert '"READY_NO_LOCAL_MODEL".equals(state)' in test
-          assert '"ENGINE_NOT_READY".equals(callbackCode.get())' in test
+          assert '"ENGINE_ERROR"' in test
+          assert "Local inference is unavailable and cloud processing is not permitted." in test
+          assert "Boolean.TRUE.equals(resultLocal.get())" in test
 
           app = ET.parse("launcher/app/src/main/AndroidManifest.xml").getroot()
           bridge = app.find("./application/service[@android:name='.ManaEngineBridgeService']", {
@@ -63,6 +64,10 @@ jobs:
           assert bridge is not None
           assert bridge.attrib["{http://schemas.android.com/apk/res/android}exported"] == "true"
           assert bridge.attrib["{http://schemas.android.com/apk/res/android}permission"] == "com.mana.permission.BIND_BRAIN"
+          brain_source = pathlib.Path("system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java").read_text()
+          assert '"READY".equals(engineState)' in brain_source
+          assert '"READY_NO_LOCAL_MODEL".equals(engineState)' in brain_source
+          assert "MAX_BACKEND_REBIND_ATTEMPTS = 5" in brain_source
 
           brain = ET.parse("system/mana/services/ManaBrainService/AndroidManifest.xml").getroot()
           service = brain.find("./application/service[@android:name='.ManaBrainService']", {
