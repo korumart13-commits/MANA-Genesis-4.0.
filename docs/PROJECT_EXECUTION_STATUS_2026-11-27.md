@@ -91,3 +91,35 @@ The project must preserve the full MANA product requirements in `docs/MASTER_PRO
   comparison, SELinux service context/domain and Binder policy, emulator Binder tests,
   product-image boot, and RMX5566 device tests. No flashable firmware is produced by this
   integration-preparation step.
+
+
+## Binder integration test and Soong execution handoff — 2026-11-27
+
+- Added a real device-side instrumentation test module:
+  `system/mana/services/ManaBrainService/tests/integration`.
+  It binds to the exported platform `ManaBrainService`, verifies the signature permission
+  and AIDL protocol, waits for the app-owned `ManaEngineBridgeService` backend to connect,
+  then sends a local-only request and requires a backend callback. A disconnected backend
+  is a test failure; a truthful model-not-ready/inference diagnostic is acceptable.
+- Added Soong module `mana-brain-binder-integration-tests` and
+  `tools/run_mana_aosp_binder_integration.sh`. The runner builds
+  `mana-brain-interface`, `ManaBrainService`, staged `ManaLauncher` and the integration
+  test using `m`, then runs `atest` only against a connected image where both MANA
+  services are already installed. It contains no flashing, unlock, wipe or partition-write
+  operation.
+- Added CI static checks and shell syntax validation for the instrumentation module/runner.
+  These checks prove the test contract is present, not that Soong compiled it or that Binder
+  worked on a device.
+- The latest Actions snapshot at the time of this commit shows runs
+  `45916530147` (launcher Gradle source verification),
+  `45916526548` (MANA Soong/Binder integration contract), and source bundle runs
+  `45916523943`, `45916520940`, `45916519072`, `45916515469`, `45916513838`
+  still in progress. Do not mark them successful until GitHub reports completed/success.
+- No full AOSP Android 16 checkout or verified lunch target is available in this repository
+  workspace. Therefore the actual Soong module build, APK platform-certificate equality
+  check, SELinux integration, Tradefed Binder run and product boot remain unexecuted.
+  The next real build must run on a provisioned AOSP build host using the pinned local
+  manifest and a verified product configuration.
+- Device gate unchanged: no RMX5566 firmware build/flash until exact matching stock restore,
+  device tree, OEM kernel sources, vendor blobs, VINTF, partition map and AVB chain are
+  independently verified.
