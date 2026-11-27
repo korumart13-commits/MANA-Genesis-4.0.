@@ -212,7 +212,11 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         activityResumed = true
-        if (!manaEngineBound && manaEngineBinder == null) attemptEngineConnection()
+        if (manaEngineBound && manaEngineBinder?.isInitialized() == true) {
+            reconnectController?.onConnected()
+        } else if (!manaEngineBound && manaEngineBinder == null) {
+            attemptEngineConnection()
+        }
     }
 
     override fun onPause() {
