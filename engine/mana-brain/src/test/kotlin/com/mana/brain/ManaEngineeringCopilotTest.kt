@@ -98,4 +98,22 @@ class ManaEngineeringCopilotTest {
             ManaEngineeringCopilot(FakeProvider(validResponse, available = false)).propose(task())
         }
     }
+
+    @Test fun permitsReviewOnlyPlatformServiceProposals() = runBlocking {
+        val response = validResponse.replace(
+            "os/core/src/main/kotlin/com/mana/os/core/Example.kt",
+            "system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java"
+        )
+        val proposal = ManaEngineeringCopilot(FakeProvider(response)).propose(task())
+        assertTrue(proposal.changedPaths.all { it.startsWith("system/mana/") })
+        assertEquals(EngineeringProposalStatus.REVIEW_REQUIRED, proposal.status)
+    }
+
+    @Test fun rejectsDeviceAndKernelSourceTargets() = runBlocking {
+        for (blocked in listOf("device/realme/RMX5566/device.mk", "kernel/arch/arm64/configs/defconfig")) {
+            assertFailsWith<IllegalArgumentException> {
+                ManaEngineeringCopilot(FakeProvider(validResponse)).propose(task(path = blocked))
+            }
+        }
+    }
 }
