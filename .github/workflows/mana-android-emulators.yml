@@ -1,4 +1,4 @@
-name: MANA RMX5566RU Android 16 Compatibility Smoke Test
+name: MANA Universal Android Compatibility Smoke Test
 
 on:
   push:
@@ -15,13 +15,17 @@ permissions:
   contents: read
 
 concurrency:
-  group: mana-rmx5566-android16-${{ github.ref }}
+  group: mana-universal-android-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  android16-smoke:
-    name: Android 16 API 36 build/runtime smoke (not OEM hardware proof)
+  android-compatibility:
+    name: Android API ${{ matrix.api-level }} compatibility smoke
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level: [29, 33, 36]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,14 +56,14 @@ jobs:
           set -o pipefail
           "$SDKMANAGER" --install "platform-tools" "platforms;android-36" "build-tools;35.0.0"
 
-      - name: Run unit tests and build Android 16 APK
+      - name: Run unit tests and build Android APK
         working-directory: launcher
         run: gradle :app:testDebugUnitTest :app:assembleDebug --stacktrace
 
-      - name: Run Android 16 API 36 emulator smoke test
+      - name: Run Android API ${{ matrix.api-level }} emulator smoke test
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 36
+          api-level: ${{ matrix.api-level }}
           arch: x86_64
           target: google_apis
           profile: pixel_6
@@ -70,7 +74,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mana-rmx5566-android16-api36-debug
+          name: mana-universal-android-api${{ matrix.api-level }}-debug
           path: launcher/app/build/outputs/apk/debug/*.apk
           if-no-files-found: ignore
           retention-days: 7
