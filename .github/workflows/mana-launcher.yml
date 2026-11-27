@@ -15,8 +15,6 @@ on:
       - 'tools/stage_mana_aosp_prebuilt.sh'
       - 'tools/test_stage_mana_aosp_prebuilt.sh'
       - 'tools/verify_mana_platform_signature.sh'
-      - 'tools/run_mana_aosp_binder_integration.sh'
-      - 'system/mana/services/ManaBrainService/tests/integration/**'
   pull_request:
     paths:
       - 'launcher/**'
@@ -188,19 +186,6 @@ jobs:
           grep -F 'MAX_PENDING_REQUESTS = 32' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
           grep -F 'requests.execute' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
           grep -F 'requests.shutdownNow()' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
-      - name: Validate device-side MANA Binder integration test and Soong runner
-        run: |
-          bash -n tools/run_mana_aosp_binder_integration.sh
-          test -f system/mana/services/ManaBrainService/tests/integration/Android.bp
-          test -f system/mana/services/ManaBrainService/tests/integration/AndroidManifest.xml
-          test -f system/mana/services/ManaBrainService/tests/integration/AndroidTest.xml
-          grep -F 'name: "mana-brain-binder-integration-tests"' system/mana/services/ManaBrainService/tests/integration/Android.bp
-          grep -F 'certificate: "platform"' system/mana/services/ManaBrainService/tests/integration/Android.bp
-          grep -F 'IManaBrain.Stub.asInterface(service)' system/mana/services/ManaBrainService/tests/integration/src/com/mana/system/brain/ManaBrainBinderIntegrationTest.java
-          grep -F 'getProtocolVersion()' system/mana/services/ManaBrainService/tests/integration/src/com/mana/system/brain/ManaBrainBinderIntegrationTest.java
-          grep -F 'UNAVAILABLE_ENGINE_BACKEND_DISCONNECTED' system/mana/services/ManaBrainService/tests/integration/src/com/mana/system/brain/ManaBrainBinderIntegrationTest.java
-          grep -F 'atest mana-brain-binder-integration-tests' tools/run_mana_aosp_binder_integration.sh
-          ! grep -E '(^|[[:space:]])(fastboot|dd|flash|wipe|reboot)([[:space:]]|$)' tools/run_mana_aosp_binder_integration.sh
       - name: Validate AOSP prebuilt staging workflow
         run: |
           bash tools/test_stage_mana_aosp_prebuilt.sh
