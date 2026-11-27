@@ -97,6 +97,7 @@ class MainActivity : Activity() {
     private var manaEngineBinder: ManaEngineService.LocalBinder? = null
     private var manaEngineBound = false
     private var reconnectController: ManaEngineReconnectController? = null
+    private var activityResumed = false
     private var uiInitialized = false
     private val manaEngineConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -202,9 +203,22 @@ class MainActivity : Activity() {
         window.statusBarColor = bg
         window.navigationBarColor = bg
         window.decorView.setBackgroundColor(bg)
-        reconnectController = ManaEngineReconnectController(this) { attemptEngineConnection() }
+        reconnectController = ManaEngineReconnectController(this) {
+            if (activityResumed) attemptEngineConnection()
+        }
         showEngineUnavailableScreen("Подключение к MANA Engine…")
-        attemptEngineConnection()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        activityResumed = true
+        if (!manaEngineBound && manaEngineBinder == null) attemptEngineConnection()
+    }
+
+    override fun onPause() {
+        activityResumed = false
+        reconnectController?.cancel()
+        super.onPause()
     }
 
     private fun attemptEngineConnection() {
@@ -213,10 +227,14 @@ class MainActivity : Activity() {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(engineIntent) else startService(engineIntent)
             manaEngineBound = bindService(engineIntent, manaEngineConnection, BIND_AUTO_CREATE)
-            if (!manaEngineBound) showEngineUnavailableScreen("Android не подтвердил подключение к MANA Engine.")
+            if (!manaEngineBound) {
+                showEngineUnavailableScreen("Android не подтвердил подключение к MANA Engine.")
+                reconnectController?.onFailure()
+            }
         } catch (error: Exception) {
             android.util.Log.e("MANA", "Unable to connect to Engine service", error)
             showEngineUnavailableScreen("Не удалось подключиться: ${error.message ?: error.javaClass.simpleName}")
+            reconnectController?.onFailure()
         }
     }
 
