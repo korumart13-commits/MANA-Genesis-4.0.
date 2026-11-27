@@ -26,4 +26,7 @@ grep -F 'UNAVAILABLE_ENGINE_BACKEND_DISCONNECTED' system/mana/tests/ManaBrainBin
 grep -F 'brain.think(request' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
 grep -F 'IManaBrainCallback.Stub()' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
 grep -F 'ENGINE_UNAVAILABLE' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
+grep -F '"READY".equals(state)' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
+grep -F '"READY_NO_LOCAL_MODEL".equals(state)' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
+grep -F '"ENGINE_NOT_READY".equals(callbackCode.get())' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
 echo "MANA Soong and Binder integration contract checks passed."
