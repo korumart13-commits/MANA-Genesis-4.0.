@@ -150,3 +150,17 @@ The project must preserve the full MANA product requirements in `docs/MASTER_PRO
 - Added source-contract assertions for the atomic gate and both duplicate-callback guards. The latest source-contract workflow run `45918556057` on commit `a86e50959064c7f7850a94294d88edad675623b3` completed successfully.
 - The Gradle Android app verification run `45918549370` was still running at the last status check; no new Gradle result is claimed here. The callback change is in the platform Java service and does not constitute a real Soong compile or device Binder test.
 - The actual Android 16 AOSP/Soong build, platform certificate comparison, SELinux integration, emulator instrumentation, and RMX5566 firmware build/flash remain unexecuted. No device partitions have been modified.
+
+
+## MANA Brain provider routing and local-failure fallback — 2026-11-27
+
+- Normalized provider IDs at the MANA Brain routing boundary. Gateway IDs such as `cloud-gemini` now match the official provider aliases `google` / `gemini`; `cloud-grok` maps to `xai` / `grok`. Returned provider metadata uses canonical IDs, and alias-equivalent duplicate connectors are rejected.
+- Added regression tests for gateway-prefix normalization, Google/Gemini aliases and duplicate aliases.
+- MANA Brain now may fall back to an available cloud provider after local inference throws or returns an empty response only when the request explicitly permits cloud use and is not sensitive. Cancellation is rethrown, and local failure never triggers cloud use without consent or for sensitive requests. Tests cover consent, sensitive-request blocking, and blank local output.
+- JVM verification run `45919199972` for commit `5f84e7da` completed successfully, including the new MANA Brain tests. The broader Android launcher Gradle verification run `45919199900` was still running at the last status check; no result is claimed yet.
+
+## One-shot Binder callback gate — 2026-11-27
+
+- Extracted the atomic first-terminal-callback gate into `ManaBrainTerminalCallbackGate` and wired it into the platform `ManaBrainService` result, error and synchronous-failure paths.
+- Added host JUnit coverage for sequential and 64-way concurrent callback attempts and included the class/tests in `mana-brain-request-policy-tests`.
+- The source-contract workflow and actual Soong host-test execution for this new helper must still be confirmed. No AOSP Soong compile or device Binder test is claimed.
