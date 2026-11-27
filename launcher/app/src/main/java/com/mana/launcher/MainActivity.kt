@@ -139,6 +139,16 @@ class MainActivity : Activity() {
             }
             reconnectController?.onFailure()
         }
+
+        override fun onNullBinding(name: ComponentName?) {
+            manaEngineBinder = null
+            modelStatus?.text = "Служба MANA Engine не предоставила Binder-интерфейс."
+            if (manaEngineBound) {
+                runCatching { unbindService(this) }
+                manaEngineBound = false
+            }
+            reconnectController?.onFailure()
+        }
     }
     private var voiceTarget: EditText? = null
     private var editingDiaryId: String? = null
