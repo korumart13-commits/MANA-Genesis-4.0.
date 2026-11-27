@@ -1,6 +1,5 @@
 name: MANA Engineering Pipeline
-run-name: MANA Engineering - ${{ inputs.client_run_id || github.run_id }}
-run-name: MANA Engineering CI ${{ inputs.task_id || github.sha }}
+run-name: MANA Engineering CI ${{ inputs.task_id || github.run_id }}
 
 on:
   push:
@@ -28,7 +27,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: mana-engineering-${{ inputs.client_run_id || github.ref }}
+  group: mana-engineering-${{ inputs.task_id || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -94,6 +93,7 @@ jobs:
           git status --short
 
       - name: Run patch policy and full JVM tests
+        id: tests
         run: gradle --no-daemon -p engine/mana-brain clean test
 
       - name: Preserve JVM test report even on failure
@@ -106,6 +106,7 @@ jobs:
           retention-days: 14
 
       - name: Build distributable engine JAR
+        id: jar
         run: gradle --no-daemon -p engine/mana-brain jar
 
       - name: Preserve reviewed patch in candidate bundle
@@ -139,7 +140,7 @@ jobs:
           TEST_OUTCOME: ${{ steps.tests.outcome }}
           JAR_OUTCOME: ${{ steps.jar.outcome }}
           PATCH_INPUT: ${{ inputs.patch }}
-          CLIENT_RUN_ID: ${{ inputs.client_run_id }}
+          CLIENT_RUN_ID: ${{ inputs.task_id }}
         run: |
           set -euo pipefail
           mkdir -p ci-report
