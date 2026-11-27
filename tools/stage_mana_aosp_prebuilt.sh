@@ -18,6 +18,7 @@ ANDROID_BP="$MODULE_DIR/Android.bp"
 DEST_DIR="$MODULE_DIR/prebuilts"
 DEST_APK="$DEST_DIR/ManaLauncher.apk"
 APKANALYZER="${APKANALYZER:-apkanalyzer}"
+APKSIGNER="${APKSIGNER:-apksigner}"
 
 [[ -f "$AOSP_TOP/build/make/core/envsetup.mk" ]] || {
   echo "ERROR: AOSP_TOP does not look like a full Android source checkout." >&2
@@ -32,6 +33,15 @@ command -v "$APKANALYZER" >/dev/null 2>&1 || {
   echo "ERROR: apkanalyzer is required (set APKANALYZER to its full path)." >&2
   exit 1
 }
+command -v "$APKSIGNER" >/dev/null 2>&1 || {
+  echo "ERROR: apksigner is required (set APKSIGNER to its full path)." >&2
+  exit 1
+}
+
+if "$APKSIGNER" verify "$APK" >/dev/null 2>&1; then
+  echo "ERROR: expected an unsigned release APK; refusing to re-sign an already signed APK." >&2
+  exit 1
+fi
 
 PACKAGE="$("$APKANALYZER" manifest application-id "$APK")"
 [[ "$PACKAGE" == "com.mana.launcher" ]] || {
