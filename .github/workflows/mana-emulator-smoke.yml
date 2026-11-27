@@ -1,4 +1,4 @@
-name: MANA Android Emulator — install and launch smoke test
+name: MANA Universal Android Emulator — install and launch matrix
 
 on:
   workflow_dispatch:
@@ -15,6 +15,10 @@ permissions:
 jobs:
   emulator-smoke:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level: [29, 33, 36]
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
@@ -31,10 +35,10 @@ jobs:
       - name: Run MANA Brain, OS core and Android app unit tests; build debug APK
         working-directory: launcher
         run: gradle --no-daemon :brain:test :core:test :app:testDebugUnitTest :app:assembleDebug
-      - name: Boot official Android emulator and install/launch MANA
+      - name: Boot Android API ${{ matrix.api-level }} emulator and install/launch MANA
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 36
+          api-level: ${{ matrix.api-level }}
           target: google_apis
           arch: x86_64
           profile: pixel_2
@@ -62,7 +66,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MANA-RMX5566RU-Android16-debug-APK
+          name: MANA-Android-API${{ matrix.api-level }}-debug-APK
           path: launcher/app/build/outputs/apk/debug/*.apk
           if-no-files-found: ignore
           retention-days: 14
