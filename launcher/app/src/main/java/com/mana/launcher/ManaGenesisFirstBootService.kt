@@ -58,7 +58,7 @@ class ManaGenesisFirstBootService(context: Context) {
     private fun collectSnapshot(): GenesisCapabilitySnapshot {
         val installed = linkedSetOf("mana.launcher")
         if (ManaEngineProcessOwner.brainBridge() != null) installed += "mana.brain"
-        if (ManaEngineProcessOwner.engineRuntime() != null) installed += "mana.core"
+        if (ManaEngineProcessOwner.engineRuntime() != null || ManaEngineProcessOwner.isPrepared()) installed += "mana.core"
         if (ManaEngineProcessOwner.memoryService() != null) installed += "mana.encrypted-memory"
         if (ManaEngineProcessOwner.cloudGateway() != null) installed += "mana.cloud-gateway"
         if (ManaEngineProcessOwner.yandexProvider() != null) installed += "mana.yandex-gateway"
