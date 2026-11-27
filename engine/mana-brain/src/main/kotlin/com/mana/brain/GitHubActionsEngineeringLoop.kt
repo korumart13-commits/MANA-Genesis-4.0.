@@ -34,7 +34,7 @@ data class GitHubWorkflowJob(
 )
 
 interface GitHubActionsGateway {
-    suspend fun dispatchPatch(branch: String, patch: String, expectedHeadSha: String): GitHubWorkflowRun
+    suspend fun dispatchPatch(branch: String, patch: String, expectedHeadSha: String, clientRunId: String): GitHubWorkflowRun
     suspend fun awaitCompletion(run: GitHubWorkflowRun, timeoutMs: Long = 240_000): GitHubWorkflowRun
     suspend fun failedJobLogs(runId: Long, maxChars: Int = 40_000): String
 }
@@ -57,17 +57,19 @@ class GitHubActionsRestClient(
     override suspend fun dispatchPatch(
         branch: String,
         patch: String,
-        expectedHeadSha: String
+        expectedHeadSha: String,
+        clientRunId: String
     ): GitHubWorkflowRun = withContext(Dispatchers.IO) {
         require(branch.matches(Regex("[A-Za-z0-9._/-]{1,200}")) && !branch.contains(".."))
         require(expectedHeadSha.matches(Regex("[a-fA-F0-9]{40}")))
+        require(clientRunId.matches(Regex("[A-Za-z0-9._-]{1,80}")))
         require(patch.isNotBlank() && patch.length <= MAX_WORKFLOW_PATCH_CHARS)
         EngineeringPatchPolicy.validate(patch)
 
         val dispatchedAt = Instant.now()
         val payload = JsonObject().apply {
             addProperty("ref", branch)
-            add("inputs", JsonObject().apply { addProperty("patch", patch) })
+            add("inputs", JsonObject().apply { addProperty("patch", patch); addProperty("client_run_id", clientRunId) })
         }
         request("POST", "actions/workflows/$workflowFile/dispatches", payload.toString(), expected = setOf(204))
         val deadline = System.currentTimeMillis() + dispatchTimeoutMs
@@ -129,42 +131,79 @@ class GitHubActionsRestClient(
     ): String {
         val token = tokenProvider.accessToken()?.trim().orEmpty()
         require(token.isNotBlank()) { "GitHub Actions is not connected: no access token is available." }
-        var url = URL("$API_BASE/$pathAndQuery")
-        var authenticated = true
-        repeat(3) {
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = method
-                connectTimeout = 15_000
-                readTimeout = 90_000
-                instanceFollowRedirects = false
-                setRequestProperty("Accept", "application/vnd.github+json")
-                setRequestProperty("X-GitHub-Api-Version", API_VERSION)
-                if (authenticated) setRequestProperty("Authorization", "Bearer $token")
-                if (body != null) {
-                    doOutput = true
-                    setRequestProperty("Content-Type", "application/json")
-                }
+        val connection = URL("$API_BASE/$repository/$pathAndQuery").openConnection() as HttpURLConnection
+        try {
+            connection.requestMethod = method
+            connection.connectTimeout = 15_000
+            connection.readTimeout = 90_000
+            connection.setRequestProperty("Accept", "application/vnd.github+json")
+            connection.setRequestProperty("Authorization", "Bearer $token")
+            connection.setRequestProperty("X-GitHub-Api-Version", API_VERSION)
+            connection.setRequestProperty("User-Agent", "MANA-Genesis-Engineering")
+            if (body != null) {
+                connection.doOutput = true
+                connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                connection.outputStream.use { it.write(body.toByteArray(StandardCharsets.UTF_8)) }
             }
-            try {
-                if (body != null) connection.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
-                val status = connection.responseCode
-                if (status in 300..399) {
-                    val location = connection.getHeaderField("Location")
-                        ?: throw IllegalStateException("GitHub returned a redirect without a location.")
-                    url = URL(url, location)
-                    authenticated = false // Never forward the GitHub token to a signed artifact-log URL.
-                    return@repeat
+            val status = connection.responseCode
+            val stream = if (status in 200..299) connection.inputStream else connection.errorStream
+            val response = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
+            if (status !in expected) throw IllegalStateException("GitHub API request failed with HTTP $status for $pathAndQuery.")
+            return response
+        } finally { connection.disconnect() }
+    }
+
+    /** Download GitHub's log ZIP without forwarding the PAT to its signed blob URL. */
+    private fun downloadJobLogZip(path: String): ByteArray {
+        val token = tokenProvider.accessToken()?.trim().orEmpty()
+        require(token.isNotBlank()) { "GitHub Actions is not connected." }
+        val api = URL("$API_BASE/$repository/$path").openConnection() as HttpURLConnection
+        val redirect: String
+        try {
+            api.instanceFollowRedirects = false
+            api.connectTimeout = 15_000
+            api.readTimeout = 90_000
+            api.setRequestProperty("Accept", "application/vnd.github+json")
+            api.setRequestProperty("Authorization", "Bearer $token")
+            api.setRequestProperty("X-GitHub-Api-Version", API_VERSION)
+            api.setRequestProperty("User-Agent", "MANA-Genesis-Engineering")
+            val status = api.responseCode
+            if (status !in 300..399) throw IllegalStateException("GitHub job log endpoint did not return a redirect (HTTP $status).")
+            redirect = api.getHeaderField("Location") ?: error("GitHub job log redirect omitted its download URL.")
+        } finally { api.disconnect() }
+
+        val blob = URL(redirect).openConnection() as HttpURLConnection
+        try {
+            blob.instanceFollowRedirects = true
+            blob.connectTimeout = 15_000
+            blob.readTimeout = 90_000
+            if (blob.responseCode !in 200..299) {
+                throw IllegalStateException("GitHub job log archive download failed (HTTP ${blob.responseCode}).")
+            }
+            return blob.inputStream.use { it.readNBytes(MAX_LOG_ARCHIVE_BYTES) }
+        } finally { blob.disconnect() }
+    }
+
+    private fun unzipJobLogs(bytes: ByteArray, remainingChars: Int): String {
+        if (remainingChars <= 0) return ""
+        val output = StringBuilder()
+        ZipInputStream(ByteArrayInputStream(bytes)).use { zip ->
+            while (output.length < remainingChars) {
+                val entry = zip.nextEntry ?: break
+                if (!entry.isDirectory && entry.name.endsWith(".txt")) {
+                    val buffer = ByteArray(8_192)
+                    while (output.length < remainingChars) {
+                        val count = zip.read(buffer)
+                        if (count < 0) break
+                        output.append(String(buffer, 0, count, StandardCharsets.UTF_8))
+                    }
                 }
-                if (status !in expected) {
-                    throw IllegalStateException("GitHub API request failed with HTTP " + status + " for " + pathAndQuery + ".")
-                }
-                return connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-            } finally {
-                connection.disconnect()
+                zip.closeEntry()
             }
         }
-        throw IllegalStateException("GitHub API redirect limit exceeded for " + pathAndQuery + ".")
+        return output.toString()
     }
+
     private fun runCreatedAt(item: com.google.gson.JsonObject): Instant =
         Instant.parse(item.get("created_at").asString)
 
@@ -229,7 +268,7 @@ class ManaEngineeringAutomation(
             )
             val proposal = copilot.propose(currentTask)
             check(proposal.status == EngineeringProposalStatus.REVIEW_REQUIRED)
-            val dispatched = github.dispatchPatch(branch, proposal.unifiedDiff, expectedHeadSha)
+            val dispatchId = "${task.id}-a${attempt + 1}-${java.util.UUID.randomUUID().toString().take(8)}"\n            val dispatched = github.dispatchPatch(branch, proposal.unifiedDiff, expectedHeadSha, dispatchId)
             val completed = github.awaitCompletion(dispatched)
             latestRun = completed
             if (completed.succeeded) {
