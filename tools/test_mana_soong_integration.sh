@@ -55,4 +55,7 @@ grep -F '"READY_NO_LOCAL_MODEL".equals(state)' system/mana/tests/ManaBrainBinder
 grep -F 'Boolean.TRUE.equals(resultLocal.get())' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
 grep -F 'callbackCount.get()' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
 grep -F 'callbackDelivered.await(180, TimeUnit.SECONDS)' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
+grep -F 'android:targetPackage="com.mana.system.brain"' system/mana/tests/ManaBrainBinderIntegration/AndroidManifest.xml
+grep -F 'getInstrumentation().getContext()' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
+grep -F 'context.checkSelfPermission("com.mana.permission.BIND_BRAIN")' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
 echo "MANA Soong and Binder integration contract checks passed."
