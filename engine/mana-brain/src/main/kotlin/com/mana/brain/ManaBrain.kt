@@ -16,7 +16,7 @@ data class BrainRequest(
 ) {
     init {
         require(prompt.isNotBlank()) { "Prompt must not be blank" }
-        require(prompt.length <= MAX_PROMPT_CHARS) { "Prompt exceeds the maximum supported length" }
+        require(prompt.length <= ManaBrain.MAX_PROMPT_CHARS) { "Prompt exceeds the maximum supported length" }
         require(preferredCloudProvider == null || preferredCloudProvider.isNotBlank())
     }
 }
