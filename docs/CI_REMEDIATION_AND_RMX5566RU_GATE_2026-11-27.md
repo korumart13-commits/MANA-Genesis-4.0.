@@ -43,7 +43,7 @@ The workflow was strengthened so that both the debug APK and unsigned release AP
 - Workflow file: `.github/workflows/mana-launcher.yml`
 - New launcher run: https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/45937236960
 - Run number: 1012
-- At report creation the new run was queued; no success or artifact is claimed yet.
+- At the latest follow-up check the new run was in progress. Setup and the first validation stages (MANA Brain ownership, Binder contract, pinned AOSP manifest, RMX5566 profile/collector, host policy tests, platform service boundary, prebuilt staging and glTF validation) had passed; MANA Brain/core tests had also passed. Android app compilation was in progress. No artifact had been published at that check; no final success is claimed.
 
 Important packaging distinction:
 - The standalone release artifact is `app-release-unsigned.apk`, intended for AOSP platform signing; it is not directly installable as-is.
