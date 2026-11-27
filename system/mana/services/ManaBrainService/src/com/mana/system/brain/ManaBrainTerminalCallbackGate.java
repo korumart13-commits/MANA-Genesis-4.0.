@@ -9,4 +9,8 @@ final class ManaBrainTerminalCallbackGate {
     boolean tryDeliver() {
         return delivered.compareAndSet(false, true);
     }
+
+    boolean isDelivered() {
+        return delivered.get();
+    }
 }
