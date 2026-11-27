@@ -65,7 +65,7 @@ class ManaEngineeringCopilot(
         val prompt = buildPrompt(task, safeFiles)
         require(prompt.length <= maxPromptChars) { "Engineering context exceeds the configured prompt budget." }
         val raw = provider.generate(prompt)
-        return parseProposal(task.id, provider.id, raw)
+        return parseProposal(task.id, provider.id, raw, safeFiles.map { it.path }.toSet())
     }
 
     private fun buildPrompt(task: EngineeringTask, files: List<EngineeringSourceFile>): String = buildString {
@@ -89,7 +89,12 @@ class ManaEngineeringCopilot(
         }
     }
 
-    private fun parseProposal(taskId: String, providerId: String, raw: String): EngineeringProposal {
+    private fun parseProposal(
+        taskId: String,
+        providerId: String,
+        raw: String,
+        approvedSourcePaths: Set<String>
+    ): EngineeringProposal {
         val jsonText = raw.trim()
             .removePrefix("```json").removePrefix("```")
             .removeSuffix("```").trim()
@@ -103,6 +108,9 @@ class ManaEngineeringCopilot(
         require(tests.isNotEmpty() && tests.size <= 30) { "Proposal must include a bounded test plan." }
         require(risks.size <= 30)
         val paths = EngineeringPatchPolicy.validate(diff).changedPaths
+        require(paths.all { it in approvedSourcePaths }) {
+            "Proposal modifies a file that was not explicitly selected for this task."
+        }
         return EngineeringProposal(
             taskId, providerId, summary, diff, tests, risks, paths,
             EngineeringProposalStatus.REVIEW_REQUIRED
