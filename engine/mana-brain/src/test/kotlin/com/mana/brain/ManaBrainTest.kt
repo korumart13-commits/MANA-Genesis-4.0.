@@ -273,6 +273,34 @@ class ManaBrainTest {
     }
 
     @Test
+    fun cloudProviderCannotReturnBlankResponse() {
+        val local = FakeProvider("litert-local", false, "")
+        val cloud = FakeProvider("openai", true, "   ")
+        assertFailsWith<IllegalArgumentException> {
+            kotlinx.coroutines.runBlocking {
+                ManaBrain(local, listOf(cloud)).respond(
+                    BrainRequest("hello", allowCloud = true)
+                )
+            }
+        }
+    }
+
+    @Test
+    fun oversizedPromptIsRejectedBeforeInference() {
+        val prompt = "x".repeat(ManaBrain.MAX_PROMPT_CHARS + 1)
+        assertFailsWith<IllegalArgumentException> { BrainRequest(prompt) }
+    }
+
+    @Test
+    fun blankProviderIdentifiersAreRejected() {
+        val local = FakeProvider("", true, "answer")
+        assertFailsWith<IllegalArgumentException> { ManaBrain(local) }
+        val validLocal = FakeProvider("litert-local", false, "")
+        val blankCloud = FakeProvider(" ", true, "answer")
+        assertFailsWith<IllegalArgumentException> { ManaBrain(validLocal, listOf(blankCloud)) }
+    }
+
+    @Test
     fun inferenceTimeoutsMustBePositive() {
         val local = FakeProvider("litert-local", false, "")
         assertFailsWith<IllegalArgumentException> { ManaBrain(local, emptyList(), localTimeoutMs = 0) }
