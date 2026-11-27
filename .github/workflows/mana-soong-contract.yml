@@ -22,7 +22,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: mana-validation-${{ github.ref }}
+  group: mana-soong-contract-${{ github.ref }}
   cancel-in-progress: true
 
 
