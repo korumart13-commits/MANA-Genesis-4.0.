@@ -5,7 +5,7 @@ android_app {
     static_libs: ["mana-brain-interface"],
     platform_apis: true,
     certificate: "platform",
-    privileged: true,
+    privileged: false,
     product_specific: true,
 }
 
