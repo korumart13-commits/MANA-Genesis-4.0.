@@ -61,6 +61,11 @@ import com.mana.os.core.ManaFutureUpdateService
 import com.mana.os.core.ManaUpdateStage
 
 class MainActivity : Activity() {
+    companion object {
+        private const val OFFICIAL_GEMMA_4_E2B_SHA256 =
+            "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c"
+    }
+
     private val bg = Color.rgb(4, 7, 14)
     private val panel = Color.rgb(10, 22, 42)
     private val panelRaised = Color.rgb(13, 32, 59)
@@ -1132,6 +1137,9 @@ class MainActivity : Activity() {
                     }
                     require(copied > 0L) { "Файл модели пуст." }
                     val hash = digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
+                    require(hash == OFFICIAL_GEMMA_4_E2B_SHA256) {
+                        "Контрольная сумма не совпадает с официальной Gemma 4 E2B. Файл не установлен."
+                    }
                     Files.move(temp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
                     File(directory, "selected-model.sha256").writeText("$hash  selected-model.litertlm\n")
                 } finally {
