@@ -3,6 +3,10 @@ set -euo pipefail
 
 bash -n tools/run_mana_soong_integration.sh
 grep -F 'm nothing --no-skip-soong-tests' tools/run_mana_soong_integration.sh
+grep -F 'PLATFORM_SDK_VERSION="$(get_build_var PLATFORM_SDK_VERSION)"' tools/run_mana_soong_integration.sh
+grep -F 'PLATFORM_SDK_VERSION" == "36"' tools/run_mana_soong_integration.sh
+grep -F 'get_build_var PRODUCT_PACKAGES' tools/run_mana_soong_integration.sh
+grep -F 'ManaBrainService ManaLauncher' tools/run_mana_soong_integration.sh
 grep -F 'mana-brain-interface' tools/run_mana_soong_integration.sh
 grep -F 'ManaBrainService' tools/run_mana_soong_integration.sh
 grep -F 'ManaLauncher' tools/run_mana_soong_integration.sh
