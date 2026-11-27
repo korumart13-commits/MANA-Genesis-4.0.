@@ -1,10 +1,10 @@
 > **Обязательный главный источник требований:** [MANA_GENESIS_4.0_MASTER_FILE_RU.md](../../MANA_GENESIS_4.0_MASTER_FILE_RU.md). Перед реализацией прочитать его целиком; не считать этот короткий task-файл заменой полной спецификации.
 
-# Задание: завершить MANA Genesis 4.0 для одного аппарата и one-action setup
+# Задание: завершить универсальную MANA Genesis 4.0 для Android 10+ и one-action setup
 
 Главный источник требований: `docs/MANA_ASI_UNIVERSAL_ARCHITECTURE_RU.md` (название файла сохранено для ссылок, но содержание теперь строго RMX5566RU-specific).
 
-Цель: один основной APK MANA для **realme RMX5566RU / RE645F, Android 16, Snapdragon 685/SM6225**. Не разрабатывать универсальную поддержку Android 12+ и не заявлять совместимость с другими моделями.
+Цель: один основной универсальный APK MANA для **Android 10 (API 29) и выше**. RMX5566RU / RE645F / Android 16 / Snapdragon 685 — один тестовый профиль, не единственная цель. Поддержку заявлять только в пределах проверенной матрицы API, ABI, RAM и физических устройств.
 
 ## Обязательное пользовательское поведение
 
@@ -15,24 +15,24 @@
 ## Реализация
 
 1. Проверить текущий Gradle app и launcher, сделать один реальный главный экран и связать кнопку с полным first-run coordinator; не оставлять кнопки-заглушки.
-2. Сверить device profile и все проверки строго с RMX5566RU/RE645F, Android 16 build RMX5566_16.0.5.1310 (EX01), SM6225/bengal, ARM64. Исключить C85 5G/Dimensity 6300.
+2. Реализовать универсальный device profiler: API/build/fingerprint/ABI/SoC/RAM/storage/GPU/runtime/battery/thermal/OEM limits. RMX5566RU — регрессионный тестовый профиль; не переносить его аппаратные параметры на другие телефоны.
 3. Собрать inventory: API/build/fingerprint/ABI/RAM/storage/battery/thermal/available services; точные поля, которые Android не разрешает читать, отмечать unknown.
-4. Интегрировать локальную LiteRT-LM модель, автоматическую проверку и безопасную подготовку весов; проверить реальную загрузку на RMX5566RU, не только модельные JVM mocks.
+4. Интегрировать локальную LiteRT-LM модель, автоматическую проверку и безопасную подготовку весов; проверить реальную загрузку на нескольких физических устройствах разных классов; не только модельные JVM mocks.
 5. Реализовать зашифрованную персистентную память, task journal, recovery/resume, capability registry для функций этого устройства.
 6. Подключить русский voice I/O, 3D avatar, navy UI, Diary, Future Updates, Adaptive Learning, Smart Receptionist, Contact Intelligence, Life Manager, Yandex/VK, Game Intelligence/Minecraft и wearable/car adapters — сохранять все требования из полной спецификации. Интеграции аккаунтов опциональны и не требуют ключей для базового запуска.
 7. Довести GitHub Actions loop: workflow на default branch только после одобрения владельца; реальные dispatch/status/log/retry тесты; секреты не логировать; до 2 повторов; никаких auto-merge/flash.
 8. APK updates: подписывание, SHA-256, staged rollout, health check, rollback. Не считать APK updater прошивочным OTA.
 9. Firmware bring-up только при наличии exact device tree, kernel/DTS/DTBO, vendor blobs, VINTF/HAL, partition map, AVB chain и verified recovery. Никаких guessed blobs/partitions или чужих образов.
-10. CI: JVM unit/integration, Gradle Android compile/package/signature, emulator smoke, затем физический RMX5566RU install/runtime tests. Разделять результаты по уровню доказательства.
+10. CI: JVM unit/integration, Gradle Android compile/package/signature, emulator smoke, затем физические install/runtime tests на нескольких Android-устройствах разных производителей и версий. Разделять результаты по уровню доказательства.
 
 ## Не делать
 
-- Не расширять целевой релиз на любые Android 12+ устройства.
-- Не использовать C85 5G / Dimensity 6300 device tree.
+- Не объявлять универсальную прошивку для всех устройств.
+- Не переносить device tree, kernel или vendor blobs между моделями без квалификации.
 - Не выдавать mock/UI/документацию за интеграцию.
 - Не выполнять скрытую эскалацию привилегий, обход системных экранов, malware, stealth persistence или самораспространение.
 - Не менять main и не мержить PR без отдельного одобрения владельца.
 
 ## Definition of Done
 
-Единый подписанный APK, установленный и реально запущенный на RMX5566RU; одна кнопка запускает все доступные app-level настройки и безопасно возобновляет незавершённые шаги; локальный Brain и модель фактически работают; ключевые модули имеют runtime evidence; отчёт о блокерах честный. Полная прошивка/OTA — отдельный этап и не объявляется готовой без физического boot/rollback теста.
+Единый подписанный APK, установленный и реально запущенный на нескольких физических Android-устройствах из заявленной матрицы; одна кнопка запускает все доступные app-level настройки и безопасно возобновляет незавершённые шаги; локальный Brain и модель фактически работают; ключевые модули имеют runtime evidence; отчёт о блокерах честный. Полная прошивка/OTA — отдельный этап и не объявляется готовой без физического boot/rollback теста.
