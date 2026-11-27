@@ -43,7 +43,7 @@ jobs:
           set -euo pipefail
           ROOT="MANA_Genesis_4.0_COMPLETE"
           mkdir -p "$ROOT/01_Source_LATEST" "$ROOT/02_Local_AI_Gemma_LiteRT" "$ROOT/03_APK_Installers/Debug_signed" "$ROOT/03_APK_Installers/Release_unsigned" "$ROOT/04_Documentation"
-          rsync -a --exclude='.git/' --exclude='raw/' ./ "$ROOT/01_Source_LATEST/"
+          rsync -a --exclude='.git/' --exclude='raw/' --exclude="$ROOT/" ./ "$ROOT/01_Source_LATEST/"
           rsync -a raw/full/ "$ROOT/02_Local_AI_Gemma_LiteRT/"
           find raw/debug -type f -name '*.apk' -exec cp -n {} "$ROOT/03_APK_Installers/Debug_signed/" \;
           find raw/release -type f -name '*.apk' -exec cp -n {} "$ROOT/03_APK_Installers/Release_unsigned/" \;
