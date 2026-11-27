@@ -323,3 +323,5 @@ jobs:
           path: launcher/app/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
           retention-days: 14
+
+# Re-run source verification after repairing the unified bundle SDK setup.
