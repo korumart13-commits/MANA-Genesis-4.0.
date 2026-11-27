@@ -254,7 +254,7 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, dp(24))
         })
-        val launch = action(if (setupRunning) "MANA УСТАНАВЛИВАЕТСЯ…" else if (setupStarted) "ПРОДОЛЖИТЬ УСТАНОВКУ MANA" else "УСТАНОВИТЬ MANA") {
+        val launch = action(if (setupRunning) "MANA XZ УСТАНАВЛИВАЕТСЯ…" else if (setupStarted) "ПРОДОЛЖИТЬ УСТАНОВКУ MANA XZ" else "УСТАНОВИТЬ MANA XZ") {
             startManaOneTapSetup()
         }.apply {
             textSize = 15f
@@ -351,7 +351,7 @@ class MainActivity : Activity() {
         fallback.addView(label(message, 14, textColor, false).apply {
             setPadding(0, 0, 0, dp(18))
         })
-        fallback.addView(action(if (setupRunning) "MANA УСТАНАВЛИВАЕТСЯ…" else "ПОВТОРИТЬ ЗАПУСК MANA") {
+        fallback.addView(action(if (setupRunning) "MANA XZ УСТАНАВЛИВАЕТСЯ…" else "ПОВТОРИТЬ ЗАПУСК MANA XZ") {
             if (!setupRunning) attemptEngineConnection()
         }, LinearLayout.LayoutParams(-1, dp(56)))
         setContentView(fallback)
