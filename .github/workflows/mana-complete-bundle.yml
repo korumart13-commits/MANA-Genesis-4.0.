@@ -66,10 +66,14 @@ jobs:
           set -euo pipefail
           DEBUG_APK="$(find raw/debug -type f -name '*.apk' -print -quit)"
           RELEASE_APK="$(find raw/release -type f -name '*.apk' -print -quit)"
-          apksigner verify --verbose "$DEBUG_APK"
-          apkanalyzer manifest application-id "$DEBUG_APK" | grep -Fx 'com.mana.launcher'
-          apkanalyzer manifest application-id "$RELEASE_APK" | grep -Fx 'com.mana.launcher'
-          if apksigner verify "$RELEASE_APK" >/dev/null 2>&1; then
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          APKANALYZER="$(find "$ANDROID_HOME" -type f -name apkanalyzer | sort -V | tail -n 1)"
+          test -x "$APKSIGNER"
+          test -x "$APKANALYZER"
+          "$APKSIGNER" verify --verbose "$DEBUG_APK"
+          "$APKANALYZER" manifest application-id "$DEBUG_APK" | grep -Fx 'com.mana.launcher'
+          "$APKANALYZER" manifest application-id "$RELEASE_APK" | grep -Fx 'com.mana.launcher'
+          if "$APKSIGNER" verify "$RELEASE_APK" >/dev/null 2>&1; then
             echo "Expected the AOSP platform-signing release APK to be unsigned, but it is signed." >&2
             exit 1
           fi
@@ -124,9 +128,15 @@ jobs:
           from pathlib import Path
           import hashlib, os
           root = Path(os.environ["RUNNER_TEMP"]) / "MANA_Genesis_4.0_COMPLETE"
+          def sha256(path):
+              digest = hashlib.sha256()
+              with path.open("rb") as stream:
+                  for block in iter(lambda: stream.read(8 * 1024 * 1024), b""):
+                      digest.update(block)
+              return digest.hexdigest()
           seen, removed = {}, []
           for path in sorted(p for p in root.rglob("*") if p.is_file()):
-              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              digest = sha256(path)
               if digest in seen:
                   removed.append((str(path.relative_to(root)), seen[digest]))
                   path.unlink()
