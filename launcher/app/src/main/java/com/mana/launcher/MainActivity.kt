@@ -157,10 +157,7 @@ class MainActivity : Activity() {
     private var speechRecognizer: SpeechRecognizer? = null
     private val audioPermissionRequestCode = 4111
     private val contactsPermissionRequestCode = 4112
-    private val callScreeningRoleRequestCode = 4113
     private val assistantRoleRequestCode = 4115
-    private val notificationPermissionRequestCode = 4114
-    private var pendingCallScreeningRoleAfterContacts = false
     private lateinit var contactIntelligence: ManaContactIntelligence
 
     private fun startFloatingAvatarService() {
@@ -692,43 +689,14 @@ class MainActivity : Activity() {
         avatarPanel = overlay
     }
 
-    private fun requestCallScreeningRole() {
-        if (Build.VERSION.SDK_INT < 29) {
-            showMessage("Системная роль Call Screening доступна начиная с Android 10.")
-            return
-        }
-        if (checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-            pendingCallScreeningRoleAfterContacts = true
-            requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS), contactsPermissionRequestCode)
-            return
-        }
-        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), notificationPermissionRequestCode)
-            return
-        }
-        val roleManager = getSystemService(RoleManager::class.java)
-        if (!roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
-            showMessage("На этой прошивке роль Call Screening недоступна.")
-            return
-        }
-        if (roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)) {
-            showMessage("MANA уже назначена приложением распознавания вызовов.")
-            return
-        }
-        startActivityForResult(roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING), callScreeningRoleRequestCode)
-    }
-
     private fun showReceptionist() {
         showingDrawer = false
         search.setText("")
         content.removeAllViews()
-        content.addView(label("MANA SMART RECEPTIONIST", 22, textColor, true))
-        content.addView(label("Локальная проверка контакта. Профиль: playful • задержка автоответа 10 секунд • неизвестные номера • сводка метаданных вызова. Автоответ после 10 секунд доступен только при добровольном назначении MANA приложением телефона.", 12, muted, false))
-        content.addView(action("Включить системное распознавание неизвестных вызовов") { requestCallScreeningRole() }, LinearLayout.LayoutParams(-1, dp(44)).apply { topMargin = dp(10) })
-        content.addView(action("Открыть MANA Phone для настройки автоответа") { startActivity(Intent(this, ManaDialerActivity::class.java)) })
-        content.addView(label("CallScreeningService распознаёт неизвестные номера и уведомляет владельца. Для автоответа через 10 секунд открой MANA Phone и отдельно назначь MANA приложением телефона; без этого системный номеронабиратель не меняется.", 11, muted, false))
+        content.addView(label("MANA CONTACT INTELLIGENCE", 22, textColor, true))
+        content.addView(label("В MANA нет собственной звонилки и набора номеров. Для обычных звонков используется стандартное приложение телефона realme. Здесь можно только локально найти сохранённый контакт по номеру.", 12, muted, false))
         val phone = EditText(this).apply {
-            hint = "Номер телефона"
+            hint = "Номер для поиска контакта"
             setTextColor(textColor)
             setHintTextColor(muted)
             inputType = InputType.TYPE_CLASS_PHONE
@@ -736,24 +704,20 @@ class MainActivity : Activity() {
             setPadding(dp(12), 0, dp(12), 0)
         }
         content.addView(phone, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(14) })
-        content.addView(action("Проверить контакт локально") {
+        content.addView(action("Найти контакт") {
             val number = phone.text.toString()
-            if (!contactIntelligence.hasPermission()) {
+            if (number.isBlank()) {
+                showMessage("Введи номер для поиска в сохранённых контактах.")
+            } else if (!contactIntelligence.hasPermission()) {
                 requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS), contactsPermissionRequestCode)
             } else try {
                 val match = contactIntelligence.findByPhone(number)
-                val decision = ManaSmartReceptionistPolicy().onIncomingCall(numberKnown = match != null)
-                val identity = match?.displayName?.takeIf { it.isNotBlank() } ?: "Неизвестный номер"
-                showMessage(
-                    "$identity\nЗадержка решения: ${decision.delay.seconds} сек.\n" +
-                        "Сводка метаданных вызова: ${if (decision.offerSummary) "включена" else "выключена"} (без записи и расшифровки аудио).\n" +
-                        "Требуется подтверждение владельца: да."
-                )
+                showMessage(match?.displayName?.takeIf { it.isNotBlank() } ?: "Контакт с таким номером не найден.")
             } catch (error: Exception) {
-                showMessage("Проверка контакта не удалась: ${error.message}")
+                showMessage("Поиск контакта не удался: ${error.message}")
             }
         }, LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(10) })
-        content.addView(label("Номер и контакты обрабатываются на устройстве. Доступ к аудио звонка и его расшифровка не выполняются. Для доступа к контактам требуется отдельное разрешение Android.", 11, muted, false).apply {
+        content.addView(label("Поиск выполняется на устройстве. MANA не запрашивает разрешения на совершение вызовов, чтение журнала звонков или управление телефонными вызовами.", 11, muted, false).apply {
             setPadding(0, dp(10), 0, 0)
         })
     }
@@ -1599,20 +1563,11 @@ class MainActivity : Activity() {
             else showMessage("Доступ к микрофону не предоставлен.")
         }
         if (requestCode == contactsPermissionRequestCode) {
-            val granted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
-            if (pendingCallScreeningRoleAfterContacts) {
-                pendingCallScreeningRoleAfterContacts = false
-                if (granted) requestCallScreeningRole()
-                else showMessage("Без доступа к контактам MANA не сможет отличать сохранённые номера от неизвестных. Роль фильтрации не запрошена.")
-            } else if (granted) {
-                showMessage("Доступ к контактам включён. Повтори проверку номера.")
+            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+                showMessage("Доступ к контактам включён. Повтори поиск.")
             } else {
                 showMessage("Доступ к контактам не предоставлен.")
             }
-        }
-        if (requestCode == notificationPermissionRequestCode) {
-            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) requestCallScreeningRole()
-            else showMessage("Уведомления выключены; MANA не сможет сообщать об неизвестных вызовах.")
         }
     }
 
@@ -1628,14 +1583,6 @@ class MainActivity : Activity() {
             voiceTarget = null
             if (!spoken.isNullOrBlank() && target != null) target.setText(spoken)
             else if (!spoken.isNullOrBlank()) { chatInput?.setText(spoken); sendToLocalModel() }
-        }
-        if (requestCode == callScreeningRoleRequestCode && Build.VERSION.SDK_INT >= 29) {
-            val roleManager = getSystemService(RoleManager::class.java)
-            showMessage(if (roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)) {
-                "MANA включена для распознавания вызовов. Звонки остаются под твоим контролем."
-            } else {
-                "Роль распознавания вызовов не была предоставлена."
-            })
         }
         if (requestCode == assistantRoleRequestCode && Build.VERSION.SDK_INT >= 29) {
             val roleManager = getSystemService(RoleManager::class.java)
