@@ -2,11 +2,18 @@
 
 MANA Genesis 4.0 is being developed as an Android 16 AOSP-derived operating system for the realme RMX5566RU (RE645F), not as a standalone launcher APK.
 
-## Current focus
+## Current release scope (revised 2026-11-27)
 
-- Establish the Android platform source and product architecture.
-- Verify the exact RMX5566RU device tree, vendor interface and Linux kernel source.
-- Build the MANA system layer into the OS: System UI, launcher, settings, avatar, local-first MANA Brain and system services.
+The immediate deliverable is a MANA OS Design/Update APK plus device self-audit and a forward-compatible system bridge. The current APK release explicitly defers the AI app, Gemma/LLM model downloads, and drivers/kernel/vendor changes. It includes MANA HOME, app-level MANA Shade, Lock Screen Preview, Settings, system information cards, Device Audit, Firmware Readiness reporting, and MANA System Bridge API v1 for future MANA Brain integration.
+
+First-run setup explains and requests necessary Android permissions sequentially, verifies each result, and ends with a user-controlled reboot suggestion. It must not silently reboot, bypass permissions, claim to replace protected System UI/lock screen, or flash partitions. Visual direction combines iOS 13 clarity, Samsung One UI ergonomics, and familiar Android behavior in the dark-blue MANA identity.
+
+The APK audits only information exposed by Android APIs, marks inaccessible/unknown values explicitly, and generates a compatibility/missing-components report for the later RMX5566RU AOSP firmware stage. It cannot obtain proprietary OEM sources or build a full ROM on-device. Full AOSP/ROM development remains the later goal after exact device tree, kernel/vendor sources, VINTF, AVB/signing and recovery are verified. See [the revised release scope and self-audit specification](docs/MANA_OS_REVISED_SCOPE_AND_SELF_AUDIT_RU.md).
+
+## Later platform goal
+
+- Verify exact RMX5566RU device tree, vendor interface and Linux kernel source.
+- Build the MANA system layer into AOSP after the device-specific source and recovery gates pass.
 - Preserve the stock boot chain until device-specific sources, recovery and signing are verified.
 
 ## Core architecture
