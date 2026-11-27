@@ -5,7 +5,7 @@ import org.junit.Test
 
 class ManaServiceResiliencePolicyTest {
     @Test fun exponentialBackoffIsBounded() {
-        val policy = ManaServiceResiliencePolicy(maxAttempts = 6, baseDelayMs = 1_000, maxDelayMs = 5_000)
+        val policy = ManaServiceResiliencePolicy(maxAttempts = 6, baseDelayMs = 1_000, maxDelayMs = 5_000, jitter = { 0L })
         assertEquals(1_000L, policy.recordFailure(0).delayMs)
         assertEquals(2_000L, policy.recordFailure(1_000).delayMs)
         assertEquals(4_000L, policy.recordFailure(3_000).delayMs)
@@ -13,7 +13,7 @@ class ManaServiceResiliencePolicyTest {
     }
 
     @Test fun retryBudgetEventuallyExhausts() {
-        val policy = ManaServiceResiliencePolicy(maxAttempts = 2)
+        val policy = ManaServiceResiliencePolicy(maxAttempts = 2, jitter = { 0L })
         assertFalse(policy.recordFailure(0).exhausted)
         assertFalse(policy.recordFailure(1).exhausted)
         val exhausted = policy.recordFailure(2)
@@ -23,7 +23,7 @@ class ManaServiceResiliencePolicyTest {
     }
 
     @Test fun stableHealthResetsRetryBudgetOnlyAfterWindow() {
-        val policy = ManaServiceResiliencePolicy(maxAttempts = 1, stableWindowMs = 10)
+        val policy = ManaServiceResiliencePolicy(maxAttempts = 1, stableWindowMs = 10, jitter = { 0L })
         policy.recordFailure(0)
         policy.recordHealthy(5)
         assertFalse(policy.resetIfStable(14))
@@ -33,14 +33,14 @@ class ManaServiceResiliencePolicyTest {
     }
 
     @Test fun failuresOutsideWindowStartNewBudget() {
-        val policy = ManaServiceResiliencePolicy(maxAttempts = 1, stableWindowMs = 50, failureWindowMs = 100)
+        val policy = ManaServiceResiliencePolicy(maxAttempts = 1, stableWindowMs = 50, failureWindowMs = 100, jitter = { 0L })
         assertFalse(policy.recordFailure(0).exhausted)
         assertTrue(policy.recordFailure(50).exhausted)
         assertFalse(policy.recordFailure(151).exhausted)
     }
 
     @Test fun failureClearsPendingHealthyWindow() {
-        val policy = ManaServiceResiliencePolicy(maxAttempts = 3, stableWindowMs = 50)
+        val policy = ManaServiceResiliencePolicy(maxAttempts = 3, stableWindowMs = 50, jitter = { 0L })
         policy.recordFailure(0)
         policy.recordHealthy(10)
         policy.recordFailure(20)
