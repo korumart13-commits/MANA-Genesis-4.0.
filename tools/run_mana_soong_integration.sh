@@ -40,6 +40,21 @@ cd "$AOSP_TOP"
 source build/envsetup.sh
 lunch "$PRODUCT_TARGET"
 
+# Refuse to run against a non-Android-16 tree or a product that omits either MANA package.
+PLATFORM_SDK_VERSION="$(get_build_var PLATFORM_SDK_VERSION)"
+[[ "$PLATFORM_SDK_VERSION" == "36" ]] || {
+  echo "ERROR: expected Android 16 / API 36, got PLATFORM_SDK_VERSION=$PLATFORM_SDK_VERSION." >&2
+  exit 1
+}
+PRODUCT_PACKAGES_LIST="$(get_build_var PRODUCT_PACKAGES)"
+for required_package in ManaBrainService ManaLauncher; do
+  if ! printf '%s\\n' "$PRODUCT_PACKAGES_LIST" | tr ' ' '\\n' | grep -Fxq "$required_package"; then
+    echo "ERROR: lunch target $PRODUCT_TARGET does not include $required_package in PRODUCT_PACKAGES." >&2
+    echo "Include vendor/mana/genesis/system/mana/mana_product.mk in the selected product." >&2
+    exit 1
+  fi
+done
+
 # Import the exact unsigned Gradle release artifact. The staging script rejects signed input.
 "$MANA_TOP/tools/stage_mana_aosp_prebuilt.sh" "$AOSP_TOP" "$APK"
 
