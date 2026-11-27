@@ -20,13 +20,39 @@ concurrency:
 
 jobs:
   emulator-tests:
-    name: Android API ${{ matrix.api-level }} instrumentation
+    name: Android ${{ matrix.android-name }} / ${{ matrix.device-name }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 3
       matrix:
-        api-level: [28, 30, 33, 35, 36]
+        include:
+          # Android 12 = API 31; Android 15 = API 35; Android 16 = API 36.
+          # Pixel AVDs provide repeatable hardware classes, not OEM firmware emulation.
+          - android-name: "12 (API 31)"
+            api-level: 31
+            device-name: "compact-phone profile"
+            avd-profile: pixel_2
+          - android-name: "15 (API 35)"
+            api-level: 35
+            device-name: "compact-phone profile"
+            avd-profile: pixel_2
+          - android-name: "16 (API 36)"
+            api-level: 36
+            device-name: "compact-phone profile"
+            avd-profile: pixel_2
+          - android-name: "12 (API 31)"
+            api-level: 31
+            device-name: "large-phone profile"
+            avd-profile: pixel_6
+          - android-name: "15 (API 35)"
+            api-level: 35
+            device-name: "large-phone profile"
+            avd-profile: pixel_6
+          - android-name: "16 (API 36)"
+            api-level: 36
+            device-name: "large-phone profile"
+            avd-profile: pixel_6
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -55,7 +81,7 @@ jobs:
           api-level: ${{ matrix.api-level }}
           arch: x86_64
           target: google_apis
-          profile: pixel_2
+          profile: ${{ matrix.avd-profile }}
           disable-animations: true
           script: cd launcher && gradle :app:connectedDebugAndroidTest --stacktrace
 
@@ -63,7 +89,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mana-debug-api-${{ matrix.api-level }}
+          name: mana-debug-api-${{ matrix.api-level }}-${{ matrix.avd-profile }}
           path: launcher/app/build/outputs/apk/debug/*.apk
           if-no-files-found: ignore
           retention-days: 7
