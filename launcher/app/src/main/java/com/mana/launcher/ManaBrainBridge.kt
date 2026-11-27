@@ -121,6 +121,9 @@ class ManaBrainBridge(
         }
     }
 
+    /** True when a local model or at least one explicitly configured cloud fallback is ready. */
+    fun isAvailable(): Boolean = !closed.get() && (localRuntime.isReady() || cloudProviders.any { it.isAvailable() })
+
     fun shutdown() {
         if (closed.compareAndSet(false, true)) scope.cancel()
     }
