@@ -579,6 +579,9 @@ class MainActivity : Activity() {
         card.addView(action("Состояние MANA • диагностика и восстановление") {
             startActivity(Intent(this, ManaSystemStatusActivity::class.java))
         })
+        card.addView(action("Отчёт MANA • поделиться с ChatGPT") {
+            startActivity(Intent(this, ManaDiagnosticsActivity::class.java))
+        })
         card.addView(action(if (getSharedPreferences("mana.settings", MODE_PRIVATE).getBoolean("floating_avatar_enabled", false)) "Выключить плавающий 3D-аватар" else "Включить плавающий 3D-аватар") { requestFloatingAvatar() })
         card.addView(action("Открыть полноценную 3D-модель MANA") {
             startActivity(Intent(this, ManaAvatarPreviewActivity::class.java))
