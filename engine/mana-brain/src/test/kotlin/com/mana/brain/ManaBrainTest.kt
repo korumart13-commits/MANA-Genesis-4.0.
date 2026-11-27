@@ -44,6 +44,41 @@ class ManaBrainCloudSelectionTest {
     }
 
     @Test
+    fun cloudGatewayIdsAndProviderAliasesResolveToTheSameConnector() {
+        val local = FakeProvider("litert-local", false, "")
+        val gateway = FakeProvider("cloud-gemini", true, "gemini answer")
+        val result = kotlinx.coroutines.runBlocking {
+            ManaBrain(local, listOf(gateway)).respond(
+                BrainRequest("hello", allowCloud = true, preferredCloudProvider = "google")
+            )
+        }
+        assertEquals("google", result.provider)
+        assertEquals("gemini answer", result.text)
+        assertEquals(1, gateway.calls)
+    }
+
+    @Test
+    fun geminiAliasSelectsGoogleConnector() {
+        val local = FakeProvider("litert-local", false, "")
+        val gateway = FakeProvider("cloud-gemini", true, "gemini answer")
+        val result = kotlinx.coroutines.runBlocking {
+            ManaBrain(local, listOf(gateway)).respond(
+                BrainRequest("hello", allowCloud = true, preferredCloudProvider = "gemini")
+            )
+        }
+        assertEquals("google", result.provider)
+        assertEquals(1, gateway.calls)
+    }
+
+    @Test
+    fun cloudProviderAliasesCannotRegisterAsDuplicateConnectors() {
+        val local = FakeProvider("litert-local", false, "")
+        val google = FakeProvider("google", true, "one")
+        val gemini = FakeProvider("cloud-gemini", true, "two")
+        assertFailsWith<IllegalArgumentException> { ManaBrain(local, listOf(google, gemini)) }
+    }
+
+    @Test
     fun unknownPreferredProviderFailsClosedInsteadOfSilentlySwitching() {
         val local = FakeProvider("litert-local", false, "")
         val openAi = FakeProvider("openai", true, "openai answer")
