@@ -41,9 +41,12 @@ def main():
         if not ID.fullmatch(module_id) or not VERSION.fullmatch(version) or module_id in ids:
             raise SystemExit("Invalid or duplicate module ID/version")
         ids.add(module_id)
-        source = (args.payload_dir / module["file"]).resolve()
+        source_input = args.payload_dir / module["file"]
+        if source_input.is_symlink():
+            raise SystemExit("Symlink payloads are not allowed")
+        source = source_input.resolve()
         root = args.payload_dir.resolve()
-        if root not in source.parents or not source.is_file() or source.is_symlink():
+        if root not in source.parents or not source.is_file():
             raise SystemExit("Payload must be a regular file inside --payload-dir")
         if source.suffix.lower() not in EXTENSIONS:
             raise SystemExit("Unsupported payload extension")
@@ -51,7 +54,7 @@ def main():
         if any(not ID.fullmatch(dep) or dep == module_id for dep in deps):
             raise SystemExit("Invalid module dependency")
         min_os = module["min_os"]
-        if not min_os:
+        if not isinstance(min_os, str) or not VERSION.fullmatch(min_os):
             raise SystemExit("module.min_os is required")
         entry = f"modules/{module_id}/payload{source.suffix.lower()}"
         data = source.read_bytes()
@@ -62,6 +65,8 @@ def main():
         })
 
     prepared.sort(key=lambda item: item["id"])
+    if sum(len(item["data"]) for item in prepared) > 4 * 1024 * 1024 * 1024:
+        raise SystemExit("Combined payload exceeds the 4 GiB format limit")
     lines = ["MANA-PACK/1", pack_id, pack_version, device, str(min_api), str(max_api)]
     for module in prepared:
         lines.append("|".join([
