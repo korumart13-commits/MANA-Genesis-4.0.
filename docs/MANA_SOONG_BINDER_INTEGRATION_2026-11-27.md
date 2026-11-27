@@ -173,3 +173,10 @@ source-level validation only; no Binder transaction has been executed on Android
 The instrumentation test also counts callbacks and requires exactly one terminal callback
 per request. Its timeout is 180 seconds to accommodate first-run local inference on slower
 hardware; the no-model local-only path must return the explicit fallback diagnostic.
+
+
+A final Binder failure-path review also covers signature-permission denials: service
+connection negotiation catches `SecurityException`, a state query fails closed as
+disconnected, and a denied request is returned to the caller as
+`ENGINE_PERMISSION_DENIED` rather than silently dropping the callback or crashing the
+request worker. The source-contract checks assert this handling.
