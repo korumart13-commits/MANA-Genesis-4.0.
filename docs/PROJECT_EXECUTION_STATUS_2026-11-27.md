@@ -142,3 +142,11 @@ The project must preserve the full MANA product requirements in `docs/MASTER_PRO
 - The Soong runner and device test are ready in source, but no AOSP checkout/lunch target is
   available here. No actual Soong compile, final APK signature comparison, SELinux integration,
   Tradefed run or device Binder handshake is claimed.
+
+
+## Binder callback delivery hardening — 2026-11-27
+
+- Added a per-request atomic terminal-callback gate in `ManaBrainService`. The platform Binder endpoint now accepts only the first Engine Bridge result or error; duplicate result/error callbacks are ignored and logged. A synchronous Binder exception can deliver a fallback error only if no terminal callback has already won the race.
+- Added source-contract assertions for the atomic gate and both duplicate-callback guards. The latest source-contract workflow run `45918556057` on commit `a86e50959064c7f7850a94294d88edad675623b3` completed successfully.
+- The Gradle Android app verification run `45918549370` was still running at the last status check; no new Gradle result is claimed here. The callback change is in the platform Java service and does not constitute a real Soong compile or device Binder test.
+- The actual Android 16 AOSP/Soong build, platform certificate comparison, SELinux integration, emulator instrumentation, and RMX5566 firmware build/flash remain unexecuted. No device partitions have been modified.
