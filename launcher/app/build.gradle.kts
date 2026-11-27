@@ -8,7 +8,7 @@ android {
     compileSdk = 36
     defaultConfig {
         applicationId = "com.mana.launcher"
-        minSdk = 36
+        minSdk = 29
         targetSdk = 36
         versionCode = 4
         versionName = "4.0.3"
