@@ -70,6 +70,8 @@ jobs:
           assert '"READY".equals(engineState)' in brain_source
           assert '"READY_NO_LOCAL_MODEL".equals(engineState)' in brain_source
           assert "MAX_BACKEND_REBIND_ATTEMPTS = 5" in brain_source
+          assert "RemoteException | SecurityException" in brain_source
+          assert "ENGINE_PERMISSION_DENIED" in brain_source
 
           brain = ET.parse("system/mana/services/ManaBrainService/AndroidManifest.xml").getroot()
           service = brain.find("./application/service[@android:name='.ManaBrainService']", {
