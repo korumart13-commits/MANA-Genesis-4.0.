@@ -1531,7 +1531,7 @@ class MainActivity : Activity() {
         if (modelDownloadReceiverRegistered) return
         val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
         if (Build.VERSION.SDK_INT >= 33) {
-            registerReceiver(modelDownloadReceiver, filter, RECEIVER_NOT_EXPORTED)
+            registerReceiver(modelDownloadReceiver, filter, android.content.Context.RECEIVER_NOT_EXPORTED)
         } else {
             @Suppress("DEPRECATION")
             registerReceiver(modelDownloadReceiver, filter)
