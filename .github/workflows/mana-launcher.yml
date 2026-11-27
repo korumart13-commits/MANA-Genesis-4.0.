@@ -14,6 +14,7 @@ on:
       - 'tools/validate_mana_gltf.py'
       - 'tools/stage_mana_aosp_prebuilt.sh'
       - 'tools/test_stage_mana_aosp_prebuilt.sh'
+      - 'tools/verify_mana_platform_signature.sh'
   pull_request:
     paths:
       - 'launcher/**'
@@ -155,6 +156,8 @@ jobs:
           test -f system/mana/services/ManaBrainService/AndroidManifest.xml
           grep -F 'ManaBrainService' system/mana/mana_product.mk
           grep -F 'certificate: "platform"' system/mana/services/ManaBrainService/Android.bp
+          grep -F 'privileged: false' system/mana/services/ManaBrainService/Android.bp
+          ! grep -F 'privileged: true' system/mana/services/ManaBrainService/Android.bp
           grep -F 'privileged: true' system/mana/services/ManaBrainService/Android.bp
           grep -F 'android:protectionLevel="signature"' system/mana/services/ManaBrainService/AndroidManifest.xml
           grep -F 'android:permission="com.mana.permission.BIND_BRAIN"' system/mana/services/ManaBrainService/AndroidManifest.xml
@@ -183,6 +186,8 @@ jobs:
       - name: Validate AOSP prebuilt staging workflow
         run: |
           bash tools/test_stage_mana_aosp_prebuilt.sh
+          grep -F 'certificate: "platform"' tools/stage_mana_aosp_prebuilt.sh
+          grep -F 'privileged: false' tools/stage_mana_aosp_prebuilt.sh
       - name: Validate embedded full-body MANA glTF asset
         working-directory: .
         run: |
