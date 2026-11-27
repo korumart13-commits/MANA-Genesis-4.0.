@@ -41,10 +41,11 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           product = Path('system/mana/mana_product.mk').read_text()
-          expected = ['ManaLauncher', 'ManaAssistant', 'ManaSettings', 'ManaControlCenter']
+          expected = ['ManaLauncher', 'ManaBrainService', 'ManaSettings', 'ManaControlCenter']
+          assert 'ManaAssistant' not in product, 'Legacy duplicate ManaAssistant must remain excluded'
           missing = [name for name in expected if name not in product]
           assert not missing, f'Missing MANA product packages: {missing}'
-          print('All four non-privileged MANA apps are declared in the product package list.')
+          print('All four intended MANA product modules are declared; legacy duplicate assistant is excluded.')
           PY
       - name: Validate manifests and permission surface
         run: |
