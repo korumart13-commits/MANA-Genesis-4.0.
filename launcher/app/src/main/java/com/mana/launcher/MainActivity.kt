@@ -454,6 +454,40 @@ class MainActivity : Activity() {
             setPadding(dp(18), dp(18), dp(18), dp(18))
             background = rounded(panelRaised, 22)
         }
+        card.addView(action("Установить и настроить MANA — одно нажатие") {
+            val report = runCatching { ManaOneTapSetupCoordinator(this).run() }
+            if (report.isSuccess) {
+                val result = report.getOrThrow()
+                AlertDialog.Builder(this)
+                    .setTitle("MANA Genesis 4.0")
+                    .setMessage(result.toReadableText())
+                    .setPositiveButton("Готово", null)
+                    .setNeutralButton("Открыть разрешения") { _, _ ->
+                        val permissions = mutableListOf<String>()
+                        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                            permissions += Manifest.permission.RECORD_AUDIO
+                        }
+                        if (Build.VERSION.SDK_INT >= 33 &&
+                            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                            permissions += Manifest.permission.POST_NOTIFICATIONS
+                        }
+                        if (permissions.isNotEmpty()) {
+                            requestPermissions(permissions.toTypedArray(), audioPermissionRequestCode)
+                        } else if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
+                            startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+                        } else {
+                            requestAssistantRole()
+                        }
+                    }
+                    .show()
+            } else {
+                AlertDialog.Builder(this)
+                    .setTitle("Не удалось завершить настройку")
+                    .setMessage(report.exceptionOrNull()?.message ?: "Неизвестная ошибка")
+                    .setPositiveButton("Закрыть", null)
+                    .show()
+            }
+        })
         card.addView(label("MANA ASSISTANT", 11, accentSoft, true))
         card.addView(label("Твой телефон. Твои правила.", 19, textColor, true))
         card.addView(action("Состояние MANA • диагностика и восстановление") {
