@@ -3,12 +3,14 @@
 Target identity observed from the owner's Android 16 audit:
 - Product/model: RMX5566RU / RMX5566
 - Device: RE645F
-- SoC family: Qualcomm SM6225, platform codename bengal
+- SoC: Qualcomm Snapdragon 685 (realme's official product specification); the owner's Android audit reports the Qualcomm SM6225 family and platform codename bengal. Some public catalogs label the variant SM6225pro; the exact silicon/platform identifiers must be read from the live device inventory before selecting any board support.
 - Runtime kernel: 5.15.197-android13
 - Android API: 36
 - Current stock build: RMX5566_16.0.5.1310(EX01)
 
 This directory is a **deferred device-port workspace**, not an enabled AOSP product. It deliberately contains no invented BoardConfig, kernel defconfig, DTS, fstab, init scripts, vendor blobs, VINTF manifest, partition sizes, AVB keys or recovery images.
+
+Important compatibility boundary: other Snapdragon 685 / SM6225 devices (including Xiaomi and Motorola ports) are research references only. Their device trees, vendor blobs, kernel configurations, partition layouts and boot-chain assumptions must not be copied into RMX5566RU without matching hardware/build evidence. A shared SoC name is not proof of board compatibility.
 
 ## Files MANA must populate after evidence collection
 
