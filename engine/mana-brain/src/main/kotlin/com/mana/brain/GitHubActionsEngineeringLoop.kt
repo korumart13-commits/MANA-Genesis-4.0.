@@ -177,7 +177,14 @@ class GitHubActionsRestClient(
             val status = connection.responseCode
             val stream = if (status in 200..299) connection.inputStream else connection.errorStream
             val response = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
-            if (status !in expected) throw IllegalStateException("GitHub API request failed with HTTP $status for $pathAndQuery.")
+            if (status !in expected) {
+                if (status == 404 && pathAndQuery.contains("/dispatches")) {
+                    throw IllegalStateException(
+                        "GitHub cannot dispatch this workflow yet. GitHub requires the workflow_dispatch file to exist on the repository default branch; merge the MANA Engineering Pipeline workflow first."
+                    )
+                }
+                throw IllegalStateException("GitHub API request failed with HTTP $status for $pathAndQuery.")
+            }
             return response
         } finally { connection.disconnect() }
     }
