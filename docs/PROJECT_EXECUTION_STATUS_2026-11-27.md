@@ -164,3 +164,11 @@ The project must preserve the full MANA product requirements in `docs/MASTER_PRO
 - Extracted the atomic first-terminal-callback gate into `ManaBrainTerminalCallbackGate` and wired it into the platform `ManaBrainService` result, error and synchronous-failure paths.
 - Added host JUnit coverage for sequential and 64-way concurrent callback attempts and included the class/tests in `mana-brain-request-policy-tests`.
 - The source-contract workflow and actual Soong host-test execution for this new helper must still be confirmed. No AOSP Soong compile or device Binder test is claimed.
+
+
+## Bounded inference and request-scoped native cancellation — 2026-11-27
+
+- MANA Brain now enforces a 90-second default local inference deadline and a 60-second default cloud inference deadline. Both are constructor-configurable and must be positive. Local timeout may fall back only under the existing explicit cloud-consent and non-sensitive-request rules; cloud timeout returns a distinct `InferenceTimeoutException` and does not silently switch providers.
+- The first timeout CI attempt exposed a missing `withTimeoutOrNull` import; this was corrected in commit `7479fba6001764749943d513e91aebd45e1834ff`. The initial failed run is `45919568435`; it is not counted as a passing verification.
+- Added per-request cancellation handles to the local inference interface. Each handle is bound to the exact queued LiteRT generation job, so a timed-out queued request cannot cancel another request currently running on the single-thread executor. Shutdown cancels all active generation jobs. Added unit tests for cancellation isolation and cancellation-before-start.
+- The final Gradle verification for these latest changes is pending at the time this note is written; no compile/test success is claimed until that run completes. No physical-device LiteRT cancellation test has been performed.
