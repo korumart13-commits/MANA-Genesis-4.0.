@@ -21,7 +21,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Platform-facing Binder endpoint for MANA Brain.
@@ -188,12 +187,12 @@ public final class ManaBrainService extends Service {
                     "The MANA Engine backend is not installed, not signed with the system key, or not connected.");
             return;
         }
-        AtomicBoolean terminalCallbackDelivered = new AtomicBoolean(false);
+        ManaBrainTerminalCallbackGate terminalCallbackDelivered = new ManaBrainTerminalCallbackGate();
         try {
             current.think(request, new IManaEngineBackendCallback.Stub() {
                 @Override
                 public void onResult(String text, String provider, boolean local, int memoryItemsUsed) {
-                    if (!terminalCallbackDelivered.compareAndSet(false, true)) {
+                    if (!terminalCallbackDelivered.tryDeliver()) {
                         Log.w(TAG, "Ignoring duplicate MANA Engine result callback.");
                         return;
                     }
