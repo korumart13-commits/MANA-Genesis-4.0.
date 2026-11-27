@@ -65,7 +65,7 @@ realme RMX5566RU / RE645F (Android 16, API 36, Qualcomm SM6225, ARM64, locked bo
 
 ## 8. Критерии готовности
 
-- Единый portable APK с minSdk 26 собирается и проходит тесты.
+- Единый portable APK с minSdk 31 собирается и проходит тесты.
 - Автоматический профиль устройства создаётся на API 31+ без root.
 - Capability adapters корректно сообщают ограничения.
 - One-action app installation не обещает обход штатного Android installer.
