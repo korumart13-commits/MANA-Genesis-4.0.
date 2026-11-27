@@ -104,7 +104,13 @@ class ManaEngineAndroidRuntime(
         runtime = ManaEngineRuntime(system, reasoning, memory, microworld, shogun)
     }
 
-    fun start(): ManaEngineHealth = runtime.start()
+    fun start(): ManaEngineHealth {
+        val health = runtime.start()
+        // The encrypted backlog is advisory and must never prevent Brain startup.
+        runCatching { ManaGenesisFirstBootService(appContext).refresh() }
+            .onFailure { android.util.Log.e("MANA", "First-boot backlog checkpoint failed", it) }
+        return health
+    }
 
     suspend fun think(
         text: String,
