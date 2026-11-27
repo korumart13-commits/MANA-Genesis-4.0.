@@ -83,6 +83,9 @@ jobs:
           assert "fun ensureSavedModelLoaded(" in owner
           assert "ManaEngineProcessOwner.ensureSavedModelLoaded(this)" in bridge
           assert "MANA-Model-Bootstrap" in owner
+          assert "modelLoadCallbacks" in owner
+          assert "Локальная модель ещё не установлена" in owner
+          assert "pendingCallbacks.forEach" in owner
           assert "initializeFromService(" not in activity
           assert "initializeDependenciesFromService(" not in activity
           assert "LocalModelRuntime(" not in activity
