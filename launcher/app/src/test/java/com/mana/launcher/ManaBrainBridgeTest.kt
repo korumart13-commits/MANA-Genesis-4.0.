@@ -19,8 +19,9 @@ class ManaBrainBridgeTest {
                 prompt: String,
                 onChunk: (String) -> Unit,
                 callback: (Result<Unit>) -> Unit
-            ) {
+            ): LocalInferenceCancellation {
                 callback(Result.failure(UnsupportedOperationException()))
+                return LocalInferenceCancellation().also { it.cancel() }
             }
             override fun shutdown() = Unit
         }
