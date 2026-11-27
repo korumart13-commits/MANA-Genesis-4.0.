@@ -10,7 +10,7 @@ MANA ASI (Autonomous System Intelligence) — основная архитект�
 
 ## 2. Целевой охват устройств
 
-- Минимальная версия: Android 8.0 / API 26.
+- Минимальная версия: Android 12 / API 31.
 - Обязательные семейства для проверки: Samsung, Xiaomi/Redmi, realme, Huawei, Honor, Meizu, Fly.
 - Другие Android OEM — расширяемая матрица.
 - Архитектуры CPU, объём памяти, ABI, экран, доступность сервисов Google и OEM-ограничения определяются динамически.
@@ -18,7 +18,7 @@ MANA ASI (Autonomous System Intelligence) — основная архитект�
 
 ## 3. Универсальная многослойная реализация
 
-### Layer A — portable Android application (API 26+)
+### Layer A — portable Android application (API 31+)
 Единый APK: MANA Brain UI, локальное хранилище, голосовой интерфейс, аватар, настройки, диагностика, доступные интеграции и управление функциями через публичные Android API. Базовые функции должны работать без root и без системной подписи.
 
 ### Layer B — capability adapters
@@ -53,7 +53,7 @@ MANA ASI (Autonomous System Intelligence) — основная архитект�
 
 ## 6. Обязательные проверки
 
-Матрица должна включать реальные устройства/эмуляторы для API 26, 28, 29, 30, 31/32, 33, 34, 35 и 36; OEM-прошивки Samsung One UI, Xiaomi HyperOS/MIUI, realme UI, Huawei EMUI/HarmonyOS Android-совместимые варианты, Honor MagicOS, Meizu Flyme и Fly. Отдельно проверять установку/обновление/удаление, фоновые ограничения, энергосбережение, голос, overlay, Bluetooth, уведомления, локальную модель, восстановление после сбоя и Deadman.
+Матрица должна включать реальные устройства/эмуляторы для API 31/32, 33, 34, 35 и 36; OEM-прошивки Samsung One UI, Xiaomi HyperOS/MIUI, realme UI, Huawei EMUI/HarmonyOS Android-совместимые варианты, Honor MagicOS, Meizu Flyme и Fly. Отдельно проверять установку/обновление/удаление, фоновые ограничения, энергосбережение, голос, overlay, Bluetooth, уведомления, локальную модель, восстановление после сбоя и Deadman.
 
 Результат по каждой модели: PASS / PASS_WITH_LIMITATIONS / BLOCKED / NOT_TESTED. Не использовать «работает на любом Android» до завершения матрицы.
 
@@ -66,7 +66,7 @@ realme RMX5566RU / RE645F (Android 16, API 36, Qualcomm SM6225, ARM64, locked bo
 ## 8. Критерии готовности
 
 - Единый portable APK с minSdk 26 собирается и проходит тесты.
-- Автоматический профиль устройства создаётся на API 26+ без root.
+- Автоматический профиль устройства создаётся на API 31+ без root.
 - Capability adapters корректно сообщают ограничения.
 - One-action app installation не обещает обход штатного Android installer.
 - Никаких скрытых системных изменений или несанкционированных повышений привилегий.
