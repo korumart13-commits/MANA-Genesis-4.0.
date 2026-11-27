@@ -120,3 +120,25 @@ The project must preserve the full MANA product requirements in `docs/MASTER_PRO
 - Device gate unchanged: no RMX5566 firmware build/flash until exact matching stock restore,
   device tree, OEM kernel sources, vendor blobs, VINTF, partition map and AVB chain are
   independently verified.
+
+
+## Latest verification snapshot — 2026-11-27
+
+- Confirmed successful Gradle app pipeline: run `45916217043` completed with no failed job
+  steps and uploaded the unsigned release APK (artifact `15161949345`), debug prototype
+  (artifact `15162029283`) and source bundle (artifact `15161959377`). This confirms the
+  Android app release build, not a platform-signed APK or ROM.
+- Confirmed successful Soong/Binder source-contract runs `45916643525` and
+  `45916693175`. The latter checks the canonical instrumentation test after it was extended
+  to send a local-only request and require an Engine Bridge callback. The stale workflow
+  assertion from failed run `45916543920` was corrected.
+- The latest Gradle run observed during this check, `45916745681`, was still in progress at
+  the Android SDK setup step. Earlier superseded runs were cancelled by concurrency; they are
+  not counted as successful or failed source validation.
+- AOSP's upstream `android_app_import` implementation documents that an imported APK must
+  select exactly one signing mode: certificate, presigned, or default development certificate.
+  MANA uses unsigned APK + `certificate: "platform"`; the real product build must still
+  prove both MANA APKs carry the same final signer certificate.
+- The Soong runner and device test are ready in source, but no AOSP checkout/lunch target is
+  available here. No actual Soong compile, final APK signature comparison, SELinux integration,
+  Tradefed run or device Binder handshake is claimed.
