@@ -1,19 +1,21 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# Builds MANA's source-backed Soong modules inside an already initialized AOSP tree.
-# A valid lunch target must be selected by the build host first.
+# Builds MANA's source-backed Soong modules inside an initialized AOSP tree.
+# A valid lunch target must be supplied by the build host.
 # This does not build a device image, sign a release, or flash a phone.
 
 die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
-TOP="${ANDROID_BUILD_TOP:-}"
-[[ -n "$TOP" && -f "$TOP/build/envsetup.sh" ]] || die "Set ANDROID_BUILD_TOP to a synced AOSP source tree."
+TOP="${ANDROID_BUILD_TOP:-$PWD}"
+TARGET="${1:-${MANA_LUNCH_TARGET:-}}"
+[[ -f "$TOP/build/envsetup.sh" ]] || die "Run this from an AOSP source tree or set ANDROID_BUILD_TOP."
 [[ -d "$TOP/vendor/mana/genesis/system/mana" ]] || die "MANA source tree is not synced at vendor/mana/genesis."
-[[ -n "${TARGET_PRODUCT:-}" ]] || die "Select a valid AOSP lunch target before running this script."
+[[ -n "$TARGET" ]] || die "Pass a verified AOSP lunch target as the first argument."
 
 cd "$TOP"
 source build/envsetup.sh
-[[ -n "${TARGET_PRODUCT:-}" ]] || die "No TARGET_PRODUCT is selected. Run lunch first."
+lunch "$TARGET"
+[[ -n "${TARGET_PRODUCT:-}" ]] || die "Lunch did not select a TARGET_PRODUCT."
 
 MODULES=(
   mana-brain-interface
