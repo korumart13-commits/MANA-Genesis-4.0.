@@ -56,3 +56,16 @@ Until all release gates pass, deliverables remain source code, app prototypes an
 - AOSP bootloader lock/unlock requirements: https://source.android.com/docs/core/architecture/bootloader/locking_unlocking
 - RMX5566 third-party firmware listing (unverified mirror; reference only): https://romprovider.com/firmware/realme/rmx5566/
 - Third-party flashing-tool risk overview (not an OEM procedure): https://geekchamp.com/realme-flash-tool-is-there-an-official-universal-download/
+
+## Additional firmware mirror research — 2026-11-27
+
+Public mirror searches for the exact owner-reported Android 16 build `RMX5566_16.0.5.1310(EX01)` did not return a matching full OTA package. The RMX5566 catalog pages surfaced older `RMX5566export_11_15.0.2.900(EX01)` and 15.0.2.797/796/793/760 packages (Android 15 branch labels). Some third-party pages inconsistently label the RMX5566 package as “C85 5G”; that label conflicts with the target identity and is not accepted as a basis for flashing.
+
+References reviewed:
+- Solution Firmware RMX5566 catalog: https://solution-firmware.com/index.php?a=downloads&b=folder&id=2894
+- Hello Firmware RMX5566 catalog: https://hello-firmware.com/index.php?a=downloads&b=folder&id=6888
+- ROMProvider RMX5566 page, which describes an authenticated Oplus service-tool/EDL path: https://romprovider.com/firmware/realme/rmx5566/
+- Realme Updater, which says its catalog uses official download channels but did not expose a verified exact-build match in this search: https://realmeupdater.com/
+- Open-source OPlus firmware discovery client (reference for OTA metadata discovery only; not a flashing tool): https://github.com/suddenBook/OPlus_firmware_download
+
+Decision: no download link from a mirror is approved as a restore image for this phone. A package must match RMX5566RU, EX01 region, the owner build lineage and anti-rollback requirements; its official signature and integrity must be verified. The current Android 16 build should be preserved until a matching official recovery package is found. EDL/service-tool pages are evidence that service workflows exist, not authorization or a safe owner-side procedure.
