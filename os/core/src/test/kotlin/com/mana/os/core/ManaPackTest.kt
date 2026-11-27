@@ -92,6 +92,29 @@ class ManaPackTest {
         dir.deleteRecursively()
     }
 
+    @Test fun failedBatchRestoresEveryPreviouslyInstalledModule() {
+        val dir = java.nio.file.Files.createTempDirectory("mana-pack-rollback").toFile()
+        val keys = keyPair()
+        val verified = ManaPackVerifier(keys.public, device, "4.0.2", 36)
+        val packFile = createPack(dir, keys)
+        val staged = verified.verify(packFile, File(dir, "stage"))
+        val first = staged.modules.single()
+        val second = first.copy(
+            id = "mana.second",
+            entry = "modules/mana.second/payload.bin",
+            payloadFile = File(dir, "missing-payload")
+        )
+        val root = File(dir, "active")
+        val oldFirst = File(root, "mana.example").apply { mkdirs() }.resolve("payload").apply { writeText("old-first") }
+        val oldSecond = File(root, "mana.second").apply { mkdirs() }.resolve("payload").apply { writeText("old-second") }
+        assertFailsWith<IllegalStateException> {
+            ManaModuleInstaller(root).apply(staged.copy(modules = listOf(first, second)), emptySet())
+        }
+        assertEquals("old-first", oldFirst.readText())
+        assertEquals("old-second", oldSecond.readText())
+        dir.deleteRecursively()
+    }
+
     @Test fun rejectsTamperedPayloadAndUnsatisfiedDependencyWithoutChangingInstalledModule() {
         val dir = java.nio.file.Files.createTempDirectory("mana-pack-tamper").toFile()
         val keys = keyPair()
