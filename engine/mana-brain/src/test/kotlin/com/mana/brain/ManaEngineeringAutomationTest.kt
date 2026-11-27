@@ -16,7 +16,7 @@ class ManaEngineeringAutomationTest {
             return """
                 {
                   "summary":"Add a bounded test change (proposal $calls)",
-                  "unifiedDiff":"diff --git a/engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt b/engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt\\n--- a/engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt\\n+++ b/engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt\\n@@ -1 +1,2 @@\\n class Fixture\\n+// reviewed change",
+                  "unifiedDiff":"diff --git a/engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt b/engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt\n--- a/engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt\n+++ b/engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt\n@@ -1 +1,2 @@\n class Fixture\n+// reviewed change",
                   "testPlan":["Run MANA Brain JVM tests"],
                   "riskNotes":["Review before merge"]
                 }
