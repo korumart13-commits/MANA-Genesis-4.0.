@@ -87,9 +87,9 @@ jobs:
           assert "modelLoadCallbacks" in owner
           assert "Локальная модель ещё не установлена" in owner
           assert "pendingCallbacks.forEach" in owner
-          assert "fun acceptGemmaTerms()" in catalog
+          assert "fun acknowledgeGemmaLicense()" in catalog
           assert "Выбрать Gemma из комплекта" in activity
-          assert "catalog.acceptGemmaTerms()" in activity
+          assert "catalog.acknowledgeGemmaLicense()" in activity
           assert "copied == ManaModelCatalog.MODEL_SIZE" in activity
           assert "initializeFromService(" not in activity
           assert "initializeDependenciesFromService(" not in activity
@@ -258,6 +258,13 @@ jobs:
           echo "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c  $MODEL" | sha256sum --check -
           cp "$MODEL" "$PACKAGE/models/Gemma/gemma-4-E2B-it.litertlm"
           test "$(stat -c '%s' "$PACKAGE/models/Gemma/gemma-4-E2B-it.litertlm")" = "2588147712"
+          curl --fail --location --retry 5 --connect-timeout 30 --max-time 120 https://www.apache.org/licenses/LICENSE-2.0.txt --output "$PACKAGE/models/Gemma/LICENSE-APACHE-2.0.txt"
+          cat > "$PACKAGE/models/Gemma/NOTICE.txt" <<'NOTICE'
+          Gemma 4 E2B instruction-tuned model weights by Google DeepMind.
+          LiteRT-LM package published by litert-community.
+          Licensed under the Apache License, Version 2.0; see LICENSE-APACHE-2.0.txt.
+          This distribution is not endorsed by Google.
+          NOTICE
           test "$(stat -c '%s' "$MODEL")" -gt 2500000000
           test "$(stat -c '%s' "$MODEL")" -lt 3000000000
           cp launcher/app/build/outputs/apk/debug/app-debug.apk "$PACKAGE/installer/INSTALL_MANA.apk"
@@ -268,7 +275,7 @@ jobs:
           SHA-256: 181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c
           Источник: https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm
           Закреплённый файл: https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/21c646194210256750db12cfa1e4fdf22bd3ddf1/gemma-4-E2B-it.litertlm
-          Лицензия/условия: Apache 2.0 для формата упаковки; исходные веса также регулируются Gemma Terms of Use и Prohibited Use Policy.
+          Лицензия модели Gemma 4: Apache License 2.0; копия лицензии находится в LICENSE-APACHE-2.0.txt.
           Полный файл модели включён в models/Gemma/gemma-4-E2B-it.litertlm внутри этого ZIP.
           После явного согласия владелец выбирает этот файл в системном Android-пикере; MANA копирует его в закрытое хранилище, проверяет размер и SHA-256, затем подключает.
           Альтернативно MANA может загрузить ту же закреплённую версию через Android Download Manager по Wi-Fi.
@@ -283,6 +290,7 @@ jobs:
           installer/INSTALL_MANA.apk — единое приложение MANA со встроенным мастером установки.
           models/Gemma/gemma-4-E2B-it.litertlm — полный файл Gemma 4 E2B (2,588,147,712 байт).
           models/Gemma/MODEL_MANIFEST_RU.txt — источник, лицензия и SHA-256 модели.
+          models/Gemma/LICENSE-APACHE-2.0.txt и NOTICE.txt — лицензия и уведомление об авторстве Gemma 4.
           source/MANA-Genesis-4.0-source-project.zip — исходный проект этой сборки.
           docs/ — русская документация и обязательные требования проекта.
           SHA256SUMS.txt — контрольные суммы, включая сам файл Gemma.
@@ -291,7 +299,7 @@ jobs:
           1. Полностью распакуй ZIP на телефоне.
           2. Открой installer/INSTALL_MANA.apk и подтверди штатную установку Android.
           3. Запусти MANA и нажми главную кнопку «УСТАНОВИТЬ MANA».
-          4. Прочитай условия Gemma и подтверди их. В системном окне выбора Android укажи
+          4. Ознакомься с Apache License 2.0 в папке models/Gemma. В системном окне выбора Android укажи
              models/Gemma/gemma-4-E2B-it.litertlm из распакованной папки.
           5. MANA скопирует модель в своё закрытое хранилище, проверит точный размер и SHA-256,
              затем автоматически подключит её к локальному движку LiteRT-LM.
@@ -327,7 +335,7 @@ jobs:
           Локальная генерация без интернета: НЕ ПРОВЕРЕНО
           Примечания / ошибки: __________________
           EOF
-          (cd "$PACKAGE" && sha256sum installer/INSTALL_MANA.apk models/Gemma/gemma-4-E2B-it.litertlm models/Gemma/MODEL_MANIFEST_RU.txt source/MANA-Genesis-4.0-source-project.zip docs/LOCAL_MODEL_SETUP_RU.md docs/MASTER_REQUIREMENTS_RU.md README-FIRST-RU.txt INSTALL_REPORT_TEMPLATE.txt > SHA256SUMS.txt)
+          (cd "$PACKAGE" && sha256sum installer/INSTALL_MANA.apk models/Gemma/gemma-4-E2B-it.litertlm models/Gemma/LICENSE-APACHE-2.0.txt models/Gemma/NOTICE.txt models/Gemma/MODEL_MANIFEST_RU.txt source/MANA-Genesis-4.0-source-project.zip docs/LOCAL_MODEL_SETUP_RU.md docs/MASTER_REQUIREMENTS_RU.md README-FIRST-RU.txt INSTALL_REPORT_TEMPLATE.txt > SHA256SUMS.txt)
           (cd release/offline && zip -0 -q -r ../MANA-Genesis-4.0-INSTALLER-PACKAGE.zip MANA-Genesis-4.0/)
           sha256sum release/MANA-Genesis-4.0-INSTALLER-PACKAGE.zip > release/MANA-Genesis-4.0-INSTALLER-PACKAGE.zip.sha256
 
