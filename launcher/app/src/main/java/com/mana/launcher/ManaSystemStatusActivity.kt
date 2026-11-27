@@ -88,6 +88,15 @@ class ManaSystemStatusActivity : Activity() {
         entries += "Android Keystore" to if (keystoreProvider) "Провайдер доступен; ключ проверяется при открытии хранилища" else "Провайдер недоступен"
         entries += "Копии восстановления" to if (recoveryFiles.isEmpty()) "Не обнаружены" else "${recoveryFiles.size} файл(ов): ${recoveryFiles.joinToString { it.name }}"
         entries += "Устройство" to "${Build.MANUFACTURER} ${Build.MODEL} • Android ${Build.VERSION.SDK_INT}"
+        val backlog = runCatching { ManaGenesisFirstBootService(this).readCheckpoint() }.getOrNull()
+        entries += "План саморазвития" to when {
+            backlog == null -> "Контрольная точка ещё не создана или недоступна"
+            else -> {
+                val ordered = backlog.optJSONArray("orderedWork")?.length() ?: 0
+                val blocked = backlog.optJSONArray("blockedWork")?.length() ?: 0
+                "Ожидают выполнения: $ordered • заблокированы до получения исходников/доказательств: $blocked"
+            }
+        }
         entries += "Приложение" to "MANA Genesis • диагностика приложения, не статус прошивки"
 
         report = entries.joinToString("\n") { "${it.first}: ${it.second}" }
