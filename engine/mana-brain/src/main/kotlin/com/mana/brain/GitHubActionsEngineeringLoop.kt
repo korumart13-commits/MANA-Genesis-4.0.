@@ -39,7 +39,7 @@ data class GitHubWorkflowJob(
 interface GitHubActionsGateway {
     suspend fun currentHeadSha(branch: String): String
     suspend fun dispatchPatch(branch: String, patch: String, expectedHeadSha: String, clientRunId: String): GitHubWorkflowRun
-    suspend fun awaitCompletion(run: GitHubWorkflowRun, timeoutMs: Long = 240_000): GitHubWorkflowRun
+    suspend fun awaitCompletion(run: GitHubWorkflowRun, timeoutMs: Long = 1_800_000): GitHubWorkflowRun
     suspend fun failedJobLogs(runId: Long, maxChars: Int = 40_000): String
 }
 
@@ -125,7 +125,7 @@ class GitHubActionsRestClient(
 
     override suspend fun awaitCompletion(run: GitHubWorkflowRun, timeoutMs: Long): GitHubWorkflowRun =
         withContext(Dispatchers.IO) {
-            require(timeoutMs in 5_000..900_000)
+            require(timeoutMs in 5_000..1_800_000)
             val deadline = System.currentTimeMillis() + timeoutMs
             while (System.currentTimeMillis() < deadline) {
                 val item = JsonParser.parseString(request("GET", "actions/runs/${run.id}")).asJsonObject
