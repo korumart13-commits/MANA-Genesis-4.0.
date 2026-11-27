@@ -103,3 +103,11 @@ The home Activity now has a minimal fallback screen when the Engine cannot initi
 ## Source snapshot pin refresh — 2026-11-27
 
 The AOSP local manifest now pins MANA source snapshot `4f514a53be14ab4d5ebc5cc411322138ca7f4d35`, which includes the service resilience work, Android lifecycle safeguards, and firmware research documentation. The manifest update itself is a later commit; keeping the referenced snapshot immutable avoids a self-referential moving branch. CI run 45914434084 is queued to revalidate the updated pin and app source.
+
+## Release lint toolchain investigation — 2026-11-27
+
+The first run after the lifecycle compile fix passed the Brain/core tests, Android debug assembly and app unit tests. The unsigned release build then failed in `:app:lintVitalAnalyzeRelease`, not in Kotlin compilation: the bundled `androidx.lifecycle.lint.NonNullableMutableLiveDataDetector` crashed with `IncompatibleClassChangeError` / `NegativeArraySizeException` while analyzing `LocalModelRuntime.kt`. Lint has not been disabled.
+
+The build toolchain has been advanced from AGP 8.7.3 / Gradle 8.10.2 to AGP 8.13.2 / Gradle 8.13. Android Developers lists AGP 8.13 as supporting API 36.1 and requiring Gradle 8.13, which aligns the project with its compileSdk 36 target. This is a compatibility correction candidate; release packaging remains unverified until the new CI run completes. References: https://developer.android.com/build/releases/agp-8-13-0-release-notes and https://developer.android.com/build/releases/about-agp.
+
+The AOSP local manifest is now pinned to immutable source snapshot `635e36e9eb0e99674ce8c0069b10da6461ce4a5d`, including the current app lifecycle changes and upgraded build toolchain.
