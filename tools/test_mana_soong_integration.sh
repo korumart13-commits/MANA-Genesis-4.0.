@@ -32,6 +32,10 @@ grep -F 'backendConnectTimeout' system/mana/services/ManaBrainService/src/com/ma
 grep -F 'scheduleBackendRebind()' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'RemoteException | SecurityException' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'ENGINE_PERMISSION_DENIED' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+grep -F 'import java.util.concurrent.atomic.AtomicBoolean;' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+grep -F 'terminalCallbackDelivered.compareAndSet(false, true)' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+grep -F 'Ignoring duplicate MANA Engine result callback.' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+grep -F 'Ignoring duplicate MANA Engine error callback.' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F '"READY_NO_LOCAL_MODEL".equals(engineState)' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'getProtocolVersion()' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
 grep -F 'UNAVAILABLE_ENGINE_BACKEND_DISCONNECTED' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
