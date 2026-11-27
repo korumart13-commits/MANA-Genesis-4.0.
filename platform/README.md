@@ -56,7 +56,7 @@ After the Gradle release APK is built, stage it into the AOSP checkout:
 vendor/mana/genesis/tools/stage_mana_aosp_prebuilt.sh "$ANDROID_BUILD_TOP" /path/to/app-release-unsigned.apk
 ```
 
-The staging script validates package identity and the engine Binder declarations, then
+The staging script first rejects already-signed input APKs, validates package identity and the engine Binder declarations, then
 replaces the Java-only launcher stub with an `android_app_import` module using
 `presigned: false` and `certificate: "platform"`. The APK is installed as a product
 application, not a privileged application. The platform Brain service is separately built
