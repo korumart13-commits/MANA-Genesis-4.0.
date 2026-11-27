@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.IBinder;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -33,6 +35,9 @@ public final class ManaBrainService extends Service {
     private static final int PROTOCOL_VERSION = 1;
     private static final String STATE_DISCONNECTED = "UNAVAILABLE_ENGINE_BACKEND_DISCONNECTED";
     private static final int MAX_PENDING_REQUESTS = 32;
+    private static final int MAX_BACKEND_REBIND_ATTEMPTS = 5;
+    private static final long BACKEND_REBIND_BASE_MS = 2_000L;
+    private static final long BACKEND_REBIND_MAX_MS = 60_000L;
 
     @SuppressWarnings("FieldCanBeLocal")
     private final ThreadPoolExecutor requests = new ThreadPoolExecutor(
@@ -47,6 +52,19 @@ public final class ManaBrainService extends Service {
 
     private volatile IManaEngineBackend backend;
     private boolean backendBindingRequested;
+    private int backendRebindAttempts;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final Runnable backendRebind = () -> {
+        if (backendBindingRequested) {
+            try {
+                unbindService(backendConnection);
+            } catch (IllegalArgumentException ignored) {
+                // The binding may already have been removed by the system.
+            }
+            backendBindingRequested = false;
+        }
+        bindEngineBackend();
+    };
 
     private final ServiceConnection backendConnection = new ServiceConnection() {
         @Override
@@ -56,13 +74,17 @@ public final class ManaBrainService extends Service {
                 if (candidate != null && candidate.getProtocolVersion() == PROTOCOL_VERSION) {
                     backend = candidate;
                     Log.i(TAG, "Connected to the single MANA Engine backend.");
+                    backendRebindAttempts = 0;
+                    mainHandler.removeCallbacks(backendRebind);
                 } else {
                     backend = null;
                     Log.e(TAG, "MANA Engine backend protocol mismatch.");
+                    scheduleBackendRebind();
                 }
             } catch (RemoteException failure) {
                 backend = null;
                 Log.e(TAG, "Unable to negotiate MANA Engine backend.", failure);
+                scheduleBackendRebind();
             }
         }
 
@@ -75,13 +97,15 @@ public final class ManaBrainService extends Service {
         @Override
         public void onBindingDied(ComponentName name) {
             backend = null;
-            Log.e(TAG, "MANA Engine backend binding died.");
+            Log.e(TAG, "MANA Engine backend binding died; scheduling a bounded rebind.");
+            scheduleBackendRebind();
         }
 
         @Override
         public void onNullBinding(ComponentName name) {
             backend = null;
-            Log.e(TAG, "MANA Engine backend returned a null Binder.");
+            Log.e(TAG, "MANA Engine backend returned a null Binder; scheduling a bounded rebind.");
+            scheduleBackendRebind();
         }
     };
 
@@ -183,22 +207,45 @@ public final class ManaBrainService extends Service {
         }
     }
 
-    @Override
-    public void onCreate() {
-        super.onCreate();
+    private void bindEngineBackend() {
+        if (backendBindingRequested) return;
         Intent backendIntent = new Intent("com.mana.action.BIND_ENGINE_BACKEND")
                 .setComponent(new ComponentName(
                         "com.mana.launcher",
                         "com.mana.launcher.ManaEngineBridgeService"));
         try {
-            backendBindingRequested = bindService(backendIntent, backendConnection, BIND_AUTO_CREATE);
+            backendBindingRequested = bindService(
+                    backendIntent, backendConnection, BIND_AUTO_CREATE);
             if (!backendBindingRequested) {
                 Log.w(TAG, "MANA Engine backend service is not currently resolvable.");
+                scheduleBackendRebind();
             }
         } catch (SecurityException | IllegalStateException failure) {
             backendBindingRequested = false;
             Log.e(TAG, "MANA Engine backend binding was denied.", failure);
+            scheduleBackendRebind();
         }
+    }
+
+    private void scheduleBackendRebind() {
+        if (backendRebindAttempts >= MAX_BACKEND_REBIND_ATTEMPTS) {
+            Log.e(TAG, "MANA Engine backend rebind limit reached; remaining fail-closed.");
+            return;
+        }
+        long multiplier = 1L << backendRebindAttempts;
+        long delayMs = Math.min(BACKEND_REBIND_MAX_MS,
+                BACKEND_REBIND_BASE_MS * multiplier);
+        backendRebindAttempts++;
+        mainHandler.removeCallbacks(backendRebind);
+        mainHandler.postDelayed(backendRebind, delayMs);
+        Log.w(TAG, "Scheduled MANA Engine backend rebind attempt "
+                + backendRebindAttempts + " in " + delayMs + " ms.");
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        bindEngineBackend();
     }
 
     @Override
@@ -209,6 +256,7 @@ public final class ManaBrainService extends Service {
 
     @Override
     public void onDestroy() {
+        mainHandler.removeCallbacks(backendRebind);
         requests.shutdownNow();
         backend = null;
         if (backendBindingRequested) {
