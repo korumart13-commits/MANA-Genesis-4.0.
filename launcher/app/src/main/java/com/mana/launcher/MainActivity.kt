@@ -412,13 +412,9 @@ class MainActivity : Activity() {
                 }.onFailure { error ->
                     modelStatus?.text = "Локальная модель ещё не готова: ${error.message}"
                     if (modelCatalog?.verifiedSavedModel() == null) {
-                        // Ask for consent once. After consent, reuse the existing DownloadManager
-                        // request and automatically verify/activate it after completion or resume.
-                        if (modelCatalog?.hasAcceptedGemmaTerms() == true) {
-                            activateCompletedModelDownload()
-                        } else {
-                            downloadOfficialModel()
-                        }
+                        // Offer the bundled, hash-verified model first; automatic Wi-Fi
+                        // download remains available as a fallback after owner confirmation.
+                        downloadOfficialModel()
                     }
                 }
             }
