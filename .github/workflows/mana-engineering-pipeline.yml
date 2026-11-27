@@ -51,6 +51,26 @@ jobs:
         with:
           gradle-version: "8.14.3"
 
+      - name: Exercise policy, git apply and isolated patch application
+        shell: bash
+        env:
+          MANA_PATCH_FILE: ${{ runner.temp }}/mana-fixture.patch
+        run: |
+          set -euo pipefail
+          fixture="$RUNNER_TEMP/mana-patch-fixture"
+          mkdir -p "$fixture/engine/mana-brain/src/main/kotlin/com/mana/brain"
+          git -C "$fixture" init -q
+          git -C "$fixture" config user.name "MANA CI"
+          git -C "$fixture" config user.email "mana-ci@users.noreply.github.com"
+          printf '%s\n' 'package com.mana.brain' 'class PipelineFixture' > "$fixture/engine/mana-brain/src/main/kotlin/com/mana/brain/PipelineFixture.kt"
+          git -C "$fixture" add .
+          git -C "$fixture" commit -qm "fixture baseline"
+          printf '%s\n' '// patch applied in disposable CI workspace' >> "$fixture/engine/mana-brain/src/main/kotlin/com/mana/brain/PipelineFixture.kt"
+          git -C "$fixture" diff --binary > "$MANA_PATCH_FILE"
+          MANA_PATCH_FILE="$MANA_PATCH_FILE" gradle --no-daemon -p engine/mana-brain validateEngineeringPatch
+          git -C "$fixture" apply --check --whitespace=error-all "$MANA_PATCH_FILE"
+          git -C "$fixture" apply --whitespace=error-all "$MANA_PATCH_FILE"
+          grep -q 'patch applied in disposable CI workspace' "$fixture/engine/mana-brain/src/main/kotlin/com/mana/brain/PipelineFixture.kt"
       - name: Validate and apply proposed patch in disposable CI checkout
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.patch != '' }}
         env:
@@ -85,7 +105,9 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.patch != '' }}
         env:
           MANA_PATCH: ${{ inputs.patch }}
-        run: printf '%s' "$MANA_PATCH" > dist/proposed.patch
+        run: |
+          mkdir -p dist
+          printf '%s' "$MANA_PATCH" > dist/proposed.patch
 
       - name: Create SHA-256 manifest
         shell: bash
