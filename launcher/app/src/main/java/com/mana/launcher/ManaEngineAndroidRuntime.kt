@@ -109,6 +109,8 @@ class ManaEngineAndroidRuntime(
         // The encrypted backlog is advisory and must never prevent Brain startup.
         runCatching { ManaGenesisFirstBootService(appContext).refresh() }
             .onFailure { android.util.Log.e("MANA", "First-boot backlog checkpoint failed", it) }
+        runCatching { ManaGenesisWorkScheduler.ensureScheduled(appContext) }
+            .onFailure { android.util.Log.e("MANA", "Periodic inventory scheduling failed", it) }
         return health
     }
 
