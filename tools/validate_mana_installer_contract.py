@@ -19,6 +19,7 @@ for required in (
     "DownloadManager.ACTION_DOWNLOAD_COMPLETE",
     "registerModelDownloadReceiver()",
     "activateCompletedModelDownload()",
+    "startModelProgressUpdates()",
     "startGemmaDownload(catalog)",
     "hasAcceptedGemmaTerms()",
 ):
@@ -38,6 +39,7 @@ assert "Build.PRODUCT.equals" not in coordinator
 for required in (
     "fun hasAcceptedGemmaTerms()",
     "DownloadManager.Request",
+    "fun downloadProgressText(): String?",
     ".setAllowedOverMetered(false)",
     "MODEL_SIZE = 2_588_147_712L",
     "SHA256 =",
