@@ -66,7 +66,7 @@ class ManaEngineeringActivity : ComponentActivity() {
             sourcePicker.launch(arrayOf("text/*", "application/json", "application/xml"))
         })
         repositoryPaths = EditText(this).apply {
-            hint = "Путь каждого файла в GitHub, по одному на строку, в порядке выбора"
+            hint = "Пути файлов в GitHub, по одному на строку. Можно загружать без выбора локальных файлов."
             setTextColor(0xFFFFFFFF.toInt())
             setHintTextColor(0xFF9CB6D4.toInt())
             minLines = 2
@@ -75,7 +75,7 @@ class ManaEngineeringActivity : ComponentActivity() {
         root.addView(repositoryPaths, LinearLayout.LayoutParams(-1, -2))
         root.addView(button("Применить пути GitHub к выбранным файлам") { applyRepositoryPaths() })
         root.addView(button("Загрузить точные исходники из GitHub") { loadRepositorySources() })
-        sourceSummary = text("Исходники не выбраны. Без указания путей файлы остаются в docs/owner-context/.", 12, 0xFF9CB6D4.toInt())
+        sourceSummary = text("Укажи путь исходника в GitHub и загрузи точную версию ветки.", 12, 0xFF9CB6D4.toInt())
         root.addView(sourceSummary)
         root.addView(button("Подключить GitHub Actions") { configureGitHub() })
         root.addView(button("Отключить GitHub и удалить токен") {
@@ -125,8 +125,10 @@ class ManaEngineeringActivity : ComponentActivity() {
 
     private fun loadRepositorySources() {
         if (!github.isConfigured()) { status.text = "Сначала подключи GitHub Actions."; return }
-        val paths = selectedFiles.map { it.path }
-        if (paths.isEmpty()) { status.text = "Выбери файлы и укажи их точные пути в репозитории."; return }
+        val typedPaths = repositoryPaths.text.toString().lines().map { it.trim() }.filter { it.isNotBlank() }
+        val paths = typedPaths.ifEmpty { selectedFiles.map { it.path } }
+        if (paths.isEmpty()) { status.text = "Укажи хотя бы один путь к файлу в репозитории GitHub."; return }
+        if (paths.size > 12 || paths.distinct().size != paths.size) { status.text = "Нужно от 1 до 12 уникальных путей."; return }
         status.text = "MANA загружает исходники и фиксирует SHA ветки GitHub…"
         lifecycleScope.launch {
             try {
