@@ -46,3 +46,32 @@ The product configuration fragment is at
 `vendor/mana/genesis/system/mana/mana_product.mk`. It must be included by a verified product
 makefile only after the actual AOSP checkout and product target exist. This manifest attachment
 does not create a device target, supply proprietary blobs, or make the product flashable.
+
+
+## MANA APK import and signing
+
+After the Gradle release APK is built, stage it into the AOSP checkout:
+
+```sh
+tools/stage_mana_aosp_prebuilt.sh "$ANDROID_BUILD_TOP" /path/to/app-release-unsigned.apk
+```
+
+The staging script validates package identity and the engine Binder declarations, then
+replaces the Java-only launcher stub with an `android_app_import` module using
+`presigned: false` and `certificate: "platform"`. The APK is installed as a product
+application, not a privileged application. The platform Brain service is separately built
+with the same `certificate: "platform"` setting and is also non-privileged. The signature
+permission therefore depends on both packages being signed by the exact same platform key.
+
+After the product build, verify the final launcher APK against the platform certificate
+actually used by that product:
+
+```sh
+tools/verify_mana_platform_signature.sh "$ANDROID_BUILD_TOP" /path/to/ManaLauncher.apk
+```
+
+The verifier defaults to the AOSP development certificate at
+`build/target/product/security/platform.x509.pem`; pass a third argument for a different
+product certificate. A production private key must remain in a protected signing system and
+must never be added to this repository. A successful source CI run is not a substitute for
+this post-build certificate check or a Soong build.
