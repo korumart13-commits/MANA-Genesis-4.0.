@@ -23,6 +23,8 @@ grep -F 'android:permission="com.mana.permission.BIND_BRAIN"' system/mana/servic
 grep -F 'com.mana.launcher.ManaEngineBridgeService' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'MAX_BACKEND_REBIND_ATTEMPTS = 5' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'BACKEND_REBIND_BASE_MS = 2_000L' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+grep -F 'BACKEND_CONNECT_TIMEOUT_MS = 15_000L' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+grep -F 'backendConnectTimeout' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'scheduleBackendRebind()' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'RemoteException | SecurityException' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'ENGINE_PERMISSION_DENIED' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
