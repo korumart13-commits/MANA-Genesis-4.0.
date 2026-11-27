@@ -76,34 +76,23 @@ https://android.googlesource.com/platform/build/soong/+/refs/heads/master/java/a
 
 ## CI results recorded
 
-- Source-contract workflow `45916548420` completed successfully for commit
-  `3116d029`. It validates the test module declaration, both signature-permission
-  boundaries, the explicit bridge component and the Soong runner command sequence.
-- Source bundle workflow `45916548296` completed successfully for the same commit.
-- An earlier contract run `45916543920` failed because its static assertion still
-  expected the previous service-action symbol after the test was changed to use the
-  public action string. The assertion was corrected; subsequent contract runs
-  `45916546934` and `45916548420` passed.
-- The latest completed Gradle verification available during this stage,
-  `45916217043`, passed. Newer Gradle runs `45916548312` and `45916564659`
-  were still running when this status was recorded; they are not counted as passed.
+- Gradle verification run `45916217043` completed successfully. Its artifacts include:
+  - unsigned release APK package `MANA-Android-release-unsigned-for-AOSP-platform-signing`,
+    artifact ID `15161949345` (45,822,738 bytes);
+  - debug prototype ZIP `15162029283` (49,707,558 bytes);
+  - source project ZIP `15161959377` (17,469,603 bytes).
+  These are build artifacts only; the release APK is unsigned and the debug APK is not a ROM.
+- Soong/Binder source-contract run `45916643525` completed successfully after the integration
+  test was extended to assert the signature permission, AIDL protocol, backend handshake and
+  request callback. Earlier run `45916543920` failed on a stale assertion expecting an old
+  action-symbol expression; the workflow assertion was corrected.
+- Gradle run `45916166845` also completed successfully and produced the corresponding
+  unsigned release APK, debug prototype and source project artifacts.
+- Several intermediate runs were cancelled by the workflow concurrency group when newer commits
+  superseded them. Cancelled runs are not counted as failures of the final source state.
+- The latest manifest-pin commit triggers a fresh Gradle source-verification run; check its
+  terminal result before treating the manifest snapshot as fully CI-verified.
 
-These CI results validate repository contracts only. They do not execute Soong,
-sign the APK with a product key, boot an emulator, or run the Binder instrumentation test.
-
-
-## Dual-package platform certificate verification
-
-The signature verifier now accepts the final Brain service APK as an optional fourth
-argument, so both packages can be compared with the same product platform certificate:
-
-```sh
-vendor/mana/genesis/tools/verify_mana_platform_signature.sh \
-  "$ANDROID_BUILD_TOP" /path/to/ManaLauncher.apk \
-  /path/to/platform.x509.pem /path/to/ManaBrainService.apk
-```
-
-The verifier checks package IDs (`com.mana.launcher` and
-`com.mana.system.brain`), APK signature validity and exact signer-certificate SHA-256
-equality. This extends the verification procedure; it has not yet been run against
-Soong-produced APKs.
+These CI results validate Android Gradle compilation/tests and source contracts only. They do
+not execute a full AOSP Soong build, sign APKs with a product platform key, boot an emulator,
+or run the Binder instrumentation test on a device.
