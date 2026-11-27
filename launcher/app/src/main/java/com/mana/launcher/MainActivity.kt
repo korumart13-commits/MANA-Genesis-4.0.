@@ -160,6 +160,7 @@ class MainActivity : Activity() {
     private val callScreeningRoleRequestCode = 4113
     private val assistantRoleRequestCode = 4115
     private val notificationPermissionRequestCode = 4114
+    private var pendingCallScreeningRoleAfterContacts = false
     private lateinit var contactIntelligence: ManaContactIntelligence
 
     private fun startFloatingAvatarService() {
@@ -688,12 +689,17 @@ class MainActivity : Activity() {
     }
 
     private fun requestCallScreeningRole() {
-        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), notificationPermissionRequestCode)
-            return
-        }
         if (Build.VERSION.SDK_INT < 29) {
             showMessage("Системная роль Call Screening доступна начиная с Android 10.")
+            return
+        }
+        if (checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+            pendingCallScreeningRoleAfterContacts = true
+            requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS), contactsPermissionRequestCode)
+            return
+        }
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), notificationPermissionRequestCode)
             return
         }
         val roleManager = getSystemService(RoleManager::class.java)
@@ -1586,7 +1592,12 @@ class MainActivity : Activity() {
             else showMessage("Доступ к микрофону не предоставлен.")
         }
         if (requestCode == contactsPermissionRequestCode) {
-            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+            val granted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
+            if (pendingCallScreeningRoleAfterContacts) {
+                pendingCallScreeningRoleAfterContacts = false
+                if (granted) requestCallScreeningRole()
+                else showMessage("Без доступа к контактам MANA не сможет отличать сохранённые номера от неизвестных. Роль фильтрации не запрошена.")
+            } else if (granted) {
                 showMessage("Доступ к контактам включён. Повтори проверку номера.")
             } else {
                 showMessage("Доступ к контактам не предоставлен.")
