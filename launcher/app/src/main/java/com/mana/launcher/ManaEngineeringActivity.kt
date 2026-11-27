@@ -76,6 +76,16 @@ class ManaEngineeringActivity : ComponentActivity() {
         sourceSummary = text("Исходники не выбраны. Без указания путей файлы остаются в docs/owner-context/.", 12, 0xFF9CB6D4.toInt())
         root.addView(sourceSummary)
         root.addView(button("Подключить GitHub Actions") { configureGitHub() })
+        root.addView(button("Отключить GitHub и удалить токен") {
+            AlertDialog.Builder(this)
+                .setTitle("Удалить GitHub token?")
+                .setMessage("Зашифрованный токен и ключ Android Keystore будут удалены с этого устройства.")
+                .setNegativeButton("Отмена", null)
+                .setPositiveButton("Удалить") { _, _ ->
+                    try { github.removeCredentials(); status.text = "GitHub token удалён." }
+                    catch (error: Exception) { status.text = error.message ?: "Не удалось удалить токен." }
+                }.show()
+        })
         root.addView(button("Запустить CI и автоисправление (до 2 повторов)") { confirmAndRunEngineeringLoop() })
         root.addView(button("Попросить GPT подготовить патч") { confirmAndGenerate() })
         root.addView(button("Обновить статус облачного провайдера") {
