@@ -21,6 +21,9 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Platform-facing Binder endpoint for MANA Brain.
@@ -56,6 +59,7 @@ public final class ManaBrainService extends Service {
     private boolean backendBindingRequested;
     private int backendRebindAttempts;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final Set<Runnable> pendingRequestTimeouts = ConcurrentHashMap.newKeySet();
     private final Runnable backendConnectTimeout = () -> {
         if (backend == null && backendBindingRequested) {
             Log.w(TAG, "Timed out waiting for MANA Engine backend Binder connection.");
@@ -172,41 +176,58 @@ public final class ManaBrainService extends Service {
                 return;
             }
 
+            ManaBrainTerminalCallbackGate terminalGate = new ManaBrainTerminalCallbackGate();
+            AtomicReference<Runnable> timeoutReference = new AtomicReference<>();
+            Runnable requestTimeout = () -> {
+                Runnable timeout = timeoutReference.get();
+                if (timeout != null) pendingRequestTimeouts.remove(timeout);
+                if (terminalGate.tryDeliver()) {
+                    Log.w(TAG, "MANA Brain request expired before a terminal response.");
+                    deliverError(callback, "ENGINE_TIMEOUT",
+                            "MANA Brain request exceeded its end-to-end service deadline.");
+                }
+            };
+            timeoutReference.set(requestTimeout);
+            pendingRequestTimeouts.add(requestTimeout);
+            mainHandler.postDelayed(requestTimeout, REQUEST_CALLBACK_TIMEOUT_MS);
             try {
-                requests.execute(() -> forwardToEngine(request, callback));
+                requests.execute(() -> forwardToEngine(request, callback, terminalGate, requestTimeout));
             } catch (RejectedExecutionException overloaded) {
-                callback.onError("SERVICE_BUSY",
-                        "MANA Brain request queue is full or the service is shutting down.");
+                if (claimTerminal(terminalGate, requestTimeout)) {
+                    deliverError(callback, "SERVICE_BUSY",
+                            "MANA Brain request queue is full or the service is shutting down.");
+                }
             }
         }
     };
 
-    private void forwardToEngine(ManaBrainRequest request, IManaBrainCallback callback) {
+    private boolean claimTerminal(ManaBrainTerminalCallbackGate gate, Runnable timeout) {
+        if (!gate.tryDeliver()) return false;
+        mainHandler.removeCallbacks(timeout);
+        pendingRequestTimeouts.remove(timeout);
+        return true;
+    }
+
+    private void forwardToEngine(ManaBrainRequest request, IManaBrainCallback callback,
+            ManaBrainTerminalCallbackGate terminalGate, Runnable requestTimeout) {
+        if (terminalGate.isDelivered()) return;
         IManaEngineBackend current = backend;
         if (current == null) {
-            deliverError(callback, "ENGINE_UNAVAILABLE",
-                    "The MANA Engine backend is not installed, not signed with the system key, or not connected.");
+            if (claimTerminal(terminalGate, requestTimeout)) {
+                deliverError(callback, "ENGINE_UNAVAILABLE",
+                        "The MANA Engine backend is not installed, not signed with the system key, or not connected.");
+            }
             return;
         }
-        ManaBrainTerminalCallbackGate terminalCallbackDelivered = new ManaBrainTerminalCallbackGate();
-        Runnable requestTimeout = () -> {
-            if (terminalCallbackDelivered.tryDeliver()) {
-                Log.w(TAG, "MANA Engine request exceeded its callback deadline.");
-                deliverError(callback, "ENGINE_TIMEOUT",
-                        "MANA Engine did not complete this request before the service deadline.");
-            }
-        };
-        mainHandler.postDelayed(requestTimeout, REQUEST_CALLBACK_TIMEOUT_MS);
         try {
             current.think(request, new IManaEngineBackendCallback.Stub() {
                 @Override
                 public void onResult(String text, String provider, boolean local, int memoryItemsUsed) {
-                    if (!terminalCallbackDelivered.tryDeliver()) {
+                    if (!claimTerminal(terminalGate, requestTimeout)) {
                         Log.w(TAG, "Ignoring duplicate or late MANA Engine result callback.");
                         return;
                     }
-                    mainHandler.removeCallbacks(requestTimeout);
-                    try {
+                                        try {
                         com.mana.brain.ManaBrainResponse response = new com.mana.brain.ManaBrainResponse();
                         response.text = text;
                         response.provider = provider;
@@ -224,15 +245,13 @@ public final class ManaBrainService extends Service {
                         Log.w(TAG, "Ignoring duplicate or late MANA Engine error callback.");
                         return;
                     }
-                    mainHandler.removeCallbacks(requestTimeout);
-                    deliverError(callback, code, message);
+                                        deliverError(callback, code, message);
                 }
             });
         } catch (RemoteException | SecurityException disconnected) {
             backend = null;
             if (terminalCallbackDelivered.tryDeliver()) {
-                mainHandler.removeCallbacks(requestTimeout);
-                deliverError(callback, disconnected instanceof SecurityException
+                                deliverError(callback, disconnected instanceof SecurityException
                         ? "ENGINE_PERMISSION_DENIED" : "ENGINE_DISCONNECTED",
                         "The local MANA Engine Binder call failed or was denied.");
             }
@@ -307,6 +326,8 @@ public final class ManaBrainService extends Service {
     public void onDestroy() {
         mainHandler.removeCallbacks(backendRebind);
         mainHandler.removeCallbacks(backendConnectTimeout);
+        for (Runnable timeout : pendingRequestTimeouts) mainHandler.removeCallbacks(timeout);
+        pendingRequestTimeouts.clear();
         requests.shutdownNow();
         backend = null;
         if (backendBindingRequested) {
