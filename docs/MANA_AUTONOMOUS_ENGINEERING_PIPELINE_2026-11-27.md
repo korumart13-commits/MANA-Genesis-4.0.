@@ -7,6 +7,7 @@ Branch: `chatgpt/mana-asi-rmx5566-one-action-setup`
 
 - `EngineeringPatchPolicy` validates proposed standard Git diffs before they can enter the build pipeline.
 - The policy limits a patch to 12 files and 80,000 characters, requires standard Git/unified-diff headers and hunks, and rejects path traversal, absolute paths, file deletion, rename/copy/mode changes, symlinks, binary patches, compiled artifacts, build output, signing material, build scripts and workflow changes.
+- The copilot additionally rejects any diff path that was not explicitly selected in the owner-approved task context; a model cannot silently expand its patch to another otherwise-allowed file.
 - Allowed patch roots are limited to MANA source/test trees and project documentation.
 - `ManaEngineeringCopilot.parseProposal` invokes the policy. A malformed or out-of-scope proposal fails closed and remains unapplied.
 - `EngineeringPatchPolicyCli` exposes the same validator to automation.
@@ -15,6 +16,8 @@ Branch: `chatgpt/mana-asi-rmx5566-one-action-setup`
 ## CI execution path
 
 Workflow: `.github/workflows/mana-engineering-pipeline.yml`
+
+Every pipeline run first creates a throwaway Git repository, generates a real diff, resets the working tree, and proves that the production Kotlin validator and git apply can validate and apply that patch in the disposable workspace.
 
 On a workflow-dispatch run with a patch input, the disposable GitHub-hosted checkout:
 1. Validates the patch with the production Kotlin policy.
@@ -49,4 +52,4 @@ This is a real patch-validation, application-in-disposable-checkout, test and bu
 
 ## Verification status
 
-CI is triggered by commits touching the Brain module or this workflow. The implementation is not marked passed until the latest run completes successfully. The authoritative result is the linked GitHub Actions run for the branch head, not a local assumption.
+CI is triggered by commits touching the Brain module or this workflow. The synthetic patch-application self-test, complete JVM test suite, JAR build, SHA-256 manifest and keyless GitHub provenance attestation have passed for commit 51941443b17306d46d1f3cecc88ef18df70a5e72. The additional selected-source-path restriction is under CI verification at the current branch head. The authoritative result is the linked GitHub Actions run for that exact branch-head commit, not a local assumption.
