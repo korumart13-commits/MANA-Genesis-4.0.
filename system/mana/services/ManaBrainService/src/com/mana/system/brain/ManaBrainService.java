@@ -21,6 +21,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Platform-facing Binder endpoint for MANA Brain.
@@ -187,10 +188,15 @@ public final class ManaBrainService extends Service {
                     "The MANA Engine backend is not installed, not signed with the system key, or not connected.");
             return;
         }
+        AtomicBoolean terminalCallbackDelivered = new AtomicBoolean(false);
         try {
             current.think(request, new IManaEngineBackendCallback.Stub() {
                 @Override
                 public void onResult(String text, String provider, boolean local, int memoryItemsUsed) {
+                    if (!terminalCallbackDelivered.compareAndSet(false, true)) {
+                        Log.w(TAG, "Ignoring duplicate MANA Engine result callback.");
+                        return;
+                    }
                     try {
                         com.mana.brain.ManaBrainResponse response = new com.mana.brain.ManaBrainResponse();
                         response.text = text;
@@ -205,14 +211,20 @@ public final class ManaBrainService extends Service {
 
                 @Override
                 public void onError(String code, String message) {
+                    if (!terminalCallbackDelivered.compareAndSet(false, true)) {
+                        Log.w(TAG, "Ignoring duplicate MANA Engine error callback.");
+                        return;
+                    }
                     deliverError(callback, code, message);
                 }
             });
         } catch (RemoteException | SecurityException disconnected) {
             backend = null;
-            deliverError(callback, disconnected instanceof SecurityException
-                    ? "ENGINE_PERMISSION_DENIED" : "ENGINE_DISCONNECTED",
-                    "The local MANA Engine Binder call failed or was denied.");
+            if (terminalCallbackDelivered.compareAndSet(false, true)) {
+                deliverError(callback, disconnected instanceof SecurityException
+                        ? "ENGINE_PERMISSION_DENIED" : "ENGINE_DISCONNECTED",
+                        "The local MANA Engine Binder call failed or was denied.");
+            }
         }
     }
 
