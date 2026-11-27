@@ -36,7 +36,7 @@ data class GitHubActionsConfig(
         require(branch.isNotBlank() && branch.length <= 200 && !branch.contains(".."))
         require(apiBaseUrl.startsWith("https://") || apiBaseUrl.startsWith("http://127.0.0.1"))
         require(pollIntervalMillis in 100..60_000)
-        require(maxWaitMillis in pollIntervalMillis..(30 * 60 * 1_000))
+        require(maxWaitMillis in pollIntervalMillis..(30L * 60 * 1_000))
         require(maxLogChars in 1_000..100_000)
     }
 }
@@ -262,11 +262,11 @@ class GitHubActionsEngineeringGateway(
 
     private fun redact(value: String): String {
         var safe = value
-        listOf(
-            Regex("(?i)(authorization: bearer\\s+)[^\\s]+"),
-            Regex("(?i)(token|password|api[_-]?key)(\\s*[:=]\\s*)[^\\s,]+"),
-            Regex("gh[pousr]_[A-Za-z0-9_]{20,}")
-        ).forEach { safe = it.replace(safe, "$1[REDACTED]") }
+        safe = Regex("(?i)(authorization: bearer\\s+)[^\\s]+")
+            .replace(safe) { it.groupValues[1] + "[REDACTED]" }
+        safe = Regex("(?i)(token|password|api[_-]?key)(\\s*[:=]\\s*)[^\\s,]+")
+            .replace(safe) { it.groupValues[1] + it.groupValues[2] + "[REDACTED]" }
+        safe = Regex("gh[pousr]_[A-Za-z0-9_]{20,}").replace(safe, "[REDACTED]")
         return safe
     }
 }
