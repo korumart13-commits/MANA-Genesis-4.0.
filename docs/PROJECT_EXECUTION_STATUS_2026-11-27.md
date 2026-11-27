@@ -198,3 +198,21 @@ The project must preserve the full MANA product requirements in `docs/MASTER_PRO
 - Android launcher compilation, app unit tests, Brain/Core tests and all source-contract checks passed. This does not establish a real Soong/AOSP build, platform certificate equality, SELinux integration, Binder runtime handshake, or device operation.
 - The call-screening role opt-in change is included in this verified commit. Screening and default-dialer roles remain separate explicit user approvals. The current call UI warns that PSTN two-way voice interaction is not implemented; do not describe the receptionist as capable of conversing with callers.
 - Next source snapshot promotion: update the AOSP local manifest to pin this tested commit. After that manifest-only commit, run its contract CI. Continue with a real AOSP build environment, SELinux service policy and emulator Binder integration; keep RMX5566 firmware blocked pending exact device tree, kernel, vendor blobs, VINTF/AVB and matching stock restore.
+
+
+## Android release verification and Binder test identity correction — 2026-11-27
+
+- Android workflow run `45922765453` for commit `5f58e94addbafa452581fc8caf2950e3aadf0949` completed successfully. All static architecture checks, Brain/Core host tests, Android launcher compilation, app unit tests, unsigned release build and artifact uploads passed.
+- Artifacts from this run:
+  - Source project ZIP: `MANA-Genesis-4.0-source-project`, artifact `15164644226`, 17,493,937 bytes.
+  - Debug APK prototype ZIP: `MANA-Android-debug-prototype-NOT-ROM`, artifact `15164977813`, 49,717,831 bytes.
+  - Unsigned release APK ZIP: `MANA-Android-release-unsigned-for-AOSP-platform-signing`, artifact `15165272348`, 45,819,562 bytes.
+- Artifact sizes identify GitHub ZIPs, not the APK files inside. These remain application/source artifacts and are not bootable firmware, recovery packages or OTA images.
+- Corrected the device-side Binder instrumentation identity:
+  - `android:targetPackage` now names `com.mana.system.brain`, the actual platform service app.
+  - Permission checks and `bindService` now use `getInstrumentation().getContext()`, the test APK's own caller identity, rather than the target service app context. This prevents a false-positive permission check caused by testing with the service application's identity.
+  - Extended `tools/test_mana_soong_integration.sh` to assert both requirements.
+- The updated source-contract workflow `45923288853` for commit `5d5d3a26169c06bf4d37c1ccf2d55a4caed48c35` completed successfully. This confirms the manifest/context source contract only; it does not compile the instrumentation APK or prove a live Binder transaction.
+- Gradle verification for the Java test-source correction is running separately as `45923286007`. No result is claimed until it completes.
+- Next: build `ManaBrainBinderIntegrationTests` and the platform modules in a provisioned Android 16 AOSP checkout; verify the platform signer and run `atest ManaBrainBinderIntegrationTests` on an emulator/product image. This workspace has not yet demonstrated a full AOSP checkout or a verified RMX5566 lunch target, so the real Soong and Binder execution remain open.
+- Firmware remains the project end goal. Device-specific ROM construction still depends on exact RMX5566RU/RE645F sources, matching OEM kernel/device configuration/vendor blobs, VINTF/AVB and partition metadata, plus a verified matching stock restore path. Do not mark any of those prerequisites complete by inference.
