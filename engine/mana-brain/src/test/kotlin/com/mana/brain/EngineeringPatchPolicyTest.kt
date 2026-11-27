@@ -51,10 +51,10 @@ class EngineeringPatchPolicyTest {
 
     @Test fun rejectsBinarySymlinkAndOversizedPatches() {
         assertFailsWith<IllegalArgumentException> {
-            EngineeringPatchPolicy.validate(diff() + "\\nGIT binary patch")
+            EngineeringPatchPolicy.validate(diff() + "\nGIT binary patch")
         }
         assertFailsWith<IllegalArgumentException> {
-            EngineeringPatchPolicy.validate(diff() + "\\nnew file mode 120000")
+            EngineeringPatchPolicy.validate(diff() + "\nnew file mode 120000")
         }
         assertFailsWith<IllegalArgumentException> {
             EngineeringPatchPolicy.validate(diff().repeat(EngineeringPatchPolicy.MAX_DIFF_CHARS))
