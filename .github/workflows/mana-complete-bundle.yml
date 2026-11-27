@@ -3,6 +3,9 @@ name: MANA Genesis 4.0 Complete Bundle
 # Run manually. Commits made by GitHub's token do not reliably trigger another workflow.
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
   actions: read
