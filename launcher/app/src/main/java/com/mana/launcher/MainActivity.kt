@@ -409,10 +409,13 @@ class MainActivity : Activity() {
                 }.onFailure { error ->
                     modelStatus?.text = "Локальная модель ещё не готова: ${error.message}"
                     if (modelCatalog?.verifiedSavedModel() == null) {
-                        // Bring the required model's owner consent directly into the one-action
-                        // bootstrap flow; never accept model terms or start a multi-GB download
-                        // on the owner's behalf.
-                        downloadOfficialModel()
+                        // Ask for consent once. After consent, reuse the existing DownloadManager
+                        // request and automatically verify/activate it after completion or resume.
+                        if (modelCatalog?.hasAcceptedGemmaTerms() == true) {
+                            activateCompletedModelDownload()
+                        } else {
+                            downloadOfficialModel()
+                        }
                     }
                 }
             }
@@ -1463,27 +1466,35 @@ class MainActivity : Activity() {
     private fun downloadOfficialModel() {
         val catalog = modelCatalog
         if (catalog == null) { showMessage("Хранилище загрузок Android недоступно."); return }
+        if (catalog.hasAcceptedGemmaTerms()) {
+            startGemmaDownload(catalog)
+            return
+        }
         AlertDialog.Builder(this)
             .setTitle("Условия модели Gemma 4 E2B")
             .setMessage("Модель занимает около 2,59 ГБ и загружается только по Wi-Fi. Репозиторий указывает Apache 2.0; исходные веса Gemma также подпадают под Gemma Terms of Use и Prohibited Use Policy. Перед загрузкой ознакомься с условиями на официальной карточке модели и правилами Gemma. После загрузки MANA проверит точный размер и SHA-256. Нажатие «Принимаю и скачать» означает твоё собственное подтверждение условий и запуск загрузки.")
             .setNegativeButton("Отмена", null)
-             .setNeutralButton("Открыть карточку модели") { _, _ ->
+            .setNeutralButton("Открыть карточку модели") { _, _ ->
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm")))
             }
             .setPositiveButton("Принимаю и скачать") { _, _ ->
-                try {
-                    val id = catalog.enqueueGemma4E2B(licenseAccepted = true)
-                    if (id == -1L) {
-                        activateCompletedModelDownload()
-                        showMessage("Официальная модель проверена. Подключаю её к локальному движку…")
-                    } else {
-                        showMessage("Загрузка Gemma 4 E2B началась через Android Download Manager. Загрузка разрешена только по Wi-Fi. После завершения вернись в MANA — файл будет проверен и подключён.")
-                    }
-                } catch (error: Exception) {
-                    showMessage("Не удалось начать загрузку: " + error.message)
-                }
+                startGemmaDownload(catalog)
             }
             .show()
+    }
+
+    private fun startGemmaDownload(catalog: ManaModelCatalog) {
+        try {
+            val id = catalog.enqueueGemma4E2B(licenseAccepted = true)
+            if (id == -1L) {
+                activateCompletedModelDownload()
+                showMessage("Официальная модель проверена. Подключаю её к локальному движку…")
+            } else {
+                showMessage("Загрузка Gemma 4 E2B выполняется или возобновлена через Android Download Manager по Wi-Fi. MANA проверит SHA-256 и подключит модель автоматически после завершения.")
+            }
+        } catch (error: Exception) {
+            showMessage("Не удалось начать загрузку: " + error.message)
+        }
     }
 
     private fun registerModelDownloadReceiver() {
@@ -1505,24 +1516,28 @@ class MainActivity : Activity() {
             modelActivationInProgress = true
         }
         Thread {
+            var loadCallbackExpected = false
             try {
-                val file = catalog.verifiedSavedModel() ?: catalog.verifyCompletedDownload() ?: return@Thread
-                localRuntime.load(file) { result ->
-                    synchronized(this) { modelActivationInProgress = false }
-                    runOnUiThread {
-                        result.onSuccess { name ->
-                            modelStatus?.text = "Официальная модель проверена и активна: " + name
-                            showMessage("Gemma 4 E2B прошла проверку SHA-256 и подключена к локальному MANA Brain.")
-                        }.onFailure { error ->
-                            modelStatus?.text = "Модель скачана, но не запустилась: " + error.message
-                            showMessage("LiteRT-LM не смог загрузить модель: " + error.message)
+                val file = catalog.verifiedSavedModel() ?: catalog.verifyCompletedDownload()
+                if (file != null) {
+                    loadCallbackExpected = true
+                    localRuntime.load(file) { result ->
+                        synchronized(this) { modelActivationInProgress = false }
+                        runOnUiThread {
+                            result.onSuccess { name ->
+                                modelStatus?.text = "Официальная модель проверена и активна: " + name
+                                showMessage("Gemma 4 E2B прошла проверку SHA-256 и подключена к локальному MANA Brain.")
+                            }.onFailure { error ->
+                                modelStatus?.text = "Модель скачана, но не запустилась: " + error.message
+                                showMessage("LiteRT-LM не смог загрузить модель: " + error.message)
+                            }
                         }
                     }
                 }
             } catch (error: Exception) {
                 runOnUiThread { showMessage("Проверка загрузки модели не пройдена: " + error.message) }
             } finally {
-                synchronized(this) { modelActivationInProgress = false }
+                if (!loadCallbackExpected) synchronized(this) { modelActivationInProgress = false }
             }
         }.start()
     }
