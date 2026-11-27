@@ -120,13 +120,17 @@ or run the Binder instrumentation test on a device.
 
 ## Binder test hardening and reconnect behavior
 
-The device test was tightened after review: it now requires the backend state to be
-exactly `READY` or `READY_NO_LOCAL_MODEL` before sending a request. A connected
-Binder endpoint that has not initialized the Engine no longer counts as a successful
-handshake. The callback must arrive, and `ENGINE_NOT_READY`, `ENGINE_UNAVAILABLE`
-and `ENGINE_DISCONNECTED` are treated as failures.
+The device test requires the backend state to be exactly `READY` or
+`READY_NO_LOCAL_MODEL` before sending a request. A connected Binder endpoint that
+has not initialized the Engine no longer counts as a successful handshake. It then
+checks the complete request/callback path: either a non-empty local inference result is
+returned, or (when no local model is installed) the exact expected local-only
+`ENGINE_ERROR` diagnostic is returned. It never enables cloud processing or exports
+personal memory during this test.
 
-`ManaBrainService` now retries a dead/null/protocol-mismatched backend binding with a
+`ManaBrainService` now accepts the backend only after both AIDL protocol negotiation
+and a positive Engine readiness state. A protocol-compatible but degraded/uninitialized
+backend is rejected and retried. Dead/null/protocol-mismatched/not-ready bindings use a
 bounded schedule (2, 4, 8, 16 and 32 seconds; five attempts maximum). A normal
 `onServiceDisconnected` is left to Android's existing automatic reconnection behavior.
 The service remains fail-closed after the bounded retry limit; this is not an unlimited
@@ -147,3 +151,20 @@ measured on the actual product image. Do not paper over denials with permissive 
 directions, app data access, Keystore access and framework service use must be reviewed
 against the Android 16 policy and the device's vendor policy before any production image
 is accepted.
+
+
+## Readiness and callback review — 2026-11-27
+
+A source review found two false-positive risks and corrected them:
+
+1. The platform service previously treated a matching AIDL version as sufficient to
+   accept the app bridge, even if the Engine itself reported a degraded or uninitialized
+   state. It now requires `READY` or `READY_NO_LOCAL_MODEL` before publishing the
+   backend Binder as usable. Otherwise it retries using the bounded rebind policy.
+2. The instrumentation test previously accepted nearly any callback error as proof of
+   a successful request path. It now accepts only a non-empty local result or the exact
+   `ENGINE_ERROR`/no-model diagnostic expected when no local model is installed. It
+   captures provider and local/remote metadata and rejects any cloud result.
+
+The revised checks are covered by the Soong source-contract workflow. This is still
+source-level validation only; no Binder transaction has been executed on Android yet.
