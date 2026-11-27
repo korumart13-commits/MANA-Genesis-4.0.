@@ -31,6 +31,7 @@ class ManaEngineeringActivity : ComponentActivity() {
     private lateinit var sourceSummary: TextView
     private lateinit var result: TextView
     private var selectedFiles: List<EngineeringSourceFile> = emptyList()
+    private var repositoryHeadSha: String? = null
 
     private val sourcePicker = registerForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments()
@@ -73,6 +74,7 @@ class ManaEngineeringActivity : ComponentActivity() {
         }
         root.addView(repositoryPaths, LinearLayout.LayoutParams(-1, -2))
         root.addView(button("Применить пути GitHub к выбранным файлам") { applyRepositoryPaths() })
+        root.addView(button("Загрузить точные исходники из GitHub") { loadRepositorySources() })
         sourceSummary = text("Исходники не выбраны. Без указания путей файлы остаются в docs/owner-context/.", 12, 0xFF9CB6D4.toInt())
         root.addView(sourceSummary)
         root.addView(button("Подключить GitHub Actions") { configureGitHub() })
@@ -115,9 +117,29 @@ class ManaEngineeringActivity : ComponentActivity() {
         }
         try {
             selectedFiles = selectedFiles.mapIndexed { index, file -> file.copy(path = paths[index]) }
+            repositoryHeadSha = null
             sourceSummary.text = "Подготовлено для GitHub:\n" + selectedFiles.joinToString("\n") { it.path }
             status.text = "Пути применены. Они будут проверены политикой MANA перед отправкой."
         } catch (error: Exception) { status.text = error.message ?: "Недопустимый путь." }
+    }
+
+    private fun loadRepositorySources() {
+        if (!github.isConfigured()) { status.text = "Сначала подключи GitHub Actions."; return }
+        val paths = selectedFiles.map { it.path }
+        if (paths.isEmpty()) { status.text = "Выбери файлы и укажи их точные пути в репозитории."; return }
+        status.text = "MANA загружает исходники и фиксирует SHA ветки GitHub…"
+        lifecycleScope.launch {
+            try {
+                val snapshot = github.fetchRepositorySources(paths)
+                selectedFiles = snapshot.files
+                repositoryHeadSha = snapshot.headSha
+                sourceSummary.text = "Загружено непосредственно из GitHub (${snapshot.files.size} файлов).\nБазовый commit: ${snapshot.headSha}\n" + snapshot.files.joinToString("\n") { it.path }
+                status.text = "Исходники синхронизированы с точным commit. Теперь можно запросить патч и запустить CI."
+            } catch (error: Exception) {
+                repositoryHeadSha = null
+                status.text = "Не удалось получить исходники GitHub: ${error.message}"
+            }
+        }
     }
 
     private fun configureGitHub() {
@@ -142,6 +164,7 @@ class ManaEngineeringActivity : ComponentActivity() {
     private fun confirmAndRunEngineeringLoop() {
         val goal = objective.text.toString().trim()
         if (goal.isBlank() || selectedFiles.isEmpty()) { status.text = "Нужны описание задачи и выбранные исходники."; return }
+        if (repositoryHeadSha == null) { status.text = "Сначала нажми «Загрузить точные исходники из GitHub» после указания путей."; return }
         if (!github.isConfigured()) { status.text = "Сначала подключи GitHub Actions."; return }
         if (!provider.isAvailable()) { status.text = "Сначала настрой и включи облачный инженерный провайдер MANA."; return }
         val task = EngineeringTask(
@@ -161,7 +184,7 @@ class ManaEngineeringActivity : ComponentActivity() {
                 status.text = "MANA получает SHA ветки и запускает проверку…"
                 lifecycleScope.launch {
                     try {
-                        val outcome = github.run(provider, task, maxRepairAttempts = 2)
+                        val outcome = github.run(provider, task, maxRepairAttempts = 2, expectedHeadSha = repositoryHeadSha)
                         result.text = buildString {
                             appendLine(if (outcome.succeeded) "CI: SUCCESS" else "CI: NOT PASSED")
                             appendLine("Запусков: ${outcome.attempts.size} / максимум 3")
@@ -209,6 +232,7 @@ class ManaEngineeringActivity : ComponentActivity() {
                 EngineeringSourceFile("docs/owner-context/$safeName", content)
             }
             selectedFiles = loaded
+            repositoryHeadSha = null
             sourceSummary.text = "Выбрано файлов: ${loaded.size}\n" + loaded.joinToString("\n") { it.path }
             status.text = "Файлы прочитаны локально. Отправка ещё не выполнялась."
         } catch (error: Exception) {
