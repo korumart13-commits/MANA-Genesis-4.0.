@@ -1,0 +1,35 @@
+name: MANA Bootstrapper CI
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "bootstrapper/**"
+      - ".github/workflows/mana-bootstrapper.yml"
+  push:
+    branches: [mana-genesis-bootstrapper]
+    paths:
+      - "bootstrapper/**"
+      - ".github/workflows/mana-bootstrapper.yml"
+  workflow_dispatch:
+jobs:
+  validate-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate shell and target profile
+        run: |
+          bash -n bootstrapper/bootstrap.sh
+          bash -n bootstrapper/tests/smoke.sh
+          python3 -m json.tool bootstrapper/device/rmx5566ru.target.json >/dev/null
+          bash bootstrapper/tests/smoke.sh
+      - name: Build distributable package
+        run: |
+          mkdir -p dist
+          zip -r dist/MANA-Genesis-4.0-Bootstrapper-v0.1.zip bootstrapper
+          sha256sum dist/MANA-Genesis-4.0-Bootstrapper-v0.1.zip > dist/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Genesis-4.0-Bootstrapper-v0.1
+          path: |
+            dist/MANA-Genesis-4.0-Bootstrapper-v0.1.zip
+            dist/SHA256SUMS.txt

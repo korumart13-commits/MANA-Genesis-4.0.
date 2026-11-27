@@ -1,0 +1,47 @@
+{
+  "schema": "mana.target-profile.v1",
+  "product": "MANA Genesis 4.0",
+  "device": {
+    "model": "RMX5566RU",
+    "device_code": "RE645F",
+    "soc_family": "Qualcomm",
+    "soc_codename_reported": "bengal",
+    "android_target": 16,
+    "architecture": ["arm64-v8a", "32-bit compatibility"],
+    "profile_confidence": "REQUIRES_ON_DEVICE_REVALIDATION"
+  },
+  "required_rom_inputs": [
+    "verified_device_tree",
+    "compatible_kernel_source",
+    "legally_obtained_vendor_blobs",
+    "matching_firmware",
+    "VINTF_and_HAL_validation",
+    "partition_and_dynamic_partition_map",
+    "AVB_and_signing_plan",
+    "recovery_and_rollback_plan"
+  ],
+  "policy": {
+    "no_root_required_for_audit": true,
+    "no_bootloader_bypass": true,
+    "no_partition_writes": true,
+    "no_automatic_flashing": true,
+    "no_builtin_dialer": true,
+    "no_call_ui": true,
+    "no_phone_number_dialing_feature": true,
+    "api_keys_in_repository_or_apk": false,
+    "user_confirmation_for_irreversible_actions": true
+  },
+  "mana_architecture": {
+    "central_brain": "MANA Brain",
+    "system_body": "MANA OS",
+    "orchestration": "Shogun",
+    "permissioned_tools": "Hydra",
+    "model_router": "MANA Engine",
+    "persistent_research_space": "Microworld",
+    "optional_remote_worker": "Cloud Home",
+    "local_model_direction": ["Gemma LiteRT-LM", "llama.cpp"],
+    "cloud_providers_optional": ["OpenAI GPT", "Google Gemini", "Anthropic Claude", "xAI Grok"],
+    "integrations": ["Google APIs", "Yandex", "VK"],
+    "user_experience": ["Russian voice", "persistent memory", "dark navy UI", "animated MANA avatar"]
+  }
+}
