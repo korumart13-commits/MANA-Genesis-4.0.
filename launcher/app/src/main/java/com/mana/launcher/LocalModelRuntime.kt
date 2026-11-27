@@ -8,9 +8,6 @@ import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.SamplerConfig
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.CancellationException
-import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.flow.collect
 import java.io.File
 import java.util.concurrent.Executors
@@ -24,7 +21,7 @@ class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntim
     @Volatile private var conversation: Conversation? = null
     @Volatile private var loadedModel: File? = null
     @Volatile private var loadedBackend: String? = null
-    private val activeGeneration = java.util.concurrent.atomic.AtomicReference<Job?>(null)
+
 
     override fun isReady(): Boolean = conversation != null && loadedModel?.isFile == true
     override fun modelName(): String? = loadedModel?.let { "${it.name} · ${loadedBackend ?: "unknown"}" }
@@ -53,29 +50,29 @@ class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntim
         }
     }
 
-    override fun generate(prompt: String, onChunk: (String) -> Unit, callback: (Result<Unit>) -> Unit) {
+    override fun generate(prompt: String, onChunk: (String) -> Unit, callback: (Result<Unit>) -> Unit): LocalInferenceCancellation {
+        val cancellation = LocalInferenceCancellation()
         if (closed.get()) {
             callback(Result.failure(IllegalStateException("MANA local inference runtime is shut down")))
-            return
+            cancellation.cancel()
+            return cancellation
         }
         executor.execute {
+            if (cancellation.isCancelled()) return@execute
             try {
                 val active = conversation ?: error("Сначала загрузи файл модели .litertlm.")
                 require(prompt.isNotBlank()) { "Пустой запрос." }
                 runBlocking {
-                    val generationJob = coroutineContext[Job]
-                    activeGeneration.set(generationJob)
-                    try {
-                        active.sendMessageAsync(prompt).collect { message -> onChunk(message.toString()) }
-                    } finally {
-                        activeGeneration.compareAndSet(generationJob, null)
-                    }
+                    val generationJob = checkNotNull(coroutineContext[Job])
+                    cancellation.attach(generationJob)
+                    active.sendMessageAsync(prompt).collect { message -> onChunk(message.toString()) }
                 }
                 callback(Result.success(Unit))
             } catch (error: Exception) {
                 callback(Result.failure(error))
             }
         }
+        return cancellation
     }
 
     private fun closeLoaded() {
