@@ -11,7 +11,7 @@ The Android Engineering Lab exposes the same flow through `ManaGitHubActionsConn
 
 ### Runtime sequence
 
-1. The owner selects source files and maps each file to its exact repository-relative path.
+1. The owner enters one or more exact repository-relative paths directly (or optionally selects local files and maps their paths). MANA fetches the authoritative file contents from the target branch and verifies the branch SHA did not change during the read.
 2. The owner explicitly approves one engineering cycle. The engineering adapter routes through the central MANA Brain: local LiteRT-LM is attempted first; only if local inference is unavailable may an enabled cloud provider be used as fallback. Cloud use is covered by the one-cycle confirmation and may incur charges.
 3. The owner connects GitHub using a repository-scoped fine-grained token. The app stores it with the existing AES-GCM Android Keystore credential vault; it is not embedded in source, passed to workflow inputs, or written to logs.
 4. MANA reads the target branch SHA and checks it again before each attempt. A stale branch aborts before model generation or dispatch.
