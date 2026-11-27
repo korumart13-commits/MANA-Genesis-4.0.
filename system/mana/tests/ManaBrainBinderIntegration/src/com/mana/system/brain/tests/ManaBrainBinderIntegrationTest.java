@@ -28,7 +28,9 @@ public final class ManaBrainBinderIntegrationTest extends InstrumentationTestCas
             "UNAVAILABLE_ENGINE_BACKEND_DISCONNECTED";
 
     public void testPlatformBrainConnectsToEngineBridgeAndForwardsRequest() throws Exception {
-        Context context = getInstrumentation().getTargetContext();
+        // Use the instrumentation APK context so permission checks and bindService calls
+        // exercise the real caller identity, not the target service application's identity.
+        Context context = getInstrumentation().getContext();
         assertEquals("Test APK must hold the platform signature permission.",
                 PackageManager.PERMISSION_GRANTED,
                 context.checkSelfPermission("com.mana.permission.BIND_BRAIN"));
