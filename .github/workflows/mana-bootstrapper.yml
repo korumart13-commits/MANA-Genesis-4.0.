@@ -1,5 +1,10 @@
 name: MANA Bootstrapper CI
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "bootstrapper/**"
+      - ".github/workflows/mana-bootstrapper.yml"
   push:
     branches: [mana-genesis-bootstrapper]
     paths:
