@@ -56,6 +56,8 @@ jobs:
           assert '"ENGINE_ERROR"' in test
           assert "Local inference is unavailable and cloud processing is not permitted." in test
           assert "Boolean.TRUE.equals(resultLocal.get())" in test
+          assert "callbackCount.get()" in test
+          assert "callbackDelivered.await(180, TimeUnit.SECONDS)" in test
 
           app = ET.parse("launcher/app/src/main/AndroidManifest.xml").getroot()
           bridge = app.find("./application/service[@android:name='.ManaEngineBridgeService']", {
