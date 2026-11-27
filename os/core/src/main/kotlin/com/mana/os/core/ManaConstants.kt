@@ -172,7 +172,7 @@ object ManaConstants {
             SMART_RECEPTIONIST,
             CONTACT_INTELLIGENCE,
             LIFE_MANAGER,
-            DIARY_MODULE_ID,
+            Memory.DIARY_MODULE_ID,
             FUTURE_UPDATES,
             GAME_INTELLIGENCE,
             YANDEX,
