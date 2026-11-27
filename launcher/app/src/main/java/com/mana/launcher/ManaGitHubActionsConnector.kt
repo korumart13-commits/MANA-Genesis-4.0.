@@ -56,13 +56,18 @@ class ManaGitHubActionsConnector(context: Context) {
         require(provider.isAvailable()) { "Инженерный облачный провайдер MANA не настроен или выключен." }
         val gateway = createClient()
         val headSha = expectedHeadSha ?: gateway.currentHeadSha(branch)
+        val remoteSources = task.sourceFiles.map { gateway.fetchRepositoryFile(branch, it.path) }
+        check(gateway.currentHeadSha(branch).equals(headSha, ignoreCase = true)) {
+            "GitHub branch changed while MANA was refreshing source files; reload the source snapshot."
+        }
+        val synchronizedTask = task.copy(sourceFiles = remoteSources)
         val automation = ManaEngineeringAutomation(
             copilot = ManaEngineeringCopilot(provider),
             github = gateway,
             branch = branch,
             maxRepairAttempts = maxRepairAttempts
         )
-        automation.run(task, headSha)
+        automation.run(synchronizedTask, headSha)
     }
 
     private fun createClient() = GitHubActionsRestClient(
