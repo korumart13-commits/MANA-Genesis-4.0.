@@ -43,7 +43,7 @@ jobs:
           packages: 'platforms;android-36'
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.10.2'
+          gradle-version: '8.13'
       - name: Verify canonical MANA Brain module is included
         working-directory: .
         run: |
