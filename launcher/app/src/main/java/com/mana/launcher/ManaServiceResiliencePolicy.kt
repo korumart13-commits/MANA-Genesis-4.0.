@@ -9,7 +9,8 @@ internal class ManaServiceResiliencePolicy(
     private val baseDelayMs: Long = 2_000L,
     private val maxDelayMs: Long = 60_000L,
     private val stableWindowMs: Long = 60_000L,
-    private val failureWindowMs: Long = 10 * 60_000L
+    private val failureWindowMs: Long = 10 * 60_000L,
+    private val jitter: (Long) -> Long = { upperBound -> kotlin.random.Random.nextLong(upperBound.coerceAtLeast(1L)) }
 ) {
     data class RetryDecision(val attempt: Int, val delayMs: Long, val exhausted: Boolean)
 
@@ -35,9 +36,11 @@ internal class ManaServiceResiliencePolicy(
         if (attempts >= maxAttempts) return RetryDecision(attempts, 0L, exhausted = true)
         attempts += 1
         val multiplier = 1L shl (attempts - 1).coerceAtMost(30)
-        val delay = if (baseDelayMs > maxDelayMs / multiplier) maxDelayMs
+        val exponentialDelay = if (baseDelayMs > maxDelayMs / multiplier) maxDelayMs
             else (baseDelayMs * multiplier).coerceAtMost(maxDelayMs)
-        return RetryDecision(attempts, delay, exhausted = false)
+        val jitterWindow = minOf(exponentialDelay / 5L, maxDelayMs - exponentialDelay)
+        val jitterMs = if (jitterWindow > 0L) jitter(jitterWindow).coerceIn(0L, jitterWindow) else 0L
+        return RetryDecision(attempts, exponentialDelay + jitterMs, exhausted = false)
     }
 
     @Synchronized
