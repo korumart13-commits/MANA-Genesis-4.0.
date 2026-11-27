@@ -96,6 +96,83 @@ class ManaEngineeringActivity : ComponentActivity() {
         setContentView(root)
     }
 
+
+    private fun applyRepositoryPaths() {
+        if (selectedFiles.isEmpty()) { status.text = "Сначала выбери файлы."; return }
+        val paths = repositoryPaths.text.toString().lines().map { it.trim() }.filter { it.isNotBlank() }
+        if (paths.size != selectedFiles.size) {
+            status.text = "Укажи ровно ${selectedFiles.size} путей — по одному на каждый выбранный файл."
+            return
+        }
+        try {
+            selectedFiles = selectedFiles.mapIndexed { index, file -> file.copy(path = paths[index]) }
+            sourceSummary.text = "Подготовлено для GitHub:\n" + selectedFiles.joinToString("\n") { it.path }
+            status.text = "Пути применены. Они будут проверены политикой MANA перед отправкой."
+        } catch (error: Exception) { status.text = error.message ?: "Недопустимый путь." }
+    }
+
+    private fun configureGitHub() {
+        val input = EditText(this).apply {
+            hint = "Fine-grained GitHub token (Actions: read/write; Contents: read)"
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Подключить GitHub Actions")
+            .setMessage("Создай fine-grained token только для репозитория ${ManaGitHubActionsConnector.REPOSITORY}. Дай Actions: read/write и Contents: read. Токен будет зашифрован Android Keystore и не попадёт в исходники или CI-логи.")
+            .setView(input)
+            .setNegativeButton("Отмена", null)
+            .setPositiveButton("Сохранить") { _, _ ->
+                try {
+                    github.configure(input.text.toString())
+                    status.text = "GitHub Actions подключён. Токен хранится в Android Keystore-backed vault."
+                    input.setText("")
+                } catch (error: Exception) { status.text = error.message ?: "Не удалось сохранить токен." }
+            }.show()
+    }
+
+    private fun confirmAndRunEngineeringLoop() {
+        val goal = objective.text.toString().trim()
+        if (goal.isBlank() || selectedFiles.isEmpty()) { status.text = "Нужны описание задачи и выбранные исходники."; return }
+        if (!github.isConfigured()) { status.text = "Сначала подключи GitHub Actions."; return }
+        if (!provider.isAvailable()) { status.text = "Сначала настрой и включи облачный инженерный провайдер MANA."; return }
+        val task = EngineeringTask(
+            id = "mana-auto-${System.currentTimeMillis()}",
+            objective = goal,
+            targetDevice = "realme RMX5566RU / RE645F",
+            targetBuild = "Android 16 / RMX5566_16.0.5.1310(EX01)",
+            sourceFiles = selectedFiles,
+            ownerApprovedContext = true,
+            allowCloud = true
+        )
+        AlertDialog.Builder(this)
+            .setTitle("Разрешить инженерный цикл MANA?")
+            .setMessage("MANA отправит выбранные исходники и задачу в ${provider.selectedProvider()}, предложит diff, запустит GitHub Actions и прочитает логи при ошибке. Разрешено не более 2 автоматических повторов (3 запуска CI всего). Изменения выполняются только во временном CI checkout: без commit, merge, установки APK или прошивки. Облачный запрос может тарифицироваться.")
+            .setNegativeButton("Отмена", null)
+            .setPositiveButton("Разрешить один цикл") { _, _ ->
+                status.text = "MANA получает SHA ветки и запускает проверку…"
+                lifecycleScope.launch {
+                    try {
+                        val outcome = github.run(provider, task, maxRepairAttempts = 2)
+                        result.text = buildString {
+                            appendLine(if (outcome.succeeded) "CI: SUCCESS" else "CI: NOT PASSED")
+                            appendLine("Запусков: ${outcome.attempts.size} / максимум 3")
+                            outcome.attempts.forEach { attempt ->
+                                appendLine("\nПопытка ${attempt.attempt}: ${attempt.run.conclusion ?: attempt.run.status}")
+                                appendLine(attempt.patchSummary)
+                                appendLine(attempt.run.htmlUrl)
+                                attempt.failureLogExcerpt?.let { appendLine("Логи ошибки:\n" + it) }
+                            }
+                            appendLine("\nПатчи не были закоммичены или установлены. CI проверял их в одноразовой среде.")
+                        }
+                        status.text = if (outcome.succeeded) "GitHub Actions успешно проверил кандидат. Никаких изменений в ветку не записано." else "Автоисправление остановлено после ограниченного числа попыток. Требуется разбор отчёта."
+                    } catch (error: Exception) {
+                        status.text = "Инженерный цикл не выполнен: ${error.message}"
+                        result.text = "Нет подтверждённого успешного результата. Проверь права GitHub token, сеть и состояние workflow."
+                    }
+                }
+            }.show()
+    }
+
     private fun loadSelectedSources(uris: List<Uri>) {
         if (uris.isEmpty()) return
         if (uris.size > 12) {
