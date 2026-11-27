@@ -1,8 +1,8 @@
 # RMX5566 exact OTA identity captured from owner — 2026-11-27
 
-The owner ran the read-only Termux `getprop` query and supplied these exact values:
+The owner supplied these values directly from Termux `getprop`:
 
-| Property | Value |
+| Property | Exact value |
 |---|---|
 | `ro.product.name` | `RMX5566RU` |
 | `ro.build.version.ota` | `RMX5566_11.F.03_2030_202610170441` |
@@ -11,34 +11,54 @@ The owner ran the read-only Termux `getprop` query and supplied these exact valu
 | `ro.build.version.oplusrom` | `V16.0.0` |
 | `ro.build.display.id` | `RMX5566_16.0.5.1310(EX01)` |
 
-These values now provide a much more precise OTA lookup tuple than model/build alone. They do not prove which OTA package the server will return.
+## OTA client compatibility and region
 
-## Canonical OTA query tuple
+The current public `realme-ota` CLI accepts the exact model, OTA version, Realme UI major version, NV ID and region. Its current CLI choices include RUI 7; a public commit explicitly added RUI 7 support. Region codes documented by the project are GL=0, CN=1, IN=2, EU=3. Sources:
+- https://github.com/R0rt1z2/realme-ota
+- https://github.com/R0rt1z2/realme-ota/commit/d264167
 
-- model/product: RMX5566RU
-- OTA version: RMX5566_11.F.03_2030_202610170441
-- NV ID: 00110111
-- realme UI: V7.0
-- OPlus ROM: V16.0.0
-- display build: RMX5566_16.0.5.1310(EX01)
+Given the owner's European regulatory marking and EU use, EU (3) is the first region to test, but the regulatory mark alone does not prove the OTA sales channel. Do not silently switch to another region if the query fails.
 
-Use the exact values above in an OTA metadata request. Do not normalize away leading zeros in NV ID. Treat any returned signed URL as temporary and record response metadata before it expires.
+Exact query profile:
+- product: `RMX5566RU`
+- current OTA: `RMX5566_11.F.03_2030_202610170441`
+- RUI major: `7`
+- NV ID: `00110111` (preserve leading zeros)
+- first region attempt: `EU / 3`
+- current display build: `RMX5566_16.0.5.1310(EX01)`
 
-## Verification status
+The public OPlus downloader project confirms these are the precise property inputs it reads from the device and explains that its realme-ota backend uses them to query OPPO's OTA endpoint, returning component packet download URL, size and MD5. It also documents the separate public catalog API:
+`GET https://roms.danielspringer.at/api/ota.php?model=RMX5566&latest=1`
+Source: https://github.com/suddenBook/OPlus_firmware_download
 
-- This tuple was supplied directly by the owner from Termux `getprop`.
-- OTA catalog/backend availability for this tuple has not yet been confirmed.
-- No OTA URL, package size, MD5/SHA checksum, payload type, source-build constraint, partition manifest, rollback metadata or package signature has yet been obtained.
-- A response matching RMX5566RU is only a candidate. It must still match the exact build/region and pass package verification.
-- No firmware has been downloaded, flashed or installed as part of this step.
+The catalog endpoint could not be opened through the current research fetcher, so no catalog response is claimed. No OTA package URL or package metadata has yet been obtained.
 
-## Next operations
+## Safe query-only Termux command
 
-1. Query the public OTA catalog with model RMX5566 and preserve any exact matching result.
-2. Use the documented OPlus OTA request client/protocol with the exact tuple above, without guessing additional region/NV values.
-3. Compare the returned target build against the current build. Prefer a full package; identify incremental packages and their required source build.
-4. Download only after the server response identifies the exact package; verify supplied checksum and package signature/manifest before extraction.
-5. Extract read-only metadata first: payload manifest, partition names, sizes, rollback indexes, boot/vendor_boot/dtbo/vbmeta presence.
-6. Continue to block flashing until a verified matching stock restore route and device-specific boot chain are available.
+This command installs the open-source CLI and queries the EU endpoint. It does not intentionally invoke a flash command; do not add beta, IMEI, GUID, proxy or download options.
 
-Privacy note: these are software build/channel properties, not IMEI, serial number, Android ID, or credentials. Keep all personal hardware identifiers out of OTA reports.
+```sh
+pkg update -y
+pkg install -y python git
+python -m pip install --upgrade git+https://github.com/R0rt1z2/realme-ota
+realme-ota -r 3 -v 3 RMX5566RU RMX5566_11.F.03_2030_202610170441 7 00110111
+```
+
+The command may display temporary vendor download links or component metadata. Do not publish a live signed URL; share only the returned target version, component names, sizes, MD5 values and whether the tool labels the result full or incremental. If the CLI prompts to download, cancel and report the prompt first. Do not enter IMEI or GUID.
+
+## Package validation gates
+
+A returned result is only a lead. Before any archive is accepted:
+1. exact model and region/channel must match;
+2. target build must be understood and not be an unintended downgrade;
+3. distinguish full package from incremental/component OTA and record source-build prerequisites;
+4. verify every provided size and checksum;
+5. inspect package signature and payload manifest;
+6. enumerate partition names, sizes and rollback indexes;
+7. establish an independent, tested stock recovery path.
+
+No package has yet passed these gates. No download, flash, bootloader unlock, partition write or AVB bypass was performed.
+
+## Device source status
+
+Exact RMX5566 kernel source matching `5.15.197-android13-8-o-01074-gdfa4acfa411e`, defconfig, DTS/DTSI, DTBO, complete device tree and matching vendor blobs remain unverified. Similar SoC sources are not substitutes.
