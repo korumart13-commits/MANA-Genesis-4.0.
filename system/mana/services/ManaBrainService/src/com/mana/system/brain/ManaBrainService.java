@@ -54,18 +54,6 @@ public final class ManaBrainService extends Service {
     private boolean backendBindingRequested;
     private int backendRebindAttempts;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
-    private final Runnable backendRebind = () -> {
-        if (backendBindingRequested) {
-            try {
-                unbindService(backendConnection);
-            } catch (IllegalArgumentException ignored) {
-                // The binding may already have been removed by the system.
-            }
-            backendBindingRequested = false;
-        }
-        bindEngineBackend();
-    };
-
     private final ServiceConnection backendConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -107,6 +95,18 @@ public final class ManaBrainService extends Service {
             Log.e(TAG, "MANA Engine backend returned a null Binder; scheduling a bounded rebind.");
             scheduleBackendRebind();
         }
+    };
+
+    private final Runnable backendRebind = () -> {
+        if (backendBindingRequested) {
+            try {
+                unbindService(backendConnection);
+            } catch (IllegalArgumentException ignored) {
+                // The binding may already have been removed by the system.
+            }
+            backendBindingRequested = false;
+        }
+        bindEngineBackend();
     };
 
     private final IManaBrain.Stub binder = new IManaBrain.Stub() {
