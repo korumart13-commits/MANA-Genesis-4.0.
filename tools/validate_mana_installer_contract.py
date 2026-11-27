@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+"""Static contract guard for the one-button realme C85 4G MANA installer.
+
+This validates source/documentation wiring only; it is not a device or model-runtime test.
+"""
+from pathlib import Path
+
+root = Path(__file__).resolve().parents[1]
+activity = (root / "launcher/app/src/main/java/com/mana/launcher/MainActivity.kt").read_text()
+coordinator = (root / "launcher/app/src/main/java/com/mana/launcher/ManaOneTapSetupCoordinator.kt").read_text()
+catalog = (root / "launcher/app/src/main/java/com/mana/launcher/ManaModelCatalog.kt").read_text()
+setup_doc = (root / "launcher/LOCAL_MODEL_SETUP.md").read_text()
+requirements = (root / "docs/MANA_GENESIS_4_0_NON_NEGOTIABLE_REQUIREMENTS_AND_GAPS.md").read_text()
+workflow = (root / ".github/workflows/mana-launcher.yml").read_text()
+
+for required in (
+    '"УСТАНОВИТЬ MANA"',
+    '"ПРОДОЛЖИТЬ УСТАНОВКУ MANA"',
+    "DownloadManager.ACTION_DOWNLOAD_COMPLETE",
+    "registerModelDownloadReceiver()",
+    "activateCompletedModelDownload()",
+    "startGemmaDownload(catalog)",
+    "hasAcceptedGemmaTerms()",
+):
+    assert required in activity, f"Installer UI/flow missing: {required}"
+
+for required in (
+    'Build.MANUFACTURER.equals("realme", ignoreCase = true)',
+    'Build.MODEL.contains("RMX5566", ignoreCase = true)',
+    "Build.VERSION.SDK_INT == 36",
+    'it.equals("arm64-v8a", ignoreCase = true)',
+):
+    assert required in coordinator, f"Target profile guard missing: {required}"
+assert "Build.FINGERPRINT.startsWith" not in coordinator
+assert "Build.DEVICE.equals" not in coordinator
+assert "Build.PRODUCT.equals" not in coordinator
+
+for required in (
+    "fun hasAcceptedGemmaTerms()",
+    "DownloadManager.Request",
+    ".setAllowedOverMetered(false)",
+    "MODEL_SIZE = 2_588_147_712L",
+    "SHA256 =",
+    "ModelArtifactIntegrity.matches",
+):
+    assert required in catalog, f"Gemma download/integrity guard missing: {required}"
+
+assert "УСТАНОВИТЬ MANA" in setup_doc
+assert "Termux" in requirements
+assert "УСТАНОВИТЬ MANA" in requirements
+assert "INSTALL_MANA.apk" in workflow
+assert "models/Gemma/Gemma4-E2B.litertlm" in workflow
+assert "SHA256SUMS.txt" in workflow
+
+print("Validated static one-button installer contract for realme C85 4G / RMX5566.")
+print("This does not prove physical-device compatibility or successful Gemma inference.")
