@@ -17,28 +17,38 @@ Branch: `chatgpt/mana-asi-rmx5566-one-action-setup`
 
 Workflow: `.github/workflows/mana-engineering-pipeline.yml`
 
-Every pipeline run first creates a throwaway Git repository, generates a real diff, resets the working tree, and proves that the production Kotlin validator and git apply can validate and apply that patch in the disposable workspace.
+The Android engineering workspace now connects to the GitHub REST API through `ManaGitHubActionsConnector` and `GitHubActionsRestClient`:
 
-On a workflow-dispatch run with a patch input, the disposable GitHub-hosted checkout:
-1. Validates the patch with the production Kotlin policy.
-2. Runs `git apply --check --whitespace=error-all`.
-3. Applies the patch only to that ephemeral checkout.
-4. Runs the full MANA Brain JVM test suite, including patch-policy and copilot tests.
-5. Builds the MANA Brain JAR.
-6. Retains the test report, patch, JAR and SHA-256 manifest as workflow artifacts.
-7. Produces a GitHub build-provenance attestation for non-PR runs.
+1. The owner saves a fine-grained GitHub token. The app stores it encrypted with AES-GCM; its key is held by Android Keystore. The token is not sent to the model, patch, workflow inputs, or CI logs.
+2. The connector fetches the exact branch HEAD and the selected repository source files through GitHub Contents API. It reads the branch HEAD again after fetching and rejects a moving snapshot.
+3. MANA Brain generates a complete replacement unified diff from the selected source snapshot. It uses local LiteRT-LM first; enabled cloud providers are fallback only when the owner approves the engineering cycle.
+4. Before each attempt the app checks that the branch HEAD still equals the source snapshot. It then dispatches `workflow_dispatch` with a unique `client_run_id` and the bounded patch.
+5. The REST client correlates the run by branch, SHA, dispatch event, unique run name and creation time, then polls the run to completion.
+6. On failure it fetches failed job metadata, downloads GitHub's ZIP log archive without forwarding the PAT to the signed blob URL, extracts bounded text and redacts common credential/private-key patterns.
+7. The failure evidence is added to the next MANA Brain engineering prompt. MANA generates a complete replacement diff against the original selected files and repeats. The retry budget is hard-capped at two repairs (three CI attempts total).
+8. The CI workflow validates the diff, applies it only in the ephemeral GitHub-hosted checkout, runs the MANA Brain JVM tests and builds the JAR. Test reports, diagnostics, candidate and SHA-256 manifest are retained as artifacts.
 
-The job uses read-only repository contents permission, disables persisted checkout credentials, and does not receive model/API keys or Android signing secrets. The generated source is tested away from the user's phone and is never executed inside the live MANA app process.
+The Android UI exposes token setup/removal, repository path mapping, exact source refresh, and a separate confirmation before running the engineering cycle. The token requires a fine-grained permission set limited to this repository: **Actions: read/write** and **Contents: read**. No repository write/merge permission is requested.
 
-## How to run a proposed patch
+Every pipeline run also creates a throwaway Git repository, generates a real diff, resets the working tree, and proves that the production Kotlin validator and `git apply` can validate and apply that patch in the disposable workspace.
 
-1. Open the repository's Actions tab.
-2. Select **MANA Engineering Pipeline** and choose **Run workflow**.
-3. Paste the complete standard Git diff into the optional `patch` input.
-4. Start the workflow and inspect every validation/test step.
-5. Download the candidate artifact and review its patch, test report and SHA-256 manifest before proposing or merging source changes.
+The workflow job uses read-only repository contents permission, disables persisted checkout credentials, and does not receive model/API keys or Android signing secrets. Generated source is tested away from the user's phone and is never executed inside the live MANA app process.
 
-A patch rejected by the policy or failing tests does not produce a candidate build.
+## CI test coverage
+
+- `ManaEngineeringAutomationTest`: verifies local-first provider invocation, CI dispatch sequencing, failure-log handoff to the next proposal, stale-HEAD rejection, owner approval and the hard retry cap.
+- `GitHubActionsRestClientTest`: runs a local HTTP fixture to exercise branch SHA retrieval, repository source download, workflow dispatch payload, run correlation, completion polling and bounded ZIP-log extraction.
+- The production workflow applies a real synthetic diff in an isolated checkout and runs the full Gradle JVM test suite.
+
+## Running a proposed patch
+
+1. In MANA Engineering Lab, connect a fine-grained GitHub token scoped to this repository.
+2. Select local files to identify the desired source set, map each one to its exact repository-relative path, then use **Загрузить точные исходники из GitHub**. MANA replaces local contents with the branch's current source and records the exact base SHA.
+3. Describe the engineering task and confirm the model request.
+4. Confirm **Запустить CI и автоисправление**. MANA can make at most two repair retries. It does not commit, merge, install or flash the candidate.
+5. Review each run URL, result, summary and failure excerpt. A successful CI candidate still requires separate review and release authorization.
+
+The GitHub workflow-dispatch API requires the workflow file to exist on the repository's default branch. At this checkpoint, `mana-engineering-pipeline.yml` exists on the development branch but not on `main`; therefore the app's live dispatch will return a clear HTTP 404 explanation until PR #22 (or an equivalent reviewed change) places that workflow on the default branch. Push/PR CI for this branch remains available now. No token was available in this ChatGPT session, so no live authenticated dispatch from the phone app has been claimed.
 
 ## Exact completion boundary
 
