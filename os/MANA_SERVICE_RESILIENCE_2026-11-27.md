@@ -4,7 +4,7 @@
 
 Added ManaServiceResiliencePolicy, a deterministic, platform-independent retry-budget component for transient app-process/service failures.
 
-- Exponential delays start at 2 seconds and cap at 60 seconds.
+- Exponential delays start at 2 seconds and cap at 60 seconds, with bounded positive jitter to avoid synchronized retry bursts.
 - Five retries are allowed by default; the next failure reports an exhausted budget and schedules no retry.
 - A failure window bounds repeated failures; failures after the window begin a fresh budget.
 - The budget resets only after a full stable-health window (60 seconds), not merely after a successful bind.
@@ -40,3 +40,5 @@ This is app-process lifecycle recovery, not an always-on daemon. Delayed retries
 Reconnect attempts are now initiated only while MainActivity is resumed. Pending retries are cancelled on pause, and a resumed Activity makes a fresh bind attempt if no Binder is connected. This avoids trying to start the foreground Engine service from a background Activity callback on Android versions that restrict such starts.
 
 ServiceConnection handles disconnection, binding death and a null Binder response through the same bounded retry policy. Retry state is written with one SharedPreferences editor transaction. The current CI run must still verify Kotlin compilation, app unit tests and release packaging.
+
+The jitter source is injectable for deterministic unit tests; production defaults to a bounded random offset and never exceeds the configured maximum delay.
