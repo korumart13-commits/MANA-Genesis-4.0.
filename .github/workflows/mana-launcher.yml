@@ -250,7 +250,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release/offline
-          PACKAGE="release/offline/MANA-Genesis-4.0"
+          PACKAGE="release/offline/MANA-XZ"
           mkdir -p release/offline "$PACKAGE/installer" "$PACKAGE/models/Gemma" "$PACKAGE/source" "$PACKAGE/docs"
           MODEL="release/offline/Gemma4-E2B.litertlm"
           URL="https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/21c646194210256750db12cfa1e4fdf22bd3ddf1/gemma-4-E2B-it.litertlm"
