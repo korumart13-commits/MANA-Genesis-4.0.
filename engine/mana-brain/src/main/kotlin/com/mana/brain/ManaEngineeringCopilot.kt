@@ -128,8 +128,13 @@ class ManaEngineeringCopilot(
         require(segments.none { it.isBlank() || it == "." || it == ".." }) {
             "Engineering patch contains an unsafe path."
         }
-        val allowed = listOf("engine/", "os/core/", "launcher/app/src/", "docs/", "os/")
-            .any { normalized.startsWith(it) }
+        val allowed = normalized.startsWith("engine/") ||
+            normalized.startsWith("os/core/") ||
+            normalized.startsWith("launcher/app/src/") ||
+            normalized.startsWith("docs/") ||
+            normalized.startsWith("system/mana/") ||
+            normalized.startsWith("platform/") ||
+            (normalized.startsWith("os/") && normalized.endsWith(".md"))
         require(allowed) { "Engineering patch path is outside the approved MANA source workspaces." }
         val forbidden = listOf(".git/", ".github/workflows/", "vendor/keys/", "out/", "device/", "kernel/")
         require(forbidden.none { normalized.startsWith(it) || normalized.contains("/${it}") }) {
