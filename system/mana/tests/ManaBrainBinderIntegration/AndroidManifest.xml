@@ -11,5 +11,5 @@
 
     <instrumentation
         android:name="android.test.InstrumentationTestRunner"
-        android:targetPackage="com.mana.system.brain.tests" />
+        android:targetPackage="com.mana.system.brain" />
 </manifest>
