@@ -44,6 +44,9 @@ jobs:
           assert "brain.getProtocolVersion()" in test
           assert "brain.getEngineState()" in test
           assert "UNAVAILABLE_ENGINE_BACKEND_DISCONNECTED" in test
+          assert "brain.think(request" in test
+          assert "IManaBrainCallback.Stub()" in test
+          assert "ENGINE_UNAVAILABLE" in test
 
           app = ET.parse("launcher/app/src/main/AndroidManifest.xml").getroot()
           bridge = app.find("./application/service[@android:name='.ManaEngineBridgeService']", {
