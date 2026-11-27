@@ -294,6 +294,9 @@ class ManaEngineeringAutomation(
         var latestRun: GitHubWorkflowRun? = null
 
         for (attempt in 0..maxRepairAttempts) {
+            check(github.currentHeadSha(branch).equals(expectedHeadSha, ignoreCase = true)) {
+                "Branch HEAD changed during the engineering task; refusing to test against a stale base."
+            }
             val currentTask = task.copy(
                 id = "${task.id.take(60)}-ci-${attempt + 1}",
                 objective = objective.take(6_000)
@@ -301,7 +304,6 @@ class ManaEngineeringAutomation(
             val proposal = copilot.propose(currentTask)
             check(proposal.status == EngineeringProposalStatus.REVIEW_REQUIRED)
             val dispatchId = "${task.id.take(50)}-a${attempt + 1}-${java.util.UUID.randomUUID().toString().take(8)}"
-            check(github.currentHeadSha(branch).equals(expectedHeadSha, ignoreCase = true)) { "Branch HEAD changed during the engineering task; refusing to test against a stale base." }
             val dispatched = github.dispatchPatch(branch, proposal.unifiedDiff, expectedHeadSha, dispatchId)
             val completed = github.awaitCompletion(dispatched)
             latestRun = completed
