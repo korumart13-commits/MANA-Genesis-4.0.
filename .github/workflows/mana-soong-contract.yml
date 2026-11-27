@@ -40,7 +40,7 @@ jobs:
           assert 'test_suites: ["device-tests"]' in bp
 
           test = pathlib.Path("system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java").read_text()
-          assert "ManaBrainService.ACTION_BIND" in test
+          assert '"com.mana.action.BIND_BRAIN"' in test
           assert "brain.getProtocolVersion()" in test
           assert "brain.getEngineState()" in test
           assert "UNAVAILABLE_ENGINE_BACKEND_DISCONNECTED" in test
