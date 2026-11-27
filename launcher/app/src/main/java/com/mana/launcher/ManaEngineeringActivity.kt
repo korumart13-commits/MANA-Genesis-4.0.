@@ -49,7 +49,7 @@ class ManaEngineeringActivity : ComponentActivity() {
         }
         root.addView(text("MANA Engineering Lab", 23, 0xFFFFFFFF.toInt(), true))
         root.addView(text(
-            "GPT помогает проектировать изменения MANA. Выбранные файлы отправляются настроенному облачному провайдеру только после отдельного подтверждения. Результат — предложение diff для проверки, не автоматическое изменение проекта.",
+            "Инженерный запрос идёт через центральный MANA Brain: сначала локальная LiteRT-LM модель; если она недоступна, облачный резерв может использоваться только после отдельного подтверждения. Результат — diff для проверки, без автоматического изменения проекта.",
             12, 0xFF9CB6D4.toInt()
         ))
         status = text("Провайдер: ${provider.statusLabel()} • ${if (provider.isAvailable()) "готов" else "не настроен"}", 12, 0xFF69C6FF.toInt())
@@ -166,7 +166,7 @@ class ManaEngineeringActivity : ComponentActivity() {
         if (goal.isBlank() || selectedFiles.isEmpty()) { status.text = "Нужны описание задачи и выбранные исходники."; return }
         if (repositoryHeadSha == null) { status.text = "Сначала нажми «Загрузить точные исходники из GitHub» после указания путей."; return }
         if (!github.isConfigured()) { status.text = "Сначала подключи GitHub Actions."; return }
-        if (!provider.isAvailable()) { status.text = "Сначала настрой и включи облачный инженерный провайдер MANA."; return }
+        if (!provider.isAvailable()) { status.text = "Запусти MANA Engine и загрузи локальную модель либо включи разрешённый облачный резерв."; return }
         val task = EngineeringTask(
             id = "mana-auto-${System.currentTimeMillis()}",
             objective = goal,
