@@ -239,11 +239,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release/offline
-          git archive --format=zip --output=release/offline/MANA-Genesis-4.0-source-project.zip HEAD
           PACKAGE="release/offline/MANA-Genesis-4.0"
           mkdir -p release/offline "$PACKAGE/installer" "$PACKAGE/models/Gemma" "$PACKAGE/source" "$PACKAGE/docs"
           MODEL="release/offline/Gemma4-E2B.litertlm"
-          URL="https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm"
+          URL="https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/21c646194210256750db12cfa1e4fdf22bd3ddf1/gemma-4-E2B-it.litertlm"
           curl --fail --location --retry 5 --retry-all-errors --connect-timeout 30 --max-time 3600 "$URL" --output "$MODEL"
           echo "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c  $MODEL" | sha256sum --check -
           test "$(stat -c '%s' "$MODEL")" -gt 2500000000
@@ -255,6 +254,7 @@ jobs:
           Размер: 2 588 147 712 байт (около 2,59 ГБ)
           SHA-256: 181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c
           Источник: https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm
+          Закреплённый файл: https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/21c646194210256750db12cfa1e4fdf22bd3ddf1/gemma-4-E2B-it.litertlm
           Лицензия/условия: Apache 2.0 для формата упаковки; исходные веса также регулируются Gemma Terms of Use и Prohibited Use Policy.
           MANA скачивает модель автоматически через Android Download Manager после явного согласия владельца.
           Пользователю не нужно распаковывать модель или выбирать файл вручную.
