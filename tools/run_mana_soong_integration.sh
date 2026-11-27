@@ -52,6 +52,21 @@ m -j"${MANA_BUILD_JOBS:-$(nproc)}" \
   mana-brain-request-policy-tests \
   ManaBrainBinderIntegrationTests
 
+# Verify the actual imported APK emitted by this product build against its platform cert.
+PRODUCT_OUT="$AOSP_TOP/out/target/product/$TARGET_PRODUCT"
+SIGNED_APK=""
+if [[ -d "$PRODUCT_OUT" ]]; then
+  SIGNED_APK="$(find "$PRODUCT_OUT" -type f -name ManaLauncher.apk -print -quit)"
+fi
+if [[ -z "$SIGNED_APK" ]]; then
+  SIGNED_APK="$(find "$AOSP_TOP/out/soong/.intermediates" -type f -name ManaLauncher.apk -print -quit 2>/dev/null || true)"
+fi
+[[ -n "$SIGNED_APK" ]] || {
+  echo "ERROR: Soong did not emit a ManaLauncher.apk; refusing to skip signature verification." >&2
+  exit 1
+}
+"$MANA_TOP/tools/verify_mana_platform_signature.sh" "$AOSP_TOP" "$SIGNED_APK" "${MANA_PLATFORM_CERT:-$AOSP_TOP/build/target/product/security/platform.x509.pem}"
+
 # Run the host policy tests as a separate test result.
 atest --host mana-brain-request-policy-tests
 
@@ -65,7 +80,15 @@ if [[ "$RUN_DEVICE_TESTS" == "--run-device-tests" ]]; then
     exit 1
   }
   adb get-state >/dev/null
-  # The connected image must contain both product packages and use the same platform key.
+  # Do not let atest report a misleading test failure when the product packages are absent.
+  adb shell pm path com.mana.system.brain >/dev/null || {
+    echo "ERROR: ManaBrainService is not installed in the running image." >&2
+    exit 1
+  }
+  adb shell pm path com.mana.launcher >/dev/null || {
+    echo "ERROR: ManaLauncher with ManaEngineBridgeService is not installed in the running image." >&2
+    exit 1
+  }
   atest ManaBrainBinderIntegrationTests
 fi
 
