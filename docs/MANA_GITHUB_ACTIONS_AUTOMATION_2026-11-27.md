@@ -56,7 +56,9 @@ The JVM automation tests cover:
 
 The Android app is wired to the existing Brain project module and the shared encrypted credential vault. `ManaBrainEngineeringProvider` routes code generation through the central Brain and tries the local LiteRT-LM runtime before optional cloud fallback.
 
-The branch push and PR workflows have been triggered for the latest changes. Their authoritative result must be read from the GitHub Actions run at the current branch-head SHA; queued, cancelled or in-progress runs are not passes.
+Verified push CI on commit `cb1625553907124d1f02791a7302efdec5decc06` succeeded: https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/46005104570. The synthetic patch policy/apply test, complete MANA Brain JVM test suite, JAR build, SHA-256 manifest, GitHub provenance attestation, machine-readable diagnostic artifact and candidate upload all completed successfully. Artifacts: test report `15201365713`, diagnostics `15201191143`, candidate JAR bundle `15200691836`.
+
+This successful push run validates the engine-side implementation and CI harness. The separate Android launcher Gradle build is being rerun for the app-side connector/UI; it must also pass before claiming the APK integration compiles. The workflow_dispatch API itself remains blocked until the workflow is present on the default branch and the installed app is provisioned with the owner's GitHub token. Queued, cancelled or in-progress runs are not passes.
 
 ## GitHub dispatch activation blocker
 
