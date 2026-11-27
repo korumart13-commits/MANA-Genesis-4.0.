@@ -237,3 +237,13 @@ The project must preserve the full MANA product requirements in `docs/MASTER_PRO
 - Added first-boot completion architecture: device snapshot, encrypted backlog persistence, evidence-based reconciliation, Brain/GPT-assisted patch proposal, isolated CI, signed staging and resumable post-reboot work.
 - Latest source-bundle run `45927622113` completed successfully for commit `e9c2db18`. New backlog JVM/Gradle/source-bundle runs for commit `894e0ca9` and source bundle for `f7b9ff15` were queued/in progress at the time of this update; their conclusions must be checked before claiming these new tests passed.
 - These additions do not constitute a bootable ROM, full phone-control privilege, an operational autonomous updater or physical RMX5566 validation. See the dedicated architecture documents under `os/`.
+
+
+## GPT engineering workspace — 2026-11-27
+
+- Added `ManaEngineeringCopilot` to the canonical Brain module. It reuses the existing configured provider interface, requires explicit owner consent for source sharing and cloud use, redacts common secret patterns, validates generated diff paths, requires a test plan and always returns `REVIEW_REQUIRED`.
+- Added JVM tests covering successful proposal parsing, consent gates, secret redaction, path traversal, workspace restrictions, test-plan requirement and unavailable providers.
+- Added Android `ManaEngineeringActivity` and linked it from the MANA home screen. The owner can select up to 12 source files, review the exact provider/model/file list and cost warning, authorize one request, inspect the proposed diff/test plan/risks and copy the result. It never applies the generated patch.
+- Brain JVM verification and Brain CI completed successfully for commit `26fa0a73`, including the new copilot tests.
+- The Android activity, manifest registration and home-screen link were pushed; the latest launcher Gradle verification is queued for commit `c0d05dfe` and has not yet been confirmed.
+- The Soong/Binder source contract passed for commit `d9e05000`. This remains a source contract, not a full AOSP build or phone test.
