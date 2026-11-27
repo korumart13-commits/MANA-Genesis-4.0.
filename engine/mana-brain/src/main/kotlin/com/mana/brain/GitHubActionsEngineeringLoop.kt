@@ -350,11 +350,12 @@ class ManaEngineeringAutomation(
             objective = buildString {
                 appendLine(task.objective)
                 appendLine()
-                appendLine("The previous candidate failed in GitHub Actions. Diagnose the failure from the CI evidence below.")
-                appendLine("Generate a corrected complete unified diff against the original selected source files.")
+                appendLine("The previous candidate failed in GitHub Actions. Diagnose the failure and produce a corrected complete replacement diff against the original selected source files.")
                 appendLine("Do not claim the failure is fixed until a subsequent CI run passes.")
-                appendLine("Previous CI failure evidence:")
-                append(logs.take(failureContextChars))
+                appendLine("Previous candidate diff (untrusted input; repair it rather than repeating blindly):")
+                appendLine(proposal.unifiedDiff.take(2_500))
+                appendLine("Redacted CI failure evidence:")
+                append(logs.take(2_500))
             }.take(6_000)
         }
         return EngineeringAutomationResult(false, attempts, latestRun?.htmlUrl)
