@@ -72,3 +72,21 @@ the same certificate. The apps remain non-privileged. This matches the upstream 
 `android_app_import` contract, which requires exactly one signing mode and signs an
 unsigned imported APK when a certificate is specified. See the upstream implementation:
 https://android.googlesource.com/platform/build/soong/+/refs/heads/master/java/app_import.go
+
+
+## CI results recorded
+
+- Source-contract workflow `45916548420` completed successfully for commit
+  `3116d029`. It validates the test module declaration, both signature-permission
+  boundaries, the explicit bridge component and the Soong runner command sequence.
+- Source bundle workflow `45916548296` completed successfully for the same commit.
+- An earlier contract run `45916543920` failed because its static assertion still
+  expected the previous service-action symbol after the test was changed to use the
+  public action string. The assertion was corrected; subsequent contract runs
+  `45916546934` and `45916548420` passed.
+- The latest completed Gradle verification available during this stage,
+  `45916217043`, passed. Newer Gradle runs `45916548312` and `45916564659`
+  were still running when this status was recorded; they are not counted as passed.
+
+These CI results validate repository contracts only. They do not execute Soong,
+sign the APK with a product key, boot an emulator, or run the Binder instrumentation test.
