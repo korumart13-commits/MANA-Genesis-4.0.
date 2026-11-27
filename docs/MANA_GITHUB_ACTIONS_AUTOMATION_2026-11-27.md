@@ -58,6 +58,10 @@ The Android app is wired to the existing Brain project module and the encrypted 
 
 The branch push and PR workflows have been triggered for the latest changes. Their authoritative result must be read from the GitHub Actions run at the current branch-head SHA; queued, cancelled or in-progress runs are not passes.
 
+## GitHub dispatch activation blocker
+
+GitHub requires a workflow file configured for `workflow_dispatch` to exist on the repository's **default branch** before the REST dispatch endpoint will run it. The new `mana-engineering-pipeline.yml` currently exists only on this feature branch; the repository default branch is `main`, and the workflow file is not present there. Therefore the Android connector is implemented, but a live app-originated dispatch cannot succeed until PR #22 (or an equivalent owner-approved change) adds this workflow to `main`. This work deliberately does not write to `main` or merge the PR on the owner's behalf. The connector returns a clear error for this condition rather than claiming that a run started.
+
 ## Not yet verified / not claimed
 
 - A real `workflow_dispatch` from an installed MANA APK has not been executed because the app has not yet been provisioned with the owner's GitHub token and cloud model credential.
