@@ -80,6 +80,11 @@ class ManaDialerActivity : Activity() {
         root.addView(text("MANA PHONE", 25, 0xFFFFFFFF.toInt(), true))
         root.addView(text("Автоответ после 10 секунд требует, чтобы владелец сам назначил MANA приложением телефона Android. Без этой роли звонки продолжает обслуживать текущий системный номеронабиратель.", 12, 0xFF9CB6D4.toInt()))
         root.addView(button("Назначить MANA приложением телефона") { requestDialerRole() })
+        root.addView(button("Разрешить MANA фильтровать входящие звонки") { requestCallScreeningRole() })
+        root.addView(text(
+            "Фильтрация неизвестных номеров — отдельная системная роль Android. Она не включается автоматически вместе с ролью номеронабирателя; без твоего подтверждения MANA не получает вызовы для проверки.",
+            11, 0xFF9CB6D4.toInt()
+        ))
 
         val autoAnswer = CheckBox(this).apply {
             text = "Включить автоответ через 10 секунд"
@@ -174,6 +179,26 @@ class ManaDialerActivity : Activity() {
         startActivityForResult(roles.createRequestRoleIntent(RoleManager.ROLE_DIALER), REQUEST_DIALER_ROLE)
     }
 
+    private fun requestCallScreeningRole() {
+        if (Build.VERSION.SDK_INT < 29) {
+            showMessage("Роль фильтрации звонков требует Android 10 или новее.")
+            return
+        }
+        val roles = getSystemService(RoleManager::class.java)
+        if (!roles.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
+            showMessage("Роль фильтрации звонков недоступна на этой прошивке.")
+            return
+        }
+        if (roles.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)) {
+            showMessage("MANA уже назначена приложением фильтрации звонков.")
+            return
+        }
+        startActivityForResult(
+            roles.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING),
+            REQUEST_CALL_SCREENING_ROLE
+        )
+    }
+
     private fun placeCall() {
         val number = numberInput.text.toString().trim()
         if (number.isBlank()) { showMessage("Введи номер телефона."); return }
@@ -241,6 +266,12 @@ class ManaDialerActivity : Activity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_CALL_SCREENING_ROLE) {
+            showMessage(
+                if (resultCode == RESULT_OK) "MANA назначена приложением фильтрации звонков. Проверка неизвестных номеров теперь может работать."
+                else "Роль фильтрации звонков не предоставлена. MANA не будет проверять входящие вызовы."
+            )
+        }
         if (requestCode == REQUEST_DIALER_ROLE) {
             if (resultCode == RESULT_OK) {
                 showMessage("MANA назначена приложением телефона. Теперь можно включить автоответ через 10 секунд.")
@@ -296,5 +327,6 @@ class ManaDialerActivity : Activity() {
         private const val REQUEST_CALL_PHONE = 7402
         private const val REQUEST_CALL_LOG = 7403
         private const val REQUEST_NOTIFICATIONS = 7404
+        private const val REQUEST_CALL_SCREENING_ROLE = 7405
     }
 }
