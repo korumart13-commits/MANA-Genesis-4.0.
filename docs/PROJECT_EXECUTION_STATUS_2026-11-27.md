@@ -227,3 +227,13 @@ The project must preserve the full MANA product requirements in `docs/MASTER_PRO
 - Updated `device/RMX5566RU_SOURCE_DISCOVERY_2026-11-27.md` with the exact audit findings and limitations.
 - Gradle workflow run `45923286007`, commit `00e04ca7f1f32d0a888178d1c5877c3deb27ae73`, completed successfully. Brain/Core host tests, Android launcher/test-app compilation, unsigned release build and all three artifact uploads succeeded. Artifacts: debug prototype ZIP `15165463406` (49,717,832 bytes), source project ZIP `15165178460` (17,494,005 bytes), unsigned release APK ZIP `15165158304` (45,819,562 bytes). They are not ROM/OTA images.
 - The real AOSP/Soong build, platform-signature verification against an actual product certificate, SELinux policy integration, Binder instrumentation on an emulator/device and RMX5566 boot testing remain unexecuted.
+
+
+## Self-development and first-boot completion expansion — 2026-11-27
+
+- Added `ManaSelfDevelopmentEngine` orchestration contract and host-side tests for patch generation, isolated validation, signed artifact staging, rollback requirement, protected-platform approval and reboot scheduling. This is a core contract; concrete Android/CI host adapters remain integration work.
+- Added the MANA Total Control / GPT co-development / defensive security research lab specification. Existing `CloudProviderAdapters.kt` already contains OpenAI Responses API plus Anthropic, Gemini and xAI provider adapters; the remaining work is owner-consented engineering-session integration, scoped context sharing and patch/build feedback.
+- Added `ManaGenesisBacklog` and tests. The initial backlog inventories missing engineering tasks, orders them by dependencies, keeps exact RMX5566 source discovery blocked until evidence exists, and prevents ROM work from being treated as ready without device/restore validation.
+- Added first-boot completion architecture: device snapshot, encrypted backlog persistence, evidence-based reconciliation, Brain/GPT-assisted patch proposal, isolated CI, signed staging and resumable post-reboot work.
+- Latest source-bundle run `45927622113` completed successfully for commit `e9c2db18`. New backlog JVM/Gradle/source-bundle runs for commit `894e0ca9` and source bundle for `f7b9ff15` were queued/in progress at the time of this update; their conclusions must be checked before claiming these new tests passed.
+- These additions do not constitute a bootable ROM, full phone-control privilege, an operational autonomous updater or physical RMX5566 validation. See the dedicated architecture documents under `os/`.
