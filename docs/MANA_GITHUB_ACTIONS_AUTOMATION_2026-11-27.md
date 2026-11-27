@@ -71,3 +71,10 @@ GitHub requires a workflow file configured for `workflow_dispatch` to exist on t
 - No successful Android APK install or firmware OTA is implied by the JVM engineering pipeline.
 - The workflow checks the MANA Brain JVM project; it is not yet a full Android/AOSP ROM build, and the repair loop does not commit accepted changes. A separately approved merge/release stage remains required.
 - The user's broader MANA Genesis 4.0 requirements remain in the project backlog; this engineering integration does not replace or mark those features complete.
+
+
+A second, fuller PR pipeline run passed on the updated engineering loop and HTTP adapter tests: https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/46005966915 (PR run conclusion: success). This run includes the loopback HTTP integration tests for dispatch correlation, exact branch source fetch, status polling, ZIP log download and bounded failure evidence. It also passed the synthetic isolated patch/apply test, all MANA Brain JVM tests, JAR build, SHA-256 manifest and diagnostic/candidate artifact uploads. Artifacts: test report `15202041733`, diagnostics `15202086789`, candidate `15202276655`.
+
+One earlier test attempt failed because the fake HTTP server omitted the GET response for the completed failed run; the fixture was corrected to return that run before log retrieval, and the subsequent PR pipeline passed. A later change only lengthens the run-poll timeout to the workflow's 25-minute maximum; CI for the newest branch head is pending.
+
+Android launcher compile verification is still pending/queued for the connector and UI. The workflow_dispatch activation blocker on default branch `main` remains.
