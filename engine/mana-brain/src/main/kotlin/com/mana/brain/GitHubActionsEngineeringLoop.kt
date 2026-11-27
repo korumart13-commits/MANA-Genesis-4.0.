@@ -169,6 +169,7 @@ class GitHubActionsRestClient(
             connection.requestMethod = method
             connection.connectTimeout = 15_000
             connection.readTimeout = 90_000
+            connection.instanceFollowRedirects = false
             connection.setRequestProperty("Accept", "application/vnd.github+json")
             connection.setRequestProperty("Authorization", "Bearer $token")
             connection.setRequestProperty("X-GitHub-Api-Version", API_VERSION)
