@@ -2,13 +2,10 @@ package com.mana.brain
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
+import java.net.HttpURLConnection
+import java.net.URL
 import java.time.Duration
 import java.time.Instant
-import java.util.Base64
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
@@ -48,10 +45,6 @@ class GitHubActionsRestClient(
     private val repository: String,
     private val workflowFile: String,
     private val tokenProvider: GitHubTokenProvider,
-    private val http: HttpClient = HttpClient.newBuilder()
-        .connectTimeout(Duration.ofSeconds(15))
-        .followRedirects(HttpClient.Redirect.NORMAL)
-        .build(),
     private val pollIntervalMs: Long = 3_000,
     private val dispatchTimeoutMs: Long = 120_000
 ) : GitHubActionsGateway {
@@ -133,31 +126,46 @@ class GitHubActionsRestClient(
         method: String,
         pathAndQuery: String,
         body: String? = null,
-        expected: Set<Int> = setOf(200),
-        followRedirect: Boolean = true
+        expected: Set<Int> = setOf(200)
     ): String {
         val token = tokenProvider.accessToken()?.trim().orEmpty()
         require(token.isNotBlank()) { "GitHub Actions is not connected: no access token is available." }
-        val builder = HttpRequest.newBuilder()
-            .uri(URI.create("$API_BASE/$pathAndQuery"))
-            .timeout(Duration.ofSeconds(90))
-            .header("Accept", "application/vnd.github+json")
-            .header("Authorization", "Bearer $token")
-            .header("X-GitHub-Api-Version", API_VERSION)
-        if (body != null) builder.header("Content-Type", "application/json")
-        val request = when (method) {
-            "POST" -> builder.POST(HttpRequest.BodyPublishers.ofString(body ?: "")).build()
-            "GET" -> builder.GET().build()
-            else -> error("Unsupported GitHub HTTP method.")
+        var url = URL("$API_BASE/$pathAndQuery")
+        var authenticated = true
+        repeat(3) {
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = method
+                connectTimeout = 15_000
+                readTimeout = 90_000
+                instanceFollowRedirects = false
+                setRequestProperty("Accept", "application/vnd.github+json")
+                setRequestProperty("X-GitHub-Api-Version", API_VERSION)
+                if (authenticated) setRequestProperty("Authorization", "Bearer $token")
+                if (body != null) {
+                    doOutput = true
+                    setRequestProperty("Content-Type", "application/json")
+                }
+            }
+            try {
+                if (body != null) connection.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+                val status = connection.responseCode
+                if (status in 300..399) {
+                    val location = connection.getHeaderField("Location")
+                        ?: throw IllegalStateException("GitHub returned a redirect without a location.")
+                    url = URL(url, location)
+                    authenticated = false // Never forward the GitHub token to a signed artifact-log URL.
+                    return@repeat
+                }
+                if (status !in expected) {
+                    throw IllegalStateException("GitHub API request failed with HTTP " + status + " for " + pathAndQuery + ".")
+                }
+                return connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+            } finally {
+                connection.disconnect()
+            }
         }
-        val response = http.send(request, HttpResponse.BodyHandlers.ofString())
-        if (response.statusCode() !in expected) {
-            // Do not echo request headers, credentials, or raw response bodies into app logs.
-            throw IllegalStateException("GitHub API request failed with HTTP ${response.statusCode()} for $pathAndQuery.")
-        }
-        return response.body().orEmpty()
+        throw IllegalStateException("GitHub API redirect limit exceeded for " + pathAndQuery + ".")
     }
-
     private fun runCreatedAt(item: com.google.gson.JsonObject): Instant =
         Instant.parse(item.get("created_at").asString)
 
