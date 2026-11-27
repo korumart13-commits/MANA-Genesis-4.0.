@@ -217,9 +217,18 @@ jobs:
           test -f "$APK"
           APKANALYZER="$(find "$ANDROID_HOME" -type f -name apkanalyzer | head -n 1)"
           test -n "$APKANALYZER"
-          test "$("$APKANALYZER" manifest application-id "$APK")" = "com.mana.launcher"
-          "$APKANALYZER" manifest print "$APK" | grep -q 'ManaEngineBridgeService'
-          "$APKANALYZER" manifest print "$APK" | grep -q 'com.mana.permission.BIND_BRAIN'
+          DEBUG_APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$DEBUG_APK"
+          for CANDIDATE in "$APK" "$DEBUG_APK"; do
+            test "$("$APKANALYZER" manifest application-id "$CANDIDATE")" = "com.mana.launcher"
+            MANIFEST="$("$APKANALYZER" manifest print "$CANDIDATE")"
+            grep -q 'ManaEngineBridgeService' <<< "$MANIFEST"
+            grep -q 'com.mana.permission.BIND_BRAIN' <<< "$MANIFEST"
+            if grep -E 'android.permission.(CALL_PHONE|READ_CALL_LOG)|android.intent.action.(DIAL|CALL)|ManaDialerActivity|ManaInCallService|ManaCallScreeningService|ManaCallActionReceiver|ROLE_DIALER|ROLE_CALL_SCREENING' <<< "$MANIFEST"; then
+              echo "Forbidden built-in dialer/call handling declaration found in $CANDIDATE" >&2
+              exit 1
+            fi
+          done
           sha256sum "$APK" > app/build/outputs/apk/release/SHA256SUMS.txt
       - name: Download and verify official Gemma 4 E2B LiteRT-LM weights
         timeout-minutes: 60
@@ -228,7 +237,7 @@ jobs:
           mkdir -p release/offline
           git archive --format=zip --output=release/offline/MANA-Genesis-4.0-source-project.zip HEAD
           MODEL="release/offline/MANA-Martynova-AI-Gemma4-E2B.litertlm"
-          URL="https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/MANA-Martynova-AI-Gemma4-E2B.litertlm"
+          URL="https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm"
           curl --fail --location --retry 5 --retry-all-errors --connect-timeout 30 --max-time 3600 "$URL" --output "$MODEL"
           echo "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c  $MODEL" | sha256sum --check -
           test "$(stat -c '%s' "$MODEL")" -gt 2500000000
