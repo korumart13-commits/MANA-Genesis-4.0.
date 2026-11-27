@@ -16,6 +16,7 @@ import com.mana.brain.ManaBrainResponse;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -39,6 +40,7 @@ public final class ManaBrainBinderIntegrationTest extends InstrumentationTestCas
         AtomicReference<String> callbackMessage = new AtomicReference<>();
         AtomicReference<String> resultProvider = new AtomicReference<>();
         AtomicReference<Boolean> resultLocal = new AtomicReference<>();
+        AtomicInteger callbackCount = new AtomicInteger();
 
         ServiceConnection connection = new ServiceConnection() {
             @Override
@@ -98,6 +100,7 @@ public final class ManaBrainBinderIntegrationTest extends InstrumentationTestCas
             brain.think(request, new IManaBrainCallback.Stub() {
                 @Override
                 public void onResult(ManaBrainResponse response) throws RemoteException {
+                    callbackCount.incrementAndGet();
                     callbackMessage.set(response == null ? null : response.text);
                     resultProvider.set(response == null ? null : response.provider);
                     resultLocal.set(response == null ? null : response.local);
@@ -106,6 +109,7 @@ public final class ManaBrainBinderIntegrationTest extends InstrumentationTestCas
 
                 @Override
                 public void onError(String code, String message) throws RemoteException {
+                    callbackCount.incrementAndGet();
                     callbackCode.set(code);
                     callbackMessage.set(message);
                     callbackDelivered.countDown();
@@ -113,7 +117,8 @@ public final class ManaBrainBinderIntegrationTest extends InstrumentationTestCas
             });
 
             assertTrue("No callback was returned from the Engine Bridge.",
-                    callbackDelivered.await(60, TimeUnit.SECONDS));
+                    callbackDelivered.await(180, TimeUnit.SECONDS));
+            assertEquals("The request must complete exactly once.", 1, callbackCount.get());
             if (callbackCode.get() == null) {
                 assertNotNull("Successful response must include provider metadata.", resultProvider.get());
                 assertTrue("Successful response text must not be blank.",
