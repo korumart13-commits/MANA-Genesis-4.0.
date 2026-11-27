@@ -10,6 +10,9 @@ import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.nio.file.AtomicMoveNotSupportedException
 import java.security.KeyStore
 import java.time.Instant
 import javax.crypto.Cipher
@@ -124,13 +127,22 @@ class ManaGenesisFirstBootService(context: Context) {
             stream.write(payload)
             stream.fd.sync()
         }
-        if (file.exists() && !file.delete()) {
+        try {
+            try {
+                Files.move(
+                    temp.toPath(), file.toPath(),
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING
+                )
+            } catch (_: AtomicMoveNotSupportedException) {
+                Files.move(temp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
+        } catch (error: Exception) {
             temp.delete()
-            error("Unable to replace prior MANA first-boot checkpoint.")
-        }
-        if (!temp.renameTo(file)) {
-            temp.delete()
-            error("Unable to atomically publish MANA first-boot checkpoint.")
+            throw IllegalStateException(
+                "Unable to publish MANA first-boot checkpoint; previous checkpoint is preserved.",
+                error
+            )
         }
     }
 
