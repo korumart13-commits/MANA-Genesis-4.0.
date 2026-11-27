@@ -116,3 +116,34 @@ or run the Binder instrumentation test on a device.
 - None of these source-contract or Gradle runs executes Soong or the instrumentation test.
   The actual AOSP build, signer comparison and live Binder test remain pending on a provisioned
   AOSP build host and booted MANA product image.
+
+
+## Binder test hardening and reconnect behavior
+
+The device test was tightened after review: it now requires the backend state to be
+exactly `READY` or `READY_NO_LOCAL_MODEL` before sending a request. A connected
+Binder endpoint that has not initialized the Engine no longer counts as a successful
+handshake. The callback must arrive, and `ENGINE_NOT_READY`, `ENGINE_UNAVAILABLE`
+and `ENGINE_DISCONNECTED` are treated as failures.
+
+`ManaBrainService` now retries a dead/null/protocol-mismatched backend binding with a
+bounded schedule (2, 4, 8, 16 and 32 seconds; five attempts maximum). A normal
+`onServiceDisconnected` is left to Android's existing automatic reconnection behavior.
+The service remains fail-closed after the bounded retry limit; this is not an unlimited
+background retry loop.
+
+The source-contract workflow validates the stricter readiness assertions and bounded
+retry constants. It still cannot validate the generated AIDL Java, Android framework
+service lifecycle, SELinux decisions, or a real Binder transaction; those require the
+full AOSP/booted-image gate described above.
+
+## SELinux integration decision
+
+Both apps are currently non-privileged product apps signed by the product platform key.
+Until the target product's complete Android 16 policy is available, no broad custom
+SELinux allow rules are added. The exact runtime domains and AVC results must be
+measured on the actual product image. Do not paper over denials with permissive mode,
+`audit2allow` bulk rules, or blanket Binder grants. The two cross-process Binder
+directions, app data access, Keystore access and framework service use must be reviewed
+against the Android 16 policy and the device's vendor policy before any production image
+is accepted.
