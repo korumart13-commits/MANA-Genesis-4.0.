@@ -32,7 +32,7 @@ class ManaEngineeringCopilotTest {
 
     private val validResponse = """{
         "summary":"Add a small example change",
-        "unifiedDiff":"--- a/os/core/src/main/kotlin/com/mana/os/core/Example.kt\n+++ b/os/core/src/main/kotlin/com/mana/os/core/Example.kt\n@@ -1 +1,2 @@\n class Example\n+// reviewed proposal",
+        "unifiedDiff":"diff --git a/os/core/src/main/kotlin/com/mana/os/core/Example.kt b/os/core/src/main/kotlin/com/mana/os/core/Example.kt\\n--- a/os/core/src/main/kotlin/com/mana/os/core/Example.kt\n+++ b/os/core/src/main/kotlin/com/mana/os/core/Example.kt\n@@ -1 +1,2 @@\n class Example\n+// reviewed proposal",
         "testPlan":["Run JVM unit tests"],
         "riskNotes":["Review API compatibility"]
     }"""
