@@ -48,7 +48,7 @@ PLATFORM_SDK_VERSION="$(get_build_var PLATFORM_SDK_VERSION)"
 }
 PRODUCT_PACKAGES_LIST="$(get_build_var PRODUCT_PACKAGES)"
 for required_package in ManaBrainService ManaLauncher; do
-  if ! printf '%s\\n' "$PRODUCT_PACKAGES_LIST" | tr ' ' '\\n' | grep -Fxq "$required_package"; then
+  if ! printf '%s\\n' "$PRODUCT_PACKAGES_LIST" | tr ' ' '\n' | grep -Fxq "$required_package"; then
     echo "ERROR: lunch target $PRODUCT_TARGET does not include $required_package in PRODUCT_PACKAGES." >&2
     echo "Include vendor/mana/genesis/system/mana/mana_product.mk in the selected product." >&2
     exit 1
