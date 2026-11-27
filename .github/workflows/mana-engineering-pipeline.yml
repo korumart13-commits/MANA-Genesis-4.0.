@@ -52,7 +52,7 @@ jobs:
           gradle-version: "8.14.3"
 
       - name: Validate and apply proposed patch in disposable CI checkout
-        if: ${{ inputs.patch != '' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.patch != '' }}
         env:
           MANA_PATCH: ${{ inputs.patch }}
           MANA_PATCH_FILE: ${{ runner.temp }}/mana-proposed.patch
@@ -69,11 +69,20 @@ jobs:
       - name: Run patch policy and full JVM tests
         run: gradle --no-daemon -p engine/mana-brain clean test
 
+      - name: Preserve JVM test report even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Brain-test-report-${{ github.sha }}
+          path: engine/mana-brain/build/reports/tests/test/
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Build distributable engine JAR
         run: gradle --no-daemon -p engine/mana-brain jar
 
       - name: Preserve reviewed patch in candidate bundle
-        if: ${{ inputs.patch != '' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.patch != '' }}
         env:
           MANA_PATCH: ${{ inputs.patch }}
         run: printf '%s' "$MANA_PATCH" > dist/proposed.patch
