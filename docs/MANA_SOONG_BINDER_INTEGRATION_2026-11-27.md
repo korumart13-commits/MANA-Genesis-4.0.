@@ -90,3 +90,20 @@ https://android.googlesource.com/platform/build/soong/+/refs/heads/master/java/a
 
 These CI results validate repository contracts only. They do not execute Soong,
 sign the APK with a product key, boot an emulator, or run the Binder instrumentation test.
+
+
+## Dual-package platform certificate verification
+
+The signature verifier now accepts the final Brain service APK as an optional fourth
+argument, so both packages can be compared with the same product platform certificate:
+
+```sh
+vendor/mana/genesis/tools/verify_mana_platform_signature.sh \
+  "$ANDROID_BUILD_TOP" /path/to/ManaLauncher.apk \
+  /path/to/platform.x509.pem /path/to/ManaBrainService.apk
+```
+
+The verifier checks package IDs (`com.mana.launcher` and
+`com.mana.system.brain`), APK signature validity and exact signer-certificate SHA-256
+equality. This extends the verification procedure; it has not yet been run against
+Soong-produced APKs.
