@@ -1,71 +1,55 @@
 # MANA Brain — Android Binder interface v1
 
-This directory defines the platform-facing AIDL contract for connecting Android product
-components to the single MANA Brain runtime.
+This directory defines the platform-facing AIDL contract between Android system components and the single MANA Brain runtime.
 
 ## Contract
 
-- `IManaBrain` exposes a protocol version, runtime state and asynchronous `think()`.
-- `ManaBrainRequest` carries the prompt and per-request cloud, sensitivity and memory consent.
-- `IManaBrainCallback` returns exactly one result or an error for each accepted request.
-- `ManaBrainResponse` reports the text, provider, whether inference was local and memory-use count.
-- The Soong module `mana-brain-interface` compiles the contract for platform-side clients.
+- `IManaBrain` exposes protocol version, runtime state and asynchronous `think()`.
+- `ManaBrainRequest` carries the prompt and per-request cloud, sensitivity and memory-consent flags.
+- `IManaBrainCallback` returns a result or error.
+- `IManaEngineBackend` is the private reverse-side contract from platform Brain to the app-owned Engine bridge.
+- `ManaBrainResponse` reports text, provider, local/cloud execution and memory-use count.
+- Soong module `mana-brain-interface` compiles the shared AIDL types.
 
 ## Security requirements
 
-- The current service endpoint is protected by the signature-level permission
-  `com.mana.permission.BIND_BRAIN`.
-- Binder entry points repeat the permission check and never trust caller-supplied identity.
+- The services are protected by signature permission `com.mana.permission.BIND_BRAIN`.
+- Both Binder endpoints repeat caller permission checks.
 - Cloud access defaults to off and requires explicit per-request consent.
 - Sensitive requests must remain local.
-- Personal-memory cloud export requires separate explicit consent in addition to cloud and
-  personal-memory inclusion flags.
-- Requests are asynchronous; inference must not run on Binder's main transaction thread.
+- Personal-memory cloud export requires separate cloud and memory consent.
+- Inference is dispatched asynchronously, not on the Binder transaction thread.
 - Errors must not leak API keys, private prompts, memory contents or filesystem paths.
 
-## Integration status
+## Implemented source-level route
 
-The AIDL contract is implemented by the permission-protected Android Service endpoint in
-`system/mana/services/ManaBrainService`. That endpoint deliberately returns
-`ENGINE_UNAVAILABLE` until a real local inference backend adapter is connected. It does not
-fabricate model output or forward prompts to a cloud provider.
+1. Platform-signed `ManaBrainService` exports `IManaBrain` under the signature permission.
+2. On creation it explicitly binds to `com.mana.launcher/.ManaEngineBridgeService`.
+3. It negotiates backend protocol version 1 through `IManaEngineBackend`.
+4. The app-side bridge validates the caller and request policy, then delegates to the single `ManaEngineProcessOwner`.
+5. Results and errors travel asynchronously through the AIDL callbacks.
 
-The Gradle application service remains the currently tested process owner. Cross-process backend
-integration, Soong build validation, SELinux service context/domain and device-image testing remain
-subsequent work. No AOSP ROM build or device runtime test is claimed.
+The bridge does not create a second inference engine or memory store. A missing or mismatched backend fails closed with a disconnected/unavailable state. A local model that is not ready is reported as a truthful engine state/error; it is not represented as a successful inference.
 
+## Signing and product boundary
 
-## App-engine backend contract
+The Gradle release APK is unsigned. The AOSP staging script imports it with
+`android_app_import`, `presigned: false` and `certificate: "platform"`, so Soong signs
+it using the product's platform certificate. `ManaBrainService` and the instrumentation
+test use the same platform certificate. Both production apps remain product-specific,
+non-privileged applications; they do not require `privileged: true` to share a signature
+permission. Private signing keys must never be committed to this repository.
 
-IManaEngineBackend is the reverse-side AIDL contract used only between the platform Brain host and the signature-protected com.mana.launcher engine bridge. It carries the same ManaBrainRequest contract and asynchronous result/error callback. The platform host remains responsible for authorization and policy checks; the app bridge repeats checks and delegates to the single process-owned runtime. The interface declaration alone does not package or platform-sign the app bridge.
+## Verification status
 
+- GitHub Actions source-contract checks validate the AIDL declarations, component names,
+  permission boundaries, test-module definition and runner syntax.
+- A device-side test module exists at
+  `system/mana/tests/ManaBrainBinderIntegration`. It checks protocol negotiation and
+  waits for the platform service to complete the app-bridge handshake.
+- A real Soong build, signed APK certificate comparison, SELinux policy integration,
+  emulator/device Binder execution and RMX5566 runtime test are still pending.
 
-## Platform signing and privilege boundary
-
-The Gradle release APK is intentionally unsigned. The AOSP staging script imports it with
-`android_app_import`, `presigned: false`, and `certificate: "platform"`, so Soong signs
-the imported APK with the AOSP product's platform certificate. The private `platform.pk8`
-must remain inside the trusted build/signing environment and must never be committed to this
-repository or included in user-facing artifacts.
-
-Both the imported MANA app and the platform Brain service are product-specific applications,
-not privileged applications. They do not need `privileged: true` to share a signature-level
-permission: the launcher and Brain service must instead be signed by the same platform key.
-This intentionally avoids granting the launcher a broader privileged-app permission surface.
-The platform service still uses platform APIs and the signature-protected Binder permission.
-
-The integration chain is:
-
-1. Gradle release APK package name is `com.mana.launcher`; its manifest must declare
-   `ManaEngineBridgeService` and request `com.mana.permission.BIND_BRAIN`.
-2. Stage the APK under `vendor/mana/genesis/system/mana/apps/ManaLauncher/prebuilts/`.
-3. Soong imports and platform-signs that APK as `ManaLauncher`.
-4. The separately built `ManaBrainService` is also signed with `certificate: "platform"`.
-5. At runtime, `ManaBrainService` binds to the explicit
-   `com.mana.launcher/.ManaEngineBridgeService` component; both sides enforce the
-   signature permission and validate the AIDL protocol version.
-6. After a real AOSP build, verify the resulting APK signer certificate against the exact
-   platform certificate used by that product, then run Binder authorization/callback tests.
-
-This is source-level integration preparation only. No AOSP Soong build, signed APK output,
-SELinux policy integration, emulator test or RMX5566 runtime test has yet been completed.
+A green source-contract workflow is not evidence of a compiled AOSP image or a live Binder
+connection. Do not mark the bridge operational until the actual Soong build and instrumentation
+test logs are green.
