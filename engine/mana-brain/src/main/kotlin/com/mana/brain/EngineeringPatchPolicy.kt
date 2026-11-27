@@ -92,7 +92,7 @@ object EngineeringPatchPolicy {
         require(raw.isNotBlank() && !raw.startsWith("/") && !raw.startsWith("\\")) {
             "Patch paths must be relative."
         }
-        val path = raw.replace('\\\\', '/')
+        val path = raw.replace('\\', '/')
         val segments = path.split('/')
         require(segments.none { it.isBlank() || it == "." || it == ".." }) {
             "Patch path traversal is not permitted."
