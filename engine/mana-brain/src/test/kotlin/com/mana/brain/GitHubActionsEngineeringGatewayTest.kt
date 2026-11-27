@@ -34,7 +34,7 @@ class GitHubActionsEngineeringGatewayTest {
                     receivedPatch = Regex("\"patch\":\"([^\"]+)\"").find(payload)!!.groupValues[1]
                     respond(exchange, 204, "")
                 }
-                path.endsWith("/runs") -> respond(exchange, 200, runJson(receivedTaskId, "completed", "success"))
+                path.contains("/runs?") -> respond(exchange, 200, runJson(receivedTaskId, "completed", "success"))
                 path.endsWith("/jobs") -> respond(exchange, 200, """{"jobs":[{"id":7,"name":"validate-build-test","status":"completed","conclusion":"success"}]}""")
                 path.endsWith("/artifacts") -> respond(exchange, 200, """{"artifacts":[{"id":91},{"id":92}]}""")
                 else -> respond(exchange, 404, "{}")
@@ -61,7 +61,7 @@ class GitHubActionsEngineeringGatewayTest {
                     taskId = Regex("\"task_id\":\"([^\"]+)\"").find(body)!!.groupValues[1]
                     respond(exchange, 204, "")
                 }
-                path.endsWith("/runs") -> respond(exchange, 200, runJson(taskId, "completed", "failure"))
+                path.contains("/runs?") -> respond(exchange, 200, runJson(taskId, "completed", "failure"))
                 path.endsWith("/jobs") -> respond(exchange, 200, """{"jobs":[{"id":8,"name":"test","status":"completed","conclusion":"failure"}]}""")
                 path.endsWith("/logs") -> {
                     exchange.responseHeaders.add("Content-Type", "application/zip")
