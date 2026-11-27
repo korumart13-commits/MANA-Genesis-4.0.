@@ -75,8 +75,10 @@ class ManaDiagnosticsActivity : Activity() {
             android.Manifest.permission.BLUETOOTH_CONNECT
         )
         val permissions = permissionNames.associate { permission ->
-            val state = if (Build.VERSION.SDK_INT < 31 &&
-                permission == android.Manifest.permission.BLUETOOTH_CONNECT) {
+            val state = if ((Build.VERSION.SDK_INT < 31 &&
+                permission == android.Manifest.permission.BLUETOOTH_CONNECT) ||
+                (Build.VERSION.SDK_INT < 33 &&
+                permission == android.Manifest.permission.POST_NOTIFICATIONS)) {
                 "NOT_APPLICABLE"
             } else if (checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED) {
                 "GRANTED"
