@@ -24,6 +24,8 @@ import kotlinx.coroutines.launch
 /** Owner-controlled GPT engineering workspace. It proposes diffs; it never applies them. */
 class ManaEngineeringActivity : ComponentActivity() {
     private lateinit var provider: ManaCloudGateway
+    private lateinit var github: ManaGitHubActionsConnector
+    private lateinit var repositoryPaths: EditText
     private lateinit var objective: EditText
     private lateinit var status: TextView
     private lateinit var sourceSummary: TextView
@@ -37,6 +39,7 @@ class ManaEngineeringActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         provider = ManaEngineProcessOwner.cloudGateway() ?: ManaCloudGateway(this, ManaAndroidKeyProvider())
+        github = ManaGitHubActionsConnector(this)
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -61,7 +64,19 @@ class ManaEngineeringActivity : ComponentActivity() {
         root.addView(button("Выбрать исходные файлы") {
             sourcePicker.launch(arrayOf("text/*", "application/json", "application/xml"))
         })
-        sourceSummary = text("Исходники не выбраны.", 12, 0xFF9CB6D4.toInt())
+        repositoryPaths = EditText(this).apply {
+            hint = "Путь каждого файла в GitHub, по одному на строку, в порядке выбора"
+            setTextColor(0xFFFFFFFF.toInt())
+            setHintTextColor(0xFF9CB6D4.toInt())
+            minLines = 2
+            maxLines = 5
+        }
+        root.addView(repositoryPaths, LinearLayout.LayoutParams(-1, -2))
+        root.addView(button("Применить пути GitHub к выбранным файлам") { applyRepositoryPaths() })
+        sourceSummary = text("Исходники не выбраны. Без указания путей файлы остаются в docs/owner-context/.", 12, 0xFF9CB6D4.toInt())
+        root.addView(sourceSummary)
+        root.addView(button("Подключить GitHub Actions") { configureGitHub() })
+        root.addView(button("Запустить CI и автоисправление (до 2 повторов)") { confirmAndRunEngineeringLoop() })
         root.addView(sourceSummary)
         root.addView(button("Попросить GPT подготовить патч") { confirmAndGenerate() })
         root.addView(button("Обновить статус облачного провайдера") {
