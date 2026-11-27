@@ -6,6 +6,7 @@ import com.mana.brain.GitHubTokenProvider
 import com.mana.brain.ManaEngineeringAutomation
 import com.mana.brain.ManaEngineeringCopilot
 import com.mana.brain.EngineeringTask
+import com.mana.brain.EngineeringSourceFile
 import com.mana.brain.EngineeringAutomationResult
 import com.mana.brain.InferenceProvider
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +31,20 @@ class ManaGitHubActionsConnector(context: Context) {
 
     fun removeCredentials() = credentials.clear()
 
+    data class SourceSnapshot(val headSha: String, val files: List<EngineeringSourceFile>)
+
+    /** Reads the selected files from GitHub and verifies the branch head did not move during download. */
+    suspend fun fetchRepositorySources(paths: List<String>, branch: String = DEFAULT_BRANCH): SourceSnapshot = withContext(Dispatchers.IO) {
+        require(isConfigured()) { "GitHub Actions не подключён." }
+        require(paths.isNotEmpty() && paths.size <= 12 && paths.distinct().size == paths.size)
+        val client = createClient()
+        val before = client.currentHeadSha(branch)
+        val files = paths.map { client.fetchRepositoryFile(branch, it) }
+        val after = client.currentHeadSha(branch)
+        check(before == after) { "Ветка GitHub изменилась во время загрузки исходников. Загрузи файлы повторно." }
+        SourceSnapshot(before, files)
+    }
+
     suspend fun run(
         provider: InferenceProvider,
         task: EngineeringTask,
@@ -38,11 +53,7 @@ class ManaGitHubActionsConnector(context: Context) {
     ): EngineeringAutomationResult = withContext(Dispatchers.IO) {
         require(isConfigured()) { "GitHub Actions не подключён: сначала сохрани токен." }
         require(provider.isAvailable()) { "Инженерный облачный провайдер MANA не настроен или выключен." }
-        val gateway = GitHubActionsRestClient(
-            repository = REPOSITORY,
-            workflowFile = WORKFLOW_FILE,
-            tokenProvider = GitHubTokenProvider { credentials.read() }
-        )
+        val gateway = createClient()
         val headSha = gateway.currentHeadSha(branch)
         val automation = ManaEngineeringAutomation(
             copilot = ManaEngineeringCopilot(provider),
@@ -52,6 +63,12 @@ class ManaGitHubActionsConnector(context: Context) {
         )
         automation.run(task, headSha)
     }
+
+    private fun createClient() = GitHubActionsRestClient(
+        repository = REPOSITORY,
+        workflowFile = WORKFLOW_FILE,
+        tokenProvider = GitHubTokenProvider { credentials.read() }
+    )
 
     companion object {
         const val REPOSITORY = "korumart13-commits/MANA-Genesis-4.0."
