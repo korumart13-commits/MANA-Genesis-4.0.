@@ -20,7 +20,7 @@ class ManaModelCatalog(context: Context) {
 
     fun hasAcknowledgedGemmaLicense(): Boolean = prefs.getBoolean(KEY_LICENSE_ACKNOWLEDGED, false)
 
-    /** Record the owner's explicit Gemma terms acceptance before bundled import. */
+    /** Record the owner's acknowledgement of the included Apache 2.0 license. */
     fun acknowledgeGemmaLicense() {
         prefs.edit().putBoolean(KEY_LICENSE_ACKNOWLEDGED, true).apply()
     }
