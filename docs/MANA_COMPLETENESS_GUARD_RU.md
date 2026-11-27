@@ -33,6 +33,13 @@
 - [ ] Capability registry и профили Core / Local AI / Advanced / Platform.
 - [ ] Task journal, фоновой supervisor, восстановление после перезапуска.
 
+### Диагностика и ChatGPT handoff
+- [ ] Версионированный MANA diagnostic report: runtime evidence, statuses, Android API/ABI, permission states and known limitations.
+- [ ] Allow-list export and redaction tests for API keys, bearer/GitHub tokens, passwords, email, phone numbers and URL secrets.
+- [ ] Owner-reviewed JSON/Markdown export through Android Sharesheet and FileProvider with temporary read grants.
+- [ ] No claim of direct access to the user's current ChatGPT conversation; manual share is the supported handoff.
+- [ ] No module is marked IMPLEMENTED without corresponding runtime/test proof.
+
 ### Локальный интеллект и провайдеры
 - [ ] Реальный локальный inference runtime, а не имитация загрузки модели.
 - [ ] LiteRT-LM как предусмотренный Android runtime; модель Gemma 4 E2B IT — кандидат, фактическая совместимость и производительность измеряются.
