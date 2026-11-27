@@ -187,3 +187,12 @@ A service bind that remains pending without delivering a Binder callback is conv
 into a bounded retry instead of leaving the platform Brain indefinitely disconnected.
 Android's normal service reconnection is given this grace period before the service
 unbinds and retries.
+
+
+## AOSP target preflight
+
+Before staging or compiling anything, the runner now checks the selected lunch target's
+`PLATFORM_SDK_VERSION` is exactly 36 (Android 16) and that its resolved
+`PRODUCT_PACKAGES` includes both `ManaBrainService` and `ManaLauncher`.
+This prevents accidentally running the integration build against a different Android
+release or a product that silently omitted one side of the Binder chain.
