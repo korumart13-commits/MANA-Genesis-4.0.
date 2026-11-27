@@ -1,12 +1,38 @@
 package com.mana.launcher
 
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
+import kotlinx.coroutines.Job
 import org.junit.Test
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 class ManaBrainBridgeTest {
+    @Test
+    fun cancellationHandleCancelsOnlyItsOwnInferenceJob() {
+        val firstJob = Job()
+        val secondJob = Job()
+        val first = LocalInferenceCancellation()
+        val second = LocalInferenceCancellation()
+        first.attach(firstJob)
+        second.attach(secondJob)
+
+        first.cancel()
+
+        assertTrue(firstJob.isCancelled)
+        assertFalse(secondJob.isCancelled)
+    }
+
+    @Test
+    fun cancellationBeforeQueuedWorkStartsCancelsJobWhenAttached() {
+        val handle = LocalInferenceCancellation()
+        handle.cancel()
+        val queuedJob = Job()
+        handle.attach(queuedJob)
+        assertTrue(queuedJob.isCancelled)
+    }
+
     @Test
     fun requestAfterShutdownCompletesCallbackWithFailure() {
         val runtime = object : LocalInferenceRuntime {
