@@ -26,7 +26,7 @@
     </queries>
     <application
         android:allowBackup="false"
-        android:label="MANA Genesis"
+        android:label="MANA Martynova"
         android:theme="@android:style/Theme.Material.NoActionBar"
         android:usesCleartextTraffic="false">
         <uses-native-library android:name="libvndksupport.so" android:required="false"/>
@@ -113,10 +113,6 @@
                 <action android:name="android.intent.action.DIAL" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="tel" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
