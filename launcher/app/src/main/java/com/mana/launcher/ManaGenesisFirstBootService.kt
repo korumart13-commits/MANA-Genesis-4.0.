@@ -56,26 +56,21 @@ class ManaGenesisFirstBootService(context: Context) {
     }
 
     private fun collectSnapshot(): GenesisCapabilitySnapshot {
-        val installed = linkedSetOf(
-            "mana.launcher",
-            "mana.brain",
-            "mana.core",
-            "mana.engine-service",
-            "mana.encrypted-memory",
-            "mana.microworld",
-            "mana.cloud-gateway",
-            "mana.yandex-gateway",
-            "mana.self-development-contract"
-        )
+        val installed = linkedSetOf("mana.launcher")
+        if (ManaEngineProcessOwner.brainBridge() != null) installed += "mana.brain"
+        if (ManaEngineProcessOwner.engineRuntime() != null) installed += "mana.core"
+        if (ManaEngineProcessOwner.memoryService() != null) installed += "mana.encrypted-memory"
+        if (ManaEngineProcessOwner.cloudGateway() != null) installed += "mana.cloud-gateway"
+        if (ManaEngineProcessOwner.yandexProvider() != null) installed += "mana.yandex-gateway"
         val capabilities = linkedSetOf<String>()
         val modelFile = File(app.filesDir, "mana-models/selected-model.litertlm")
         if (modelFile.isFile && modelFile.canRead() && modelFile.length() > 0) {
             capabilities += "local_model_file_present"
         }
-        if (Build.VERSION.SDK_INT >= 26) capabilities += "android_keystore_available"
-        if (Build.VERSION.SDK_INT >= 29) capabilities += "scoped_storage_available"
-        if (Build.VERSION.SDK_INT >= 31) capabilities += "android12_permission_model"
-        if (Build.VERSION.SDK_INT >= 35) capabilities += "android15_foreground_service_policy"
+        if (runCatching { java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) } }.isSuccess) capabilities += "android_keystore_provider_available"
+        if (Build.VERSION.SDK_INT >= 29) capabilities += "scoped_storage_api_available"
+        if (Build.VERSION.SDK_INT >= 31) capabilities += "android12_permission_model_available"
+        if (Build.VERSION.SDK_INT >= 35) capabilities += "android15_foreground_service_policy_available"
         // These are observations only; never infer OEM source availability from model properties.
         if (Build.MANUFACTURER.isNotBlank() && Build.MODEL.isNotBlank()) {
             capabilities += "device_identity_observed"
