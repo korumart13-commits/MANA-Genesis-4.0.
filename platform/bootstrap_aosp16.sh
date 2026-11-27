@@ -37,23 +37,35 @@ fi
 mkdir -p "$TOP/.repo/local_manifests"
 TMP_MANIFEST="$TOP/.repo/local_manifests/mana.xml.tmp"
 curl --fail --location --silent --show-error "$MANA_MANIFEST_URL" -o "$TMP_MANIFEST"
-grep -q 'revision="071ec83e"' "$TMP_MANIFEST" || die "MANA manifest does not contain the expected tested source pin."
+MANA_PIN="$(python3 - "$TMP_MANIFEST" <<'PY'
+import re, sys, xml.etree.ElementTree as ET
+root = ET.parse(sys.argv[1]).getroot()
+project = root.find("./project[@path='vendor/mana/genesis']")
+if project is None:
+    raise SystemExit("MANA manifest has no vendor/mana/genesis project")
+pin = project.attrib.get("revision", "")
+if not re.fullmatch(r"[0-9a-fA-F]{7,40}", pin):
+    raise SystemExit("MANA manifest revision must be an immutable Git commit")
+print(pin.lower())
+PY
+)" || die "Could not validate immutable MANA source pin."
 mv "$TMP_MANIFEST" "$TOP/.repo/local_manifests/mana.xml"
 
 repo sync -c -j"$JOBS" --no-tags
 
 MANIFEST_COMMIT="$(git -C .repo/manifests rev-parse HEAD)"
 MANA_COMMIT="$(git -C vendor/mana/genesis rev-parse HEAD)"
-[[ "$MANA_COMMIT" == 071ec83e* ]] || die "Synced MANA tree is not the expected immutable source snapshot."
+[[ "$MANA_COMMIT" == "$MANA_PIN"* ]] || die "Synced MANA tree does not match the manifest's immutable revision."
 
-python3 - "$TOP" "$AOSP_BRANCH" "$MANIFEST_COMMIT" "$MANA_COMMIT" <<'PY'
+python3 - "$TOP" "$AOSP_BRANCH" "$MANIFEST_COMMIT" "$MANA_COMMIT" "$MANA_PIN" <<'PY'
 import json, pathlib, sys
-top, branch, aosp_commit, mana_commit = sys.argv[1:]
+top, branch, aosp_commit, mana_commit, mana_pin = sys.argv[1:]
 lock = {
     "aosp_manifest_url": "https://android.googlesource.com/platform/manifest",
     "aosp_branch": branch,
     "aosp_manifest_commit": aosp_commit,
     "mana_repository": "https://github.com/korumart13-commits/MANA-Genesis-4.0.",
+    "mana_manifest_revision": mana_pin,
     "mana_commit": mana_commit,
     "device_product": None,
     "device_images_built": False,
