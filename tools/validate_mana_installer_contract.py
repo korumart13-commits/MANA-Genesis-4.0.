@@ -14,8 +14,8 @@ requirements = (root / "docs/MANA_GENESIS_4_0_NON_NEGOTIABLE_REQUIREMENTS_AND_GA
 workflow = (root / ".github/workflows/mana-launcher.yml").read_text()
 
 for required in (
-    '"УСТАНОВИТЬ MANA"',
-    '"ПРОДОЛЖИТЬ УСТАНОВКУ MANA"',
+    '"УСТАНОВИТЬ MANA XZ"',
+    '"ПРОДОЛЖИТЬ УСТАНОВКУ MANA XZ"',
     "DownloadManager.ACTION_DOWNLOAD_COMPLETE",
     "registerModelDownloadReceiver()",
     "activateCompletedModelDownload()",
@@ -47,15 +47,15 @@ for required in (
 ):
     assert required in catalog, f"Gemma download/integrity guard missing: {required}"
 
-assert "УСТАНОВИТЬ MANA" in setup_doc
+assert "УСТАНОВИТЬ MANA XZ" in setup_doc
 assert "Termux" in requirements
-assert "УСТАНОВИТЬ MANA" in requirements
-assert "INSTALL_MANA.apk" in workflow
+assert "УСТАНОВИТЬ MANA XZ" in requirements
+assert "INSTALL_MANA_XZ.apk" in workflow
 assert "models/Gemma/MODEL_MANIFEST_RU.txt" in workflow
 assert "SHA256SUMS.txt" in workflow
-assert "MANA-Genesis-4.0-INSTALLER-PACKAGE.zip" in workflow
-assert "MANA-Genesis-4.0-One-Button-Installer" in workflow
+assert "MANA-XZ-FULL-INSTALLER.zip" in workflow
+assert "MANA-XZ-FULL-INSTALLER" in workflow
 assert "MANA-Martynova-FULL-PACKAGE.zip" not in workflow
 
-print("Validated static one-button installer contract for realme C85 4G / RMX5566.")
+print("Validated static one-button MANA XZ installer contract for realme C85 4G / RMX5566.")
 print("This does not prove physical-device compatibility or successful Gemma inference.")
