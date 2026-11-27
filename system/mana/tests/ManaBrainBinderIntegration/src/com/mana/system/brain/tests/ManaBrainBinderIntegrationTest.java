@@ -82,8 +82,9 @@ public final class ManaBrainBinderIntegrationTest extends InstrumentationTestCas
                 Thread.sleep(200);
                 state = brain.getEngineState();
             }
-            assertFalse("ManaBrainService never completed the Engine Bridge handshake.",
-                    DISCONNECTED.equals(state));
+            assertTrue(
+                    "Engine Bridge Binder connected but its runtime is not ready: " + state,
+                    "READY".equals(state) || "READY_NO_LOCAL_MODEL".equals(state));
 
             ManaBrainRequest request = new ManaBrainRequest();
             request.text = "MANA Binder integration health check";
@@ -109,6 +110,8 @@ public final class ManaBrainBinderIntegrationTest extends InstrumentationTestCas
 
             assertTrue("No callback was returned from the Engine Bridge.",
                     callbackDelivered.await(60, TimeUnit.SECONDS));
+            assertFalse("Request reached the bridge before its engine runtime was ready.",
+                    "ENGINE_NOT_READY".equals(callbackCode.get()));
             assertFalse("Request failed because the backend Binder was disconnected.",
                     "ENGINE_UNAVAILABLE".equals(callbackCode.get())
                             || "ENGINE_DISCONNECTED".equals(callbackCode.get()));
