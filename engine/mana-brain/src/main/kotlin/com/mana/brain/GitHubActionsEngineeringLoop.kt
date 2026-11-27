@@ -49,13 +49,17 @@ class GitHubActionsRestClient(
     private val workflowFile: String,
     private val tokenProvider: GitHubTokenProvider,
     private val pollIntervalMs: Long = 3_000,
-    private val dispatchTimeoutMs: Long = 120_000
+    private val dispatchTimeoutMs: Long = 120_000,
+    private val apiBaseUrl: String = API_BASE
 ) : GitHubActionsGateway {
     init {
         require(repository.matches(Regex("[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")))
         require(workflowFile.matches(Regex("[A-Za-z0-9_.-]+")))
         require(pollIntervalMs in 250..30_000)
         require(dispatchTimeoutMs in 5_000..600_000)
+        require(apiBaseUrl.startsWith("https://") || apiBaseUrl.startsWith("http://127.0.0.1:")) {
+            "GitHub API base must use HTTPS (HTTP is allowed only for loopback tests)."
+        }
     }
 
     override suspend fun currentHeadSha(branch: String): String = withContext(Dispatchers.IO) {
@@ -160,7 +164,7 @@ class GitHubActionsRestClient(
     ): String {
         val token = tokenProvider.accessToken()?.trim().orEmpty()
         require(token.length in 20..500 && token.none(Char::isWhitespace)) { "GitHub Actions is not connected: no valid access token is available." }
-        val connection = URL("$API_BASE/$repository/$pathAndQuery").openConnection() as HttpURLConnection
+        val connection = URL("${apiBaseUrl.trimEnd('/')}/$repository/$pathAndQuery").openConnection() as HttpURLConnection
         try {
             connection.requestMethod = method
             connection.connectTimeout = 15_000
@@ -193,7 +197,7 @@ class GitHubActionsRestClient(
     private fun downloadJobLogZip(path: String): ByteArray {
         val token = tokenProvider.accessToken()?.trim().orEmpty()
         require(token.length in 20..500 && token.none(Char::isWhitespace)) { "GitHub Actions is not connected." }
-        val api = URL("$API_BASE/$repository/$path").openConnection() as HttpURLConnection
+        val api = URL("${apiBaseUrl.trimEnd('/')}/$repository/$path").openConnection() as HttpURLConnection
         val redirect: String
         try {
             api.instanceFollowRedirects = false
@@ -208,7 +212,10 @@ class GitHubActionsRestClient(
             redirect = api.getHeaderField("Location") ?: error("GitHub job log redirect omitted its download URL.")
         } finally { api.disconnect() }
 
-        require(redirect.startsWith("https://")) { "GitHub job log redirect must use HTTPS." }
+        val loopbackAuthority = URL(apiBaseUrl).let { "http://127.0.0.1:${it.port}/" }
+        require(redirect.startsWith("https://") || (apiBaseUrl.startsWith("http://127.0.0.1:") && redirect.startsWith(loopbackAuthority))) {
+            "GitHub job log redirect must use HTTPS (except loopback test fixtures)."
+        }
         val blob = URL(redirect).openConnection() as HttpURLConnection
         try {
             blob.instanceFollowRedirects = true
