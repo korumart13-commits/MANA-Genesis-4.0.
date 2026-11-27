@@ -9,7 +9,9 @@ import static org.junit.Assert.*;
 public final class ManaBrainTerminalCallbackGateTest {
     @Test public void onlyFirstTerminalCallbackWinsSequentially() {
         ManaBrainTerminalCallbackGate gate = new ManaBrainTerminalCallbackGate();
+        assertFalse(gate.isDelivered());
         assertTrue(gate.tryDeliver());
+        assertTrue(gate.isDelivered());
         assertFalse(gate.tryDeliver());
         assertFalse(gate.tryDeliver());
     }
