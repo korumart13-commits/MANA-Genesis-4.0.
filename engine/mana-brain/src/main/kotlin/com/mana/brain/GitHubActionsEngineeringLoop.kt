@@ -94,7 +94,8 @@ class GitHubActionsRestClient(
                 val item = element.asJsonObject
                 item.get("head_sha")?.asString == expectedHeadSha &&
                     item.get("event")?.asString == "workflow_dispatch" &&
-                    item.get("run_name")?.asString == "MANA Engineering CI $clientRunId" &&\n                    runCreatedAt(item) >= dispatchedAt.minusSeconds(5)
+                    item.get("run_name")?.asString == "MANA Engineering CI $clientRunId" &&
+                    runCreatedAt(item) >= dispatchedAt.minusSeconds(5)
             }?.asJsonObject
             if (match != null) return@withContext match.toRun()
             delay(pollIntervalMs)
@@ -192,7 +193,18 @@ class GitHubActionsRestClient(
             if (blob.responseCode !in 200..299) {
                 throw IllegalStateException("GitHub job log archive download failed (HTTP ${blob.responseCode}).")
             }
-            return blob.inputStream.use { it.readNBytes(MAX_LOG_ARCHIVE_BYTES) }
+            return blob.inputStream.use { input ->
+                val output = java.io.ByteArrayOutputStream()
+                val buffer = ByteArray(8_192)
+                var total = 0
+                while (total < MAX_LOG_ARCHIVE_BYTES) {
+                    val count = input.read(buffer, 0, minOf(buffer.size, MAX_LOG_ARCHIVE_BYTES - total))
+                    if (count < 0) break
+                    output.write(buffer, 0, count)
+                    total += count
+                }
+                output.toByteArray()
+            }
         } finally { blob.disconnect() }
     }
 
@@ -280,7 +292,9 @@ class ManaEngineeringAutomation(
             )
             val proposal = copilot.propose(currentTask)
             check(proposal.status == EngineeringProposalStatus.REVIEW_REQUIRED)
-            val dispatchId = "${task.id}-a${attempt + 1}-${java.util.UUID.randomUUID().toString().take(8)}"\n            val dispatched = github.dispatchPatch(branch, proposal.unifiedDiff, expectedHeadSha, dispatchId)
+            val dispatchId = "${task.id}-a${attempt + 1}-${java.util.UUID.randomUUID().toString().take(8)}"
+            check(github.currentHeadSha(branch) == expectedHeadSha) { "Branch HEAD changed during the engineering task; refusing to test against a stale base." }
+                        val dispatched = github.dispatchPatch(branch, proposal.unifiedDiff, expectedHeadSha, dispatchId)
             val completed = github.awaitCompletion(dispatched)
             latestRun = completed
             if (completed.succeeded) {
