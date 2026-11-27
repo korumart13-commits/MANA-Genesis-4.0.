@@ -148,6 +148,72 @@ class ManaBrainTest {
     }
 
     @Test
+    fun localInferenceFailureFallsBackOnlyWithExplicitCloudConsent() {
+        val local = object : InferenceProvider {
+            override val id = "litert-local"
+            override fun isAvailable() = true
+            override suspend fun generate(prompt: String): String = error("local runtime failure")
+        }
+        val cloud = FakeProvider("openai", true, "cloud answer")
+        val result = kotlinx.coroutines.runBlocking {
+            ManaBrain(local, cloud).respond(BrainRequest("hello", allowCloud = true))
+        }
+        assertEquals("cloud answer", result.text)
+        assertEquals("openai", result.provider)
+        assertEquals(false, result.local)
+        assertEquals(1, cloud.calls)
+    }
+
+    @Test
+    fun localInferenceFailureDoesNotFallBackWithoutConsent() {
+        val local = object : InferenceProvider {
+            override val id = "litert-local"
+            override fun isAvailable() = true
+            override suspend fun generate(prompt: String): String = error("local runtime failure")
+        }
+        val cloud = FakeProvider("openai", true, "cloud answer")
+        assertFailsWith<IllegalStateException> {
+            kotlinx.coroutines.runBlocking {
+                ManaBrain(local, cloud).respond(BrainRequest("hello", allowCloud = false))
+            }
+        }
+        assertEquals(0, cloud.calls)
+    }
+
+    @Test
+    fun localInferenceFailureNeverFallsBackForSensitiveRequest() {
+        val local = object : InferenceProvider {
+            override val id = "litert-local"
+            override fun isAvailable() = true
+            override suspend fun generate(prompt: String): String = error("local runtime failure")
+        }
+        val cloud = FakeProvider("openai", true, "cloud answer")
+        assertFailsWith<IllegalStateException> {
+            kotlinx.coroutines.runBlocking {
+                ManaBrain(local, cloud).respond(
+                    BrainRequest("private", allowCloud = true, sensitive = true)
+                )
+            }
+        }
+        assertEquals(0, cloud.calls)
+    }
+
+    @Test
+    fun blankLocalResponseCanUseCloudOnlyWithExplicitConsent() {
+        val local = object : InferenceProvider {
+            override val id = "litert-local"
+            override fun isAvailable() = true
+            override suspend fun generate(prompt: String): String = "  "
+        }
+        val cloud = FakeProvider("openai", true, "cloud answer")
+        val result = kotlinx.coroutines.runBlocking {
+            ManaBrain(local, cloud).respond(BrainRequest("hello", allowCloud = true))
+        }
+        assertEquals("cloud answer", result.text)
+        assertEquals(1, cloud.calls)
+    }
+
+    @Test
     fun cloudFallbackRequiresOwnerPermissionAndLocalUnavailable() {
         val local = FakeProvider("litert-local", false, "")
         val cloud = FakeProvider("cloud", true, "cloud answer")
