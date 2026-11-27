@@ -1,5 +1,5 @@
 name: MANA Engineering Pipeline
-run-name: MANA Engineering CI ${{ inputs.task_id || github.run_id }}
+run-name: MANA Engineering CI ${{ inputs.client_run_id || github.run_id }}
 
 on:
   push:
@@ -27,7 +27,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: mana-engineering-${{ inputs.task_id || github.ref }}
+  group: mana-engineering-${{ inputs.client_run_id || github.ref }}-${{ github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -140,7 +140,7 @@ jobs:
           TEST_OUTCOME: ${{ steps.tests.outcome }}
           JAR_OUTCOME: ${{ steps.jar.outcome }}
           PATCH_INPUT: ${{ inputs.patch }}
-          CLIENT_RUN_ID: ${{ inputs.task_id }}
+          CLIENT_RUN_ID: ${{ inputs.client_run_id }}
         run: |
           set -euo pipefail
           mkdir -p ci-report
