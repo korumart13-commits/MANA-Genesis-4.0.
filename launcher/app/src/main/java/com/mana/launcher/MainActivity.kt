@@ -187,13 +187,6 @@ class MainActivity : Activity() {
         }
     }
 
-    override fun onDestroy() {
-        reconnectController?.cancel()
-        if (manaEngineBound) runCatching { unbindService(manaEngineConnection) }
-        manaEngineBound = false
-        super.onDestroy()
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = bg
@@ -1609,6 +1602,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        reconnectController?.cancel()
         if (manaEngineBound) {
             runCatching { unbindService(manaEngineConnection) }
             manaEngineBound = false
