@@ -106,6 +106,8 @@ class MainActivity : Activity() {
     @Volatile private var setupRunning = false
     private var setupReport: ManaOneTapSetupCoordinator.Report? = null
     @Volatile private var modelActivationInProgress = false
+    private val modelProgressHandler by lazy { android.os.Handler(mainLooper) }
+    private var modelProgressRunnable: Runnable? = null
     private var modelDownloadReceiverRegistered = false
     private val modelDownloadReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: android.content.Context?, intent: Intent?) {
@@ -310,6 +312,7 @@ class MainActivity : Activity() {
     override fun onPause() {
         activityResumed = false
         reconnectController?.cancel()
+        stopModelProgressUpdates()
         if (modelDownloadReceiverRegistered) {
             runCatching { unregisterReceiver(modelDownloadReceiver) }
             modelDownloadReceiverRegistered = false
@@ -454,6 +457,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         registerModelDownloadReceiver()
+        startModelProgressUpdates()
         activityResumed = true
         val setupPreferences = getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE)
         val incompleteSetup = setupPreferences.getBoolean("setup_started", false) &&
@@ -1265,10 +1269,12 @@ class MainActivity : Activity() {
                     localRuntime.load(target) { result ->
                         runOnUiThread {
                             result.onSuccess { name ->
+                                stopModelProgressUpdates()
                                 modelStatus?.text = "Локальная модель готова: $name"
                                 chatOutput?.text = "MANA подключена к локальному движку LiteRT-LM. Можешь написать сообщение."
                                 showMessage("Локальная модель загружена.")
                             }.onFailure { error ->
+                                stopModelProgressUpdates()
                                 modelStatus?.text = "Ошибка загрузки модели"
                                 chatOutput?.text = error.message ?: "Не удалось загрузить модель."
                                 showMessage("Не удалось запустить модель: ${error.message}")
@@ -1490,11 +1496,35 @@ class MainActivity : Activity() {
                 activateCompletedModelDownload()
                 showMessage("Официальная модель проверена. Подключаю её к локальному движку…")
             } else {
-                showMessage("Загрузка Gemma 4 E2B выполняется или возобновлена через Android Download Manager по Wi-Fi. MANA проверит SHA-256 и подключит модель автоматически после завершения.")
+                showMessage("Загрузка Gemma 4 E2B выполняется или возобновлена через Android Download Manager по Wi-Fi. Прогресс виден на экране MANA; после завершения MANA проверит SHA-256 и подключит модель автоматически.")
+                startModelProgressUpdates()
+                activateCompletedModelDownload()
             }
         } catch (error: Exception) {
             showMessage("Не удалось начать загрузку: " + error.message)
         }
+    }
+
+    private fun startModelProgressUpdates() {
+        if (modelProgressRunnable != null) return
+        val task = object : Runnable {
+            override fun run() {
+                val status = modelCatalog?.downloadProgressText()
+                if (status == null) {
+                    modelProgressRunnable = null
+                    return
+                }
+                modelStatus?.text = status
+                modelProgressHandler.postDelayed(this, 1000L)
+            }
+        }
+        modelProgressRunnable = task
+        modelProgressHandler.post(task)
+    }
+
+    private fun stopModelProgressUpdates() {
+        modelProgressRunnable?.let(modelProgressHandler::removeCallbacks)
+        modelProgressRunnable = null
     }
 
     private fun registerModelDownloadReceiver() {
@@ -1519,7 +1549,10 @@ class MainActivity : Activity() {
             var loadCallbackExpected = false
             try {
                 val file = catalog.verifiedSavedModel() ?: catalog.verifyCompletedDownload()
-                if (file != null) {
+                if (file == null) {
+                    runOnUiThread { startModelProgressUpdates() }
+                } else {
+                    stopModelProgressUpdates()
                     loadCallbackExpected = true
                     localRuntime.load(file) { result ->
                         synchronized(this) { modelActivationInProgress = false }
