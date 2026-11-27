@@ -21,6 +21,9 @@ grep -F 'certificate: "platform"' tools/stage_mana_aosp_prebuilt.sh
 grep -F 'android:permission="com.mana.permission.BIND_BRAIN"' launcher/app/src/main/AndroidManifest.xml
 grep -F 'android:permission="com.mana.permission.BIND_BRAIN"' system/mana/services/ManaBrainService/AndroidManifest.xml
 grep -F 'com.mana.launcher.ManaEngineBridgeService' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+grep -F 'MAX_BACKEND_REBIND_ATTEMPTS = 5' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+grep -F 'BACKEND_REBIND_BASE_MS = 2_000L' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+grep -F 'scheduleBackendRebind()' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'getProtocolVersion()' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
 grep -F 'UNAVAILABLE_ENGINE_BACKEND_DISCONNECTED' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
 grep -F 'brain.think(request' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
