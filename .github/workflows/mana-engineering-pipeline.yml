@@ -1,4 +1,5 @@
 name: MANA Engineering Pipeline
+run-name: MANA Engineering CI ${{ inputs.task_id || github.sha }}
 
 on:
   push:
@@ -13,9 +14,13 @@ on:
       - ".github/workflows/mana-engineering-pipeline.yml"
   workflow_dispatch:
     inputs:
+      task_id:
+        description: "Unique MANA engineering task ID used to correlate this run."
+        required: true
+        type: string
       patch:
-        description: "Optional standard git diff produced by MANA. Max 60 KB; source-only changes."
-        required: false
+        description: "Standard git diff produced by MANA. Max 60 KB; source-only changes."
+        required: true
         type: string
 
 permissions:
