@@ -76,9 +76,9 @@ public final class ManaBrainService extends Service {
                     Log.e(TAG, "MANA Engine backend protocol mismatch.");
                     scheduleBackendRebind();
                 }
-            } catch (RemoteException failure) {
+            } catch (RemoteException | SecurityException failure) {
                 backend = null;
-                Log.e(TAG, "Unable to negotiate MANA Engine backend.", failure);
+                Log.e(TAG, "Unable to negotiate or authorize MANA Engine backend.", failure);
                 scheduleBackendRebind();
             }
         }
@@ -130,7 +130,7 @@ public final class ManaBrainService extends Service {
             if (current == null) return STATE_DISCONNECTED;
             try {
                 return current.getEngineState();
-            } catch (RemoteException failure) {
+            } catch (RemoteException | SecurityException failure) {
                 backend = null;
                 return STATE_DISCONNECTED;
             }
@@ -194,9 +194,11 @@ public final class ManaBrainService extends Service {
                     deliverError(callback, code, message);
                 }
             });
-        } catch (RemoteException disconnected) {
+        } catch (RemoteException | SecurityException disconnected) {
             backend = null;
-            deliverError(callback, "ENGINE_DISCONNECTED", "The local MANA Engine disconnected during the request.");
+            deliverError(callback, disconnected instanceof SecurityException
+                    ? "ENGINE_PERMISSION_DENIED" : "ENGINE_DISCONNECTED",
+                    "The local MANA Engine Binder call failed or was denied.");
         }
     }
 
