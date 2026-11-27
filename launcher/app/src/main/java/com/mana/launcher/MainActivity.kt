@@ -1468,21 +1468,21 @@ class MainActivity : Activity() {
     private fun downloadOfficialModel() {
         val catalog = modelCatalog
         if (catalog == null) { showMessage("Хранилище загрузок Android недоступно."); return }
-        val message = if (catalog.hasAcceptedGemmaTerms()) {
-            "Gemma 4 E2B уже включена в установочный ZIP. Выбери её файл в распакованной папке MANA — приложение скопирует модель в защищённое хранилище, проверит точный размер и SHA-256, а затем подключит её. Если ZIP недоступен, можно скачать модель по Wi-Fi."
+        val message = if (catalog.hasAcknowledgedGemmaLicense()) {
+            "Gemma 4 E2B уже включена в установочный ZIP и распространяется по Apache 2.0. Выбери её файл в распакованной папке MANA — приложение скопирует модель в защищённое хранилище, проверит точный размер и SHA-256, а затем подключит её. Если ZIP недоступен, можно скачать модель по Wi-Fi."
         } else {
-            "Gemma 4 E2B занимает около 2,59 ГБ и уже включена в полный установочный ZIP. Перед импортом ознакомься с Gemma Terms of Use и Prohibited Use Policy. После выбора файла MANA проверит точный размер и SHA-256. Нажатие одной из кнопок ниже означает твоё собственное согласие с условиями Gemma. Если не хочешь импортировать файл из ZIP, MANA может загрузить его автоматически по Wi-Fi."
+            "Gemma 4 E2B занимает около 2,59 ГБ и уже включена в полный установочный ZIP. Перед импортом ознакомься с лицензией Apache 2.0, включённой в ZIP. После выбора файла MANA проверит точный размер и SHA-256. Нажатие одной из кнопок подтверждает, что ты ознакомился с лицензией. Если не хочешь импортировать файл из ZIP, MANA может загрузить его автоматически по Wi-Fi."
         }
         AlertDialog.Builder(this)
-            .setTitle("Gemma 4 E2B · локальный мозг MANA")
+            .setTitle("Gemma 4 E2B · лицензия Apache 2.0")
             .setMessage(message)
             .setNegativeButton("Отмена", null)
             .setNeutralButton("Скачать по Wi-Fi") { _, _ ->
-                catalog.acceptGemmaTerms()
+                catalog.acknowledgeGemmaLicense()
                 startGemmaDownload(catalog)
             }
             .setPositiveButton("Выбрать Gemma из комплекта") { _, _ ->
-                catalog.acceptGemmaTerms()
+                catalog.acknowledgeGemmaLicense()
                 chooseModelFile()
             }
             .show()
@@ -1490,7 +1490,7 @@ class MainActivity : Activity() {
 
     private fun startGemmaDownload(catalog: ManaModelCatalog) {
         try {
-            val id = catalog.enqueueGemma4E2B(licenseAccepted = true)
+            val id = catalog.enqueueGemma4E2B(licenseAcknowledged = true)
             if (id == -1L) {
                 activateCompletedModelDownload()
                 showMessage("Официальная модель проверена. Подключаю её к локальному движку…")
