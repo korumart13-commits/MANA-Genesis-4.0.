@@ -29,6 +29,10 @@ class GitHubActionsRestClientTest {
         val server = startServer { path, exchange ->
             when {
                 path.endsWith("/branches/test-branch") -> respond(exchange, 200, """{"commit":{"sha":"$head"}}""")
+                path.contains("/contents/engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt") -> {
+                    val encoded = java.util.Base64.getEncoder().encodeToString("class Fixture".toByteArray(StandardCharsets.UTF_8))
+                    respond(exchange, 200, """{"encoding":"base64","content":"$encoded"}""")
+                }
                 path.endsWith("/dispatches") -> {
                     val body = exchange.requestBody.readBytes().toString(StandardCharsets.UTF_8)
                     receivedRunId = Regex("\"client_run_id\":\"([^\"]+)\"").find(body)!!.groupValues[1]
@@ -43,6 +47,8 @@ class GitHubActionsRestClientTest {
         try {
             val client = client(server)
             assertEquals(head, client.currentHeadSha("test-branch"))
+            val source = client.fetchRepositoryFile("test-branch", "engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt")
+            assertEquals("class Fixture", source.content)
             val dispatched = client.dispatchPatch("test-branch", patch, head, "run-test-1")
             assertEquals(42L, dispatched.id)
             assertEquals("run-test-1", receivedRunId)
