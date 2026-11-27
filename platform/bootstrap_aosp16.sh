@@ -25,6 +25,7 @@ need df
 
 mkdir -p "$TOP"
 TOP="$(cd "$TOP" && pwd)"
+cd "$TOP"
 FREE_KIB="$(df -Pk "$TOP" | awk 'NR==2 {print $4}')"
 MIN_KIB=$((MIN_FREE_GIB * 1024 * 1024))
 (( FREE_KIB >= MIN_KIB )) || die "Need at least ${MIN_FREE_GIB} GiB free at $TOP; currently $((FREE_KIB / 1024 / 1024)) GiB."
@@ -36,10 +37,9 @@ fi
 mkdir -p "$TOP/.repo/local_manifests"
 TMP_MANIFEST="$TOP/.repo/local_manifests/mana.xml.tmp"
 curl --fail --location --silent --show-error "$MANA_MANIFEST_URL" -o "$TMP_MANIFEST"
-grep -q 'revision="071ec83e' "$TMP_MANIFEST" || die "MANA manifest does not contain the expected tested source pin."
+grep -q 'revision="071ec83e"' "$TMP_MANIFEST" || die "MANA manifest does not contain the expected tested source pin."
 mv "$TMP_MANIFEST" "$TOP/.repo/local_manifests/mana.xml"
 
-cd "$TOP"
 repo sync -c -j"$JOBS" --no-tags
 
 MANIFEST_COMMIT="$(git -C .repo/manifests rev-parse HEAD)"
