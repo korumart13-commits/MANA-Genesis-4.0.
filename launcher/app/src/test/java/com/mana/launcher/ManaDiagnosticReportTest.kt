@@ -8,10 +8,14 @@ class ManaDiagnosticReportTest {
     @Test fun redactsCommonSecretsAndPersonalData() {
         val source = "Authorization: Bearer abc.def.ghi api_key=sk-proj-abcdefghijklmnop " +
             "github_pat_abcdefghijklmnopqrstuvwxyz123456 user@example.com +1 (415) 555-0199 " +
-            "https://example.test/cb?access_token=verysecret"
+            "https://example.test/cb?access_token=verysecret&client_secret=anothersecret " +
+            "token=plain-token-value"
         val result = ManaDiagnosticRedactor.redact(source)
-        listOf("abc.def.ghi", "sk-proj-abcdefghijklmnop", "github_pat_abcdefghijklmnopqrstuvwxyz123456",
-            "user@example.com", "415) 555-0199", "verysecret").forEach {
+        listOf(
+            "abc.def.ghi", "sk-proj-abcdefghijklmnop",
+            "github_pat_abcdefghijklmnopqrstuvwxyz123456", "user@example.com",
+            "415) 555-0199", "verysecret", "anothersecret", "plain-token-value"
+        ).forEach {
             assertFalse("Leaked value: $it", result.contains(it))
         }
     }
