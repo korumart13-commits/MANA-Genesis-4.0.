@@ -216,3 +216,14 @@ The project must preserve the full MANA product requirements in `docs/MASTER_PRO
 - Gradle verification for the Java test-source correction is running separately as `45923286007`. No result is claimed until it completes.
 - Next: build `ManaBrainBinderIntegrationTests` and the platform modules in a provisioned Android 16 AOSP checkout; verify the platform signer and run `atest ManaBrainBinderIntegrationTests` on an emulator/product image. This workspace has not yet demonstrated a full AOSP checkout or a verified RMX5566 lunch target, so the real Soong and Binder execution remain open.
 - Firmware remains the project end goal. Device-specific ROM construction still depends on exact RMX5566RU/RE645F sources, matching OEM kernel/device configuration/vendor blobs, VINTF/AVB and partition metadata, plus a verified matching stock restore path. Do not mark any of those prerequisites complete by inference.
+
+
+## Owner Termux audit v3 reviewed — 2026-11-27
+
+- Reviewed the owner-provided archive `mana_rmx5566_audit_20261127_043744.zip` (read-only collector v3).
+- Confirmed exact build fingerprint `realme/RMX5566RU/RE645F:16/BP2A.250605.015/V.2f025ac-8895bb-9a8318:user/release-keys`, vendor fingerprint match, API 36, vendor API/VNDK 33, security patch 2026-10-01, kernel release `5.15.197-android13-8-o-01074-gdfa4acfa411e`, locked/green AVB state, active slot `_a`, dynamic partitions and file-based encryption.
+- Archive includes readable vendor/ODM/system/system_ext VINTF XML and a vendor_dlkm module filename inventory. This is stronger evidence for interface discovery, not proof of framework VINTF compatibility or kernel-module ABI compatibility.
+- Android access controls prevented reading `/sys/class/block`, partition sizes, SELinux status/policy version, `/proc/config.gz`, kernel headers and device-tree metadata. These remain unknown; no layout is inferred.
+- Updated `device/RMX5566RU_SOURCE_DISCOVERY_2026-11-27.md` with the exact audit findings and limitations.
+- Gradle workflow run `45923286007`, commit `00e04ca7f1f32d0a888178d1c5877c3deb27ae73`, completed successfully. Brain/Core host tests, Android launcher/test-app compilation, unsigned release build and all three artifact uploads succeeded. Artifacts: debug prototype ZIP `15165463406` (49,717,832 bytes), source project ZIP `15165178460` (17,494,005 bytes), unsigned release APK ZIP `15165158304` (45,819,562 bytes). They are not ROM/OTA images.
+- The real AOSP/Soong build, platform-signature verification against an actual product certificate, SELinux policy integration, Binder instrumentation on an emulator/device and RMX5566 boot testing remain unexecuted.
