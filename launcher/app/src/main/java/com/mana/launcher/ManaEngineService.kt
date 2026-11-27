@@ -71,9 +71,32 @@ class ManaEngineService : Service() {
         }
         try {
             ManaEngineProcessOwner.acquire(this, ManaAndroidKeyProvider())
+            startGenesisBootstrapJobs()
         } catch (error: Exception) {
             android.util.Log.e("MANA", "Unable to initialize MANA Engine in service", error)
             stopSelf()
+        }
+    }
+
+    /**
+     * Connects the already-implemented first-boot inventory and discovery workers
+     * to the real Engine startup path. Checkpoint failure must not prevent scheduling.
+     */
+    private fun startGenesisBootstrapJobs() {
+        runCatching {
+            val plan = ManaGenesisFirstBootService(this).refresh()
+            android.util.Log.i(
+                "MANA-Genesis",
+                "First-boot checkpoint saved: ${plan.orderedWork.size} queued, ${plan.blockedWork.size} blocked."
+            )
+        }.onFailure { error ->
+            android.util.Log.w("MANA-Genesis", "First-boot checkpoint could not be saved", error)
+        }
+
+        runCatching {
+            ManaGenesisWorkScheduler.ensureScheduled(this)
+        }.onFailure { error ->
+            android.util.Log.w("MANA-Genesis", "Background inventory/source discovery could not be scheduled", error)
         }
     }
 
