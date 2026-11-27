@@ -214,6 +214,72 @@ class ManaBrainTest {
     }
 
     @Test
+    fun timedOutLocalInferenceFallsBackOnlyWithExplicitConsent() {
+        val local = object : InferenceProvider {
+            override val id = "litert-local"
+            override fun isAvailable() = true
+            override suspend fun generate(prompt: String): String {
+                kotlinx.coroutines.delay(200)
+                return "late local answer"
+            }
+        }
+        val cloud = FakeProvider("openai", true, "timely cloud answer")
+        val result = kotlinx.coroutines.runBlocking {
+            ManaBrain(local, listOf(cloud), localTimeoutMs = 20, cloudTimeoutMs = 200)
+                .respond(BrainRequest("hello", allowCloud = true))
+        }
+        assertEquals("timely cloud answer", result.text)
+        assertEquals(false, result.local)
+        assertEquals(1, cloud.calls)
+    }
+
+    @Test
+    fun timedOutLocalInferenceDoesNotUseCloudWithoutConsent() {
+        val local = object : InferenceProvider {
+            override val id = "litert-local"
+            override fun isAvailable() = true
+            override suspend fun generate(prompt: String): String {
+                kotlinx.coroutines.delay(200)
+                return "late local answer"
+            }
+        }
+        val cloud = FakeProvider("openai", true, "must not be used")
+        assertFailsWith<IllegalStateException> {
+            kotlinx.coroutines.runBlocking {
+                ManaBrain(local, listOf(cloud), localTimeoutMs = 20)
+                    .respond(BrainRequest("hello", allowCloud = false))
+            }
+        }
+        assertEquals(0, cloud.calls)
+    }
+
+    @Test
+    fun cloudInferenceHasItsOwnDeadline() {
+        val local = FakeProvider("litert-local", false, "")
+        val cloud = object : InferenceProvider {
+            override val id = "openai"
+            override fun isAvailable() = true
+            override suspend fun generate(prompt: String): String {
+                kotlinx.coroutines.delay(200)
+                return "late cloud answer"
+            }
+        }
+        assertFailsWith<InferenceTimeoutException> {
+            kotlinx.coroutines.runBlocking {
+                ManaBrain(local, listOf(cloud), localTimeoutMs = 100, cloudTimeoutMs = 20)
+                    .respond(BrainRequest("hello", allowCloud = true))
+            }
+        }
+    }
+
+    @Test
+    fun inferenceTimeoutsMustBePositive() {
+        val local = FakeProvider("litert-local", false, "")
+        assertFailsWith<IllegalArgumentException> { ManaBrain(local, emptyList(), localTimeoutMs = 0) }
+        assertFailsWith<IllegalArgumentException> { ManaBrain(local, emptyList(), cloudTimeoutMs = -1) }
+    }
+
+    @Test
     fun cloudFallbackRequiresOwnerPermissionAndLocalUnavailable() {
         val local = FakeProvider("litert-local", false, "")
         val cloud = FakeProvider("cloud", true, "cloud answer")
