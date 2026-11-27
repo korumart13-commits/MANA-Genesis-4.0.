@@ -83,6 +83,14 @@ class ManaEngineService : Service() {
      * to the real Engine startup path. Checkpoint failure must not prevent scheduling.
      */
     private fun startGenesisBootstrapJobs() {
+        ManaEngineProcessOwner.ensureSavedModelLoaded(this) { result ->
+            result.onSuccess { modelName ->
+                android.util.Log.i("MANA-Model", "Previously verified local model restored: $modelName")
+            }.onFailure { error ->
+                android.util.Log.w("MANA-Model", "Saved local model could not be restored", error)
+            }
+        }
+
         runCatching {
             val plan = ManaGenesisFirstBootService(this).refresh()
             android.util.Log.i(
