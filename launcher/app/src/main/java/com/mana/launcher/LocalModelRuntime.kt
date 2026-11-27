@@ -14,6 +14,7 @@ import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.flow.collect
 import java.io.File
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 
 /** Owns LiteRT-LM Engine and Conversation on one dedicated background thread. */
@@ -31,55 +32,72 @@ class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntim
     override fun modelName(): String? = loadedModel?.let { "${it.name} · ${loadedBackend ?: "unknown"}" }
 
     override fun load(modelFile: File, callback: (Result<String>) -> Unit) {
+        val completed = AtomicBoolean(false)
+        fun complete(result: Result<String>) {
+            if (completed.compareAndSet(false, true)) runCatching { callback(result) }
+        }
         if (closed.get()) {
-            callback(Result.failure(IllegalStateException("MANA local inference runtime is shut down")))
+            complete(Result.failure(IllegalStateException("MANA local inference runtime is shut down")))
             return
         }
-        executor.execute {
-            try {
-                require(modelFile.isFile && modelFile.canRead()) { "Файл модели недоступен для чтения." }
-                require(modelFile.extension.equals("litertlm", ignoreCase = true)) { "Выбери файл с расширением .litertlm." }
-                closeLoaded()
-                cacheDirectory.mkdirs()
-                val (candidate, newConversation, backendName) = createEngineWithFallback(modelFile)
-                engine = candidate
-                conversation = newConversation
-                loadedModel = modelFile
-                loadedBackend = backendName
-                callback(Result.success("${modelFile.name} · ${backendName}"))
-            } catch (error: Exception) {
-                closeLoaded()
-                callback(Result.failure(error))
+        try {
+            executor.execute {
+                try {
+                    require(modelFile.isFile && modelFile.canRead()) { "Файл модели недоступен для чтения." }
+                    require(modelFile.extension.equals("litertlm", ignoreCase = true)) { "Выбери файл с расширением .litertlm." }
+                    closeLoaded()
+                    cacheDirectory.mkdirs()
+                    val (candidate, newConversation, backendName) = createEngineWithFallback(modelFile)
+                    engine = candidate
+                    conversation = newConversation
+                    loadedModel = modelFile
+                    loadedBackend = backendName
+                    complete(Result.success("${modelFile.name} · ${backendName}"))
+                } catch (error: Exception) {
+                    closeLoaded()
+                    complete(Result.failure(error))
+                }
             }
+        } catch (rejected: RejectedExecutionException) {
+            complete(Result.failure(IllegalStateException("MANA local inference runtime is shutting down", rejected)))
         }
     }
 
     override fun generate(prompt: String, onChunk: (String) -> Unit, callback: (Result<Unit>) -> Unit): LocalInferenceCancellation {
         val cancellation = LocalInferenceCancellation()
+        val completed = AtomicBoolean(false)
+        fun complete(result: Result<Unit>) {
+            if (completed.compareAndSet(false, true)) runCatching { callback(result) }
+        }
         if (closed.get()) {
-            callback(Result.failure(IllegalStateException("MANA local inference runtime is shut down")))
+            complete(Result.failure(IllegalStateException("MANA local inference runtime is shut down")))
             cancellation.cancel()
             return cancellation
         }
-        executor.execute {
-            if (cancellation.isCancelled()) return@execute
-            try {
-                val active = conversation ?: error("Сначала загрузи файл модели .litertlm.")
-                require(prompt.isNotBlank()) { "Пустой запрос." }
-                runBlocking {
-                    val generationJob = checkNotNull(coroutineContext[Job])
-                    activeJobs.add(generationJob)
-                    cancellation.attach(generationJob)
-                    try {
-                        active.sendMessageAsync(prompt).collect { message -> onChunk(message.toString()) }
-                    } finally {
-                        activeJobs.remove(generationJob)
+        try {
+            executor.execute {
+                if (cancellation.isCancelled()) return@execute
+                try {
+                    val active = conversation ?: error("Сначала загрузи файл модели .litertlm.")
+                    require(prompt.isNotBlank()) { "Пустой запрос." }
+                    runBlocking {
+                        val generationJob = checkNotNull(coroutineContext[Job])
+                        activeJobs.add(generationJob)
+                        cancellation.attach(generationJob)
+                        try {
+                            active.sendMessageAsync(prompt).collect { message -> onChunk(message.toString()) }
+                        } finally {
+                            activeJobs.remove(generationJob)
+                        }
                     }
+                    complete(Result.success(Unit))
+                } catch (error: Exception) {
+                    complete(Result.failure(error))
                 }
-                callback(Result.success(Unit))
-            } catch (error: Exception) {
-                callback(Result.failure(error))
             }
+        } catch (rejected: RejectedExecutionException) {
+            cancellation.cancel()
+            complete(Result.failure(IllegalStateException("MANA local inference runtime is shutting down", rejected)))
         }
         return cancellation
     }
