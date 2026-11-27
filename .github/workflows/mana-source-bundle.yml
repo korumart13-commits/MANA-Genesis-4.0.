@@ -1,6 +1,5 @@
 name: MANA Genesis 4.0 — source bundle
 # Reproducible source snapshot; this does not claim to be a flashable ROM.
-# Refreshed after the latest owner-facing avatar and storage changes.
 
 on:
   workflow_dispatch:
@@ -13,6 +12,7 @@ on:
       - "system/**"
       - "game/**"
       - "tools/**"
+      - "platform/**"
       - ".github/workflows/mana-source-bundle.yml"
 
 permissions:
@@ -24,6 +24,21 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+      - name: Validate platform bootstrap scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n platform/bootstrap_aosp16.sh
+          bash -n platform/build_mana_platform_modules.sh
+          python3 - <<'PY'
+          import pathlib, xml.etree.ElementTree as ET
+          root = ET.parse("platform/local_manifests/mana.xml").getroot()
+          project = root.find("./project[@path='vendor/mana/genesis']")
+          assert project is not None
+          assert project.attrib["revision"] == "2a1e61013bb485b2214c62c77d76ee7696a95f20"
+          assert pathlib.Path("device/RMX5566RU_FIRMWARE_BRINGUP_GATE_2026-11-27.md").exists()
+          print("AOSP bootstrap shell syntax and pinned MANA manifest validated.")
+          PY
       - name: Install archive tools
         run: sudo apt-get update && sudo apt-get install -y zip
       - name: Create source archive
@@ -32,7 +47,7 @@ jobs:
           set -euo pipefail
           mkdir -p dist
           zip -r dist/MANA_Genesis_4.0_Source.zip \
-            os engine launcher system game tools .github/workflows \
+            os engine launcher system game tools platform device kernel .github/workflows \
             README.md 2>/dev/null \
             -x '*/build/*' '*/.gradle/*' '*/.git/*' '*/local.properties' \
                '*/secrets*' '*/.*keystore' '*/.env*'
