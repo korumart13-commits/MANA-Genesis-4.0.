@@ -1,0 +1,3 @@
+[submodule "upstream/sios"]
+	path = upstream/sios
+	url = https://github.com/superintelligence-os/superintelligence-os.git
