@@ -63,3 +63,30 @@ MANA Genesis 4.0 remains a full Android 16 AOSP-derived ROM project. The reposit
 - Installable ROM/OTA: only after exact device compatibility, signing, recovery and rollback validation.
 
 The project must preserve the full MANA product requirements in `docs/MASTER_PRODUCT_REQUIREMENTS.md`. Missing APIs, credentials, cloud hosting, device sources or permissions must be recorded as blockers, never simulated as completed features.
+
+
+## AOSP app import and platform-signature integration preparation
+
+- Updated `tools/stage_mana_aosp_prebuilt.sh` to stage the unsigned Gradle APK as a Soong
+  `android_app_import` module named `ManaLauncher`, with `presigned: false` and
+  `certificate: "platform"`. It validates package `com.mana.launcher`, the engine bridge
+  service and the signature permission before copying the APK into the AOSP source tree.
+- The imported launcher and `ManaBrainService` are now product-specific, non-privileged
+  applications. Both declare `certificate: "platform"`; they can share the custom
+  signature-level `com.mana.permission.BIND_BRAIN` without granting either package
+  unnecessary privileged-app status.
+- Added `tools/verify_mana_platform_signature.sh`. After a real AOSP build it verifies APK
+  signature validity, package identity and exact SHA-256 certificate equality with the
+  product's platform certificate. Production private signing keys must remain outside Git.
+- CI now checks the import/signing declarations and signature-verifier script. The first
+  CI attempts exposed a stale assertion expecting `privileged: true`; that assertion was
+  corrected. The latest run for commit `c8f22b61280abf1ccaaef02437932437fffcdb32` is queued
+  and has not yet been verified.
+- Source-level Binder route: platform-signed `ManaBrainService` declares the signature
+  permission and binds explicitly to `com.mana.launcher/.ManaEngineBridgeService`;
+  the imported launcher requests that permission, protects its bridge with it, repeats
+  caller checks, and delegates to the single `ManaEngineProcessOwner`.
+- Still not completed: a real Android 16 AOSP/Soong build, final signed-APK certificate
+  comparison, SELinux service context/domain and Binder policy, emulator Binder tests,
+  product-image boot, and RMX5566 device tests. No flashable firmware is produced by this
+  integration-preparation step.
