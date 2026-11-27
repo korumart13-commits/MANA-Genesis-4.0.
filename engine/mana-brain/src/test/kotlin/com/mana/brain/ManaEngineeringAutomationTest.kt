@@ -2,21 +2,27 @@ package com.mana.brain
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
 
 class ManaEngineeringAutomationTest {
+    private val sourcePath = "engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt"
+    private val head = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
     private class FakeProvider : InferenceProvider {
         override val id = "test-local"
         var calls = 0
+        val prompts = mutableListOf<String>()
         override fun isAvailable() = true
         override suspend fun generate(prompt: String): String {
             calls++
+            prompts += prompt
             return """
                 {
                   "summary":"Add a bounded test change (proposal $calls)",
-                  "unifiedDiff":"diff --git a/engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt b/engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt\n--- a/engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt\n+++ b/engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt\n@@ -1 +1,2 @@\n class Fixture\n+// reviewed change",
+                  "unifiedDiff":"diff --git a/engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt b/engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt\\n--- a/engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt\\n+++ b/engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt\\n@@ -1 +1,2 @@\\n class Fixture\\n+// reviewed change",
                   "testPlan":["Run MANA Brain JVM tests"],
                   "riskNotes":["Review before merge"]
                 }
@@ -27,7 +33,8 @@ class ManaEngineeringAutomationTest {
     private class FakeGateway(private val failuresBeforeSuccess: Int) : GitHubActionsGateway {
         var dispatches = 0
         var logReads = 0
-        override suspend fun currentHeadSha(branch: String): String = "a".repeat(40)
+        val clientRunIds = mutableListOf<String>()
+        override suspend fun currentHeadSha(branch: String): String = headSha()
         override suspend fun dispatchPatch(
             branch: String,
             patch: String,
@@ -36,9 +43,9 @@ class ManaEngineeringAutomationTest {
         ): GitHubWorkflowRun {
             assertEquals("chatgpt/mana-asi-rmx5566-one-action-setup", branch)
             assertTrue(patch.contains("diff --git"))
-            assertEquals("a".repeat(40), expectedHeadSha)
-            assertTrue(clientRunId.isNotBlank())
+            assertEquals(headSha(), expectedHeadSha)
             dispatches++
+            clientRunIds += clientRunId
             return GitHubWorkflowRun(
                 dispatches.toLong(), expectedHeadSha, "queued", null,
                 "https://github.com/example/repo/actions/runs/$dispatches"
@@ -52,22 +59,19 @@ class ManaEngineeringAutomationTest {
 
         override suspend fun failedJobLogs(runId: Long, maxChars: Int): String {
             logReads++
-            return "Compilation failed in Fixture.kt: unresolved reference"
+            return "Compilation failed in Fixture.kt: unresolved reference".take(maxChars)
         }
+
+        private fun headSha() = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     }
 
-    private fun task() = EngineeringTask(
+    private fun task(approved: Boolean = true) = EngineeringTask(
         id = "autofix-test",
         objective = "Add a harmless test fixture change",
         targetDevice = "RMX5566RU",
         targetBuild = "Android 16",
-        sourceFiles = listOf(
-            EngineeringSourceFile(
-                "engine/mana-brain/src/main/kotlin/com/mana/brain/Fixture.kt",
-                "class Fixture"
-            )
-        ),
-        ownerApprovedContext = true,
+        sourceFiles = listOf(EngineeringSourceFile(sourcePath, "class Fixture")),
+        ownerApprovedContext = approved,
         allowCloud = true
     )
 
@@ -79,15 +83,17 @@ class ManaEngineeringAutomationTest {
             "chatgpt/mana-asi-rmx5566-one-action-setup", maxRepairAttempts = 2
         )
 
-        val result = automation.run(task(), "a".repeat(40))
+        val result = automation.run(task(), head)
 
         assertTrue(result.succeeded)
         assertEquals(2, result.attempts.size)
         assertEquals(2, gateway.dispatches)
         assertEquals(1, gateway.logReads)
         assertEquals(2, provider.calls)
+        assertTrue(provider.prompts[1].contains("Compilation failed"))
         assertTrue(result.attempts.first().failureLogExcerpt!!.contains("Compilation failed"))
         assertTrue(result.finalRunUrl!!.endsWith("/2"))
+        assertEquals(2, gateway.clientRunIds.distinct().size)
     }
 
     @Test fun neverExceedsConfiguredRetryBudget() = runBlocking {
@@ -98,7 +104,7 @@ class ManaEngineeringAutomationTest {
             "chatgpt/mana-asi-rmx5566-one-action-setup", maxRepairAttempts = 2
         )
 
-        val result = automation.run(task(), "a".repeat(40))
+        val result = automation.run(task(), head)
 
         assertFalse(result.succeeded)
         assertEquals(3, result.attempts.size)
@@ -114,11 +120,27 @@ class ManaEngineeringAutomationTest {
             ManaEngineeringCopilot(provider), gateway,
             "chatgpt/mana-asi-rmx5566-one-action-setup"
         )
-        val unapproved = task().copy(ownerApprovedContext = false)
-
-        kotlin.test.assertFailsWith<IllegalStateException> {
-            automation.run(unapproved, "a".repeat(40))
+        assertFailsWith<IllegalStateException> {
+            automation.run(task(approved = false), head)
         }
         assertEquals(0, gateway.dispatches)
+    }
+
+    @Test fun rejectsStaleBranchBeforeDispatch() = runBlocking {
+        val provider = FakeProvider()
+        val gateway = object : GitHubActionsGateway {
+            override suspend fun currentHeadSha(branch: String) = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            override suspend fun dispatchPatch(branch: String, patch: String, expectedHeadSha: String, clientRunId: String) =
+                error("Stale branch must not dispatch.")
+            override suspend fun awaitCompletion(run: GitHubWorkflowRun, timeoutMs: Long) = run
+            override suspend fun failedJobLogs(runId: Long, maxChars: Int) = ""
+        }
+        assertFailsWith<IllegalStateException> {
+            ManaEngineeringAutomation(
+                ManaEngineeringCopilot(provider), gateway,
+                "chatgpt/mana-asi-rmx5566-one-action-setup"
+            ).run(task(), head)
+        }
+        assertEquals(0, provider.calls)
     }
 }
