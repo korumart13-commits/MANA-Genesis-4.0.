@@ -59,10 +59,10 @@ internal class ManaEngineReconnectController(
     @Synchronized
     private fun persist() {
         val (attempts, lastFailure) = policy.snapshot()
-        preferences.edit().putInt(KEY_ATTEMPTS, attempts).apply().also {
-            if (lastFailure == null) preferences.edit().remove(KEY_LAST_FAILURE).apply()
-            else preferences.edit().putLong(KEY_LAST_FAILURE, lastFailure).apply()
-        }
+        val editor = preferences.edit().putInt(KEY_ATTEMPTS, attempts)
+        if (lastFailure == null) editor.remove(KEY_LAST_FAILURE)
+        else editor.putLong(KEY_LAST_FAILURE, lastFailure)
+        editor.apply()
     }
 
     private companion object {
