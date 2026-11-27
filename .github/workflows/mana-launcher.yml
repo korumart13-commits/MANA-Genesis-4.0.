@@ -322,4 +322,5 @@ jobs:
           retention-days: 14
 
 # Re-run source verification after repairing the unified bundle SDK setup.
+# Diagnostics bridge changes are compiled and covered by :app:testDebugUnitTest.
 # Trigger complete-bundle rebuild after fixing setup-android package parsing.
