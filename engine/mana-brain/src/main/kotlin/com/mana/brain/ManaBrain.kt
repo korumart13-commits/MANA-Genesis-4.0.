@@ -38,8 +38,8 @@ class ManaBrain(
         this(localProvider, listOfNotNull(cloudProvider))
 
     init {
-        require(cloudProviders.map { it.id }.distinct().size == cloudProviders.size) {
-            "Cloud provider identifiers must be unique"
+        require(cloudProviders.map { canonicalProviderId(it.id) }.distinct().size == cloudProviders.size) {
+            "Cloud provider identifiers must be unique after alias normalization"
         }
     }
 
@@ -61,7 +61,9 @@ class ManaBrain(
         val candidates = if (request.preferredCloudProvider == null) {
             cloudProviders
         } else {
-            cloudProviders.filter { it.id == request.preferredCloudProvider }
+            cloudProviders.filter {
+                canonicalProviderId(it.id) == canonicalProviderId(request.preferredCloudProvider)
+            }
         }
         val cloud = candidates.firstOrNull { it.isAvailable() }
             ?: throw InferenceUnavailableException(
@@ -71,9 +73,18 @@ class ManaBrain(
 
         return BrainResponse(
             text = cloud.generate(request.prompt),
-            provider = cloud.id,
+            provider = canonicalProviderId(cloud.id),
             local = false
         )
+    }
+
+    private fun canonicalProviderId(value: String): String {
+        val id = value.trim().lowercase(java.util.Locale.ROOT).removePrefix("cloud-")
+        return when (id) {
+            "gemini" -> "google"
+            "grok" -> "xai"
+            else -> id
+        }
     }
 }
 
