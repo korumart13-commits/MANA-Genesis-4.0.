@@ -28,6 +28,9 @@ grep -F 'com.mana.launcher.ManaEngineBridgeService' system/mana/services/ManaBra
 grep -F 'MAX_BACKEND_REBIND_ATTEMPTS = 5' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'BACKEND_REBIND_BASE_MS = 2_000L' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'BACKEND_CONNECT_TIMEOUT_MS = 15_000L' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+grep -F 'REQUEST_CALLBACK_TIMEOUT_MS = 185_000L' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+grep -F 'ENGINE_TIMEOUT' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+grep -F 'Ignoring duplicate or late MANA Engine result callback.' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'backendConnectTimeout' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'scheduleBackendRebind()' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'RemoteException | SecurityException' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
