@@ -69,8 +69,8 @@ The project must preserve the full MANA product requirements in `docs/MASTER_PRO
 
 - Updated `tools/stage_mana_aosp_prebuilt.sh` to stage the unsigned Gradle APK as a Soong
   `android_app_import` module named `ManaLauncher`, with `presigned: false` and
-  `certificate: "platform"`. It validates package `com.mana.launcher`, the engine bridge
-  service and the signature permission before copying the APK into the AOSP source tree.
+  `certificate: "platform"`. It requires `apksigner` to confirm the input is unsigned, validates package `com.mana.launcher`, the engine bridge
+  service and the signature permission, then copies the APK into the AOSP source tree.
 - The imported launcher and `ManaBrainService` are now product-specific, non-privileged
   applications. Both declare `certificate: "platform"`; they can share the custom
   signature-level `com.mana.permission.BIND_BRAIN` without granting either package
