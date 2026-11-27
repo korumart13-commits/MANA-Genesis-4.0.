@@ -91,6 +91,7 @@ class ManaEngineeringAutomationTest {
         assertEquals(1, gateway.logReads)
         assertEquals(2, provider.calls)
         assertTrue(provider.prompts[1].contains("Compilation failed"))
+        assertTrue(provider.prompts[1].contains("Previous candidate diff"))
         assertTrue(result.attempts.first().failureLogExcerpt!!.contains("Compilation failed"))
         assertTrue(result.finalRunUrl!!.endsWith("/2"))
         assertEquals(2, gateway.clientRunIds.distinct().size)
