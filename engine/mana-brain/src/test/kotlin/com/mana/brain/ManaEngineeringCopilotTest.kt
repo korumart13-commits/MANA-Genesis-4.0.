@@ -114,7 +114,9 @@ class ManaEngineeringCopilotTest {
             "os/core/src/main/kotlin/com/mana/os/core/Example.kt",
             "system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java"
         )
-        val proposal = ManaEngineeringCopilot(FakeProvider(response)).propose(task())
+        val proposal = ManaEngineeringCopilot(FakeProvider(response)).propose(task(
+            path = "system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java"
+        ))
         assertTrue(proposal.changedPaths.all { it.startsWith("system/mana/") })
         assertEquals(EngineeringProposalStatus.REVIEW_REQUIRED, proposal.status)
     }
