@@ -655,8 +655,8 @@ class MainActivity : Activity() {
         })
         card.addView(action("Настроить Yandex AI Studio и VK") { startActivity(Intent(this, ManaIntegrationSettingsActivity::class.java)) })
         card.addView(action("Устройства MANA • часы, наушники, автомобиль") { startActivity(Intent(this, ManaDevicesActivity::class.java)) })
-        card.addView(label("Локальный движок LiteRT-LM включён в APK. При первой установке MANA предложит подтвердить условия Gemma, затем автоматически загрузит модель (около 2,59 ГБ), проверит SHA-256 и подключит её. Загрузка идёт по Wi‑Fi.", 12, accentSoft, true))
-        card.addView(action("Загрузить и подключить локальную модель Gemma 4 E2B (2,59 ГБ)") { downloadOfficialModel() })
+        card.addView(label("Локальный движок LiteRT-LM включён в APK. Полная Gemma 4 E2B включена в установочный ZIP: после подтверждения условий выбери файл в системном окне Android. MANA проверит размер и SHA-256, затем подключит модель. Если файл недоступен, можно скачать Gemma по Wi‑Fi.", 12, accentSoft, true))
+        card.addView(action("Установить локальную модель Gemma 4 E2B") { downloadOfficialModel() })
         card.addView(action("Открыть Smart Receptionist") { showReceptionist() })
         card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Движок готов; Gemma 4 E2B загружается или ожидает подтверждения условий владельцем.", 12, muted, false))
         val p = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(19) }
