@@ -196,3 +196,11 @@ Before staging or compiling anything, the runner now checks the selected lunch t
 `PRODUCT_PACKAGES` includes both `ManaBrainService` and `ManaLauncher`.
 This prevents accidentally running the integration build against a different Android
 release or a product that silently omitted one side of the Binder chain.
+
+
+## Bounded platform Binder request callback — 2026-11-27
+
+- The platform-facing `ManaBrainService` now applies a 185-second terminal callback deadline to each accepted Engine request. The deadline is slightly longer than the 180-second integration-test wait, avoiding a test/client timeout racing the service's own terminal response.
+- Result, error, synchronous Binder failure and deadline all compete through the same atomic `ManaBrainTerminalCallbackGate.tryDeliver()`. The first terminal outcome wins; later backend callbacks are ignored. The timeout is removed when a result/error/failure wins.
+- Timeout returns `ENGINE_TIMEOUT` with a safe diagnostic. It guarantees a terminal response to the caller, but does not forcibly stop backend/native computation because the current AIDL backend contract has no per-request cancellation method. Local inference has its own coroutine/native cancellation deadline separately.
+- The change also corrects the service to use the extracted gate's actual `tryDeliver()` API consistently on every path. The source-contract workflow now checks the callback deadline and timeout error. No live Binder/Soong test has run yet.
