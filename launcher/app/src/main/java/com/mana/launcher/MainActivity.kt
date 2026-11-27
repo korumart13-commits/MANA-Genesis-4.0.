@@ -217,7 +217,7 @@ class MainActivity : Activity() {
             showEngineUnavailableScreen("Настройка MANA уже выполнена. Подключаю центральный Brain…")
         } else {
             // The owner starts the complete app-level bootstrap with one explicit action.
-            showOneTapSetupScreen("Один запуск подготовит все функции MANA, доступные на RMX5566RU.")
+            showOneTapSetupScreen("Одна кнопка установит и настроит функции MANA, доступные на realme C85 4G.")
         }
     }
 
@@ -232,7 +232,7 @@ class MainActivity : Activity() {
         screen.addView(label("GENESIS 4.0", 12, accentSoft, true).apply {
             setPadding(0, dp(6), 0, dp(22))
         })
-        screen.addView(label("REALME RMX5566RU  •  ANDROID 16", 11, muted, true).apply {
+        screen.addView(label("REALME C85 4G  •  RMX5566  •  ANDROID 16", 11, muted, true).apply {
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, dp(18))
         })
@@ -240,7 +240,7 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, dp(24))
         })
-        val launch = action(if (setupRunning) "MANA НАСТРАИВАЕТСЯ…" else if (setupStarted) "ПРОДОЛЖИТЬ ЗАПУСК MANA" else "ЗАПУСТИТЬ MANA") {
+        val launch = action(if (setupRunning) "MANA УСТАНАВЛИВАЕТСЯ…" else if (setupStarted) "ПРОДОЛЖИТЬ УСТАНОВКУ MANA" else "УСТАНОВИТЬ MANA") {
             startManaOneTapSetup()
         }.apply {
             textSize = 15f
@@ -260,7 +260,7 @@ class MainActivity : Activity() {
             .putBoolean("setup_started", true)
             .putBoolean("setup_completed", false)
             .apply()
-        showOneTapSetupScreen("Проверяю RMX5566RU, целостность MANA, локальное хранилище и запускаю доступные компоненты…")
+        showOneTapSetupScreen("Проверяю realme C85 4G / RMX5566, хранилище и компоненты MANA…")
         Thread({
             var report: ManaOneTapSetupCoordinator.Report? = null
             var failure: Throwable? = null
@@ -281,14 +281,14 @@ class MainActivity : Activity() {
                         .putBoolean("setup_started", false)
                         .putBoolean("setup_completed", false)
                         .apply()
-                    showOneTapSetupScreen("Это не подтверждённый RMX5566RU / RE645F с Android 16. Настройка целевого устройства остановлена.")
+                    showOneTapSetupScreen("Не удалось подтвердить realme C85 4G / RMX5566 с Android 16 и ARM64. Настройка целевого устройства остановлена.")
                     showMessage(report?.toReadableText() ?: "Профиль целевого устройства не подтверждён.")
                 } else {
                     getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE).edit()
                         .putBoolean("setup_started", true)
                         .putBoolean("setup_completed", true)
                         .apply()
-                    showEngineUnavailableScreen("Профиль RMX5566RU подтверждён. Настройка завершена; подключаю MANA Brain…")
+                    showEngineUnavailableScreen("Профиль realme C85 4G / RMX5566 подтверждён. Подключаю MANA Brain…")
                     attemptEngineConnection()
                 }
             }
@@ -332,7 +332,7 @@ class MainActivity : Activity() {
         fallback.addView(label(message, 14, textColor, false).apply {
             setPadding(0, 0, 0, dp(18))
         })
-        fallback.addView(action(if (setupRunning) "MANA НАСТРАИВАЕТСЯ…" else "ПОВТОРИТЬ ЗАПУСК MANA") {
+        fallback.addView(action(if (setupRunning) "MANA УСТАНАВЛИВАЕТСЯ…" else "ПОВТОРИТЬ ЗАПУСК MANA") {
             if (!setupRunning) attemptEngineConnection()
         }, LinearLayout.LayoutParams(-1, dp(56)))
         setContentView(fallback)
@@ -635,10 +635,10 @@ class MainActivity : Activity() {
         })
         card.addView(action("Настроить Yandex AI Studio и VK") { startActivity(Intent(this, ManaIntegrationSettingsActivity::class.java)) })
         card.addView(action("Устройства MANA • часы, наушники, автомобиль") { startActivity(Intent(this, ManaDevicesActivity::class.java)) })
-        card.addView(label("Локальный движок LiteRT-LM включён в APK. Для офлайн-ответов отдельно загрузи официальную модель Gemma 4 E2B (2,59 ГБ).", 12, accentSoft, true))
+        card.addView(label("Локальный движок LiteRT-LM включён в APK. При первой установке MANA предложит подтвердить условия Gemma, затем автоматически загрузит модель (около 2,59 ГБ), проверит SHA-256 и подключит её. Загрузка идёт по Wi‑Fi.", 12, accentSoft, true))
         card.addView(action("Загрузить и подключить локальную модель Gemma 4 E2B (2,59 ГБ)") { downloadOfficialModel() })
         card.addView(action("Открыть Smart Receptionist") { showReceptionist() })
-        card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Движок готов; веса модели ещё не установлены. Подключи Gemma 4 E2B через Wi-Fi.", 12, muted, false))
+        card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Движок готов; Gemma 4 E2B загружается или ожидает подтверждения условий владельцем.", 12, muted, false))
         val p = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(19) }
         content.addView(card, p)
 
@@ -782,7 +782,7 @@ class MainActivity : Activity() {
         overlay.addView(action("Каталог Gemma 4 E2B • около 2,58 ГБ") {
             AlertDialog.Builder(this)
                 .setTitle("Локальная модель MANA")
-                .setMessage("Gemma 4 E2B IT — кандидат для проверки на этом телефоне. Загрузка около 2,58 ГБ. Производительность на RMX5566RU ещё не измерена. Открыть официальный репозиторий модели?")
+                .setMessage("Gemma 4 E2B IT — кандидат для проверки на этом телефоне. Загрузка около 2,58 ГБ. Производительность на RMX5566 ещё не измерена. Открыть официальный репозиторий модели?")
                 .setNegativeButton("Не сейчас", null)
                 .setPositiveButton("Открыть источник") { _, _ ->
                     startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm")))
