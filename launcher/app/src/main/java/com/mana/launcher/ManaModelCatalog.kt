@@ -20,6 +20,11 @@ class ManaModelCatalog(context: Context) {
 
     fun hasAcceptedGemmaTerms(): Boolean = prefs.getBoolean(KEY_LICENSE_ACCEPTED, false)
 
+    /** Record the owner's explicit Gemma terms acceptance before bundled import. */
+    fun acceptGemmaTerms() {
+        prefs.edit().putBoolean(KEY_LICENSE_ACCEPTED, true).apply()
+    }
+
     fun enqueueGemma4E2B(licenseAccepted: Boolean): Long {
         require(licenseAccepted) { "Owner must review and accept the Gemma terms before downloading this model." }
         prefs.edit().putBoolean(KEY_LICENSE_ACCEPTED, true).apply()
