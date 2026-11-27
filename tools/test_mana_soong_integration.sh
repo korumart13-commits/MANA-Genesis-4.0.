@@ -7,6 +7,10 @@ grep -F 'mana-brain-interface' tools/run_mana_soong_integration.sh
 grep -F 'ManaBrainService' tools/run_mana_soong_integration.sh
 grep -F 'ManaLauncher' tools/run_mana_soong_integration.sh
 grep -F 'ManaBrainBinderIntegrationTests' tools/run_mana_soong_integration.sh
+grep -F 'verify_mana_platform_signature.sh' tools/run_mana_soong_integration.sh
+grep -F 'ManaLauncher.apk' tools/run_mana_soong_integration.sh
+grep -F 'pm path com.mana.system.brain' tools/run_mana_soong_integration.sh
+grep -F 'pm path com.mana.launcher' tools/run_mana_soong_integration.sh
 grep -F 'atest --host mana-brain-request-policy-tests' tools/run_mana_soong_integration.sh
 grep -F 'atest ManaBrainBinderIntegrationTests' tools/run_mana_soong_integration.sh
 grep -F 'android_app_import' tools/stage_mana_aosp_prebuilt.sh
