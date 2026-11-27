@@ -309,7 +309,7 @@ jobs:
           Примечания / ошибки: __________________
           EOF
           (cd "$PACKAGE" && sha256sum installer/INSTALL_MANA.apk models/Gemma/MODEL_MANIFEST_RU.txt source/MANA-Genesis-4.0-source-project.zip docs/LOCAL_MODEL_SETUP_RU.md docs/MASTER_REQUIREMENTS_RU.md README-FIRST-RU.txt INSTALL_REPORT_TEMPLATE.txt > SHA256SUMS.txt)
-          (cd release/offline && zip -0 -q -r ../MANA-Martynova-FULL-PACKAGE.zip MANA-Genesis-4.0/)
+          (cd release/offline && zip -0 -q -r ../MANA-Genesis-4.0-INSTALLER-PACKAGE.zip MANA-Genesis-4.0/)
           sha256sum release/MANA-Genesis-4.0-INSTALLER-PACKAGE.zip > release/MANA-Genesis-4.0-INSTALLER-PACKAGE.zip.sha256
 
       - name: Upload one-button MANA installer and source bundle
@@ -317,8 +317,8 @@ jobs:
         with:
           name: MANA-Genesis-4.0-One-Button-Installer
           path: |
-            release/MANA-Martynova-FULL-PACKAGE.zip
-            release/MANA-Martynova-FULL-PACKAGE.zip.sha256
+            release/MANA-Genesis-4.0-INSTALLER-PACKAGE.zip
+            release/MANA-Genesis-4.0-INSTALLER-PACKAGE.zip.sha256
           if-no-files-found: error
           compression-level: 0
           retention-days: 14
