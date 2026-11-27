@@ -198,6 +198,19 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Start MANA's own safe completion loop from the single app entry point.
+        // WorkManager persists schedules across process death/reboot; Android controls
+        // execution timing and may defer work under battery/network restrictions.
+        runCatching {
+            ManaGenesisFirstBootService(applicationContext).refresh()
+        }.onFailure { error ->
+            android.util.Log.e("MANA", "Unable to checkpoint Genesis development backlog", error)
+        }
+        runCatching {
+            ManaGenesisWorkScheduler.ensureScheduled(applicationContext)
+        }.onFailure { error ->
+            android.util.Log.e("MANA", "Unable to schedule Genesis background tasks", error)
+        }
         window.statusBarColor = bg
         window.navigationBarColor = bg
         window.decorView.setBackgroundColor(bg)
