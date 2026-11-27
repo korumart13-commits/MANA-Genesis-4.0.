@@ -19,6 +19,7 @@ object ManaEngineProcessOwner {
     @Volatile private var yandex: ManaYandexAiStudioProvider? = null
     private var serviceOwners = 0
     private var modelLoadRequested = false
+    private val modelLoadCallbacks = mutableListOf<(Result<String>) -> Unit>()
 
     fun prepare(
         brainBridge: ManaBrainBridge,
@@ -72,29 +73,67 @@ object ManaEngineProcessOwner {
         callback: ((Result<String>) -> Unit)? = null
     ) {
         val app = context.applicationContext
-        val local = synchronized(lock) {
-            val runtime = inference ?: return
-            if (runtime.isReady() || modelLoadRequested) return
-            modelLoadRequested = true
-            runtime
+        var local: LocalModelRuntime? = null
+        var immediateResult: Result<String>? = null
+
+        synchronized(lock) {
+            val runtime = inference
+            when {
+                runtime == null -> {
+                    immediateResult = Result.failure(
+                        IllegalStateException("MANA Engine ещё не подготовлен для загрузки локальной модели.")
+                    )
+                }
+                runtime.isReady() -> {
+                    immediateResult = Result.success(runtime.modelName() ?: "Локальная модель MANA")
+                }
+                else -> {
+                    callback?.let(modelLoadCallbacks::add)
+                    if (!modelLoadRequested) {
+                        modelLoadRequested = true
+                        local = runtime
+                    }
+                }
+            }
         }
+
+        immediateResult?.let { result ->
+            callback?.invoke(result)
+            return
+        }
+        val target = local ?: return
+
         Thread({
+            fun complete(result: Result<String>) {
+                val pendingCallbacks = synchronized(lock) {
+                    modelLoadRequested = false
+                    modelLoadCallbacks.toList().also { modelLoadCallbacks.clear() }
+                }
+                pendingCallbacks.forEach { pending ->
+                    runCatching { pending(result) }
+                }
+            }
+
             try {
                 val catalog = ManaModelCatalog(app)
                 val model = catalog.verifiedSavedModel()
                     ?: java.io.File(app.filesDir, "mana-models/selected-model.litertlm")
                         .takeIf { it.isFile && it.canRead() }
+
                 if (model == null) {
-                    synchronized(lock) { modelLoadRequested = false }
+                    complete(
+                        Result.failure(
+                            IllegalStateException(
+                                "Локальная модель ещё не установлена. Для первого запуска необходимо подтвердить условия Gemma и загрузить модель."
+                            )
+                        )
+                    )
                     return@Thread
                 }
-                local.load(model) { result ->
-                    synchronized(lock) { modelLoadRequested = false }
-                    callback?.invoke(result)
-                }
+
+                target.load(model, ::complete)
             } catch (error: Exception) {
-                synchronized(lock) { modelLoadRequested = false }
-                callback?.invoke(Result.failure(error))
+                complete(Result.failure(error))
             }
         }, "MANA-Model-Bootstrap").apply {
             isDaemon = true
