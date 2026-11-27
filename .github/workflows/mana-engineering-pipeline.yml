@@ -67,6 +67,7 @@ jobs:
           git -C "$fixture" commit -qm "fixture baseline"
           printf '%s\n' '// patch applied in disposable CI workspace' >> "$fixture/engine/mana-brain/src/main/kotlin/com/mana/brain/PipelineFixture.kt"
           git -C "$fixture" diff --binary > "$MANA_PATCH_FILE"
+          git -C "$fixture" checkout -- .
           MANA_PATCH_FILE="$MANA_PATCH_FILE" gradle --no-daemon -p engine/mana-brain validateEngineeringPatch
           git -C "$fixture" apply --check --whitespace=error-all "$MANA_PATCH_FILE"
           git -C "$fixture" apply --whitespace=error-all "$MANA_PATCH_FILE"
