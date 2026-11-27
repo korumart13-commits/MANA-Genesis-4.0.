@@ -6,7 +6,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ManaSelfDevelopmentEngineTest {
-    private class FakeHost(
+    private open class FakeHost(
         private val validation: SelfDevelopmentValidation = SelfDevelopmentValidation(true, true, true, true, "ok"),
         private val approved: Boolean = true,
         private val signature: Boolean = true,
