@@ -198,6 +198,14 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Run all setup steps available to an ordinary Android app automatically
+        // on first launch. Android-owned grants and privileged operations remain
+        // under the owner's/system's control and are never simulated.
+        runCatching {
+            ManaOneTapSetupCoordinator(applicationContext).run()
+        }.onFailure { error ->
+            android.util.Log.e("MANA", "Automatic first-launch setup did not complete", error)
+        }
         // Start MANA's own safe completion loop from the single app entry point.
         // WorkManager persists schedules across process death/reboot; Android controls
         // execution timing and may defer work under battery/network restrictions.
@@ -454,7 +462,7 @@ class MainActivity : Activity() {
             setPadding(dp(18), dp(18), dp(18), dp(18))
             background = rounded(panelRaised, 22)
         }
-        card.addView(action("Установить и настроить MANA — одно нажатие") {
+        card.addView(action("Повторить безопасную настройку MANA") {
             val report = runCatching { ManaOneTapSetupCoordinator(this).run() }
             if (report.isSuccess) {
                 val result = report.getOrThrow()
