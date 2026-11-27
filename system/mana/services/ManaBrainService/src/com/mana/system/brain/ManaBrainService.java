@@ -227,7 +227,7 @@ public final class ManaBrainService extends Service {
                         Log.w(TAG, "Ignoring duplicate or late MANA Engine result callback.");
                         return;
                     }
-                                        try {
+                    try {
                         com.mana.brain.ManaBrainResponse response = new com.mana.brain.ManaBrainResponse();
                         response.text = text;
                         response.provider = provider;
@@ -241,17 +241,17 @@ public final class ManaBrainService extends Service {
 
                 @Override
                 public void onError(String code, String message) {
-                    if (!terminalCallbackDelivered.tryDeliver()) {
+                    if (!claimTerminal(terminalGate, requestTimeout)) {
                         Log.w(TAG, "Ignoring duplicate or late MANA Engine error callback.");
                         return;
                     }
-                                        deliverError(callback, code, message);
+                    deliverError(callback, code, message);
                 }
             });
         } catch (RemoteException | SecurityException disconnected) {
             backend = null;
-            if (terminalCallbackDelivered.tryDeliver()) {
-                                deliverError(callback, disconnected instanceof SecurityException
+            if (claimTerminal(terminalGate, requestTimeout)) {
+                deliverError(callback, disconnected instanceof SecurityException
                         ? "ENGINE_PERMISSION_DENIED" : "ENGINE_DISCONNECTED",
                         "The local MANA Engine Binder call failed or was denied.");
             }
