@@ -27,6 +27,7 @@ class ManaOneTapSetupCoordinator(context: Context) {
         val deviceName: String,
         val androidVersion: String,
         val apiLevel: Int,
+        val isTargetDevice: Boolean,
         val completed: List<String>,
         val ownerActions: List<String>,
         val unavailable: List<String>,
@@ -35,6 +36,7 @@ class ManaOneTapSetupCoordinator(context: Context) {
         fun toReadableText(): String = buildString {
             appendLine("MANA GENESIS 4.0 — ПЕРВИЧНАЯ НАСТРОЙКА")
             appendLine("$deviceName • Android $androidVersion • API $apiLevel")
+            appendLine("Целевой профиль RMX5566RU: ${if (isTargetDevice) "ПОДТВЕРЖДЁН" else "НЕ ПОДТВЕРЖДЁН"}")
             appendLine()
             appendLine("ВЫПОЛНЕНО АВТОМАТИЧЕСКИ")
             completed.forEach { appendLine("✓ $it") }
@@ -60,20 +62,28 @@ class ManaOneTapSetupCoordinator(context: Context) {
         val unavailable = mutableListOf<String>()
 
         val profile = ManaUniversalDeviceProfiler.inspect(app)
+        val targetMatch = isExactRmx5566Target()
         completed += "Автоматически определены производитель, модель, версия Android, ABI, память, хранилище и аппаратные возможности."
-
-        runCatching {
-            ManaGenesisFirstBootService(app).refresh()
-            completed += "Создан или обновлён зашифрованный снимок состояния MANA Genesis."
-        }.onFailure { error ->
-            unavailable += "Снимок первого запуска: ${error.javaClass.simpleName}: ${error.message ?: "ошибка"}."
+        if (targetMatch) {
+            completed += "Подтверждён целевой аппарат realme RMX5566RU / RE645F на Android 16."
+        } else {
+            unavailable += "Этот релиз предназначен только для realme RMX5566RU / RE645F на Android 16 (Snapdragon 685 / SM6225). Настройка целевых функций остановлена."
         }
 
-        runCatching {
-            ManaGenesisWorkScheduler.ensureScheduled(app)
-            completed += "Фоновые задачи MANA зарегистрированы через WorkManager; фактическое время запуска регулирует Android."
-        }.onFailure { error ->
-            unavailable += "Планировщик фоновых задач: ${error.javaClass.simpleName}: ${error.message ?: "ошибка"}."
+        if (targetMatch) {
+            runCatching {
+                ManaGenesisFirstBootService(app).refresh()
+                completed += "Создан или обновлён зашифрованный снимок состояния MANA Genesis."
+            }.onFailure { error ->
+                unavailable += "Снимок первого запуска: ${error.javaClass.simpleName}: ${error.message ?: "ошибка"}."
+            }
+
+            runCatching {
+                ManaGenesisWorkScheduler.ensureScheduled(app)
+                completed += "Фоновые задачи MANA зарегистрированы через WorkManager; фактическое время запуска регулирует Android."
+            }.onFailure { error ->
+                unavailable += "Планировщик фоновых задач: ${error.javaClass.simpleName}: ${error.message ?: "ошибка"}."
+            }
         }
 
         if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(app)) {
@@ -109,6 +119,8 @@ class ManaOneTapSetupCoordinator(context: Context) {
             .put("product", Build.PRODUCT)
             .put("androidRelease", Build.VERSION.RELEASE)
             .put("apiLevel", Build.VERSION.SDK_INT)
+            .put("targetDevice", "realme RMX5566RU / RE645F")
+            .put("targetDeviceMatch", targetMatch)
             .put("profile", JSONObject(profile.toJson()))
             .put("completed", JSONArray(completed))
             .put("ownerActions", JSONArray(ownerActions))
@@ -125,11 +137,23 @@ class ManaOneTapSetupCoordinator(context: Context) {
             deviceName = listOf(Build.MANUFACTURER, Build.MODEL).filter { it.isNotBlank() }.joinToString(" ").ifBlank { "Android device" },
             androidVersion = Build.VERSION.RELEASE ?: "unknown",
             apiLevel = Build.VERSION.SDK_INT,
+            isTargetDevice = targetMatch,
             completed = completed,
             ownerActions = ownerActions,
             unavailable = unavailable,
             reportPath = reportFile.absolutePath
         )
+    }
+
+    private fun isExactRmx5566Target(): Boolean {
+        val manufacturerMatches = Build.MANUFACTURER.equals("realme", ignoreCase = true)
+        val modelMatches = Build.MODEL.contains("RMX5566", ignoreCase = true)
+        val deviceMatches = Build.DEVICE.equals("RE645F", ignoreCase = true)
+        val productMatches = Build.PRODUCT.equals("RE645F", ignoreCase = true)
+        val androidMatches = Build.VERSION.SDK_INT == 36
+        val fingerprintMatches = Build.FINGERPRINT.startsWith("realme/RMX5566RU/RE645F:16/")
+        return manufacturerMatches && modelMatches && deviceMatches &&
+            productMatches && androidMatches && fingerprintMatches
     }
 
     private fun publishReport(contents: String) {
