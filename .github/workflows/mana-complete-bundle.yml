@@ -73,7 +73,7 @@ MANA GENESIS 4.0 — ЕДИНЫЙ КОМПЛЕКТ
   доступную память телефона перед распаковкой.
 - Установка APK не разблокирует bootloader и не даёт root/system privileges.
 EOF
-          cp "$ROOT/README_FIRST_RU.txt" "$ROOT/04_Documentation/README_FIRST_RU.txt"
+          install -m 0644 "$ROOT/README_FIRST_RU.txt" "$ROOT/04_Documentation/README_FIRST_RU.txt"
           git rev-parse HEAD > "$ROOT/04_Documentation/SOURCE_COMMIT.txt"
           printf 'Source repository: %s\nBuild run: %s\n' "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > "$ROOT/04_Documentation/BUILD_ORIGIN.txt"
           test -s "$ROOT/README_FIRST_RU.txt"
