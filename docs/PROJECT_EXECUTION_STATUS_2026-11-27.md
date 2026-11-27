@@ -82,6 +82,8 @@ The project must preserve the full MANA product requirements in `docs/MASTER_PRO
   CI attempts exposed a stale assertion expecting `privileged: true`; that assertion was
   corrected. The latest run for commit `c8f22b61280abf1ccaaef02437932437fffcdb32` is queued
   and has not yet been verified.
+
+- Product packaging now includes one central `ManaLauncher` app plus the separate `ManaBrainService`; the legacy Java-only `ManaAssistant` stub is excluded from `PRODUCT_PACKAGES` to avoid a second assistant entry point. `ManaSettings` and `ManaControlCenter` remain separate OS configuration surfaces.
 - Source-level Binder route: platform-signed `ManaBrainService` declares the signature
   permission and binds explicitly to `com.mana.launcher/.ManaEngineBridgeService`;
   the imported launcher requests that permission, protects its bridge with it, repeats
