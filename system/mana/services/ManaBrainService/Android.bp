@@ -13,7 +13,9 @@ java_test_host {
     name: "mana-brain-request-policy-tests",
     srcs: [
         "src/com/mana/system/brain/ManaBrainRequestPolicy.java",
+        "src/com/mana/system/brain/ManaBrainTerminalCallbackGate.java",
         "tests/src/com/mana/system/brain/ManaBrainRequestPolicyTest.java",
+        "tests/src/com/mana/system/brain/ManaBrainTerminalCallbackGateTest.java",
     ],
     libs: ["junit"],
     test_suites: ["general-tests"],
