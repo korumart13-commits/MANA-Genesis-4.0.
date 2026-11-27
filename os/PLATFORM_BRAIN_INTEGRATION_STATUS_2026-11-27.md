@@ -99,3 +99,7 @@ The Lifecycle 2.11.1 trial was rejected by CI before Kotlin compilation: its tra
 Added a read-only in-app status screen, reachable from the MANA home screen, showing observed Engine state, system supervisor phase, last startup failure, local-model readiness, encrypted memory/Microworld availability, persistence file metadata, recovery-copy inventory, Android API/device identity and Keystore-provider availability. The screen can copy a plain-text diagnostic report for troubleshooting. It does not expose memory contents, secrets, key material, or personal data, and it does not modify stores or permissions.
 
 The home Activity now has a minimal fallback screen when the Engine cannot initialize or bind, so the owner can still open diagnostics and retry the connection rather than being left with a blank screen. This reports app-level runtime state only; it is not proof that the MANA AOSP platform service or a complete MANA OS firmware is installed.
+
+## Source snapshot pin refresh — 2026-11-27
+
+The AOSP local manifest now pins MANA source snapshot `4f514a53be14ab4d5ebc5cc411322138ca7f4d35`, which includes the service resilience work, Android lifecycle safeguards, and firmware research documentation. The manifest update itself is a later commit; keeping the referenced snapshot immutable avoids a self-referential moving branch. CI run 45914434084 is queued to revalidate the updated pin and app source.
