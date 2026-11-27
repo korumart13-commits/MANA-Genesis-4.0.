@@ -49,12 +49,13 @@ class ManaGitHubActionsConnector(context: Context) {
         provider: InferenceProvider,
         task: EngineeringTask,
         branch: String = DEFAULT_BRANCH,
-        maxRepairAttempts: Int = 2
+        maxRepairAttempts: Int = 2,
+        expectedHeadSha: String? = null
     ): EngineeringAutomationResult = withContext(Dispatchers.IO) {
         require(isConfigured()) { "GitHub Actions не подключён: сначала сохрани токен." }
         require(provider.isAvailable()) { "Инженерный облачный провайдер MANA не настроен или выключен." }
         val gateway = createClient()
-        val headSha = gateway.currentHeadSha(branch)
+        val headSha = expectedHeadSha ?: gateway.currentHeadSha(branch)
         val automation = ManaEngineeringAutomation(
             copilot = ManaEngineeringCopilot(provider),
             github = gateway,
