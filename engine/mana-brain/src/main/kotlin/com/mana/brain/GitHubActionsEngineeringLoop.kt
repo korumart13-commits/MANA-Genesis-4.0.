@@ -235,8 +235,11 @@ class GitHubActionsRestClient(
     private fun redactSecrets(value: String): String {
         var safe = value
         safe = Regex("(?i)(authorization: bearer\\s+)[^\\s]+").replace(safe) { it.groupValues[1] + "[REDACTED]" }
-        safe = Regex("(?i)(token|password|api[_-]?key)(\\s*[:=]\\s*)[^\\s,]+").replace(safe) { it.groupValues[1] + it.groupValues[2] + "[REDACTED]" }
-        return Regex("gh[pousr]_[A-Za-z0-9_]{20,}").replace(safe, "[REDACTED]")
+        safe = Regex("(?i)(token|password|api[_-]?key|client[_-]?secret)(\\s*[:=]\\s*)[^\\s,]+").replace(safe) { it.groupValues[1] + it.groupValues[2] + "[REDACTED]" }
+        safe = Regex("gh[pousr]_[A-Za-z0-9_]{20,}").replace(safe, "[REDACTED]")
+        safe = Regex("sk-[A-Za-z0-9_-]{16,}").replace(safe, "[REDACTED]")
+        safe = Regex("-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----[\\s\\S]*?-----END (RSA |EC |OPENSSH )?PRIVATE KEY-----").replace(safe, "[PRIVATE KEY REDACTED]")
+        return safe
     }
 
     private fun com.google.gson.JsonObject.toRun() = GitHubWorkflowRun(
