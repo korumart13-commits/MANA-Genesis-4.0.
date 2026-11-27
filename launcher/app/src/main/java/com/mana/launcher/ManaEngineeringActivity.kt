@@ -77,7 +77,6 @@ class ManaEngineeringActivity : ComponentActivity() {
         root.addView(sourceSummary)
         root.addView(button("Подключить GitHub Actions") { configureGitHub() })
         root.addView(button("Запустить CI и автоисправление (до 2 повторов)") { confirmAndRunEngineeringLoop() })
-        root.addView(sourceSummary)
         root.addView(button("Попросить GPT подготовить патч") { confirmAndGenerate() })
         root.addView(button("Обновить статус облачного провайдера") {
             status.text = "Провайдер: ${provider.selectedProvider()} • ${if (provider.isAvailable()) "готов" else "не настроен"}"
