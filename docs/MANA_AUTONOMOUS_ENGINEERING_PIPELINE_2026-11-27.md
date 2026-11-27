@@ -43,7 +43,7 @@ The workflow job uses read-only repository contents permission, disables persist
 ## Running a proposed patch
 
 1. In MANA Engineering Lab, connect a fine-grained GitHub token scoped to this repository.
-2. Select local files to identify the desired source set, map each one to its exact repository-relative path, then use **Загрузить точные исходники из GitHub**. MANA replaces local contents with the branch's current source and records the exact base SHA.
+2. Enter one or more repository-relative source paths (one per line) and use **Загрузить точные исходники из GitHub**. Selecting local files and mapping their paths is optional. MANA fetches the exact branch contents and records the base SHA.
 3. Describe the engineering task and confirm the model request.
 4. Confirm **Запустить CI и автоисправление**. MANA can make at most two repair retries. It does not commit, merge, install or flash the candidate.
 5. Review each run URL, result, summary and failure excerpt. A successful CI candidate still requires separate review and release authorization.
