@@ -2,9 +2,12 @@ package com.mana.brain
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import java.io.ByteArrayInputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.nio.charset.StandardCharsets
 import java.time.Instant
+import java.util.zip.ZipInputStream
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
@@ -78,7 +81,7 @@ class GitHubActionsRestClient(
         val dispatchedAt = Instant.now()
         val payload = JsonObject().apply {
             addProperty("ref", branch)
-            add("inputs", JsonObject().apply { addProperty("patch", patch); addProperty("client_run_id", clientRunId) })
+            add("inputs", JsonObject().apply { addProperty("patch", patch); addProperty("task_id", clientRunId) })
         }
         request("POST", "actions/workflows/$workflowFile/dispatches", payload.toString(), expected = setOf(204))
         val deadline = System.currentTimeMillis() + dispatchTimeoutMs
@@ -91,7 +94,7 @@ class GitHubActionsRestClient(
                 val item = element.asJsonObject
                 item.get("head_sha")?.asString == expectedHeadSha &&
                     item.get("event")?.asString == "workflow_dispatch" &&
-                    runCreatedAt(item) >= dispatchedAt.minusSeconds(5)
+                    item.get("run_name")?.asString == "MANA Engineering CI $clientRunId" &&\n                    runCreatedAt(item) >= dispatchedAt.minusSeconds(5)
             }?.asJsonObject
             if (match != null) return@withContext match.toRun()
             delay(pollIntervalMs)
