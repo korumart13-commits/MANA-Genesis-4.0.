@@ -70,6 +70,7 @@ class GitHubActionsRestClientTest {
                     respond(exchange, 204, "")
                 }
                 path.endsWith("/runs") -> respond(exchange, 200, runList(receivedRunId, "completed", "failure"))
+                path.endsWith("/actions/runs/42") -> respond(exchange, 200, runObject("completed", "failure"))
                 path.endsWith("/actions/runs/42/jobs") -> respond(exchange, 200, """{"jobs":[{"id":7,"name":"gradle-test","conclusion":"failure"}]}""")
                 path.endsWith("/actions/jobs/7/logs") -> {
                     exchange.responseHeaders.add("Location", "http://127.0.0.1:${exchange.localAddress.port}/blob/log.zip")
