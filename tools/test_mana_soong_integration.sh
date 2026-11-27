@@ -29,6 +29,9 @@ grep -F 'MAX_BACKEND_REBIND_ATTEMPTS = 5' system/mana/services/ManaBrainService/
 grep -F 'BACKEND_REBIND_BASE_MS = 2_000L' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'BACKEND_CONNECT_TIMEOUT_MS = 15_000L' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'REQUEST_CALLBACK_TIMEOUT_MS = 185_000L' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+grep -F 'end-to-end service deadline' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+grep -F 'pendingRequestTimeouts' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+grep -F 'boolean isDelivered()' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainTerminalCallbackGate.java
 grep -F 'ENGINE_TIMEOUT' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'Ignoring duplicate or late MANA Engine result callback.' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'backendConnectTimeout' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
