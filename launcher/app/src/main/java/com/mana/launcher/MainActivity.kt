@@ -209,16 +209,6 @@ class MainActivity : Activity() {
         showEngineUnavailableScreen("Подключение к MANA Engine…")
     }
 
-    override fun onResume() {
-        super.onResume()
-        activityResumed = true
-        if (manaEngineBound && manaEngineBinder?.isInitialized() == true) {
-            reconnectController?.onConnected()
-        } else if (!manaEngineBound && manaEngineBinder == null) {
-            attemptEngineConnection()
-        }
-    }
-
     override fun onPause() {
         activityResumed = false
         reconnectController?.cancel()
@@ -352,6 +342,12 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        activityResumed = true
+        if (manaEngineBound && manaEngineBinder?.isInitialized() == true) {
+            reconnectController?.onConnected()
+        } else if (!manaEngineBound && manaEngineBinder == null) {
+            attemptEngineConnection()
+        }
         loadApps()
         if (::content.isInitialized && !showingDrawer) showHome()
         val avatarEnabled = getSharedPreferences("mana.settings", MODE_PRIVATE)
