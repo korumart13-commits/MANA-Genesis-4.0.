@@ -96,3 +96,23 @@ https://android.googlesource.com/platform/build/soong/+/refs/heads/master/java/a
 These CI results validate Android Gradle compilation/tests and source contracts only. They do
 not execute a full AOSP Soong build, sign APKs with a product platform key, boot an emulator,
 or run the Binder instrumentation test on a device.
+
+
+## Follow-up hardening — 2026-11-27
+
+- The canonical runner `tools/run_mana_soong_integration.sh` now refuses to continue if the
+  Soong output APK cannot be located, verifies the imported `ManaLauncher.apk` against the
+  product platform certificate using `verify_mana_platform_signature.sh`, and checks that
+  both `com.mana.system.brain` and `com.mana.launcher` are installed before invoking the
+  device-side `atest` test.
+- Duplicate, noncanonical Soong runner `tools/build_mana_soong.sh` was removed so there is
+  one documented execution path.
+- Source-contract run `45916693175` passed. A separate Gradle verification run
+  `45916635713` exposed one stale CI assertion that looked for the old
+  `ENGINE_UNAVAILABLE` text in documentation rather than the runtime service code. The
+  assertion now checks `ManaBrainService.java` (commit `d77f195e`).
+- Gradle verification run `45916745681` is the post-fix run and was still in progress at
+  the time of this update. Do not count it as passed until GitHub reports success.
+- None of these source-contract or Gradle runs executes Soong or the instrumentation test.
+  The actual AOSP build, signer comparison and live Binder test remain pending on a provisioned
+  AOSP build host and booted MANA product image.
