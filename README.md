@@ -17,6 +17,8 @@ Multi-model dialogue federation (OpenAI, Anthropic, Google, xAI and local infere
 
 ## Project status
 
+The full implementation status, CI evidence, ROM blockers and next engineering stages are tracked in [docs/PROJECT_EXECUTION_STATUS_2026-11-27.md](docs/PROJECT_EXECUTION_STATUS_2026-11-27.md).
+
 This repository contains the MANA product requirements, Android application/runtime source, MANA Brain JVM foundation, platform Binder service contracts, AOSP packaging scripts, device profile and flashing/recovery research. CI builds the source archive and verifies the Android application source; the latest release APK build is still under investigation. The repository does **not** contain a complete AOSP source checkout or a validated bootable RMX5566RU ROM/kernel build.
 
 The device profile is in [device/RMX5566RU_TARGET_PROFILE.md](device/RMX5566RU_TARGET_PROFILE.md). The OS architecture and stages are in [os/README.md](os/README.md) and [os/BUILD_SEQUENCE.md](os/BUILD_SEQUENCE.md). Kernel source findings are in [kernel/DEVICE_KERNEL_SOURCE_AUDIT.md](kernel/DEVICE_KERNEL_SOURCE_AUDIT.md).
