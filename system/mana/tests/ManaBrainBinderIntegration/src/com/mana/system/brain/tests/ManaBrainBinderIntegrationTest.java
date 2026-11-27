@@ -8,7 +8,6 @@ import android.os.IBinder;
 import android.test.InstrumentationTestCase;
 
 import com.mana.brain.IManaBrain;
-import com.mana.system.brain.ManaBrainService;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -51,7 +50,7 @@ public final class ManaBrainBinderIntegrationTest extends InstrumentationTestCas
             }
         };
 
-        Intent intent = new Intent(ManaBrainService.ACTION_BIND).setComponent(
+        Intent intent = new Intent("com.mana.action.BIND_BRAIN").setComponent(
                 new ComponentName(
                         "com.mana.system.brain",
                         "com.mana.system.brain.ManaBrainService"));
