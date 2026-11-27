@@ -226,6 +226,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release/offline
+          git archive --format=zip --output=release/offline/MANA-Genesis-4.0-source-project.zip HEAD
           MODEL="release/offline/gemma-4-E2B-it.litertlm"
           URL="https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm"
           curl --fail --location --retry 5 --retry-all-errors --connect-timeout 30 --max-time 3600 "$URL" --output "$MODEL"
@@ -234,11 +235,13 @@ jobs:
           test "$(stat -c '%s' "$MODEL")" -lt 3000000000
           cp launcher/app/build/outputs/apk/debug/app-debug.apk release/offline/MANA-Genesis-4.0-debug.apk
           cat > release/offline/README-FIRST-RU.txt <<'EOF'
-          MANA Genesis 4.0 — offline first-run bundle
+          MANA Genesis 4.0 — single-file complete project bundle
           
-          Содержимое:
+          Содержимое единого архива:
           - MANA-Genesis-4.0-debug.apk — устанавливаемый debug APK.
           - gemma-4-E2B-it.litertlm — официальные веса Gemma 4 E2B для LiteRT-LM.
+          - MANA-Genesis-4.0-source-project.zip — полный отслеживаемый исходный проект, модули,
+            системные интерфейсы, задачи, документация и GitHub Actions на момент сборки.
           
           Установка:
           1. Распакуйте этот архив в память телефона.
@@ -258,8 +261,8 @@ jobs:
           
           Это APK + модель + исходный проект, не прошивка и не OTA-образ RMX5566RU.
           EOF
-          sha256sum release/offline/MANA-Genesis-4.0-debug.apk release/offline/gemma-4-E2B-it.litertlm > release/offline/SHA256SUMS.txt
-          (cd release/offline && zip -0 -q ../MANA-Genesis-4.0-OFFLINE-COMPLETE.zip MANA-Genesis-4.0-debug.apk gemma-4-E2B-it.litertlm README-FIRST-RU.txt SHA256SUMS.txt)
+          sha256sum release/offline/MANA-Genesis-4.0-debug.apk release/offline/gemma-4-E2B-it.litertlm release/offline/MANA-Genesis-4.0-source-project.zip > release/offline/SHA256SUMS.txt
+          (cd release/offline && zip -0 -q ../MANA-Genesis-4.0-OFFLINE-COMPLETE.zip MANA-Genesis-4.0-debug.apk gemma-4-E2B-it.litertlm MANA-Genesis-4.0-source-project.zip README-FIRST-RU.txt SHA256SUMS.txt)
           sha256sum release/MANA-Genesis-4.0-OFFLINE-COMPLETE.zip > release/MANA-Genesis-4.0-OFFLINE-COMPLETE.zip.sha256
       - name: Upload complete offline MANA bundle (APK + 2.59 GB model)
         uses: actions/upload-artifact@v4
