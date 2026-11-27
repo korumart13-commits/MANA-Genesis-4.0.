@@ -53,7 +53,7 @@ does not create a device target, supply proprietary blobs, or make the product f
 After the Gradle release APK is built, stage it into the AOSP checkout:
 
 ```sh
-tools/stage_mana_aosp_prebuilt.sh "$ANDROID_BUILD_TOP" /path/to/app-release-unsigned.apk
+vendor/mana/genesis/tools/stage_mana_aosp_prebuilt.sh "$ANDROID_BUILD_TOP" /path/to/app-release-unsigned.apk
 ```
 
 The staging script validates package identity and the engine Binder declarations, then
@@ -67,7 +67,7 @@ After the product build, verify the final launcher APK against the platform cert
 actually used by that product:
 
 ```sh
-tools/verify_mana_platform_signature.sh "$ANDROID_BUILD_TOP" /path/to/ManaLauncher.apk
+vendor/mana/genesis/tools/verify_mana_platform_signature.sh "$ANDROID_BUILD_TOP" /path/to/ManaLauncher.apk
 ```
 
 The verifier defaults to the AOSP development certificate at
@@ -75,3 +75,9 @@ The verifier defaults to the AOSP development certificate at
 product certificate. A production private key must remain in a protected signing system and
 must never be added to this repository. A successful source CI run is not a substitute for
 this post-build certificate check or a Soong build.
+
+
+The verified product fragment installs one central MANA app (`ManaLauncher`) and the separate
+platform Binder host (`ManaBrainService`). The legacy Java-only `ManaAssistant` stub is not
+included in the product package list, avoiding a second, duplicate MANA assistant entry point.
+Settings and Control Center remain separate OS configuration surfaces, not separate AI agents.
