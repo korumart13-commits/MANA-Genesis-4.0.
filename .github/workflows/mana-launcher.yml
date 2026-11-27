@@ -226,6 +226,9 @@ jobs:
           test -n "$APKANALYZER"
           DEBUG_APK="app/build/outputs/apk/debug/app-debug.apk"
           test -f "$DEBUG_APK"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs "$DEBUG_APK"
           for CANDIDATE in "$APK" "$DEBUG_APK"; do
             test "$("$APKANALYZER" manifest application-id "$CANDIDATE")" = "com.mana.launcher"
             MANIFEST="$("$APKANALYZER" manifest print "$CANDIDATE")"
