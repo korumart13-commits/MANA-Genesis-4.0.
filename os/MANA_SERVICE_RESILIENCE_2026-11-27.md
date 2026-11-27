@@ -34,3 +34,9 @@ The launcher now uses a lifecycle-scoped reconnect controller:
 - A manual retry remains available through the existing degraded-state screen.
 
 This is app-process lifecycle recovery, not an always-on daemon. Delayed retries only execute while the process/looper remains alive; force-stop, process death, Doze and Android foreground-service restrictions remain authoritative. No boot receiver or automatic background foreground-service launch has been added. Device/emulator runtime testing is still required.
+
+## Foreground lifecycle hardening
+
+Reconnect attempts are now initiated only while MainActivity is resumed. Pending retries are cancelled on pause, and a resumed Activity makes a fresh bind attempt if no Binder is connected. This avoids trying to start the foreground Engine service from a background Activity callback on Android versions that restrict such starts.
+
+ServiceConnection handles disconnection, binding death and a null Binder response through the same bounded retry policy. Retry state is written with one SharedPreferences editor transaction. The current CI run must still verify Kotlin compilation, app unit tests and release packaging.
