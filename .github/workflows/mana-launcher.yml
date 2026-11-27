@@ -31,7 +31,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: mana-validation-${{ github.ref }}
+  group: mana-launcher-${{ github.ref }}
   cancel-in-progress: true
 
 
