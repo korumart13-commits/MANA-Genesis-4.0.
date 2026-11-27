@@ -79,3 +79,35 @@ Release labels must distinguish: documentation/specification, source snapshot, C
 ## 11. Acceptance principle
 
 Preserve the complete MANA concept and all modules above when extending the project. If a feature is blocked by missing hardware sources, APIs, credentials, hosting, or permissions, document the blocker and provide a safe testable substitute without pretending the feature is complete.
+
+
+## 12. Current release override — MANA OS Design/Update first (2026-11-27)
+
+This section overrides earlier plans only for the immediate release. The long-term MANA Brain and complete ROM vision remains preserved.
+
+### Immediate deliverable
+- One installable MANA OS Design/Update APK, plus source/project archive and clear build/test report.
+- Current release excludes a separate AI app, Gemma or any LLM/model download, and kernel/device drivers or vendor firmware.
+- Preserve a forward-compatible MANA System Bridge API v1 so a future `com.mana.genesis` / MANA Brain can become the central system agent without rebuilding the project from zero.
+- UI modules: MANA HOME, app-level MANA Shade, Lock Screen Preview, MANA Settings, system information cards, Device Audit and Firmware Readiness report.
+- Visual design combines iOS 13 clarity, Samsung One UI one-handed ergonomics, and familiar Android interaction patterns using the dark-blue MANA identity.
+
+### First-run permissions and completion
+- Explain and request only required Android permissions one at a time, using Android's actual permission dialogs.
+- Verify the result after each prompt; support denial and explain which feature remains unavailable.
+- After setup, show a completion screen with a user-controlled reboot suggestion. Never silently reboot or bypass Android permission/security controls.
+
+### Device self-audit and firmware continuation
+- The installed APK may inspect only device properties and capabilities available through documented Android APIs. Mark each field DETECTED, NOT_ACCESSIBLE, UNKNOWN or MISMATCH.
+- Generate a device audit and a firmware-readiness/missing-components report for RMX5566RU/RE645F.
+- The same source project must be extensible: later add verified device tree, kernel/vendor, VINTF, AVB, partition/recovery metadata, and an AOSP/Soong build pipeline as those sources become available.
+- The project may propose tasks and patches with tests and review. It must not fabricate OEM blobs/drivers, silently modify protected partitions, unlock/root the phone, bypass AVB, or flash itself.
+- A full ROM build requires a proper Linux/CI build environment and exact OEM/device sources; an ordinary APK cannot transform itself into a bootable firmware on the phone.
+
+### Explicitly deferred from the immediate APK
+- MANA AI app/UI, Gemma/LLM model bundle and provider runtime.
+- Drivers, kernel replacement, vendor blobs and firmware partition changes.
+- Actual replacement of protected System UI, notification shade or secure lock screen; app-level visual interfaces/previews are allowed until a real signed AOSP integration exists.
+- Built-in dialer/phone-number dialing/call UI remains prohibited in the MANA APK.
+
+Detailed implementation requirements and acceptance tests are in [MANA OS Revised Scope and Self-Audit](MANA_OS_REVISED_SCOPE_AND_SELF_AUDIT_RU.md). This immediate-release override does not delete deferred MANA modules from the long-term product roadmap.
