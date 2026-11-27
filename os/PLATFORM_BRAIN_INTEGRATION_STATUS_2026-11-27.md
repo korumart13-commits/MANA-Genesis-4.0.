@@ -111,3 +111,5 @@ The first run after the lifecycle compile fix passed the Brain/core tests, Andro
 The build toolchain has been advanced from AGP 8.7.3 / Gradle 8.10.2 to AGP 8.13.2 / Gradle 8.13. Android Developers lists AGP 8.13 as supporting API 36.1 and requiring Gradle 8.13, which aligns the project with its compileSdk 36 target. This is a compatibility correction candidate; release packaging remains unverified until the new CI run completes. References: https://developer.android.com/build/releases/agp-8-13-0-release-notes and https://developer.android.com/build/releases/about-agp.
 
 The AOSP local manifest is now pinned to immutable source snapshot `635e36e9eb0e99674ce8c0069b10da6461ce4a5d`, including the current app lifecycle changes and upgraded build toolchain.
+
+The local manifest pin was subsequently advanced to `0b73650c98521769fda4d7e220b932b5012a026d`, which includes the merged Activity resume/pause handling for the Engine reconnect controller. CI now also asserts that `MainActivity` has exactly one `onResume`, `onPause` and `onDestroy` override to prevent duplicate lifecycle callbacks.
