@@ -34,7 +34,7 @@ jobs:
       - name: Boot official Android emulator and install/launch MANA
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 36
           target: google_apis
           arch: x86_64
           profile: pixel_2
@@ -57,3 +57,12 @@ jobs:
             fi
             adb shell dumpsys activity activities | grep -E 'com.mana.launcher|mResumedActivity'
             echo "PASS: emulator booted, APK installed, MANA launch process observed, no fatal crash signature found."
+
+      - name: Upload RMX5566RU-targeted Android 16 debug APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-RMX5566RU-Android16-debug-APK
+          path: launcher/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: ignore
+          retention-days: 14
