@@ -38,7 +38,8 @@ grep -F 'backendConnectTimeout' system/mana/services/ManaBrainService/src/com/ma
 grep -F 'scheduleBackendRebind()' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'RemoteException | SecurityException' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'ENGINE_PERMISSION_DENIED' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
-grep -F 'ManaBrainTerminalCallbackGate terminalCallbackDelivered' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+grep -F 'ManaBrainTerminalCallbackGate terminalGate' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
+grep -F 'forwardToEngine(request, callback, terminalGate, requestTimeout)' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'boolean tryDeliver()' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainTerminalCallbackGate.java
 grep -F 'concurrentCallbacksOnlyDeliverOnce' system/mana/services/ManaBrainService/tests/src/com/mana/system/brain/ManaBrainTerminalCallbackGateTest.java
 grep -F 'ManaBrainTerminalCallbackGateTest.java' system/mana/services/ManaBrainService/Android.bp
