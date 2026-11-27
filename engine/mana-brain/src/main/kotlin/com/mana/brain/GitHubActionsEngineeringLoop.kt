@@ -66,6 +66,22 @@ class GitHubActionsRestClient(
             require(it.matches(Regex("[a-fA-F0-9]{40}"))) { "GitHub returned an invalid branch commit SHA." }
         }
     }
+    /** Fetch the exact source snapshot from the same GitHub branch that CI will test. */
+    suspend fun fetchRepositoryFile(branch: String, path: String): EngineeringSourceFile = withContext(Dispatchers.IO) {
+        require(branch.matches(Regex("[A-Za-z0-9._/-]{1,200}")) && !branch.contains(".."))
+        require(path.length in 1..240 && !path.startsWith("/") && !path.contains(92.toChar()))
+        val normalized = path
+        require(normalized.split('/').none { it.isBlank() || it == "." || it == ".." })
+        val allowedRoots = listOf("engine/mana-brain/src/main/", "engine/mana-brain/src/test/", "os/core/src/main/", "os/core/src/test/", "launcher/app/src/main/", "launcher/app/src/test/", "system/mana/services/", "docs/")
+        require(allowedRoots.any(normalized::startsWith)) { "Source path is outside MANA approved workspaces." }
+        val encodedPath = normalized.split('/').joinToString("/") { java.net.URLEncoder.encode(it, StandardCharsets.UTF_8.name()).replace("+", "%20") }
+        val encodedBranch = java.net.URLEncoder.encode(branch, StandardCharsets.UTF_8.name()).replace("+", "%20")
+        val item = JsonParser.parseString(request("GET", "contents/$encodedPath?ref=$encodedBranch")).asJsonObject
+        require(item.get("encoding")?.asString == "base64") { "GitHub did not return a base64 source file." }
+        val bytes = java.util.Base64.getMimeDecoder().decode(item.get("content").asString)
+        EngineeringSourceFile(normalized, String(bytes, StandardCharsets.UTF_8))
+    }
+
     override suspend fun dispatchPatch(
         branch: String,
         patch: String,
