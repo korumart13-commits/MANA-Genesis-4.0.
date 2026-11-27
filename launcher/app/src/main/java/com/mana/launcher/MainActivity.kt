@@ -99,6 +99,9 @@ class MainActivity : Activity() {
     private var reconnectController: ManaEngineReconnectController? = null
     private var activityResumed = false
     private var uiInitialized = false
+    @Volatile private var setupStarted = false
+    @Volatile private var setupRunning = false
+    private var setupReport: ManaOneTapSetupCoordinator.Report? = null
     private val manaEngineConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as? ManaEngineService.LocalBinder ?: return
@@ -198,34 +201,75 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Run all setup steps available to an ordinary Android app automatically
-        // on first launch. Android-owned grants and privileged operations remain
-        // under the owner's/system's control and are never simulated.
-        runCatching {
-            ManaOneTapSetupCoordinator(applicationContext).run()
-        }.onFailure { error ->
-            android.util.Log.e("MANA", "Automatic first-launch setup did not complete", error)
-        }
-        // Start MANA's own safe completion loop from the single app entry point.
-        // WorkManager persists schedules across process death/reboot; Android controls
-        // execution timing and may defer work under battery/network restrictions.
-        runCatching {
-            ManaGenesisFirstBootService(applicationContext).refresh()
-        }.onFailure { error ->
-            android.util.Log.e("MANA", "Unable to checkpoint Genesis development backlog", error)
-        }
-        runCatching {
-            ManaGenesisWorkScheduler.ensureScheduled(applicationContext)
-        }.onFailure { error ->
-            android.util.Log.e("MANA", "Unable to schedule Genesis background tasks", error)
-        }
         window.statusBarColor = bg
         window.navigationBarColor = bg
         window.decorView.setBackgroundColor(bg)
         reconnectController = ManaEngineReconnectController(this) {
-            if (activityResumed) attemptEngineConnection()
+            if (activityResumed && setupStarted) attemptEngineConnection()
         }
-        showEngineUnavailableScreen("Подключение к MANA Engine…")
+        // The owner starts the complete app-level bootstrap with one explicit action.
+        // No modules or shell commands are requested individually.
+        showOneTapSetupScreen("Один запуск подготовит все функции MANA, доступные на RMX5566RU.")
+    }
+
+    private fun showOneTapSetupScreen(message: String) {
+        val screen = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(28), dp(32), dp(28), dp(32))
+            setBackgroundColor(bg)
+        }
+        screen.addView(label("MANA", 38, textColor, true))
+        screen.addView(label("GENESIS 4.0", 12, accentSoft, true).apply {
+            setPadding(0, dp(6), 0, dp(22))
+        })
+        screen.addView(label("REALME RMX5566RU  •  ANDROID 16", 11, muted, true).apply {
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(18))
+        })
+        screen.addView(label(message, 14, textColor, false).apply {
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(24))
+        })
+        val launch = action(if (setupRunning) "MANA НАСТРАИВАЕТСЯ…" else if (setupStarted) "ПРОДОЛЖИТЬ ЗАПУСК MANA" else "ЗАПУСТИТЬ MANA").apply {
+            textSize = 15f
+            setTextColor(Color.WHITE)
+            background = rounded(accent, 18)
+            isEnabled = !setupRunning
+        }
+        launch.setOnClickListener { startManaOneTapSetup() }
+        screen.addView(launch, LinearLayout.LayoutParams(-1, dp(58)))
+        setContentView(screen)
+    }
+
+    private fun startManaOneTapSetup() {
+        if (setupRunning) return
+        setupStarted = true
+        setupRunning = true
+        showOneTapSetupScreen("Проверяю RMX5566RU, целостность MANA, локальное хранилище и запускаю доступные компоненты…")
+        Thread({
+            var report: ManaOneTapSetupCoordinator.Report? = null
+            var failure: Throwable? = null
+            try {
+                report = ManaOneTapSetupCoordinator(applicationContext).run()
+                setupReport = report
+            } catch (error: Throwable) {
+                failure = error
+                android.util.Log.e("MANA", "One-action setup failed", error)
+            }
+            runOnUiThread {
+                setupRunning = false
+                if (failure != null) {
+                    showOneTapSetupScreen("Настройка прервалась: ${failure?.message ?: "неизвестная ошибка"}. Нажми одну кнопку, чтобы безопасно повторить.")
+                } else if (report?.isTargetDevice != true) {
+                    showOneTapSetupScreen("Это не подтверждённый RMX5566RU / RE645F с Android 16. Устройство не будет настроено как целевое. Проверь отчёт MANA.")
+                    showMessage(report?.toReadableText() ?: "Профиль целевого устройства не подтверждён.")
+                } else {
+                    showEngineUnavailableScreen("Профиль RMX5566RU подтверждён. Настройка завершена; подключаю MANA Brain…")
+                    attemptEngineConnection()
+                }
+            }
+        }, "MANA-One-Action-Setup").start()
     }
 
     override fun onPause() {
@@ -235,7 +279,7 @@ class MainActivity : Activity() {
     }
 
     private fun attemptEngineConnection() {
-        if (manaEngineBound) return
+        if (!setupStarted || manaEngineBound) return
         val engineIntent = Intent(this, ManaEngineService::class.java)
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(engineIntent) else startService(engineIntent)
@@ -265,12 +309,9 @@ class MainActivity : Activity() {
         fallback.addView(label(message, 14, textColor, false).apply {
             setPadding(0, 0, 0, dp(18))
         })
-        fallback.addView(action("Открыть диагностику MANA") {
-            startActivity(Intent(this, ManaSystemStatusActivity::class.java))
-        }, LinearLayout.LayoutParams(-1, dp(48)))
-        fallback.addView(action("Повторить подключение") {
-            attemptEngineConnection()
-        }, LinearLayout.LayoutParams(-1, dp(48)))
+        fallback.addView(action(if (setupRunning) "MANA НАСТРАИВАЕТСЯ…" else "ПОВТОРИТЬ ЗАПУСК MANA") {
+            if (!setupRunning) attemptEngineConnection()
+        }, LinearLayout.LayoutParams(-1, dp(56)))
         setContentView(fallback)
     }
 
@@ -362,9 +403,9 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         activityResumed = true
-        if (manaEngineBound && manaEngineBinder?.isInitialized() == true) {
+        if (setupStarted && manaEngineBound && manaEngineBinder?.isInitialized() == true) {
             reconnectController?.onConnected()
-        } else if (!manaEngineBound && manaEngineBinder == null) {
+        } else if (setupStarted && !manaEngineBound && manaEngineBinder == null) {
             attemptEngineConnection()
         }
         loadApps()
