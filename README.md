@@ -35,3 +35,20 @@ The device profile is in [device/RMX5566RU_TARGET_PROFILE.md](device/RMX5566RU_T
 The target device reports Linux 5.15.197, Qualcomm SM6225/bengal, a locked bootloader and green Verified Boot. Do not flash experimental boot, vendor_boot, dtbo, vbmeta, recovery, super or OTA images. Do not use another phone's SM6225 kernel as a drop-in kernel.
 
 A source project, a successful Gradle APK build, a full AOSP/Soong product build, and a bootable image are separate milestones. The current pipeline distinguishes source archives, debug prototypes and unsigned release APKs. None of those is a flashable ROM. The target remains blocked on exact device tree, OEM kernel/vendor sources, VINTF, partition/AVB metadata and a verified stock restore path.
+
+
+## Unified MANA self-audit and firmware-preparation product
+
+The bootstrapper is part of this same MANA repository and is not a separate product. Its device profile, audit scripts and tests live under `bootstrapper/`; the Android-facing integration lives in the existing `launcher/app` module. The OTA capability probe is integrated at `launcher/app/src/main/java/com/mana/launcher/ManaOtaCapabilityProbe.kt` (merged from PR #19). The intended user experience is one MANA application installed normally, with the audit, firmware-readiness and future update workflow presented inside MANA.
+
+### Unified workflow target
+
+1. On first launch, MANA identifies the device using Android public APIs and gathers only information the OS exposes; unknown or restricted values remain explicitly unknown.
+2. MANA runs the existing device audit and compares the result with `device/RMX5566RU_TARGET_PROFILE.md` and firmware gates.
+3. MANA checks update capabilities, signature/hash validation and available trusted sources. The OTA capability probe is read-only; it does not grant itself Device Owner or elevated privileges.
+4. MANA can prepare source changes and run tests/builds through the repository's CI/build workers when configured. The Android app itself is not an AOSP build host and must not claim it can manufacture proprietary vendor files.
+5. A future RMX5566RU image is eligible for installation only after exact-device compatibility, trusted signing, OTA support and a verified stock-recovery path are all proven. Otherwise the app reports BLOCKED with the missing gates.
+
+### Important product boundary
+
+There is one MANA project and one intended MANA app experience; no separate Bootstrapper app is required. The current `bootstrapper/bootstrap.sh` is a developer/CI audit utility, not a user-facing installation requirement. The Android app integration is in progress and must be built and tested before an installable APK can be claimed. A normal APK cannot silently replace protected Android partitions, unlock the bootloader, bypass Verified Boot, or reboot/flash without explicit user confirmation. These limits do not change the long-term goal of evolving this same repository into the RMX5566RU MANA firmware.
