@@ -51,7 +51,7 @@ assert "УСТАНОВИТЬ MANA" in setup_doc
 assert "Termux" in requirements
 assert "УСТАНОВИТЬ MANA" in requirements
 assert "INSTALL_MANA.apk" in workflow
-assert "models/Gemma/Gemma4-E2B.litertlm" in workflow
+assert "models/Gemma/MODEL_MANIFEST_RU.txt" in workflow
 assert "SHA256SUMS.txt" in workflow
 
 print("Validated static one-button installer contract for realme C85 4G / RMX5566.")
