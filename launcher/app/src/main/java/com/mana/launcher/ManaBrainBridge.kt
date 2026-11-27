@@ -42,6 +42,9 @@ class ManaBrainBridge(
             override suspend fun generate(prompt: String): String =
                 suspendCancellableCoroutine { continuation ->
                     val output = StringBuilder()
+                    continuation.invokeOnCancellation {
+                        localRuntime.cancelGeneration()
+                    }
                     localRuntime.generate(
                         prompt,
                         onChunk = { chunk ->
