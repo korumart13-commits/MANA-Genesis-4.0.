@@ -21,7 +21,7 @@ for required in (
     "activateCompletedModelDownload()",
     "startModelProgressUpdates()",
     "startGemmaDownload(catalog)",
-    "hasAcceptedGemmaTerms()",
+    "hasAcknowledgedGemmaLicense()",
 ):
     assert required in activity, f"Installer UI/flow missing: {required}"
 
@@ -37,7 +37,7 @@ assert "Build.DEVICE.equals" not in coordinator
 assert "Build.PRODUCT.equals" not in coordinator
 
 for required in (
-    "fun hasAcceptedGemmaTerms()",
+    "fun hasAcknowledgedGemmaLicense()",
     "DownloadManager.Request",
     "fun downloadProgressText(): String?",
     ".setAllowedOverMetered(false)",
