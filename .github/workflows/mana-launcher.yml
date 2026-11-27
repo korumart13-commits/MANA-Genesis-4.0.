@@ -30,6 +30,11 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: mana-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+
 jobs:
   compile:
     runs-on: ubuntu-latest
