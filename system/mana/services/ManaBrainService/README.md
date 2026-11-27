@@ -1,35 +1,50 @@
 # MANA Brain platform Binder service
 
-This Soong product module provides the Android-side Binder endpoint for the MANA Brain AIDL contract.
+This Soong product module provides the platform-facing Binder endpoint for the single MANA Brain runtime.
 
 ## Security and behavior
 
-- Declared as a platform-signed privileged product app.
+- Product-specific Android app signed with the product platform certificate; it is deliberately **not** installed as a privileged app.
 - Binding is protected by the signature-level permission `com.mana.permission.BIND_BRAIN`.
-- Binder entry points repeat the permission check; caller identity is not accepted from request data.
-- The API rejects sensitive + cloud requests.
-- Personal-memory cloud export requires explicit cloud and personal-memory consent flags.
-- Request validation is extracted into a pure Java policy class with a host-side JUnit test target.
-- Accepted requests are dispatched away from the Binder transaction thread.
-- The queue is bounded to 32 pending requests; overload and shutdown races return an explicit `SERVICE_BUSY` error instead of accumulating unbounded work.
-- The service fails closed with `ENGINE_UNAVAILABLE` until a real local inference backend is connected. It does not generate fake answers or forward prompts to a cloud provider.
+- Binder entry points repeat caller permission checks and never trust caller-supplied identity.
+- Sensitive requests cannot use cloud providers.
+- Personal-memory export to cloud requires separate explicit cloud and memory consent.
+- Request validation is covered by the host-side `mana-brain-request-policy-tests` target.
+- Accepted requests are dispatched off the Binder transaction thread through a bounded queue of 32 requests.
+- Queue overload, backend disconnect and callback disconnect are handled as explicit errors; prompts are not fabricated or silently sent to a cloud provider.
 
-## Product integration status
+## Cross-process Engine bridge
 
-`system/mana/mana_product.mk` declares `ManaBrainService` in `PRODUCT_PACKAGES`. This is a product fragment only: it still must be included by a verified Android 16 product makefile in a real AOSP checkout. The fragment itself does not establish a valid RMX5566RU product.
+On service creation, `ManaBrainService` binds to the explicit component
+`com.mana.launcher/.ManaEngineBridgeService` using the private `IManaEngineBackend`
+AIDL contract. It checks protocol version 1 before accepting the backend as connected.
+Requests are forwarded asynchronously to the bridge. The app bridge repeats the signature
+permission and request-policy checks and delegates to the existing `ManaEngineProcessOwner`;
+it must not create a second model, memory store or Microworld instance.
 
-## Current limitation
+The Gradle release APK is staged as an `android_app_import` with
+`presigned: false` and `certificate: "platform"`. This is required because the APK must
+be signed by the same platform certificate as this service. The legacy Java-only
+`ManaAssistant` stub is excluded from product packages so there is one central MANA app.
 
-The Android Service/Binder endpoint exists in source, but it is not yet a functioning inference host. It has not been built by Soong against an AOSP checkout and has no target-specific SELinux service context/domain or backend adapter. Those steps are mandatory before shipping it in a device image. The tested Gradle foreground service remains a separate application-process engine owner; no cross-process backend adapter has been implemented.
+## Soong and Binder verification
 
+- `tools/run_mana_soong_integration.sh` is the canonical real-AOSP runner. It stages the
+  unsigned release APK, invokes Soong for the interface, service, launcher and test modules,
+  runs host policy tests, and optionally runs the device Binder instrumentation test.
+- `system/mana/tests/ManaBrainBinderIntegration` contains the platform-signed
+  `ManaBrainBinderIntegrationTests` module. It binds to `ManaBrainService`, verifies
+  protocol version 1 and waits for the real app bridge handshake. A disconnected backend
+  is a test failure.
+- `.github/workflows/mana-soong-contract.yml` validates source contracts and shell syntax
+  only. It is not a Soong build and cannot prove that Binder works at runtime.
 
-## Request bounds
+## Remaining release blockers
 
-The platform endpoint limits prompts to 32,768 characters. Explicit cloud-provider names are allowlisted (OpenAI, Anthropic, Google/Gemini, xAI/Grok, Yandex and VK); a provider cannot be selected when the request is local-only. These checks happen before the request enters the bounded worker queue.
+No full AOSP Soong build, platform certificate comparison, SELinux service context/domain,
+emulator Binder test or RMX5566 runtime test has been completed. The MANA product fragment
+must be included by a verified Android 16 product configuration. The source integration
+is implemented, but its actual AOSP packaging and runtime behavior remain unverified.
 
-
-## Cross-process backend bridge
-
-ManaBrainService binds to the explicit com.mana.launcher/.ManaEngineBridgeService AIDL endpoint. The app-side bridge delegates to the existing process-owned ManaEngineAndroidRuntime; it does not construct a second model or memory store. Both services use the signature permission com.mana.permission.BIND_BRAIN, and the app-side Binder endpoint repeats permission and request-policy checks. If the endpoint is absent, protocol-incompatible, or not signed with the matching platform key, the platform service fails closed with an unavailable/disconnected state.
-
-This is an implemented source-level integration, not yet a verified AOSP product integration. The current Soong ManaLauncher module is a separate minimal home-app stub and does not package the Gradle Kotlin engine bridge. The Gradle debug APK is not platform-signed. A product packaging/signing solution and Soong/device verification are still required.
+Do not create or flash an RMX5566 image until the exact device tree, matching OEM kernel,
+vendor blobs, VINTF, partition/AVB metadata and a tested stock restore route are verified.
