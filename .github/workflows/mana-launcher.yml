@@ -244,31 +244,28 @@ jobs:
           test "$(stat -c '%s' "$MODEL")" -lt 3000000000
           cp launcher/app/build/outputs/apk/debug/app-debug.apk release/offline/MANA-Martynova-Genesis-4.0.apk
           cat > release/offline/README-FIRST-RU.txt <<'EOF'
-          MANA Martynova — полный установочный комплект
-          
-          Содержимое единого архива:
-          - MANA-Martynova-Genesis-4.0.apk — устанавливаемый APK приложения MANA.
-          - MANA-Martynova-AI-Gemma4-E2B.litertlm — локальная модель ИИ Gemma 4 E2B (это файл модели, не APK).
-          - MANA-Genesis-4.0-source-project.zip — полный отслеживаемый исходный проект, модули,
-            системные интерфейсы, задачи, документация и GitHub Actions на момент сборки.
-          
-          Установка:
-          1. Распакуйте этот архив в память телефона.
-          2. Установите MANA-Martynova-Genesis-4.0.apk (название приложения на телефоне: MANA Martynova).
-          3. Откройте MANA, предоставьте необходимые разрешения.
-          4. В разделе локальной модели выберите импорт файла .litertlm и укажите MANA-Martynova-AI-Gemma4-E2B.litertlm.
-          5. Дождитесь проверки SHA-256 и загрузки модели в LiteRT-LM.
-          
-          Модель не встроена внутрь APK: она поставляется рядом в этом едином архиве,
-          чтобы Android Package Installer не пытался установить многогигабайтный APK.
-          Для импорта потребуется свободное место под архив, распакованную модель
-          и рабочие данные. Производительность Gemma на RMX5566RU ещё должна быть
-          проверена на самом устройстве.
-          
-          Модель: https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm
-          Лицензия модели: Apache-2.0. Движок LiteRT-LM поставляется как Android dependency.
-          
-          Это APK + локальная модель + исходный проект, не прошивка и не OTA-образ RMX5566RU.
+          MANA Genesis 4.0 — комплект приложения, локальной модели и исходников
+
+          В архиве:
+          - MANA-Martynova-Genesis-4.0.apk — подписанный debug APK для установки и проверки.
+          - MANA-Martynova-AI-Gemma4-E2B.litertlm — локальная LiteRT-LM модель.
+          - MANA-Genesis-4.0-source-project.zip — исходный проект на момент сборки.
+          - SHA256SUMS.txt — контрольные суммы файлов.
+
+          Установка и запуск одним действием:
+          1. Установи APK штатным установщиком Android.
+          2. Открой приложение MANA и нажми единственную основную кнопку «ЗАПУСТИТЬ MANA».
+          3. MANA проверит профиль realme RMX5566RU / RE645F, создаст локальные данные,
+             запустит доступные модули и подключит MANA Brain.
+          4. Если локальная модель ещё не установлена, MANA сама покажет лицензионное
+             подтверждение Gemma. После твоего согласия загрузка около 2,59 ГБ начнётся
+             автоматически только по Wi-Fi; затем MANA проверит SHA-256 и подключит модель.
+             Приложение не принимает лицензионные условия за владельца.
+
+          Целевое устройство: realme RMX5566RU / RE645F, Android 16, Snapdragon 685 / SM6225.
+          Другие модели не заявляются как поддерживаемые. Debug APK — установочная сборка
+          для проверки приложения, а не production release и не системная прошивка.
+          Полная AOSP ROM, OTA и автоматическая прошивка не входят в этот APK-пакет.
           EOF
           (cd release/offline && sha256sum MANA-Martynova-Genesis-4.0.apk MANA-Martynova-AI-Gemma4-E2B.litertlm MANA-Genesis-4.0-source-project.zip > SHA256SUMS.txt)
           (cd release/offline && zip -0 -q ../MANA-Martynova-FULL-PACKAGE.zip MANA-Martynova-Genesis-4.0.apk MANA-Martynova-AI-Gemma4-E2B.litertlm MANA-Genesis-4.0-source-project.zip README-FIRST-RU.txt SHA256SUMS.txt)
