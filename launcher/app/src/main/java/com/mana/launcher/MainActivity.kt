@@ -240,13 +240,14 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, dp(24))
         })
-        val launch = action(if (setupRunning) "MANA НАСТРАИВАЕТСЯ…" else if (setupStarted) "ПРОДОЛЖИТЬ ЗАПУСК MANA" else "ЗАПУСТИТЬ MANA").apply {
+        val launch = action(if (setupRunning) "MANA НАСТРАИВАЕТСЯ…" else if (setupStarted) "ПРОДОЛЖИТЬ ЗАПУСК MANA" else "ЗАПУСТИТЬ MANA") {
+            startManaOneTapSetup()
+        }.apply {
             textSize = 15f
             setTextColor(Color.WHITE)
             background = rounded(accent, 18)
             isEnabled = !setupRunning
         }
-        launch.setOnClickListener { startManaOneTapSetup() }
         screen.addView(launch, LinearLayout.LayoutParams(-1, dp(58)))
         setContentView(screen)
     }
