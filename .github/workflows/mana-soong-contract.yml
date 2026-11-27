@@ -1,0 +1,63 @@
+name: MANA Soong and Binder integration contract
+
+on:
+  push:
+    paths:
+      - 'system/mana/**'
+      - 'tools/run_mana_soong_integration.sh'
+      - 'tools/test_mana_soong_integration.sh'
+      - 'tools/stage_mana_aosp_prebuilt.sh'
+      - 'launcher/app/src/main/AndroidManifest.xml'
+      - '.github/workflows/mana-soong-contract.yml'
+  pull_request:
+    paths:
+      - 'system/mana/**'
+      - 'tools/run_mana_soong_integration.sh'
+      - 'tools/test_mana_soong_integration.sh'
+      - 'tools/stage_mana_aosp_prebuilt.sh'
+      - 'launcher/app/src/main/AndroidManifest.xml'
+      - '.github/workflows/mana-soong-contract.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  source-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Soong integration and Binder test source
+        run: |
+          bash tools/test_mana_soong_integration.sh
+          python3 - <<'PY'
+          import pathlib
+          import xml.etree.ElementTree as ET
+
+          bp = pathlib.Path("system/mana/tests/ManaBrainBinderIntegration/Android.bp").read_text()
+          assert 'name: "ManaBrainBinderIntegrationTests"' in bp
+          assert 'static_libs: ["mana-brain-interface"]' in bp
+          assert 'certificate: "platform"' in bp
+          assert 'test_suites: ["device-tests"]' in bp
+
+          test = pathlib.Path("system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java").read_text()
+          assert "ManaBrainService.ACTION_BIND" in test
+          assert "brain.getProtocolVersion()" in test
+          assert "brain.getEngineState()" in test
+          assert "UNAVAILABLE_ENGINE_BACKEND_DISCONNECTED" in test
+
+          app = ET.parse("launcher/app/src/main/AndroidManifest.xml").getroot()
+          bridge = app.find("./application/service[@android:name='.ManaEngineBridgeService']", {
+              "android": "http://schemas.android.com/apk/res/android"
+          })
+          assert bridge is not None
+          assert bridge.attrib["{http://schemas.android.com/apk/res/android}exported"] == "true"
+          assert bridge.attrib["{http://schemas.android.com/apk/res/android}permission"] == "com.mana.permission.BIND_BRAIN"
+
+          brain = ET.parse("system/mana/services/ManaBrainService/AndroidManifest.xml").getroot()
+          service = brain.find("./application/service[@android:name='.ManaBrainService']", {
+              "android": "http://schemas.android.com/apk/res/android"
+          })
+          assert service is not None
+          assert service.attrib["{http://schemas.android.com/apk/res/android}permission"] == "com.mana.permission.BIND_BRAIN"
+          print("Validated the platform-signed Binder integration test and both service permission boundaries.")
+          PY
