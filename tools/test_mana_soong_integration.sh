@@ -39,10 +39,6 @@ grep -F 'ManaBrainTerminalCallbackGate terminalCallbackDelivered' system/mana/se
 grep -F 'boolean tryDeliver()' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainTerminalCallbackGate.java
 grep -F 'concurrentCallbacksOnlyDeliverOnce' system/mana/services/ManaBrainService/tests/src/com/mana/system/brain/ManaBrainTerminalCallbackGateTest.java
 grep -F 'ManaBrainTerminalCallbackGateTest.java' system/mana/services/ManaBrainService/Android.bp
-grep -F 'import java.util.concurrent.atomic.AtomicBoolean;' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
-grep -F 'terminalCallbackDelivered.compareAndSet(false, true)' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
-grep -F 'Ignoring duplicate MANA Engine result callback.' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
-grep -F 'Ignoring duplicate MANA Engine error callback.' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F '"READY_NO_LOCAL_MODEL".equals(engineState)' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
 grep -F 'getProtocolVersion()' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
 grep -F 'UNAVAILABLE_ENGINE_BACKEND_DISCONNECTED' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
