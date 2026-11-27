@@ -17,7 +17,7 @@ Multi-model dialogue federation (OpenAI, Anthropic, Google, xAI and local infere
 
 ## Project status
 
-This repository currently contains the project documentation, device profile, MANA Brain JVM foundation and previous application prototypes. It does **not** yet contain a complete AOSP source checkout or a validated bootable RMX5566RU ROM/kernel build.
+This repository contains the MANA product requirements, Android application/runtime source, MANA Brain JVM foundation, platform Binder service contracts, AOSP packaging scripts, device profile and flashing/recovery research. CI builds the source archive and verifies the Android application source; the latest release APK build is still under investigation. The repository does **not** contain a complete AOSP source checkout or a validated bootable RMX5566RU ROM/kernel build.
 
 The device profile is in [device/RMX5566RU_TARGET_PROFILE.md](device/RMX5566RU_TARGET_PROFILE.md). The OS architecture and stages are in [os/README.md](os/README.md) and [os/BUILD_SEQUENCE.md](os/BUILD_SEQUENCE.md). Kernel source findings are in [kernel/DEVICE_KERNEL_SOURCE_AUDIT.md](kernel/DEVICE_KERNEL_SOURCE_AUDIT.md).
 
@@ -25,4 +25,4 @@ The device profile is in [device/RMX5566RU_TARGET_PROFILE.md](device/RMX5566RU_T
 
 The target device reports Linux 5.15.197, Qualcomm SM6225/bengal, a locked bootloader and green Verified Boot. Do not flash experimental boot, vendor_boot, dtbo, vbmeta, recovery, super or OTA images. Do not use another phone's SM6225 kernel as a drop-in kernel.
 
-A source project, a successful CI build, and a bootable image are separate milestones. The project will report them separately. No APK build is part of the current milestone.
+A source project, a successful Gradle APK build, a full AOSP/Soong product build, and a bootable image are separate milestones. The current pipeline distinguishes source archives, debug prototypes and unsigned release APKs. None of those is a flashable ROM. The target remains blocked on exact device tree, OEM kernel/vendor sources, VINTF, partition/AVB metadata and a verified stock restore path.
