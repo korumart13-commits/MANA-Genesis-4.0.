@@ -7,12 +7,12 @@ Branch: `chatgpt/mana-asi-rmx5566-one-action-setup`
 
 The MANA Brain JVM module now contains `GitHubActionsRestClient`, `GitHubActionsGateway` and `ManaEngineeringAutomation`.
 
-The Android Engineering Lab exposes the same flow through `ManaGitHubActionsConnector` and `ManaEngineeringActivity`.
+The Android Engineering Lab exposes the same flow through `ManaGitHubActionsConnector`, `ManaBrainEngineeringProvider` and `ManaEngineeringActivity`. The provider adapter calls `ManaBrainBridge.respondDetailed`, so engineering requests use the same local-first Brain routing as other MANA tasks.
 
 ### Runtime sequence
 
 1. The owner selects source files and maps each file to its exact repository-relative path.
-2. The owner explicitly approves sending the selected source and task to the configured cloud engineering provider. The local-first conversational Brain routing is unchanged; code generation through the current engineering copilot requires an enabled cloud provider.
+2. The owner explicitly approves one engineering cycle. The engineering adapter routes through the central MANA Brain: local LiteRT-LM is attempted first; only if local inference is unavailable may an enabled cloud provider be used as fallback. Cloud use is covered by the one-cycle confirmation and may incur charges.
 3. The owner connects GitHub using a repository-scoped fine-grained token. The app stores it with the existing AES-GCM Android Keystore credential vault; it is not embedded in source, passed to workflow inputs, or written to logs.
 4. MANA reads the target branch SHA and checks it again before each attempt. A stale branch aborts before model generation or dispatch.
 5. The copilot generates a complete unified diff. The production patch policy checks paths, file count, size, hunks and disallowed changes. The workflow input is capped at 60 KB.
@@ -54,7 +54,7 @@ The JVM automation tests cover:
 - stale branch rejection before cloud generation
 - unique run identifiers
 
-The Android app is wired to the existing Brain project module and the encrypted credential vault.
+The Android app is wired to the existing Brain project module and the shared encrypted credential vault. `ManaBrainEngineeringProvider` routes code generation through the central Brain and tries the local LiteRT-LM runtime before optional cloud fallback.
 
 The branch push and PR workflows have been triggered for the latest changes. Their authoritative result must be read from the GitHub Actions run at the current branch-head SHA; queued, cancelled or in-progress runs are not passes.
 
