@@ -1,9 +1,7 @@
 name: MANA Genesis 4.0 Complete Bundle
 
+# Run manually. Commits made by GitHub's token do not reliably trigger another workflow.
 on:
-  push:
-    paths:
-      - ".github/workflows/mana-complete-bundle.yml"
   workflow_dispatch:
 
 permissions:
@@ -16,123 +14,153 @@ concurrency:
 
 jobs:
   assemble:
+    name: Verify inputs and assemble one complete archive
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 240
     steps:
-      - name: Checkout latest MANA source
+      - name: Checkout the latest source tree
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Download previously verified AI runtime package
+      - name: Set up Android SDK tools for APK signature checks
+        uses: android-actions/setup-android@v3
+
+      - name: Download successful upstream build artifacts
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+        shell: bash
         run: |
           set -euo pipefail
           mkdir -p raw/full raw/debug raw/release
           gh run download 45937236960 --repo "$GH_REPO" --name "MANA-Martynova-FULL-PACKAGE-APK-AND-AI" --dir raw/full
           gh run download 45937236960 --repo "$GH_REPO" --name "MANA-Android-debug-prototype-NOT-ROM" --dir raw/debug
           gh run download 45937236960 --repo "$GH_REPO" --name "MANA-Android-release-unsigned-for-AOSP-platform-signing" --dir raw/release
-          test -n "$(find raw/full -type f -print -quit)"
+          FULL_ZIP="$(find raw/full -type f -name 'MANA-Martynova-FULL-PACKAGE.zip' -print -quit)"
+          test -n "$FULL_ZIP"
+          unzip -tq "$FULL_ZIP"
+          mkdir -p raw/full/extracted
+          unzip -q "$FULL_ZIP" -d raw/full/extracted
+          MODEL="$(find raw/full/extracted -type f -name '*.litertlm' -print -quit)"
+          test -n "$MODEL"
+          echo "MODEL=$MODEL" >> "$GITHUB_ENV"
           test -n "$(find raw/debug -type f -name '*.apk' -print -quit)"
           test -n "$(find raw/release -type f -name '*.apk' -print -quit)"
 
-      - name: Assemble one easy-to-extract directory
+      - name: Verify the official Gemma model and LiteRT-LM dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(basename "$MODEL")" = "MANA-Martynova-AI-Gemma4-E2B.litertlm"
+          test "$(stat -c '%s' "$MODEL")" -gt 2500000000
+          test "$(stat -c '%s' "$MODEL")" -lt 3000000000
+          echo "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c  $MODEL" | sha256sum --check -
+          grep -F 'com.google.ai.edge.litertlm:litertlm-android:0.16.1' launcher/app/build.gradle.kts
+          grep -F 'include(":app", ":core", ":brain")' launcher/settings.gradle.kts
+          grep -F 'implementation(project(":brain"))' launcher/app/build.gradle.kts
+
+      - name: Verify APKs and signatures
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEBUG_APK="$(find raw/debug -type f -name '*.apk' -print -quit)"
+          RELEASE_APK="$(find raw/release -type f -name '*.apk' -print -quit)"
+          apksigner verify --verbose "$DEBUG_APK"
+          apkanalyzer manifest application-id "$DEBUG_APK" | grep -Fx 'com.mana.launcher'
+          apkanalyzer manifest application-id "$RELEASE_APK" | grep -Fx 'com.mana.launcher'
+          if apksigner verify "$RELEASE_APK" >/dev/null 2>&1; then
+            echo "Expected the AOSP platform-signing release APK to be unsigned, but it is signed." >&2
+            exit 1
+          fi
+          echo "DEBUG_APK=$DEBUG_APK" >> "$GITHUB_ENV"
+          echo "RELEASE_APK=$RELEASE_APK" >> "$GITHUB_ENV"
+
+      - name: Assemble a single unified directory from latest source and verified payloads
+        shell: bash
         run: |
           set -euo pipefail
           ROOT="$RUNNER_TEMP/MANA_Genesis_4.0_COMPLETE"
           mkdir -p "$ROOT/01_Source_LATEST" "$ROOT/02_Local_AI_Gemma_LiteRT" "$ROOT/03_APK_Installers/Debug_signed" "$ROOT/03_APK_Installers/Release_unsigned" "$ROOT/04_Documentation"
-          rsync -a --exclude='.git/' --exclude='raw/' ./ "$ROOT/01_Source_LATEST/"
-          rsync -a raw/full/ "$ROOT/02_Local_AI_Gemma_LiteRT/"
-          find raw/debug -type f -name '*.apk' -exec cp -n {} "$ROOT/03_APK_Installers/Debug_signed/" \;
-          find raw/release -type f -name '*.apk' -exec cp -n {} "$ROOT/03_APK_Installers/Release_unsigned/" \;
-          cat > "$ROOT/README_FIRST_RU.txt" <<'EOF'
-MANA GENESIS 4.0 — ЕДИНЫЙ КОМПЛЕКТ
-
-СТРУКТУРА
-01_Source_LATEST/             Последние исходники из main на момент этой сборки.
-02_Local_AI_Gemma_LiteRT/     Полный ранее собранный пакет локального ИИ и runtime.
-03_APK_Installers/            APK для установки и отдельный unsigned APK.
-04_Documentation/             Отчёты, инструкции и контрольные суммы.
-
-КАК РАСПАКОВАТЬ НА ANDROID
-1. Скачайте этот единый ZIP из GitHub Actions → Artifacts.
-2. Откройте ZIP в системном архиваторе или ZArchiver.
-3. Нажмите «Извлечь» в папку MANA_Genesis_4.0_COMPLETE.
-4. Для обычной установки используйте APK из Debug_signed.
-5. APK из Release_unsigned не устанавливается обычным способом: он предназначен
-   для последующей подписи в платформенной сборке AOSP.
-
-ВАЖНО
-- Это единый комплект исходников, Android-прототипа и локального AI-пакета.
-- Это НЕ готовая прошивка/ROM и не гарантирует работу системных функций без
-  разрешений Android, совместимых компонентов и отдельной интеграции в AOSP.
-- Debug APK — отладочная сборка, не production-релиз.
-- Локальная модель требует свободного места сверх размера APK; проверьте
-  доступную память телефона перед распаковкой.
-- Установка APK не разблокирует bootloader и не даёт root/system privileges.
-EOF
-          install -m 0644 "$ROOT/README_FIRST_RU.txt" "$ROOT/04_Documentation/README_FIRST_RU.txt"
+          rsync -a --exclude='.git/' --exclude='raw/' --exclude='dist/' ./ "$ROOT/01_Source_LATEST/"
+          cp "$MODEL" "$ROOT/02_Local_AI_Gemma_LiteRT/"
+          cp "$DEBUG_APK" "$ROOT/03_APK_Installers/Debug_signed/MANA-Genesis-4.0-debug.apk"
+          cp "$RELEASE_APK" "$ROOT/03_APK_Installers/Release_unsigned/MANA-Genesis-4.0-release-unsigned.apk"
+          cp raw/full/extracted/README-FIRST-RU.txt "$ROOT/04_Documentation/" 2>/dev/null || true
           git rev-parse HEAD > "$ROOT/04_Documentation/SOURCE_COMMIT.txt"
-          printf 'Source repository: %s\nBuild run: %s\n' "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > "$ROOT/04_Documentation/BUILD_ORIGIN.txt"
-          test -s "$ROOT/README_FIRST_RU.txt"
+          printf 'Source repository: %s\nUpstream successful build run: 45937236960\nBundle run: %s\n' "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > "$ROOT/04_Documentation/BUILD_ORIGIN.txt"
+          cat > "$ROOT/README_FIRST_RU.txt" <<'EOF'
+          MANA GENESIS 4.0 — ЕДИНЫЙ ПРОВЕРЕННЫЙ КОМПЛЕКТ
 
-      - name: Remove exact duplicate files and write SHA-256 manifest
+          Состав:
+          01_Source_LATEST/             Последние исходники из main на момент сборки.
+          02_Local_AI_Gemma_LiteRT/     Официальная модель Gemma 4 E2B LiteRT-LM.
+          03_APK_Installers/            Подписанный debug APK и unsigned release APK.
+          04_Documentation/             Сведения о сборке и SHA-256 манифест.
+
+          Установка APK:
+          Используйте APK из Debug_signed. Release_unsigned предназначен для
+          платформенной подписи в AOSP и обычным установщиком Android не ставится.
+
+          Модель:
+          Это отдельный многогигабайтный файл .litertlm, а не часть APK.
+          Для загрузки в MANA требуется поддержка импорта модели в приложении,
+          достаточно свободного места и совместимое устройство.
+
+          ГРАНИЦЫ:
+          Это единый архив исходников, APK и модели, но НЕ прошивка/ROM/OTA.
+          Наличие файла модели и зависимости LiteRT-LM не доказывает, что
+          модель уже интегрирована в интерфейс приложения или проверена на телефоне.
+          APK не получает root/system privileges и не меняет разделы устройства.
+          EOF
+          cp "$ROOT/README_FIRST_RU.txt" "$ROOT/04_Documentation/README_FIRST_RU.txt"
+
+      - name: Remove exact duplicates and create complete SHA-256 manifest
+        shell: bash
         run: |
           set -euo pipefail
           ROOT="$RUNNER_TEMP/MANA_Genesis_4.0_COMPLETE"
           python3 - <<'PY'
           from pathlib import Path
-          import hashlib
-          root = Path(__import__("os").environ["RUNNER_TEMP"]) / "MANA_Genesis_4.0_COMPLETE"
-          seen = {}
-          duplicates = []
-          files = sorted(p for p in root.rglob("*") if p.is_file())
-          for p in files:
-              if p.name == "SHA256SUMS.txt":
-                  continue
-              h = hashlib.sha256()
-              with p.open("rb") as f:
-                  for block in iter(lambda: f.read(8 * 1024 * 1024), b""):
-                      h.update(block)
-              digest = h.hexdigest()
+          import hashlib, os
+          root = Path(os.environ["RUNNER_TEMP"]) / "MANA_Genesis_4.0_COMPLETE"
+          seen, removed = {}, []
+          for path in sorted(p for p in root.rglob("*") if p.is_file()):
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
               if digest in seen:
-                  duplicates.append((str(p.relative_to(root)), seen[digest]))
-                  p.unlink()
+                  removed.append((str(path.relative_to(root)), seen[digest]))
+                  path.unlink()
               else:
-                  seen[digest] = str(p.relative_to(root))
+                  seen[digest] = str(path.relative_to(root))
           docs = root / "04_Documentation"
-          docs.mkdir(exist_ok=True)
-          with (docs / "SHA256SUMS.txt").open("w", encoding="utf-8") as out:
-              for p in sorted(x for x in root.rglob("*") if x.is_file() and x.name != "SHA256SUMS.txt"):
-                  h = hashlib.sha256()
-                  with p.open("rb") as f:
-                      for block in iter(lambda: f.read(8 * 1024 * 1024), b""):
-                          h.update(block)
-                  out.write(f"{h.hexdigest()}  {p.relative_to(root)}\n")
-          with (docs / "DUPLICATES_REMOVED.txt").open("w", encoding="utf-8") as out:
-              out.write("Exact duplicate files removed by SHA-256:\n")
-              for current, original in duplicates:
-                  out.write(f"{current} == {original}\n")
-              if not duplicates:
-                  out.write("None found.\n")
-          print(f"Files retained: {len(seen)}; exact duplicates removed: {len(duplicates)}")
+          with (docs / "DUPLICATES_REMOVED.txt").open("w", encoding="utf-8") as f:
+              f.write("Exact SHA-256 duplicates removed:\n")
+              for current, original in removed:
+                  f.write(f"{current} == {original}\n")
+              if not removed:
+                  f.write("None found.\n")
+          with (docs / "SHA256SUMS.txt").open("w", encoding="utf-8") as f:
+              for path in sorted(p for p in root.rglob("*") if p.is_file() and p.name != "SHA256SUMS.txt"):
+                  f.write(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(root)}\n")
+          print(f"Retained {len(seen)} unique files; removed {len(removed)} exact duplicates.")
           PY
 
-      - name: Verify APKs, model payload and every file checksum
+      - name: Final integrity and completeness gate
+        shell: bash
         run: |
           set -euo pipefail
           ROOT="$RUNNER_TEMP/MANA_Genesis_4.0_COMPLETE"
           test -s "$ROOT/README_FIRST_RU.txt"
-          test -n "$(find "$ROOT/02_Local_AI_Gemma_LiteRT" -type f -print -quit)"
-          test -n "$(find "$ROOT/03_APK_Installers/Debug_signed" -type f -name '*.apk' -print -quit)"
-          test -n "$(find "$ROOT/03_APK_Installers/Release_unsigned" -type f -name '*.apk' -print -quit)"
+          test "$(find "$ROOT/02_Local_AI_Gemma_LiteRT" -type f -name '*.litertlm' | wc -l)" -eq 1
+          test -s "$ROOT/03_APK_Installers/Debug_signed/MANA-Genesis-4.0-debug.apk"
+          test -s "$ROOT/03_APK_Installers/Release_unsigned/MANA-Genesis-4.0-release-unsigned.apk"
+          test -s "$ROOT/01_Source_LATEST/launcher/app/build.gradle.kts"
+          grep -Fq 'com.google.ai.edge.litertlm:litertlm-android:0.16.1' "$ROOT/01_Source_LATEST/launcher/app/build.gradle.kts"
           (cd "$ROOT" && sha256sum -c 04_Documentation/SHA256SUMS.txt)
           find "$ROOT" -type f -printf '%s %p\n' | sort -nr | head -20
           du -sh "$ROOT"
 
-      - name: Upload single unified bundle
+      - name: Upload the single unified MANA bundle
         uses: actions/upload-artifact@v4
         with:
           name: MANA-Genesis-4.0-COMPLETE-SOURCE-APK-GEMMA-LITERT
