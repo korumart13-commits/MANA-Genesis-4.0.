@@ -158,7 +158,8 @@ jobs:
           grep -F 'certificate: "platform"' system/mana/services/ManaBrainService/Android.bp
           grep -F 'privileged: false' system/mana/services/ManaBrainService/Android.bp
           ! grep -F 'privileged: true' system/mana/services/ManaBrainService/Android.bp
-          grep -F 'privileged: true' system/mana/services/ManaBrainService/Android.bp
+          grep -F 'privileged: false' system/mana/services/ManaBrainService/Android.bp
+          ! grep -F 'privileged: true' system/mana/services/ManaBrainService/Android.bp
           grep -F 'android:protectionLevel="signature"' system/mana/services/ManaBrainService/AndroidManifest.xml
           grep -F 'android:permission="com.mana.permission.BIND_BRAIN"' system/mana/services/ManaBrainService/AndroidManifest.xml
           grep -F 'checkCallingPermission(BIND_PERMISSION)' system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java
