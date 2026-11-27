@@ -154,7 +154,9 @@ jobs:
         run: |
           test -f system/mana/services/ManaBrainService/Android.bp
           test -f system/mana/services/ManaBrainService/AndroidManifest.xml
+          grep -F 'ManaLauncher' system/mana/mana_product.mk
           grep -F 'ManaBrainService' system/mana/mana_product.mk
+          ! grep -F 'ManaAssistant' system/mana/mana_product.mk
           grep -F 'certificate: "platform"' system/mana/services/ManaBrainService/Android.bp
           grep -F 'privileged: false' system/mana/services/ManaBrainService/Android.bp
           ! grep -F 'privileged: true' system/mana/services/ManaBrainService/Android.bp
