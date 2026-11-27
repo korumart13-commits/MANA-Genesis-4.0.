@@ -37,6 +37,8 @@ public final class ManaBrainBinderIntegrationTest extends InstrumentationTestCas
         AtomicReference<IManaBrain> brainRef = new AtomicReference<>();
         AtomicReference<String> callbackCode = new AtomicReference<>();
         AtomicReference<String> callbackMessage = new AtomicReference<>();
+        AtomicReference<String> resultProvider = new AtomicReference<>();
+        AtomicReference<Boolean> resultLocal = new AtomicReference<>();
 
         ServiceConnection connection = new ServiceConnection() {
             @Override
@@ -97,6 +99,8 @@ public final class ManaBrainBinderIntegrationTest extends InstrumentationTestCas
                 @Override
                 public void onResult(ManaBrainResponse response) throws RemoteException {
                     callbackMessage.set(response == null ? null : response.text);
+                    resultProvider.set(response == null ? null : response.provider);
+                    resultLocal.set(response == null ? null : response.local);
                     callbackDelivered.countDown();
                 }
 
@@ -110,13 +114,18 @@ public final class ManaBrainBinderIntegrationTest extends InstrumentationTestCas
 
             assertTrue("No callback was returned from the Engine Bridge.",
                     callbackDelivered.await(60, TimeUnit.SECONDS));
-            assertFalse("Request reached the bridge before its engine runtime was ready.",
-                    "ENGINE_NOT_READY".equals(callbackCode.get()));
-            assertFalse("Request failed because the backend Binder was disconnected.",
-                    "ENGINE_UNAVAILABLE".equals(callbackCode.get())
-                            || "ENGINE_DISCONNECTED".equals(callbackCode.get()));
-            assertTrue("Backend callback did not contain a result or diagnostic.",
-                    callbackMessage.get() != null || callbackCode.get() != null);
+            if (callbackCode.get() == null) {
+                assertNotNull("Successful response must include provider metadata.", resultProvider.get());
+                assertTrue("Successful response text must not be blank.",
+                        callbackMessage.get() != null && !callbackMessage.get().trim().isEmpty());
+                assertTrue("This test must remain local-only.", Boolean.TRUE.equals(resultLocal.get()));
+            } else {
+                assertEquals("Only the expected no-model local fallback is acceptable.",
+                        "ENGINE_ERROR", callbackCode.get());
+                assertEquals("Unexpected local-only fallback diagnostic.",
+                        "Local inference is unavailable and cloud processing is not permitted.",
+                        callbackMessage.get());
+            }
         } finally {
             context.unbindService(connection);
         }
