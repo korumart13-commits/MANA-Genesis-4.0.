@@ -34,6 +34,7 @@ data class GitHubWorkflowJob(
 )
 
 interface GitHubActionsGateway {
+    suspend fun currentHeadSha(branch: String): String
     suspend fun dispatchPatch(branch: String, patch: String, expectedHeadSha: String, clientRunId: String): GitHubWorkflowRun
     suspend fun awaitCompletion(run: GitHubWorkflowRun, timeoutMs: Long = 240_000): GitHubWorkflowRun
     suspend fun failedJobLogs(runId: Long, maxChars: Int = 40_000): String
@@ -54,6 +55,14 @@ class GitHubActionsRestClient(
         require(dispatchTimeoutMs in 5_000..600_000)
     }
 
+    override suspend fun currentHeadSha(branch: String): String = withContext(Dispatchers.IO) {
+        require(branch.matches(Regex("[A-Za-z0-9._/-]{1,200}")) && !branch.contains(".."))
+        val encoded = java.net.URLEncoder.encode(branch, Charsets.UTF_8.name()).replace("+", "%20")
+        val root = JsonParser.parseString(request("GET", "branches/$encoded")).asJsonObject
+        root.getAsJsonObject("commit").get("sha").asString.also {
+            require(it.matches(Regex("[a-fA-F0-9]{40}"))) { "GitHub returned an invalid branch commit SHA." }
+        }
+    }
     override suspend fun dispatchPatch(
         branch: String,
         patch: String,
