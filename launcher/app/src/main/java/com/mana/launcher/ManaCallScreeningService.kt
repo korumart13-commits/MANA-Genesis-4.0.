@@ -8,6 +8,7 @@ import android.telecom.Call
 import android.telecom.CallScreeningService
 import android.content.Context
 import com.mana.os.core.ManaSmartReceptionistPolicy
+import java.util.concurrent.RejectedExecutionException
 
 /**
  * Owner-enabled call screening. It never answers, rejects or records a call.
@@ -27,17 +28,22 @@ class ManaCallScreeningService : CallScreeningService() {
         respondToCall(details, response)
 
         val number = details.handle?.takeIf { it.scheme == "tel" }?.schemeSpecificPart.orEmpty()
-        // Local contact lookup and owner notification must never delay ringing.
-
-        Thread {
-            val contacts = ManaContactIntelligence(this)
-            // Without Contacts permission, do not label every caller as unknown.
-            val known = if (!contacts.hasPermission()) true else runCatching {
-                contacts.findByPhone(number) != null
-            }.getOrDefault(true)
-            val decision = ManaSmartReceptionistPolicy().onIncomingCall(numberKnown = known)
-            if (decision.unknownCaller) notifyOwner(number)
-        }.start()
+        // Auxiliary contact lookup is bounded and never delays the telecom response.
+        try {
+            ManaCallScreeningWorkQueue.executor.execute {
+                val contacts = ManaContactIntelligence(this)
+                // Without Contacts permission, do not label every caller as unknown.
+                val known = if (!contacts.hasPermission()) true else runCatching {
+                    contacts.findByPhone(number) != null
+                }.getOrDefault(true)
+                val decision = ManaSmartReceptionistPolicy().onIncomingCall(numberKnown = known)
+                if (decision.unknownCaller) notifyOwner(number)
+            }
+        } catch (_: RejectedExecutionException) {
+            // Under overload, skip the optional notification rather than creating
+            // unbounded threads or delaying/rejecting the incoming call.
+            android.util.Log.w(TAG, "Call-screening lookup queue is full; skipped auxiliary lookup")
+        }
     }
 
     private fun notifyOwner(number: String) {
@@ -62,6 +68,7 @@ class ManaCallScreeningService : CallScreeningService() {
     }
 
     companion object {
+        private const val TAG = "ManaCallScreening"
         private const val CHANNEL_ID = "mana_unknown_call_alerts"
     }
 }
