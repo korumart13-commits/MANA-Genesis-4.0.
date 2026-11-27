@@ -298,7 +298,7 @@ jobs:
           Локальная генерация без интернета: НЕ ПРОВЕРЕНО
           Примечания / ошибки: __________________
           EOF
-          (cd "$PACKAGE" && sha256sum installer/INSTALL_MANA.apk models/Gemma/Gemma4-E2B.litertlm source/MANA-Genesis-4.0-source-project.zip docs/LOCAL_MODEL_SETUP_RU.md docs/MASTER_REQUIREMENTS_RU.md > SHA256SUMS.txt)
+          (cd "$PACKAGE" && sha256sum installer/INSTALL_MANA.apk models/Gemma/Gemma4-E2B.litertlm source/MANA-Genesis-4.0-source-project.zip docs/LOCAL_MODEL_SETUP_RU.md docs/MASTER_REQUIREMENTS_RU.md README-FIRST-RU.txt INSTALL_REPORT_TEMPLATE.txt > SHA256SUMS.txt)
           (cd release/offline && zip -0 -q -r ../MANA-Martynova-FULL-PACKAGE.zip MANA-Genesis-4.0/)
           sha256sum release/MANA-Martynova-FULL-PACKAGE.zip > release/MANA-Martynova-FULL-PACKAGE.zip.sha256
 
