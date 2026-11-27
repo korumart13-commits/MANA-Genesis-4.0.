@@ -242,7 +242,7 @@ class MainActivity : Activity() {
             setPadding(dp(28), dp(32), dp(28), dp(32))
             setBackgroundColor(bg)
         }
-        screen.addView(label("MANA", 38, textColor, true))
+        screen.addView(label("MANA XZ", 38, textColor, true))
         screen.addView(label("GENESIS 4.0", 12, accentSoft, true).apply {
             setPadding(0, dp(6), 0, dp(22))
         })
@@ -344,7 +344,7 @@ class MainActivity : Activity() {
             setPadding(dp(24), dp(28), dp(24), dp(28))
             setBackgroundColor(bg)
         }
-        fallback.addView(label("MANA", 34, textColor, true))
+        fallback.addView(label("MANA XZ", 34, textColor, true))
         fallback.addView(label("GENESIS 4.0", 12, accentSoft, true).apply {
             setPadding(0, dp(4), 0, dp(18))
         })
@@ -495,7 +495,7 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setPadding(0, dp(7), 0, dp(18))
         }
-        header.addView(label("MANA", 35, textColor, true))
+        header.addView(label("MANA XZ", 35, textColor, true))
         header.addView(label("GENESIS 4.0  •  ТВОЁ ПРОСТРАНСТВО", 10, accentSoft, true))
         page.addView(header)
 
@@ -565,7 +565,7 @@ class MainActivity : Activity() {
             if (report.isSuccess) {
                 val result = report.getOrThrow()
                 AlertDialog.Builder(this)
-                    .setTitle("MANA Genesis 4.0")
+                    .setTitle("MANA XZ • Genesis 4.0")
                     .setMessage(result.toReadableText())
                     .setPositiveButton("Готово", null)
                     .setNeutralButton("Открыть разрешения") { _, _ ->
@@ -594,7 +594,7 @@ class MainActivity : Activity() {
                     .show()
             }
         })
-        card.addView(label("MANA ASSISTANT", 11, accentSoft, true))
+        card.addView(label("MANA XZ ASSISTANT", 11, accentSoft, true))
         card.addView(label("Твой телефон. Твои правила.", 19, textColor, true))
         card.addView(action("Состояние MANA • диагностика и восстановление") {
             startActivity(Intent(this, ManaSystemStatusActivity::class.java))
