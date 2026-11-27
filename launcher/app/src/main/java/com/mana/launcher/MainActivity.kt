@@ -1254,7 +1254,7 @@ class MainActivity : Activity() {
                             }
                         }
                     }
-                    require(copied > 0L) { "Файл модели пуст." }
+                    require(copied == ManaModelCatalog.MODEL_SIZE) { "Размер Gemma не совпадает с официальным: ожидалось ${ManaModelCatalog.MODEL_SIZE} байт, получено $copied." }
                     val hash = digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
                     require(hash == OFFICIAL_GEMMA_4_E2B_SHA256) {
                         "Контрольная сумма не совпадает с официальной Gemma 4 E2B. Файл не установлен."
@@ -1472,19 +1472,22 @@ class MainActivity : Activity() {
     private fun downloadOfficialModel() {
         val catalog = modelCatalog
         if (catalog == null) { showMessage("Хранилище загрузок Android недоступно."); return }
-        if (catalog.hasAcceptedGemmaTerms()) {
-            startGemmaDownload(catalog)
-            return
+        val message = if (catalog.hasAcceptedGemmaTerms()) {
+            "Gemma 4 E2B уже включена в установочный ZIP. Выбери её файл в распакованной папке MANA — приложение скопирует модель в защищённое хранилище, проверит точный размер и SHA-256, а затем подключит её. Если ZIP недоступен, можно скачать модель по Wi-Fi."
+        } else {
+            "Gemma 4 E2B занимает около 2,59 ГБ и уже включена в полный установочный ZIP. Перед импортом ознакомься с Gemma Terms of Use и Prohibited Use Policy. После выбора файла MANA проверит точный размер и SHA-256. Нажатие одной из кнопок ниже означает твоё собственное согласие с условиями Gemma. Если не хочешь импортировать файл из ZIP, MANA может загрузить его автоматически по Wi-Fi."
         }
         AlertDialog.Builder(this)
-            .setTitle("Условия модели Gemma 4 E2B")
-            .setMessage("Модель занимает около 2,59 ГБ и загружается только по Wi-Fi. Репозиторий указывает Apache 2.0; исходные веса Gemma также подпадают под Gemma Terms of Use и Prohibited Use Policy. Перед загрузкой ознакомься с условиями на официальной карточке модели и правилами Gemma. После загрузки MANA проверит точный размер и SHA-256. Нажатие «Принимаю и скачать» означает твоё собственное подтверждение условий и запуск загрузки.")
+            .setTitle("Gemma 4 E2B · локальный мозг MANA")
+            .setMessage(message)
             .setNegativeButton("Отмена", null)
-            .setNeutralButton("Открыть карточку модели") { _, _ ->
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm")))
-            }
-            .setPositiveButton("Принимаю и скачать") { _, _ ->
+            .setNeutralButton("Скачать по Wi-Fi") { _, _ ->
+                catalog.acceptGemmaTerms()
                 startGemmaDownload(catalog)
+            }
+            .setPositiveButton("Выбрать Gemma из комплекта") { _, _ ->
+                catalog.acceptGemmaTerms()
+                chooseModelFile()
             }
             .show()
     }
