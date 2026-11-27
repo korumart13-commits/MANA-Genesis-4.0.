@@ -1,8 +1,0 @@
-<configuration description="MANA Brain to app-owned Engine Binder integration test">
-    <option name="test-suite-tag" value="general-tests" />
-    <option name="test-tag" value="mana-brain-binder-integration-tests" />
-    <test class="com.android.tradefed.testtype.AndroidJUnitTest">
-        <option name="package" value="com.mana.system.brain.tests" />
-        <option name="runner" value="android.test.InstrumentationTestRunner" />
-    </test>
-</configuration>
