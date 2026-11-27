@@ -180,3 +180,10 @@ connection negotiation catches `SecurityException`, a state query fails closed a
 disconnected, and a denied request is returned to the caller as
 `ENGINE_PERMISSION_DENIED` rather than silently dropping the callback or crashing the
 request worker. The source-contract checks assert this handling.
+
+
+The backend connection now also has a 15-second establishment/reconnection timeout.
+A service bind that remains pending without delivering a Binder callback is converted
+into a bounded retry instead of leaving the platform Brain indefinitely disconnected.
+Android's normal service reconnection is given this grace period before the service
+unbinds and retries.
