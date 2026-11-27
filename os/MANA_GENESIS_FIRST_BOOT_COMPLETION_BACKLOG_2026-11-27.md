@@ -31,3 +31,18 @@ The initial install should boot with the features that can be built and validate
 ## Capability truth
 
 The Kotlin backlog planner orders tasks, validates dependencies and preserves blocked work. The Android persistence adapter, first-boot UI/service, research connector, CI patch executor and update installer must be connected before the phone can autonomously execute this plan. A backlog entry is not a completed capability.
+
+
+## Android first-boot checkpoint implementation
+
+The launcher now contains `ManaGenesisFirstBootService`:
+
+- Runs after the MANA Engine startup path and builds a conservative capability snapshot from Android build facts and actual process-owned MANA components.
+- Does not infer availability of OEM kernel/device/vendor sources from a device model string.
+- Encrypts the checkpoint with a dedicated AES-256-GCM key held by Android Keystore; each write uses a fresh nonce and a bounded payload.
+- Publishes the checkpoint via an atomic file replacement where supported; a failed write preserves the previous checkpoint.
+- Stores ordered and blocked backlog entries, dependency IDs, required evidence and owner-approval flags.
+- Exposes counts in the read-only MANA System Status screen.
+- Failure to write the advisory checkpoint is logged and does not prevent the Brain from starting.
+
+This is a persistent inventory/checkpoint, not yet an autonomous code executor or update installer. The generated plan remains conservative: exact RMX5566 sources and ROM build stay blocked until verified evidence exists.
