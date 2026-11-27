@@ -1,4 +1,5 @@
 name: MANA Engineering Pipeline
+run-name: MANA Engineering - ${{ inputs.client_run_id || github.run_id }}
 run-name: MANA Engineering CI ${{ inputs.task_id || github.sha }}
 
 on:
@@ -27,7 +28,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: mana-engineering-${{ github.ref }}
+  group: mana-engineering-${{ inputs.client_run_id || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -130,6 +131,39 @@ jobs:
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: dist/*.jar
+
+      - name: Write machine-readable CI diagnostics
+        if: always()
+        shell: bash
+        env:
+          TEST_OUTCOME: ${{ steps.tests.outcome }}
+          JAR_OUTCOME: ${{ steps.jar.outcome }}
+          PATCH_INPUT: ${{ inputs.patch }}
+          CLIENT_RUN_ID: ${{ inputs.client_run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p ci-report
+          PATCH_SHA="$(printf '%s' "$PATCH_INPUT" | sha256sum | awk '{print $1}')"
+          jq -n \
+            --arg task_id "${CLIENT_RUN_ID:-push-$GITHUB_RUN_ID}" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg commit "$GITHUB_SHA" \
+            --arg event "$GITHUB_EVENT_NAME" \
+            --arg test_outcome "${TEST_OUTCOME:-not_run}" \
+            --arg jar_outcome "${JAR_OUTCOME:-not_run}" \
+            --arg patch_sha256 "$PATCH_SHA" \
+            '{task_id:$task_id,run_id:$run_id,commit:$commit,event:$event,test_outcome:$test_outcome,jar_outcome:$jar_outcome,patch_sha256:$patch_sha256,review_only:true,firmware_install_performed:false}' \
+            > ci-report/mana-ci-report.json
+          cat ci-report/mana-ci-report.json
+
+      - name: Upload machine-readable CI diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-CI-diagnostics-${{ github.run_id }}
+          path: ci-report/mana-ci-report.json
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Upload tested candidate and checksum
         uses: actions/upload-artifact@v4
