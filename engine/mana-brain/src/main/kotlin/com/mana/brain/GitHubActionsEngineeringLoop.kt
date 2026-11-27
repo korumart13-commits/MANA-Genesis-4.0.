@@ -128,8 +128,8 @@ class GitHubActionsRestClient(
             val id = job.get("id").asLong
             val name = job.get("name").asString
             output.appendLine("## Failed job: $name (id=$id)")
-            val logs = request("GET", "actions/jobs/$id/logs", followRedirect = true)
-            output.append(logs.take((maxChars - output.length).coerceAtLeast(0)))
+            val logs = unzipJobLogs(downloadJobLogZip("actions/jobs/$id/logs"), (maxChars - output.length).coerceAtLeast(0))
+            output.append(logs)
             output.appendLine()
             if (output.length >= maxChars) return@forEach
         }
