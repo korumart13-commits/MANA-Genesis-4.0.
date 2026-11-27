@@ -86,6 +86,16 @@ jobs:
           assert "localRuntime.shutdown()" not in activity
           assert "engineBinder.think(" in activity
           assert "manaBrain.respond(" not in activity
+          assert activity.count("override fun onDestroy()") == 1
+          assert "ManaEngineReconnectController(this)" in activity
+          assert "override fun onResume()" in activity
+          assert "override fun onPause()" in activity
+          assert "reconnectController?.cancel()" in activity
+          assert "override fun onBindingDied(name: ComponentName?)" in activity
+          assert "override fun onNullBinding(name: ComponentName?)" in activity
+          assert "reconnectController?.onFailure()" in activity
+          assert "reconnectController?.onConnected()" in activity
+          assert "editor.apply()" in Path("launcher/app/src/main/java/com/mana/launcher/ManaEngineReconnectController.kt").read_text()
           assert "val brainBridge = ManaBrainBridge(local, listOf(cloudGateway, yandexProvider))" in owner
           assert "ManaMemoryService(" in owner
           assert "MANA Engine dependencies are already prepared" in owner
