@@ -16,6 +16,7 @@ data class BrainRequest(
 ) {
     init {
         require(prompt.isNotBlank()) { "Prompt must not be blank" }
+        require(prompt.length <= MAX_PROMPT_CHARS) { "Prompt exceeds the maximum supported length" }
         require(preferredCloudProvider == null || preferredCloudProvider.isNotBlank())
     }
 }
@@ -93,10 +94,12 @@ class ManaBrain(
                 }
             )
 
+        val cloudText = withTimeoutOrNull(cloudTimeoutMs) {
+            cloud.generate(request.prompt)
+        } ?: throw InferenceTimeoutException("Cloud inference exceeded its time limit.")
+        require(cloudText.isNotBlank()) { "Cloud inference returned an empty response." }
         return BrainResponse(
-            text = withTimeoutOrNull(cloudTimeoutMs) {
-                cloud.generate(request.prompt)
-            } ?: throw InferenceTimeoutException("Cloud inference exceeded its time limit."),
+            text = cloudText,
             provider = canonicalProviderId(cloud.id),
             local = false
         )
@@ -111,6 +114,7 @@ class ManaBrain(
         }
     }
     companion object {
+        const val MAX_PROMPT_CHARS = 32_000
         const val DEFAULT_LOCAL_TIMEOUT_MS = 90_000L
         const val DEFAULT_CLOUD_TIMEOUT_MS = 60_000L
     }
