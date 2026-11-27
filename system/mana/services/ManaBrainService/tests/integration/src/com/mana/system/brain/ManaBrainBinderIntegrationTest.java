@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.content.pm.PackageManager;
 import android.test.InstrumentationTestCase;
 
 import com.mana.brain.IManaBrain;
@@ -33,7 +34,7 @@ public final class ManaBrainBinderIntegrationTest extends InstrumentationTestCas
         final Context testContext = getInstrumentation().getContext();
         assertEquals(
                 "Integration test must be signed with the same platform certificate.",
-                Context.PERMISSION_GRANTED,
+                PackageManager.PERMISSION_GRANTED,
                 testContext.checkSelfPermission("com.mana.permission.BIND_BRAIN"));
 
         final CountDownLatch connected = new CountDownLatch(1);
