@@ -2,9 +2,9 @@
 <manifest>
     <remote name="mana-github" fetch="https://github.com/" />
     <default remote="mana-github" revision="refs/heads/main" sync-j="4" />
-    <!-- Immutable source snapshot; advance deliberately when promoting a tested snapshot. -->
+    <!-- Immutable previously tested source snapshot; advance only after CI passes. -->
     <project
         name="korumart13-commits/MANA-Genesis-4.0."
         path="vendor/mana/genesis"
-        revision="df00b28b34343edc63a214254c0e98213ae6650d" />
+        revision="071ec83e" />
 </manifest>
