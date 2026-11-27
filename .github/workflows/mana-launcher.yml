@@ -67,6 +67,7 @@ jobs:
           service = Path("launcher/app/src/main/java/com/mana/launcher/ManaEngineService.kt").read_text()
           bridge = Path("launcher/app/src/main/java/com/mana/launcher/ManaEngineBridgeService.kt").read_text()
           owner = Path("launcher/app/src/main/java/com/mana/launcher/ManaEngineProcessOwner.kt").read_text()
+          catalog = Path("launcher/app/src/main/java/com/mana/launcher/ManaModelCatalog.kt").read_text()
           manifest = Path("launcher/app/src/main/AndroidManifest.xml").read_text()
           assert "ManaEngineProcessOwner.acquire(this, ManaAndroidKeyProvider())" in service
           assert "ManaEngineProcessOwner.release()" in service
@@ -86,6 +87,10 @@ jobs:
           assert "modelLoadCallbacks" in owner
           assert "Локальная модель ещё не установлена" in owner
           assert "pendingCallbacks.forEach" in owner
+          assert "fun acceptGemmaTerms()" in catalog
+          assert "Выбрать Gemma из комплекта" in activity
+          assert "catalog.acceptGemmaTerms()" in activity
+          assert "copied == ManaModelCatalog.MODEL_SIZE" in activity
           assert "initializeFromService(" not in activity
           assert "initializeDependenciesFromService(" not in activity
           assert "LocalModelRuntime(" not in activity
@@ -251,6 +256,8 @@ jobs:
           URL="https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/21c646194210256750db12cfa1e4fdf22bd3ddf1/gemma-4-E2B-it.litertlm"
           curl --fail --location --retry 5 --retry-all-errors --connect-timeout 30 --max-time 3600 "$URL" --output "$MODEL"
           echo "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c  $MODEL" | sha256sum --check -
+          cp "$MODEL" "$PACKAGE/models/Gemma/gemma-4-E2B-it.litertlm"
+          test "$(stat -c '%s' "$PACKAGE/models/Gemma/gemma-4-E2B-it.litertlm")" = "2588147712"
           test "$(stat -c '%s' "$MODEL")" -gt 2500000000
           test "$(stat -c '%s' "$MODEL")" -lt 3000000000
           cp launcher/app/build/outputs/apk/debug/app-debug.apk "$PACKAGE/installer/INSTALL_MANA.apk"
@@ -262,8 +269,9 @@ jobs:
           Источник: https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm
           Закреплённый файл: https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/21c646194210256750db12cfa1e4fdf22bd3ddf1/gemma-4-E2B-it.litertlm
           Лицензия/условия: Apache 2.0 для формата упаковки; исходные веса также регулируются Gemma Terms of Use и Prohibited Use Policy.
-          MANA скачивает модель автоматически через Android Download Manager после явного согласия владельца.
-          Пользователю не нужно распаковывать модель или выбирать файл вручную.
+          Полный файл модели включён в models/Gemma/gemma-4-E2B-it.litertlm внутри этого ZIP.
+          После явного согласия владелец выбирает этот файл в системном Android-пикере; MANA копирует его в закрытое хранилище, проверяет размер и SHA-256, затем подключает.
+          Альтернативно MANA может загрузить ту же закреплённую версию через Android Download Manager по Wi-Fi.
           EOF
           git archive --format=zip --output="$PACKAGE/source/MANA-Genesis-4.0-source-project.zip" HEAD
           cp launcher/LOCAL_MODEL_SETUP.md "$PACKAGE/docs/LOCAL_MODEL_SETUP_RU.md"
@@ -273,26 +281,30 @@ jobs:
 
           СТРУКТУРА:
           installer/INSTALL_MANA.apk — единое приложение MANA со встроенным мастером установки.
-          models/Gemma/MODEL_MANIFEST_RU.txt — источник, размер и SHA-256 модели Gemma; приложение загрузит её автоматически.
+          models/Gemma/gemma-4-E2B-it.litertlm — полный файл Gemma 4 E2B (2,588,147,712 байт).
+          models/Gemma/MODEL_MANIFEST_RU.txt — источник, лицензия и SHA-256 модели.
           source/MANA-Genesis-4.0-source-project.zip — исходный проект этой сборки.
           docs/ — русская документация и обязательные требования проекта.
-          SHA256SUMS.txt — контрольные суммы файлов комплекта.
+          SHA256SUMS.txt — контрольные суммы, включая сам файл Gemma.
 
           УСТАНОВКА:
-          1. Открой installer/INSTALL_MANA.apk и подтверди обычную установку Android.
-          2. Запусти MANA и нажми главную кнопку «УСТАНОВИТЬ MANA».
-          3. Перед первой загрузкой Gemma прочитай условия и подтверди их сам кнопкой
-             «Принимаю и скачать». MANA не принимает лицензию за владельца.
-          4. Android Download Manager автоматически загружает модель с возобновлением только по Wi-Fi;
-             MANA показывает процент и объём загрузки на экране; Android Download Manager ведёт фоновую загрузку и сохраняет её состояние.
-          5. MANA проверяет размер и SHA-256 и подключает Gemma автоматически:
-             сразу по системному событию завершения загрузки, если приложение открыто,
-             либо при следующем открытии MANA, если Android завершил процесс приложения.
+          1. Полностью распакуй ZIP на телефоне.
+          2. Открой installer/INSTALL_MANA.apk и подтверди штатную установку Android.
+          3. Запусти MANA и нажми главную кнопку «УСТАНОВИТЬ MANA».
+          4. Прочитай условия Gemma и подтверди их. В системном окне выбора Android укажи
+             models/Gemma/gemma-4-E2B-it.litertlm из распакованной папки.
+          5. MANA скопирует модель в своё закрытое хранилище, проверит точный размер и SHA-256,
+             затем автоматически подключит её к локальному движку LiteRT-LM.
+          6. Если файл комплекта недоступен, выбери «Скачать по Wi-Fi» — загрузка возобновляется
+             через Android Download Manager, а проверка и подключение выполняются автоматически.
 
-          РУЧНЫЕ КОМАНДЫ TERMUX НЕ НУЖНЫ. Ручной выбор файла не является обычным сценарием.
+          Это одна кнопка запуска установки внутри MANA. Системное окно выбора файла и
+          подтверждения Android остаётся под контролем Android; приложение не обходит защиту ОС.
+          РУЧНЫЕ КОМАНДЫ TERMUX И САМОСТОЯТЕЛЬНАЯ СБОРКА НЕ НУЖНЫ.
 
           ВАЖНЫЕ УСЛОВИЯ:
-          - Для загрузки модели требуется около 2,59 ГБ плюс запас свободного места.
+          - Для распаковки архива и импорта Gemma рекомендуется иметь около 8 ГБ свободного места
+            временно. После успешного импорта можно удалить ZIP и распакованную копию модели.
           - INSTALL_MANA.apk — тестовая debug-сборка, подпись проверяется apksigner в CI. Для постоянных обновлений нужна отдельная стабильная release-подпись; тестовый сертификат CI может меняться между сборками. Android не установит APK с другим сертификатом поверх старой версии; может потребоваться удалить прежнюю тестовую версию, что удалит её локальные данные.
           - APK не может самостоятельно подтвердить лицензию, выдать себе разрешения,
             назначить себя системным ассистентом или обойти ограничения Android.
@@ -315,7 +327,7 @@ jobs:
           Локальная генерация без интернета: НЕ ПРОВЕРЕНО
           Примечания / ошибки: __________________
           EOF
-          (cd "$PACKAGE" && sha256sum installer/INSTALL_MANA.apk models/Gemma/MODEL_MANIFEST_RU.txt source/MANA-Genesis-4.0-source-project.zip docs/LOCAL_MODEL_SETUP_RU.md docs/MASTER_REQUIREMENTS_RU.md README-FIRST-RU.txt INSTALL_REPORT_TEMPLATE.txt > SHA256SUMS.txt)
+          (cd "$PACKAGE" && sha256sum installer/INSTALL_MANA.apk models/Gemma/gemma-4-E2B-it.litertlm models/Gemma/MODEL_MANIFEST_RU.txt source/MANA-Genesis-4.0-source-project.zip docs/LOCAL_MODEL_SETUP_RU.md docs/MASTER_REQUIREMENTS_RU.md README-FIRST-RU.txt INSTALL_REPORT_TEMPLATE.txt > SHA256SUMS.txt)
           (cd release/offline && zip -0 -q -r ../MANA-Genesis-4.0-INSTALLER-PACKAGE.zip MANA-Genesis-4.0/)
           sha256sum release/MANA-Genesis-4.0-INSTALLER-PACKAGE.zip > release/MANA-Genesis-4.0-INSTALLER-PACKAGE.zip.sha256
 
