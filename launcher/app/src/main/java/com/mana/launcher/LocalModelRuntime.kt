@@ -8,6 +8,9 @@ import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.SamplerConfig
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.flow.collect
 import java.io.File
 import java.util.concurrent.Executors
@@ -21,6 +24,7 @@ class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntim
     @Volatile private var conversation: Conversation? = null
     @Volatile private var loadedModel: File? = null
     @Volatile private var loadedBackend: String? = null
+    private val activeJobs = java.util.concurrent.ConcurrentHashMap.newKeySet<Job>()
 
 
     override fun isReady(): Boolean = conversation != null && loadedModel?.isFile == true
@@ -64,8 +68,13 @@ class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntim
                 require(prompt.isNotBlank()) { "Пустой запрос." }
                 runBlocking {
                     val generationJob = checkNotNull(coroutineContext[Job])
+                    activeJobs.add(generationJob)
                     cancellation.attach(generationJob)
-                    active.sendMessageAsync(prompt).collect { message -> onChunk(message.toString()) }
+                    try {
+                        active.sendMessageAsync(prompt).collect { message -> onChunk(message.toString()) }
+                    } finally {
+                        activeJobs.remove(generationJob)
+                    }
                 }
                 callback(Result.success(Unit))
             } catch (error: Exception) {
@@ -122,12 +131,8 @@ class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntim
         }
     }
 
-    override fun cancelGeneration() {
-        activeGeneration.get()?.cancel(CancellationException("MANA inference request was cancelled or timed out"))
-    }
-
     override fun shutdown() {
-        cancelGeneration()
+        activeJobs.forEach { it.cancel(CancellationException("MANA local runtime is shutting down")) }
         if (closed.compareAndSet(false, true)) {
             executor.execute { closeLoaded() }
             executor.shutdown()
