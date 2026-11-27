@@ -65,6 +65,41 @@ class ManaModelCatalog(context: Context) {
 
     fun savedModelPath(): String? = if (prefs.getBoolean(KEY_LICENSE_ACCEPTED, false)) prefs.getString(KEY_ACTIVE_PATH, null) else null
 
+    /** Human-readable DownloadManager state for the MANA install screen. */
+    fun downloadProgressText(): String? {
+        val id = prefs.getLong(KEY_DOWNLOAD_ID, -1L)
+        if (id < 0L) return null
+        val cursor = manager.query(DownloadManager.Query().setFilterById(id))
+        return cursor.use {
+            if (!it.moveToFirst()) return null
+            val status = it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+            val downloaded = it.getLong(it.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
+            val total = it.getLong(it.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+            val reason = it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
+            when (status) {
+                DownloadManager.STATUS_PENDING -> "Gemma: ожидание загрузки по Wi-Fi…"
+                DownloadManager.STATUS_RUNNING -> {
+                    val amount = formatBytes(downloaded)
+                    if (total > 0L) {
+                        val percent = ((downloaded * 100L) / total).coerceIn(0L, 100L)
+                        "Загрузка Gemma: ${percent}% (${amount} из ${formatBytes(total)})"
+                    } else {
+                        "Загрузка Gemma: ${amount} получено"
+                    }
+                }
+                DownloadManager.STATUS_PAUSED -> "Загрузка Gemma приостановлена (код ${reason}); Android продолжит её, когда условия сети позволят."
+                DownloadManager.STATUS_SUCCESSFUL -> "Gemma загружена; проверяю SHA-256 и подключаю модель…"
+                else -> "Загрузка Gemma завершилась ошибкой (код ${reason}). Можно безопасно повторить установку."
+            }
+        }
+    }
+
+    private fun formatBytes(value: Long): String {
+        if (value < 0L) return "неизвестно"
+        val gib = value / (1024.0 * 1024.0 * 1024.0)
+        return String.format(java.util.Locale.US, "%.2f ГБ", gib)
+    }
+
     fun verifiedSavedModel(): File? {
         if (!prefs.getBoolean(KEY_LICENSE_ACCEPTED, false)) return null
         val path = savedModelPath() ?: return null
