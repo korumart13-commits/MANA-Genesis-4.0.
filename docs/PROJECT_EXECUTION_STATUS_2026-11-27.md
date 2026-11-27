@@ -172,3 +172,16 @@ The project must preserve the full MANA product requirements in `docs/MASTER_PRO
 - The first timeout CI attempt exposed a missing `withTimeoutOrNull` import; this was corrected in commit `7479fba6001764749943d513e91aebd45e1834ff`. The initial failed run is `45919568435`; it is not counted as a passing verification.
 - Added per-request cancellation handles to the local inference interface. Each handle is bound to the exact queued LiteRT generation job, so a timed-out queued request cannot cancel another request currently running on the single-thread executor. Shutdown cancels all active generation jobs. Added unit tests for cancellation isolation and cancellation-before-start.
 - The final Gradle verification for these latest changes is pending at the time this note is written; no compile/test success is claimed until that run completes. No physical-device LiteRT cancellation test has been performed.
+
+
+## Verified Gradle release and pinned AOSP source snapshot — 2026-11-27
+
+- Gradle workflow run `45921372734` (run 937), commit `18b84fcb65f09b12975db4e5bd20d88aaddac29f`, completed with overall conclusion `success`. All Brain/Core tests, Android debug assembly and unit tests, unsigned release APK build, manifest/package checks, source archive packaging and artifact uploads passed.
+- Published artifacts:
+  - Source project ZIP: `MANA-Genesis-4.0-source-project`, artifact `15164820555`, 17,491,491 bytes, SHA-256 `2ef3851b5695950cf5aabcaa7ed2b7a07f79ce4882fafa5963d7bbc294b168b0`, expires 2026-12-27.
+  - Debug APK prototype ZIP: `MANA-Android-debug-prototype-NOT-ROM`, artifact `15164646736`, 49,716,089 bytes, SHA-256 `6f817fa10213e5899ab28a0b371939901d574ba55c1c422a5219751a82dde271`, expires 2026-12-11.
+  - Unsigned release APK ZIP: `MANA-Android-release-unsigned-for-AOSP-platform-signing`, artifact `15164646725`, 45,819,498 bytes, SHA-256 `da5f3bba523d5e6c5d723130cefbdb4175a19b3bf498551e9a6cacd4c7b58219`, expires 2026-12-11.
+- These SHA-256 values are GitHub artifact archive digests, not the inner APK checksum. The release APK is unsigned and intended for later AOSP platform signing. The debug artifact is a launcher prototype; neither artifact is a ROM, OTA or installable firmware.
+- Advanced `platform/local_manifests/mana.xml` to immutable MANA source snapshot `18b84fcb65f09b12975db4e5bd20d88aaddac29f` in commit `5363e087acd4dd2cfebad99786a01ccab66ed5ae`. The pin intentionally references the previously tested source snapshot, not the manifest-update commit itself.
+- Call-screening source review: `ManaCallScreeningService` responds permissively to Telecom before scheduling bounded auxiliary contact lookup; it never answers, rejects or records calls. The queue is single-worker and bounded to 16. Contact lookup is local-only and only occurs with READ_CONTACTS permission. Android's screening API does not provide the requested 10-second delay; this is explicitly documented rather than simulated.
+- Remaining gates: verify the manifest-update commit with source-contract CI; inspect actual APK contents/signing state if needed; build the platform modules in a real Android 16 AOSP checkout; add SELinux service policy; run Binder instrumentation on emulator/device. Device-specific tree, matching OEM kernel/vendor sources, VINTF/AVB and stock restore remain blockers. No firmware or phone flash is claimed.
