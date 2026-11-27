@@ -1,54 +1,53 @@
 # MANA Brain Binder integration test
 
-## What the device test covers
+## What the test covers
 
-The Soong module `mana-brain-binder-integration-tests` is a platform-signed
-instrumentation test. It binds to the explicit `com.mana.system.brain/.ManaBrainService`
-component and checks:
+The canonical Soong instrumentation module is
+`system/mana/tests/ManaBrainBinderIntegration`. It is platform-signed and binds to
+`com.mana.system.brain/.ManaBrainService`. It checks the signature permission, AIDL protocol
+version, backend handshake with `ManaEngineBridgeService`, and delivery of a callback for a
+local-only request. A model-not-ready or inference diagnostic is acceptable; a disconnected
+backend is a failure.
 
-1. The test process has the signature permission `com.mana.permission.BIND_BRAIN`.
-2. The public Brain AIDL endpoint returns protocol version 1.
-3. The Brain service reaches a connected backend state rather than remaining in
-   `UNAVAILABLE_ENGINE_BACKEND_DISCONNECTED`.
-4. A local-only request receives a callback from the backend. Model-not-ready or inference
-   errors are acceptable diagnostics; a missing/disconnected backend is not.
+This is a device-side cross-process Binder test, not a host-side policy test and not a Gradle
+unit test.
 
-This test exercises the installed Android services across real Binder processes. It is not
-replaced by the existing host-side request-policy tests or Gradle unit tests.
+## Run on a provisioned AOSP build host
 
-## Preconditions
+Prerequisites:
 
-- A full Android 16 AOSP checkout with the MANA project synced at
+- Full Android 16 AOSP checkout with the pinned MANA project at
   `vendor/mana/genesis`.
-- A verified product configuration that includes `ManaBrainService` and `ManaLauncher`.
-- An unsigned Gradle release APK containing `ManaEngineBridgeService`.
-- The APK staged through `tools/stage_mana_aosp_prebuilt.sh`, so Soong signs it with the
-  same platform certificate as `ManaBrainService`.
-- A compatible emulator/device already running an image built from that product. This test
-  does not flash an image or change device partitions.
+- Verified product configuration including `ManaBrainService` and `ManaLauncher`.
+- Unsigned Gradle release APK containing `ManaEngineBridgeService`.
+- Booted emulator/device already running an image built from that product for the runtime
+  test. The runner does not flash, unlock, wipe or write partitions.
 
-## Run
-
-From a Linux AOSP build host:
+Build Soong modules and run the host policy test:
 
 ```sh
-vendor/mana/genesis/tools/run_mana_aosp_binder_integration.sh \
+vendor/mana/genesis/tools/run_mana_soong_integration.sh \
   "$ANDROID_BUILD_TOP" <verified-lunch-target> \
   /path/to/app-release-unsigned.apk
 ```
 
-The runner invokes Soong for `mana-brain-interface`, `ManaBrainService`, `ManaLauncher`
-and `mana-brain-binder-integration-tests`, checks that both services are already installed
-on the connected test image, then invokes:
+To additionally run the device-side Binder instrumentation test:
 
 ```sh
-atest mana-brain-binder-integration-tests
+vendor/mana/genesis/tools/run_mana_soong_integration.sh \
+  "$ANDROID_BUILD_TOP" <verified-lunch-target> \
+  /path/to/app-release-unsigned.apk --run-device-tests
 ```
+
+The runner invokes Soong's own test checks, builds `mana-brain-interface`,
+`ManaBrainService`, staged `ManaLauncher`, `mana-brain-request-policy-tests` and
+`ManaBrainBinderIntegrationTests`; it then uses `atest` for the host policy test and,
+when explicitly requested, the device Binder test.
 
 ## Current execution status
 
-The test module, test case and guarded runner are committed as source. GitHub CI performs
-static contract checks and shell syntax validation. No full AOSP checkout is present in the
-project environment, so a real Soong compile, platform certificate comparison and device-side
-Binder test remain pending. Do not report this test as passed until Tradefed executes it on a
-running MANA product image and the test result is green.
+The instrumentation test and runner are committed. GitHub CI checks their source contract and
+the shell runner syntax. A full AOSP Android 16 checkout is not present in the repository
+workspace, so Soong compilation, platform certificate comparison and Tradefed execution on a
+running MANA product image remain pending. Do not report the test as passed until the actual
+Soong build and `atest ManaBrainBinderIntegrationTests` both complete successfully.
