@@ -24,6 +24,16 @@ bash vendor/mana/genesis/platform/build_mana_platform_modules.sh <verified-aosp-
 
 The guarded script selects the lunch target and builds the source-backed AIDL interface, Brain service and host policy tests, Settings and Control Center through Soong. A successful module build proves compilation for the selected AOSP target only; it does not establish RMX5566RU hardware compatibility.
 
+## Common MANA product fragment
+
+A verified AOSP product makefile can include:
+
+```make
+include vendor/mana/genesis/platform/mana_aosp16_common_product.mk
+```
+
+This common fragment sets MANA product identity, declares the source-backed Soong namespaces and includes the MANA system package list. It deliberately does not define a device product, kernel, fstab, vendor files or partition configuration.
+
 ## Device integration gate
 
 Do not add an RMX5566RU product/lunch target until the exact device tree, matching vendor blobs, kernel source/config and VINTF compatibility data are available. Shared SM6225 support from another brand is useful research, not a drop-in device port.
