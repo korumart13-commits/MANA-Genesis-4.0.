@@ -207,9 +207,18 @@ class MainActivity : Activity() {
         reconnectController = ManaEngineReconnectController(this) {
             if (activityResumed && setupStarted) attemptEngineConnection()
         }
-        // The owner starts the complete app-level bootstrap with one explicit action.
-        // No modules or shell commands are requested individually.
-        showOneTapSetupScreen("Один запуск подготовит все функции MANA, доступные на RMX5566RU.")
+        val setupPreferences = getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE)
+        val wasStarted = setupPreferences.getBoolean("setup_started", false)
+        val wasCompleted = setupPreferences.getBoolean("setup_completed", false)
+        setupStarted = wasStarted || wasCompleted
+        if (wasStarted && !wasCompleted) {
+            showOneTapSetupScreen("Возобновлю незавершённую настройку MANA автоматически.")
+        } else if (wasCompleted) {
+            showEngineUnavailableScreen("Настройка MANA уже выполнена. Подключаю центральный Brain…")
+        } else {
+            // The owner starts the complete app-level bootstrap with one explicit action.
+            showOneTapSetupScreen("Один запуск подготовит все функции MANA, доступные на RMX5566RU.")
+        }
     }
 
     private fun showOneTapSetupScreen(message: String) {
@@ -246,6 +255,10 @@ class MainActivity : Activity() {
         if (setupRunning) return
         setupStarted = true
         setupRunning = true
+        getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE).edit()
+            .putBoolean("setup_started", true)
+            .putBoolean("setup_completed", false)
+            .apply()
         showOneTapSetupScreen("Проверяю RMX5566RU, целостность MANA, локальное хранилище и запускаю доступные компоненты…")
         Thread({
             var report: ManaOneTapSetupCoordinator.Report? = null
@@ -262,9 +275,18 @@ class MainActivity : Activity() {
                 if (failure != null) {
                     showOneTapSetupScreen("Настройка прервалась: ${failure?.message ?: "неизвестная ошибка"}. Нажми одну кнопку, чтобы безопасно повторить.")
                 } else if (report?.isTargetDevice != true) {
-                    showOneTapSetupScreen("Это не подтверждённый RMX5566RU / RE645F с Android 16. Устройство не будет настроено как целевое. Проверь отчёт MANA.")
+                    setupStarted = false
+                    getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE).edit()
+                        .putBoolean("setup_started", false)
+                        .putBoolean("setup_completed", false)
+                        .apply()
+                    showOneTapSetupScreen("Это не подтверждённый RMX5566RU / RE645F с Android 16. Настройка целевого устройства остановлена.")
                     showMessage(report?.toReadableText() ?: "Профиль целевого устройства не подтверждён.")
                 } else {
+                    getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE).edit()
+                        .putBoolean("setup_started", true)
+                        .putBoolean("setup_completed", true)
+                        .apply()
                     showEngineUnavailableScreen("Профиль RMX5566RU подтверждён. Настройка завершена; подключаю MANA Brain…")
                     attemptEngineConnection()
                 }
@@ -403,7 +425,12 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         activityResumed = true
-        if (setupStarted && manaEngineBound && manaEngineBinder?.isInitialized() == true) {
+        val setupPreferences = getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE)
+        val incompleteSetup = setupPreferences.getBoolean("setup_started", false) &&
+            !setupPreferences.getBoolean("setup_completed", false)
+        if (incompleteSetup && !setupRunning) {
+            startManaOneTapSetup()
+        } else if (setupStarted && manaEngineBound && manaEngineBinder?.isInitialized() == true) {
             reconnectController?.onConnected()
         } else if (setupStarted && !manaEngineBound && manaEngineBinder == null) {
             attemptEngineConnection()
