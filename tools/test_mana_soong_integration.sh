@@ -13,6 +13,9 @@ grep -F 'pm path com.mana.system.brain' tools/run_mana_soong_integration.sh
 grep -F 'pm path com.mana.launcher' tools/run_mana_soong_integration.sh
 grep -F 'atest --host mana-brain-request-policy-tests' tools/run_mana_soong_integration.sh
 grep -F 'atest ManaBrainBinderIntegrationTests' tools/run_mana_soong_integration.sh
+grep -F 'ManaBrainService.apk' tools/run_mana_soong_integration.sh
+grep -F 'verify_mana_platform_signature.sh' tools/run_mana_soong_integration.sh
+grep -F '"$BRAIN_SIGNED_APK"' tools/run_mana_soong_integration.sh
 grep -F 'android_app_import' tools/stage_mana_aosp_prebuilt.sh
 grep -F 'certificate: "platform"' tools/stage_mana_aosp_prebuilt.sh
 grep -F 'android:permission="com.mana.permission.BIND_BRAIN"' launcher/app/src/main/AndroidManifest.xml
