@@ -18,7 +18,7 @@ data class VerifiedManaPack(val packId: String, val packVersion: String, val tar
 /** Verifies .manapack archives using an application-provisioned ECDSA trust anchor. */
 class ManaPackVerifier(
     private val trustedKey: PublicKey, private val device: String, private val osVersion: String,
-    private val apiLevel: Int, private val maxTotalPayloadBytes: Long = 512L * 1024 * 1024
+    private val apiLevel: Int, private val maxTotalPayloadBytes: Long = 4L * 1024 * 1024 * 1024
 ) {
     fun verify(file: File, stagingRoot: File): VerifiedManaPack {
         require(file.isFile && file.canRead()) { "MANA pack is not readable." }
