@@ -99,6 +99,23 @@ class ManaSystemStatusActivity : Activity() {
         }
         entries += "Приложение" to "MANA Genesis • диагностика приложения, не статус прошивки"
 
+        // Universal runtime profile: generated on every audit, independent of phone brand.
+        val universalProfile = runCatching { ManaUniversalDeviceProfiler.inspect(this) }.getOrNull()
+        if (universalProfile != null) {
+            entries += "Универсальный профиль" to "Собрано фактов: ${universalProfile.facts.size}; проверено возможностей: ${universalProfile.capabilities.size}"
+            universalProfile.facts.forEach { fact ->
+                entries += fact.key to "${fact.value} [${fact.status}]"
+            }
+            universalProfile.capabilities.forEach { capability ->
+                entries += "Возможность: ${capability.id}" to "${capability.status} — ${capability.reason}"
+            }
+            runCatching {
+                File(filesDir, "MANA_DEVICE_AUDIT.json").writeText(universalProfile.toJson(), Charsets.UTF_8)
+            }
+        } else {
+            entries += "Универсальный профиль" to "ERROR: не удалось безопасно прочитать характеристики устройства"
+        }
+
         report = entries.joinToString("\n") { "${it.first}: ${it.second}" }
         entries.forEach { (name, value) ->
             val card = LinearLayout(this).apply {
