@@ -65,7 +65,18 @@ fi
   echo "ERROR: Soong did not emit a ManaLauncher.apk; refusing to skip signature verification." >&2
   exit 1
 }
-"$MANA_TOP/tools/verify_mana_platform_signature.sh" "$AOSP_TOP" "$SIGNED_APK" "${MANA_PLATFORM_CERT:-$AOSP_TOP/build/target/product/security/platform.x509.pem}"
+BRAIN_SIGNED_APK=""
+if [[ -d "$PRODUCT_OUT" ]]; then
+  BRAIN_SIGNED_APK="$(find "$PRODUCT_OUT" -type f -name ManaBrainService.apk -print -quit)"
+fi
+if [[ -z "$BRAIN_SIGNED_APK" ]]; then
+  BRAIN_SIGNED_APK="$(find "$AOSP_TOP/out/soong/.intermediates" -type f -name ManaBrainService.apk -print -quit 2>/dev/null || true)"
+fi
+[[ -n "$BRAIN_SIGNED_APK" ]] || {
+  echo "ERROR: Soong did not emit a ManaBrainService.apk; refusing to skip signature verification." >&2
+  exit 1
+}
+"$MANA_TOP/tools/verify_mana_platform_signature.sh" "$AOSP_TOP" "$SIGNED_APK" "${MANA_PLATFORM_CERT:-$AOSP_TOP/build/target/product/security/platform.x509.pem}" "$BRAIN_SIGNED_APK"
 
 # Run the host policy tests as a separate test result.
 atest --host mana-brain-request-policy-tests
