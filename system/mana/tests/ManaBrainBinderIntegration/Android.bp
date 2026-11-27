@@ -1,0 +1,9 @@
+android_test {
+    name: "ManaBrainBinderIntegrationTests",
+    manifest: "AndroidManifest.xml",
+    srcs: ["src/**/*.java"],
+    static_libs: ["mana-brain-interface"],
+    platform_apis: true,
+    certificate: "platform",
+    test_suites: ["device-tests"],
+}
