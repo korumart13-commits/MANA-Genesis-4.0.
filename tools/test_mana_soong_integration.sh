@@ -34,4 +34,6 @@ grep -F 'Local inference is unavailable and cloud processing is not permitted.' 
 grep -F '"READY".equals(state)' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
 grep -F '"READY_NO_LOCAL_MODEL".equals(state)' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
 grep -F 'Boolean.TRUE.equals(resultLocal.get())' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
+grep -F 'callbackCount.get()' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
+grep -F 'callbackDelivered.await(180, TimeUnit.SECONDS)' system/mana/tests/ManaBrainBinderIntegration/src/com/mana/system/brain/tests/ManaBrainBinderIntegrationTest.java
 echo "MANA Soong and Binder integration contract checks passed."
