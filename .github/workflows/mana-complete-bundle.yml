@@ -153,7 +153,7 @@ jobs:
                   f.write("None found.\n")
           with (docs / "SHA256SUMS.txt").open("w", encoding="utf-8") as f:
               for path in sorted(p for p in root.rglob("*") if p.is_file() and p.name != "SHA256SUMS.txt"):
-                  f.write(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(root)}\n")
+                  f.write(f"{sha256(path)}  {path.relative_to(root)}\n")
           print(f"Retained {len(seen)} unique files; removed {len(removed)} exact duplicates.")
           PY
 
@@ -169,8 +169,26 @@ jobs:
           test -s "$ROOT/01_Source_LATEST/launcher/app/build.gradle.kts"
           grep -Fq 'com.google.ai.edge.litertlm:litertlm-android:0.16.1' "$ROOT/01_Source_LATEST/launcher/app/build.gradle.kts"
           (cd "$ROOT" && sha256sum -c 04_Documentation/SHA256SUMS.txt)
-          find "$ROOT" -type f -printf '%s %p\n' | sort -nr | head -20
+          find "$ROOT" -type f -printf '%s %p\\n' | sort -nr | head -20
           du -sh "$ROOT"
+          command -v zip
+          BUNDLE="$RUNNER_TEMP/MANA_Genesis_4.0_COMPLETE.zip"
+          (cd "$RUNNER_TEMP" && zip -0 -qr "$BUNDLE" "MANA_Genesis_4.0_COMPLETE")
+          unzip -tq "$BUNDLE"
+          sha256sum "$BUNDLE" > "$BUNDLE.sha256"
+          test -s "$BUNDLE"
+          test -s "$BUNDLE.sha256"
+
+      - name: Upload the single unified MANA ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Genesis-4.0-COMPLETE-SOURCE-APK-GEMMA-LITERT
+          path: |
+            ${{ runner.temp }}/MANA_Genesis_4.0_COMPLETE.zip
+            ${{ runner.temp }}/MANA_Genesis_4.0_COMPLETE.zip.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
 
       - name: Upload the single unified MANA bundle
         uses: actions/upload-artifact@v4
