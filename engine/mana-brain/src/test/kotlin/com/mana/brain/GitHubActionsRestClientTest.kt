@@ -60,7 +60,11 @@ class GitHubActionsRestClientTest {
     }
 
     @Test fun downloadsZipLogsAndReturnsBoundedFailureEvidence() = runBlocking {
-        val zipBytes = logZip("e: unresolved reference: missingSymbol\nFAILURE: Build failed with an exception.")
+        val zipBytes = logZip(
+            "e: unresolved reference: missingSymbol\nFAILURE: Build failed with an exception.\n" +
+                "Authorization: Bearer github_pat_secret_example_12345678901234567890\n" +
+                "ghp_abcdefghijklmnopqrstuvwxyz1234567890\napi_key=sk-example_secret_1234567890123456"
+        )
         var receivedRunId = ""
         val server = startServer { path, exchange ->
             when {
@@ -94,6 +98,10 @@ class GitHubActionsRestClientTest {
             assertTrue(logs.contains("unresolved reference"))
             assertTrue(logs.contains("Build failed"))
             assertTrue(logs.length <= 4_000)
+            assertTrue(logs.contains("[REDACTED]"))
+            assertTrue(!logs.contains("github_pat_secret_example"))
+            assertTrue(!logs.contains("ghp_abcdefghijklmnopqrstuvwxyz"))
+            assertTrue(!logs.contains("sk-example_secret"))
         } finally { server.stop(0) }
     }
 
