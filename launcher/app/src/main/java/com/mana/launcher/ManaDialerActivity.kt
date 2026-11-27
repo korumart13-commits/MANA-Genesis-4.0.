@@ -35,6 +35,7 @@ class ManaDialerActivity : Activity() {
     private var pendingNumber: String? = null
     private var receiverRegistered = false
     private var muted = false
+    private var pendingCallScreeningRoleAfterContacts = false
 
     private val callReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) { refreshCallControls() }
@@ -184,6 +185,15 @@ class ManaDialerActivity : Activity() {
             showMessage("Роль фильтрации звонков требует Android 10 или новее.")
             return
         }
+        if (checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+            pendingCallScreeningRoleAfterContacts = true
+            requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS), REQUEST_SCREENING_CONTACTS)
+            return
+        }
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQUEST_SCREENING_NOTIFICATIONS)
+            return
+        }
         val roles = getSystemService(RoleManager::class.java)
         if (!roles.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
             showMessage("Роль фильтрации звонков недоступна на этой прошивке.")
@@ -298,6 +308,18 @@ class ManaDialerActivity : Activity() {
             if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) requestDialerRole()
             else showMessage("Для входящих звонков MANA нужен доступ к уведомлениям.")
         }
+        if (requestCode == REQUEST_SCREENING_CONTACTS) {
+            val granted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
+            if (pendingCallScreeningRoleAfterContacts) {
+                pendingCallScreeningRoleAfterContacts = false
+                if (granted) requestCallScreeningRole()
+                else showMessage("Без доступа к контактам MANA не сможет отличать сохранённые номера от неизвестных. Роль фильтрации не запрошена.")
+            }
+        }
+        if (requestCode == REQUEST_SCREENING_NOTIFICATIONS) {
+            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) requestCallScreeningRole()
+            else showMessage("Без уведомлений MANA не сможет сообщать об обнаруженных неизвестных вызовах. Роль фильтрации не запрошена.")
+        }
     }
 
     private fun text(value: String, size: Int, color: Int, bold: Boolean = false) =
@@ -328,5 +350,7 @@ class ManaDialerActivity : Activity() {
         private const val REQUEST_CALL_LOG = 7403
         private const val REQUEST_NOTIFICATIONS = 7404
         private const val REQUEST_CALL_SCREENING_ROLE = 7405
+        private const val REQUEST_SCREENING_CONTACTS = 7406
+        private const val REQUEST_SCREENING_NOTIFICATIONS = 7407
     }
 }
