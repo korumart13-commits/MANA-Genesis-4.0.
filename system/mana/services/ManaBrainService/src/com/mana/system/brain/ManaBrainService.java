@@ -39,6 +39,7 @@ public final class ManaBrainService extends Service {
     private static final long BACKEND_REBIND_BASE_MS = 2_000L;
     private static final long BACKEND_REBIND_MAX_MS = 60_000L;
     private static final long BACKEND_CONNECT_TIMEOUT_MS = 15_000L;
+    private static final long REQUEST_CALLBACK_TIMEOUT_MS = 185_000L;
 
     @SuppressWarnings("FieldCanBeLocal")
     private final ThreadPoolExecutor requests = new ThreadPoolExecutor(
@@ -188,14 +189,23 @@ public final class ManaBrainService extends Service {
             return;
         }
         ManaBrainTerminalCallbackGate terminalCallbackDelivered = new ManaBrainTerminalCallbackGate();
+        Runnable requestTimeout = () -> {
+            if (terminalCallbackDelivered.tryDeliver()) {
+                Log.w(TAG, "MANA Engine request exceeded its callback deadline.");
+                deliverError(callback, "ENGINE_TIMEOUT",
+                        "MANA Engine did not complete this request before the service deadline.");
+            }
+        };
+        mainHandler.postDelayed(requestTimeout, REQUEST_CALLBACK_TIMEOUT_MS);
         try {
             current.think(request, new IManaEngineBackendCallback.Stub() {
                 @Override
                 public void onResult(String text, String provider, boolean local, int memoryItemsUsed) {
                     if (!terminalCallbackDelivered.tryDeliver()) {
-                        Log.w(TAG, "Ignoring duplicate MANA Engine result callback.");
+                        Log.w(TAG, "Ignoring duplicate or late MANA Engine result callback.");
                         return;
                     }
+                    mainHandler.removeCallbacks(requestTimeout);
                     try {
                         com.mana.brain.ManaBrainResponse response = new com.mana.brain.ManaBrainResponse();
                         response.text = text;
@@ -210,16 +220,18 @@ public final class ManaBrainService extends Service {
 
                 @Override
                 public void onError(String code, String message) {
-                    if (!terminalCallbackDelivered.compareAndSet(false, true)) {
-                        Log.w(TAG, "Ignoring duplicate MANA Engine error callback.");
+                    if (!terminalCallbackDelivered.tryDeliver()) {
+                        Log.w(TAG, "Ignoring duplicate or late MANA Engine error callback.");
                         return;
                     }
+                    mainHandler.removeCallbacks(requestTimeout);
                     deliverError(callback, code, message);
                 }
             });
         } catch (RemoteException | SecurityException disconnected) {
             backend = null;
-            if (terminalCallbackDelivered.compareAndSet(false, true)) {
+            if (terminalCallbackDelivered.tryDeliver()) {
+                mainHandler.removeCallbacks(requestTimeout);
                 deliverError(callback, disconnected instanceof SecurityException
                         ? "ENGINE_PERMISSION_DENIED" : "ENGINE_DISCONNECTED",
                         "The local MANA Engine Binder call failed or was denied.");
