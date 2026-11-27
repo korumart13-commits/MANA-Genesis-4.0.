@@ -71,10 +71,6 @@ class ManaPackVerifier(
                 ManaPackModule(id, version, entry, hash, minOs, deps, File(stagingRoot, "unused"))
             }
             require(modules.map { it.id }.distinct().size == modules.size) { "Duplicate module IDs." }
-            val packIds = modules.map { it.id }.toSet()
-            modules.forEach { module ->
-                require((module.dependencies - packIds).isEmpty()) { "Missing dependency in package for \${module.id}: \${module.dependencies - packIds}" }
-            }
             require(entries.keys == (setOf(MANIFEST_PATH) + modules.map { it.entry })) { "Manifest and ZIP entries do not match." }
             val signatureBytes = try { Base64.getDecoder().decode(props.getProperty("signature").orEmpty()) }
                 catch (_: IllegalArgumentException) { error("Invalid signature encoding.") }
@@ -108,6 +104,7 @@ class ManaPackVerifier(
                             stream.fd.sync()
                         }
                     }
+                    require(copied == entries.getValue(module.entry).size) { "Payload size mismatch." }
                     require(digest.digest().toHex() == module.sha256) { "SHA-256 mismatch for \${module.id}." }
                     module.copy(payloadFile = output)
                 }
