@@ -44,15 +44,25 @@ class ManaBrain(
     }
 
     suspend fun respond(request: BrainRequest): BrainResponse {
+        var localFailure: Exception? = null
         if (localProvider.isAvailable()) {
-            return BrainResponse(
-                text = localProvider.generate(request.prompt),
-                provider = localProvider.id,
-                local = true
-            )
+            try {
+                val localText = localProvider.generate(request.prompt)
+                require(localText.isNotBlank()) { "Local inference returned an empty response." }
+                return BrainResponse(
+                    text = localText,
+                    provider = localProvider.id,
+                    local = true
+                )
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                localFailure = failure
+            }
         }
 
         if (!request.allowCloud || request.sensitive || cloudProviders.isEmpty()) {
+            localFailure?.let { throw it }
             throw InferenceUnavailableException(
                 "Local inference is unavailable and cloud processing is not permitted."
             )
@@ -67,8 +77,12 @@ class ManaBrain(
         }
         val cloud = candidates.firstOrNull { it.isAvailable() }
             ?: throw InferenceUnavailableException(
-                request.preferredCloudProvider?.let { "Requested cloud provider '$it' is unavailable." }
-                    ?: "No permitted cloud provider is available."
+                if (localFailure != null) {
+                    "Local inference failed and no permitted cloud provider is available."
+                } else {
+                    request.preferredCloudProvider?.let { "Requested cloud provider '$it' is unavailable." }
+                        ?: "No permitted cloud provider is available."
+                }
             )
 
         return BrainResponse(
