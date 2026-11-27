@@ -190,11 +190,3 @@ jobs:
           compression-level: 0
           retention-days: 14
 
-      - name: Upload the single unified MANA bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: MANA-Genesis-4.0-COMPLETE-SOURCE-APK-GEMMA-LITERT
-          path: ${{ runner.temp }}/MANA_Genesis_4.0_COMPLETE/
-          if-no-files-found: error
-          compression-level: 0
-          retention-days: 14
