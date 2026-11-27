@@ -16,16 +16,13 @@ This creates a source checkout, not a ROM. AOSP source and build output require 
 
 ## MANA platform module build
 
-After syncing, choose an AOSP lunch target supported by that exact checkout, then run:
+After syncing, pass a lunch target that is actually listed by that exact AOSP checkout:
 
 ```sh
-source build/envsetup.sh
-lunch <verified-aosp-target>
-export ANDROID_BUILD_TOP="$PWD"
-bash vendor/mana/genesis/platform/build_mana_platform_modules.sh
+bash vendor/mana/genesis/platform/build_mana_platform_modules.sh <verified-aosp-target>
 ```
 
-The guarded script builds the source-backed AIDL interface, Brain service and host policy tests, Settings and Control Center through Soong. A successful module build proves compilation for the selected AOSP target only; it does not establish RMX5566RU hardware compatibility.
+The guarded script selects the lunch target and builds the source-backed AIDL interface, Brain service and host policy tests, Settings and Control Center through Soong. A successful module build proves compilation for the selected AOSP target only; it does not establish RMX5566RU hardware compatibility.
 
 ## Device integration gate
 
