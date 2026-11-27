@@ -221,6 +221,56 @@ jobs:
           "$APKANALYZER" manifest print "$APK" | grep -q 'ManaEngineBridgeService'
           "$APKANALYZER" manifest print "$APK" | grep -q 'com.mana.permission.BIND_BRAIN'
           sha256sum "$APK" > app/build/outputs/apk/release/SHA256SUMS.txt
+      - name: Download and verify official Gemma 4 E2B LiteRT-LM weights
+        timeout-minutes: 60
+        run: |
+          set -euo pipefail
+          mkdir -p release/offline
+          MODEL="release/offline/gemma-4-E2B-it.litertlm"
+          URL="https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm"
+          curl --fail --location --retry 5 --retry-all-errors --connect-timeout 30 --max-time 3600 "$URL" --output "$MODEL"
+          echo "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c  $MODEL" | sha256sum --check -
+          test "$(stat -c '%s' "$MODEL")" -gt 2500000000
+          test "$(stat -c '%s' "$MODEL")" -lt 3000000000
+          cp launcher/app/build/outputs/apk/debug/app-debug.apk release/offline/MANA-Genesis-4.0-debug.apk
+          cat > release/offline/README-FIRST-RU.txt <<'EOF'
+          MANA Genesis 4.0 — offline first-run bundle
+          
+          Содержимое:
+          - MANA-Genesis-4.0-debug.apk — устанавливаемый debug APK.
+          - gemma-4-E2B-it.litertlm — официальные веса Gemma 4 E2B для LiteRT-LM.
+          
+          Установка:
+          1. Распакуйте этот архив в память телефона.
+          2. Установите MANA-Genesis-4.0-debug.apk.
+          3. Откройте MANA, предоставьте необходимые разрешения.
+          4. В разделе локальной модели выберите импорт файла .litertlm и укажите gemma-4-E2B-it.litertlm.
+          5. Дождитесь проверки SHA-256 и загрузки модели в LiteRT-LM.
+          
+          Модель не встроена внутрь APK: она поставляется рядом в этом едином архиве,
+          чтобы Android Package Installer не пытался установить многогигабайтный APK.
+          Для импорта потребуется свободное место под архив, распакованную модель
+          и рабочие данные. Производительность Gemma на RMX5566RU ещё должна быть
+          проверена на самом устройстве.
+          
+          Модель: https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm
+          Лицензия модели: Apache-2.0. Движок LiteRT-LM поставляется как Android dependency.
+          
+          Это APK + модель + исходный проект, не прошивка и не OTA-образ RMX5566RU.
+          EOF
+          sha256sum release/offline/MANA-Genesis-4.0-debug.apk release/offline/gemma-4-E2B-it.litertlm > release/offline/SHA256SUMS.txt
+          (cd release/offline && zip -0 -q ../MANA-Genesis-4.0-OFFLINE-COMPLETE.zip MANA-Genesis-4.0-debug.apk gemma-4-E2B-it.litertlm README-FIRST-RU.txt SHA256SUMS.txt)
+          sha256sum release/MANA-Genesis-4.0-OFFLINE-COMPLETE.zip > release/MANA-Genesis-4.0-OFFLINE-COMPLETE.zip.sha256
+      - name: Upload complete offline MANA bundle (APK + 2.59 GB model)
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Genesis-4.0-OFFLINE-COMPLETE-APK-AND-GEMMA
+          path: |
+            release/MANA-Genesis-4.0-OFFLINE-COMPLETE.zip
+            release/MANA-Genesis-4.0-OFFLINE-COMPLETE.zip.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
       - name: Package complete tracked MANA source tree
         run: |
           mkdir -p release
