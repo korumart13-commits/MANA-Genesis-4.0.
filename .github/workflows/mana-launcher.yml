@@ -270,7 +270,7 @@ jobs:
           
           Это APK + локальная модель + исходный проект, не прошивка и не OTA-образ RMX5566RU.
           EOF
-          sha256sum release/offline/MANA-Martynova-Genesis-4.0.apk release/offline/MANA-Martynova-AI-Gemma4-E2B.litertlm release/offline/MANA-Genesis-4.0-source-project.zip > release/offline/SHA256SUMS.txt
+          (cd release/offline && sha256sum MANA-Martynova-Genesis-4.0.apk MANA-Martynova-AI-Gemma4-E2B.litertlm MANA-Genesis-4.0-source-project.zip > SHA256SUMS.txt)
           (cd release/offline && zip -0 -q ../MANA-Martynova-FULL-PACKAGE.zip MANA-Martynova-Genesis-4.0.apk MANA-Martynova-AI-Gemma4-E2B.litertlm MANA-Genesis-4.0-source-project.zip README-FIRST-RU.txt SHA256SUMS.txt)
           sha256sum release/MANA-Martynova-FULL-PACKAGE.zip > release/MANA-Martynova-FULL-PACKAGE.zip.sha256
       - name: Upload complete offline MANA bundle (APK + 2.59 GB model)
