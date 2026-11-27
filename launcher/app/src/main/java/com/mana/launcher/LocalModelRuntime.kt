@@ -8,6 +8,9 @@ import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.SamplerConfig
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.flow.collect
 import java.io.File
 import java.util.concurrent.Executors
@@ -21,6 +24,7 @@ class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntim
     @Volatile private var conversation: Conversation? = null
     @Volatile private var loadedModel: File? = null
     @Volatile private var loadedBackend: String? = null
+    private val activeGeneration = java.util.concurrent.atomic.AtomicReference<Job?>(null)
 
     override fun isReady(): Boolean = conversation != null && loadedModel?.isFile == true
     override fun modelName(): String? = loadedModel?.let { "${it.name} · ${loadedBackend ?: "unknown"}" }
@@ -58,7 +62,15 @@ class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntim
             try {
                 val active = conversation ?: error("Сначала загрузи файл модели .litertlm.")
                 require(prompt.isNotBlank()) { "Пустой запрос." }
-                runBlocking { active.sendMessageAsync(prompt).collect { message -> onChunk(message.toString()) } }
+                runBlocking {
+                    val generationJob = coroutineContext[Job]
+                    activeGeneration.set(generationJob)
+                    try {
+                        active.sendMessageAsync(prompt).collect { message -> onChunk(message.toString()) }
+                    } finally {
+                        activeGeneration.compareAndSet(generationJob, null)
+                    }
+                }
                 callback(Result.success(Unit))
             } catch (error: Exception) {
                 callback(Result.failure(error))
@@ -113,7 +125,12 @@ class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntim
         }
     }
 
+    override fun cancelGeneration() {
+        activeGeneration.get()?.cancel(CancellationException("MANA inference request was cancelled or timed out"))
+    }
+
     override fun shutdown() {
+        cancelGeneration()
         if (closed.compareAndSet(false, true)) {
             executor.execute { closeLoaded() }
             executor.shutdown()
