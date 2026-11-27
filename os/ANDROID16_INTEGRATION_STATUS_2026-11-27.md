@@ -7,13 +7,13 @@ Target reported by the project: RMX5566RU / RE645F / Qualcomm SM6225 (bengal) / 
 
 The current Android application source already composes the shared MANA runtime:
 
-- `launcher/app/src/main/java/com/mana/launcher/MainActivity.kt` creates the local inference runtime, cloud providers, `ManaBrainBridge`, encrypted memory services, and `ManaEngineAndroidRuntime`.
+- `launcher/app/src/main/java/com/mana/launcher/ManaEngineService.kt` and `ManaEngineBridgeService.kt` acquire the shared `ManaEngineProcessOwner`, which owns local inference, Brain routing, encrypted memory and Microworld runtime. `MainActivity.kt` binds to the service and consumes a narrow Binder API; it no longer constructs or shuts down those engine resources.
 - `launcher/app/src/main/java/com/mana/launcher/ManaBrainBridge.kt` delegates routing to the canonical `com.mana.brain.ManaBrain`; local inference is attempted first and cloud use is controlled per request.
 - `launcher/app/src/main/java/com/mana/launcher/ManaEngineAndroidRuntime.kt` constructs `ManaEngineRuntime`, `ManaSystemCore`, `ManaMicroworldService`, `ManaSecurityService`, `ManaHydraRegistry`, and `ManaShogun`.
 - The Android composition root registers `engine.memory`, `engine.microworld`, `engine.brain`, and `engine.shogun`; the Shogun module exposes both Shogun and Hydra in the system service context.
 - `os/core/src/main/kotlin/com/mana/os/core/ManaEngineRuntime.kt` routes reasoning through a `ManaReasoningPort`, applies memory-consent rules, and submits authorized tool tasks to Shogun.
 
-This is application-process composition. It is not yet a privileged Android system daemon, a replacement SystemUI, or a flashed operating system. The app can be stopped by Android process management; 24/7 execution is not established by this wiring.
+This is service-owned application-process composition. The foreground service requests Android's `specialUse` foreground-service type and shows a persistent notification, subject to Android policy, user settings, background-start limits, Doze and process management. It is not yet a privileged Android system daemon, a replacement SystemUI, or a flashed operating system. True 24/7 execution is not guaranteed.
 
 ## Android 16 compatibility status
 
@@ -64,3 +64,4 @@ A debug APK is an application prototype. A source ZIP is a source archive. Neith
 - Added `ManaBrainBridgeTest.requestAfterShutdownCompletesCallbackWithFailure` as a regression test.
 - This is a lifecycle correctness fix inside the existing application-process integration. It does **not** move MANA Engine into a foreground/system service and does not provide persistent background execution.
 - The regression test has been committed but has not yet been executed in a verified Gradle/CI run.
+\n\n## Service resilience implementation update — 2026-11-27\n\nThe MANA Engine is now owned by a dedicated app foreground service/process owner rather than Activity-local construction. A bounded retry policy, persisted retry budget, exponential backoff with jitter, stable-health reset, and Binder disconnection/binding-death/null-binding handling are implemented in source. Retry attempts are limited to a resumed Activity to respect foreground-service start restrictions. The Kotlin policy and Android app integration still require the current CI run and eventual emulator/device tests.\n
