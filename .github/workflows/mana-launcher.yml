@@ -86,6 +86,8 @@ jobs:
           assert "localRuntime.shutdown()" not in activity
           assert "engineBinder.think(" in activity
           assert "manaBrain.respond(" not in activity
+          assert activity.count("override fun onResume()") == 1
+          assert activity.count("override fun onPause()") == 1
           assert activity.count("override fun onDestroy()") == 1
           assert "ManaEngineReconnectController(this)" in activity
           assert "override fun onResume()" in activity
