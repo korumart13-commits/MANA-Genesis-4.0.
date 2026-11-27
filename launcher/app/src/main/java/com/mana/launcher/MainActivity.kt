@@ -1,11 +1,14 @@
 package com.mana.launcher
 
 import android.app.Activity
+import android.app.DownloadManager
 import android.Manifest
 import android.content.pm.PackageManager
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.ServiceConnection
 import android.os.IBinder
@@ -102,6 +105,15 @@ class MainActivity : Activity() {
     @Volatile private var setupStarted = false
     @Volatile private var setupRunning = false
     private var setupReport: ManaOneTapSetupCoordinator.Report? = null
+    @Volatile private var modelActivationInProgress = false
+    private var modelDownloadReceiverRegistered = false
+    private val modelDownloadReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            if (intent?.action == DownloadManager.ACTION_DOWNLOAD_COMPLETE) {
+                activateCompletedModelDownload()
+            }
+        }
+    }
     private val manaEngineConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as? ManaEngineService.LocalBinder ?: return
@@ -298,6 +310,10 @@ class MainActivity : Activity() {
     override fun onPause() {
         activityResumed = false
         reconnectController?.cancel()
+        if (modelDownloadReceiverRegistered) {
+            runCatching { unregisterReceiver(modelDownloadReceiver) }
+            modelDownloadReceiverRegistered = false
+        }
         super.onPause()
     }
 
@@ -434,6 +450,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        registerModelDownloadReceiver()
         activityResumed = true
         val setupPreferences = getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE)
         val incompleteSetup = setupPreferences.getBoolean("setup_started", false) &&
@@ -1469,12 +1486,29 @@ class MainActivity : Activity() {
             .show()
     }
 
+    private fun registerModelDownloadReceiver() {
+        if (modelDownloadReceiverRegistered) return
+        val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(modelDownloadReceiver, filter, RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(modelDownloadReceiver, filter)
+        }
+        modelDownloadReceiverRegistered = true
+    }
+
     private fun activateCompletedModelDownload() {
         val catalog = modelCatalog ?: return
+        synchronized(this) {
+            if (modelActivationInProgress) return
+            modelActivationInProgress = true
+        }
         Thread {
             try {
                 val file = catalog.verifiedSavedModel() ?: catalog.verifyCompletedDownload() ?: return@Thread
                 localRuntime.load(file) { result ->
+                    synchronized(this) { modelActivationInProgress = false }
                     runOnUiThread {
                         result.onSuccess { name ->
                             modelStatus?.text = "Официальная модель проверена и активна: " + name
@@ -1487,6 +1521,8 @@ class MainActivity : Activity() {
                 }
             } catch (error: Exception) {
                 runOnUiThread { showMessage("Проверка загрузки модели не пройдена: " + error.message) }
+            } finally {
+                synchronized(this) { modelActivationInProgress = false }
             }
         }.start()
     }
