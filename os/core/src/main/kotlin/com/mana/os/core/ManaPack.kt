@@ -87,6 +87,7 @@ class ManaPackVerifier(
             require(stagingRoot.usableSpace >= total + MIN_FREE_SPACE) { "Insufficient free space." }
             val stage = Files.createTempDirectory(stagingRoot.toPath(), "manapack-").toFile()
             try {
+                var totalCopied = 0L
                 val verifiedModules = modules.map { module ->
                     val destination = File(stage, module.id).apply { require(mkdirs()) }
                     val output = File(destination, "payload")
@@ -99,7 +100,8 @@ class ManaPackVerifier(
                                 val n = input.read(buffer)
                                 if (n < 0) break
                                 copied += n
-                                require(copied <= maxTotalPayloadBytes) { "Payload exceeds configured size." }
+                                totalCopied += n
+                                require(totalCopied <= maxTotalPayloadBytes) { "Combined payload exceeds configured size." }
                                 digest.update(buffer, 0, n)
                                 stream.write(buffer, 0, n)
                             }
