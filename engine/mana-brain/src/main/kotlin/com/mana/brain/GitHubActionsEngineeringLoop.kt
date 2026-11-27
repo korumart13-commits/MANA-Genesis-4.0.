@@ -4,7 +4,6 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.net.HttpURLConnection
 import java.net.URL
-import java.time.Duration
 import java.time.Instant
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -89,18 +88,18 @@ class GitHubActionsRestClient(
         throw IllegalStateException("GitHub accepted workflow_dispatch but no matching run appeared before timeout.")
     }
 
-    override suspend fun awaitCompletion(run: GitHubWorkflowRun, timeoutMs: Long): GitHubWorkflowRun {
-        require(timeoutMs in 5_000..900_000)
-        val deadline = System.currentTimeMillis() + timeoutMs
-        while (System.currentTimeMillis() < deadline) {
-            val item = JsonParser.parseString(request("GET", "actions/runs/${run.id}")).asJsonObject
-            val current = item.toRun()
-            if (current.completed) return current
-            delay(pollIntervalMs)
+    override suspend fun awaitCompletion(run: GitHubWorkflowRun, timeoutMs: Long): GitHubWorkflowRun =
+        withContext(Dispatchers.IO) {
+            require(timeoutMs in 5_000..900_000)
+            val deadline = System.currentTimeMillis() + timeoutMs
+            while (System.currentTimeMillis() < deadline) {
+                val item = JsonParser.parseString(request("GET", "actions/runs/${run.id}")).asJsonObject
+                val current = item.toRun()
+                if (current.completed) return@withContext current
+                delay(pollIntervalMs)
+            }
+            throw IllegalStateException("GitHub Actions run ${run.id} did not complete before timeout.")
         }
-        throw IllegalStateException("GitHub Actions run ${run.id} did not complete before timeout.")
-    }
-
     override suspend fun failedJobLogs(runId: Long, maxChars: Int): String = withContext(Dispatchers.IO) {
         require(maxChars in 1_000..100_000)
         val root = JsonParser.parseString(request("GET", "actions/runs/$runId/jobs?per_page=50")).asJsonObject
