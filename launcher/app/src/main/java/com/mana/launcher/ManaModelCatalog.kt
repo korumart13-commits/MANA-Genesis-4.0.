@@ -18,9 +18,29 @@ class ManaModelCatalog(context: Context) {
     private val directory = app.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
         ?: error("Android app-specific downloads storage is unavailable.")
 
+    fun hasAcceptedGemmaTerms(): Boolean = prefs.getBoolean(KEY_LICENSE_ACCEPTED, false)
+
     fun enqueueGemma4E2B(licenseAccepted: Boolean): Long {
         require(licenseAccepted) { "Owner must review and accept the Gemma terms before downloading this model." }
         prefs.edit().putBoolean(KEY_LICENSE_ACCEPTED, true).apply()
+
+        // Reuse an existing DownloadManager request instead of creating duplicate
+        // multi-gigabyte downloads after an Activity/process restart.
+        val existingId = prefs.getLong(KEY_DOWNLOAD_ID, -1L)
+        if (existingId >= 0L) {
+            val existing = manager.query(DownloadManager.Query().setFilterById(existingId))
+            val existingStatus = existing.use {
+                if (!it.moveToFirst()) null
+                else it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+            }
+            if (existingStatus == DownloadManager.STATUS_PENDING ||
+                existingStatus == DownloadManager.STATUS_RUNNING ||
+                existingStatus == DownloadManager.STATUS_PAUSED ||
+                existingStatus == DownloadManager.STATUS_SUCCESSFUL) {
+                return existingId
+            }
+            prefs.edit().remove(KEY_DOWNLOAD_ID).apply()
+        }
         val target = File(directory, MODEL_FILE)
         if (ModelArtifactIntegrity.matches(target, MODEL_SIZE, SHA256, directory)) {
             prefs.edit().putString(KEY_ACTIVE_PATH, target.canonicalPath).apply()
