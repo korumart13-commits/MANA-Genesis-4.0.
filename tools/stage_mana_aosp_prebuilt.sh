@@ -60,7 +60,7 @@ android_app_import {
     apk: "prebuilts/ManaLauncher.apk",
     presigned: false,
     certificate: "platform",
-    privileged: true,
+    privileged: false,
     product_specific: true,
     dex_preopt: {
         enabled: false,
