@@ -80,8 +80,7 @@ The project must preserve the full MANA product requirements in `docs/MASTER_PRO
   product's platform certificate. Production private signing keys must remain outside Git.
 - CI now checks the import/signing declarations and signature-verifier script. The first
   CI attempts exposed a stale assertion expecting `privileged: true`; that assertion was
-  corrected. The latest run for commit `c8f22b61280abf1ccaaef02437932437fffcdb32` is queued
-  and has not yet been verified.
+  corrected. The app workflow `45916033709` for the single-launcher product snapshot has passed the Brain policy, platform Binder boundary, AOSP staging/signature-script static checks, RMX5566 profile checks and Brain/Core tests; Android app compilation is still in progress. Newer runs for the unsigned-input guard and final manifest snapshot are also in progress. No Soong build or signed APK certificate comparison has been executed.
 
 - Product packaging now includes one central `ManaLauncher` app plus the separate `ManaBrainService`; the legacy Java-only `ManaAssistant` stub is excluded from `PRODUCT_PACKAGES` to avoid a second assistant entry point. `ManaSettings` and `ManaControlCenter` remain separate OS configuration surfaces.
 - Source-level Binder route: platform-signed `ManaBrainService` declares the signature
