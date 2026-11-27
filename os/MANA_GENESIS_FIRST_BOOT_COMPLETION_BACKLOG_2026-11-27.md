@@ -46,3 +46,19 @@ The launcher now contains `ManaGenesisFirstBootService`:
 - Failure to write the advisory checkpoint is logged and does not prevent the Brain from starting.
 
 This is a persistent inventory/checkpoint, not yet an autonomous code executor or update installer. The generated plan remains conservative: exact RMX5566 sources and ROM build stay blocked until verified evidence exists.
+
+
+## Online source discovery and emulator validation
+
+The Android app now schedules `ManaGenesisSourceDiscoveryWorker` when the Engine starts. When a network is available, it queries public GitHub repository metadata for RMX5566, RE645F and SM6225/bengal candidates. It stores a bounded JSON report in app-private storage at:
+
+`files/mana/genesis/research/public-device-source-candidates.json`
+
+The worker records repository identity, URL, description, branch, stars and update timestamp. Every result is explicitly marked `UNVERIFIED_PUBLIC_METADATA_ONLY`. It does not clone repositories, download firmware, execute scripts, or mark any result compatible. Discovery is attempted once and then periodically (nominally every 24 hours); Android WorkManager and Doze determine the actual run time.
+
+The development backlog now explicitly includes:
+- Public device/kernel source discovery.
+- Generic Android emulator validation of the AOSP build, Binder authorization, Brain callbacks, reconnect, permission and update flows.
+- Exact RMX5566 hardware-source verification, still blocked until evidence exists.
+
+An emulator validates generic Android behavior only; it cannot prove the phone's proprietary camera, modem, GPU, sensor, power-management or boot-chain compatibility. GPT review uses the existing provider adapters and requires the owner's configured credentials and consent. Generated code remains a proposal until isolated tests, provenance checks and owner approval pass.
