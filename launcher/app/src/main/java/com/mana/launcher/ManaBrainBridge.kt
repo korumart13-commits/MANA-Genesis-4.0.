@@ -42,10 +42,7 @@ class ManaBrainBridge(
             override suspend fun generate(prompt: String): String =
                 suspendCancellableCoroutine { continuation ->
                     val output = StringBuilder()
-                    continuation.invokeOnCancellation {
-                        localRuntime.cancelGeneration()
-                    }
-                    localRuntime.generate(
+                    val cancellation = localRuntime.generate(
                         prompt,
                         onChunk = { chunk ->
                             output.append(chunk)
@@ -62,6 +59,7 @@ class ManaBrainBridge(
                             )
                         }
                     )
+                    continuation.invokeOnCancellation { cancellation.cancel() }
                 }
         }
         val personaCloudProviders = cloudProviders.map { provider ->
