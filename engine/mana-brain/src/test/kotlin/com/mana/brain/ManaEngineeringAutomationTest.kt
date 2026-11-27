@@ -27,6 +27,7 @@ class ManaEngineeringAutomationTest {
     private class FakeGateway(private val failuresBeforeSuccess: Int) : GitHubActionsGateway {
         var dispatches = 0
         var logReads = 0
+        override suspend fun currentHeadSha(branch: String): String = "a".repeat(40)
         override suspend fun dispatchPatch(
             branch: String,
             patch: String,
