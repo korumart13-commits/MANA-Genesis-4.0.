@@ -12,6 +12,7 @@ on:
       - 'os/core/**'
       - '.github/workflows/mana-launcher.yml'
       - 'tools/validate_mana_gltf.py'
+      - 'tools/validate_mana_installer_contract.py'
       - 'tools/stage_mana_aosp_prebuilt.sh'
       - 'tools/test_stage_mana_aosp_prebuilt.sh'
       - 'tools/verify_mana_platform_signature.sh'
@@ -205,6 +206,8 @@ jobs:
       - name: Test canonical MANA Brain and OS core
         working-directory: launcher
         run: gradle --no-daemon :brain:test :core:test
+      - name: Validate one-button installer contract for realme C85 4G
+        run: python3 tools/validate_mana_installer_contract.py
       - name: Compile Android launcher and test app
         working-directory: launcher
         run: gradle --no-daemon :app:assembleDebug :app:testDebugUnitTest
