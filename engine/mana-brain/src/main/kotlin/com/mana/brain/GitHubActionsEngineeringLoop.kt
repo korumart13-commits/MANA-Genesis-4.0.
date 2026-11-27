@@ -81,20 +81,20 @@ class GitHubActionsRestClient(
         val dispatchedAt = Instant.now()
         val payload = JsonObject().apply {
             addProperty("ref", branch)
-            add("inputs", JsonObject().apply { addProperty("patch", patch); addProperty("task_id", clientRunId) })
+            add("inputs", JsonObject().apply { addProperty("patch", patch); addProperty("client_run_id", clientRunId) })
         }
         request("POST", "actions/workflows/$workflowFile/dispatches", payload.toString(), expected = setOf(204))
         val deadline = System.currentTimeMillis() + dispatchTimeoutMs
         while (System.currentTimeMillis() < deadline) {
             val root = JsonParser.parseString(
-                request("GET", "actions/workflows/$workflowFile/runs?branch=$branch&event=workflow_dispatch&per_page=20")
+                request("GET", "actions/workflows/$workflowFile/runs?branch=${java.net.URLEncoder.encode(branch, StandardCharsets.UTF_8.name()).replace("+", "%20")}&event=workflow_dispatch&per_page=20")
             ).asJsonObject
             val runs = root.getAsJsonArray("workflow_runs")
             val match = runs.firstOrNull { element ->
                 val item = element.asJsonObject
                 item.get("head_sha")?.asString == expectedHeadSha &&
                     item.get("event")?.asString == "workflow_dispatch" &&
-                    item.get("run_name")?.asString == "MANA Engineering CI $clientRunId" &&
+                    item.get("display_title")?.asString?.contains(clientRunId) == true &&
                     runCreatedAt(item) >= dispatchedAt.minusSeconds(5)
             }?.asJsonObject
             if (match != null) return@withContext match.toRun()
@@ -129,7 +129,7 @@ class GitHubActionsRestClient(
             val name = job.get("name").asString
             output.appendLine("## Failed job: $name (id=$id)")
             val logs = unzipJobLogs(downloadJobLogZip("actions/jobs/$id/logs"), (maxChars - output.length).coerceAtLeast(0))
-            output.append(logs)
+            output.append(redactSecrets(logs))
             output.appendLine()
             if (output.length >= maxChars) return@forEach
         }
@@ -143,7 +143,7 @@ class GitHubActionsRestClient(
         expected: Set<Int> = setOf(200)
     ): String {
         val token = tokenProvider.accessToken()?.trim().orEmpty()
-        require(token.isNotBlank()) { "GitHub Actions is not connected: no access token is available." }
+        require(token.length in 20..500 && token.none(Char::isWhitespace)) { "GitHub Actions is not connected: no valid access token is available." }
         val connection = URL("$API_BASE/$repository/$pathAndQuery").openConnection() as HttpURLConnection
         try {
             connection.requestMethod = method
@@ -169,7 +169,7 @@ class GitHubActionsRestClient(
     /** Download GitHub's log ZIP without forwarding the PAT to its signed blob URL. */
     private fun downloadJobLogZip(path: String): ByteArray {
         val token = tokenProvider.accessToken()?.trim().orEmpty()
-        require(token.isNotBlank()) { "GitHub Actions is not connected." }
+        require(token.length in 20..500 && token.none(Char::isWhitespace)) { "GitHub Actions is not connected." }
         val api = URL("$API_BASE/$repository/$path").openConnection() as HttpURLConnection
         val redirect: String
         try {
@@ -231,6 +231,13 @@ class GitHubActionsRestClient(
     private fun runCreatedAt(item: com.google.gson.JsonObject): Instant =
         Instant.parse(item.get("created_at").asString)
 
+    private fun redactSecrets(value: String): String {
+        var safe = value
+        safe = Regex("(?i)(authorization: bearer\\s+)[^\\s]+").replace(safe) { it.groupValues[1] + "[REDACTED]" }
+        safe = Regex("(?i)(token|password|api[_-]?key)(\\s*[:=]\\s*)[^\\s,]+").replace(safe) { it.groupValues[1] + it.groupValues[2] + "[REDACTED]" }
+        return Regex("gh[pousr]_[A-Za-z0-9_]{20,}").replace(safe, "[REDACTED]")
+    }
+
     private fun com.google.gson.JsonObject.toRun() = GitHubWorkflowRun(
         id = get("id").asLong,
         headSha = get("head_sha").asString,
@@ -241,6 +248,7 @@ class GitHubActionsRestClient(
 
     companion object {
         const val MAX_WORKFLOW_PATCH_CHARS = 60_000
+        private const val MAX_LOG_ARCHIVE_BYTES = 5 * 1024 * 1024
         private const val API_BASE = "https://api.github.com/repos"
         private const val API_VERSION = "2022-11-28"
     }
@@ -287,14 +295,14 @@ class ManaEngineeringAutomation(
 
         for (attempt in 0..maxRepairAttempts) {
             val currentTask = task.copy(
-                id = "${task.id}-ci-${attempt + 1}",
+                id = "${task.id.take(60)}-ci-${attempt + 1}",
                 objective = objective.take(6_000)
             )
             val proposal = copilot.propose(currentTask)
             check(proposal.status == EngineeringProposalStatus.REVIEW_REQUIRED)
-            val dispatchId = "${task.id}-a${attempt + 1}-${java.util.UUID.randomUUID().toString().take(8)}"
-            check(github.currentHeadSha(branch) == expectedHeadSha) { "Branch HEAD changed during the engineering task; refusing to test against a stale base." }
-                        val dispatched = github.dispatchPatch(branch, proposal.unifiedDiff, expectedHeadSha, dispatchId)
+            val dispatchId = "${task.id.take(50)}-a${attempt + 1}-${java.util.UUID.randomUUID().toString().take(8)}"
+            check(github.currentHeadSha(branch).equals(expectedHeadSha, ignoreCase = true)) { "Branch HEAD changed during the engineering task; refusing to test against a stale base." }
+            val dispatched = github.dispatchPatch(branch, proposal.unifiedDiff, expectedHeadSha, dispatchId)
             val completed = github.awaitCompletion(dispatched)
             latestRun = completed
             if (completed.succeeded) {
