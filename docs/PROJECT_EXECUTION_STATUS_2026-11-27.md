@@ -247,3 +247,13 @@ The project must preserve the full MANA product requirements in `docs/MASTER_PRO
 - Brain JVM verification and Brain CI completed successfully for commit `26fa0a73`, including the new copilot tests.
 - The Android activity, manifest registration and home-screen link were pushed; the latest launcher Gradle verification is queued for commit `c0d05dfe` and has not yet been confirmed.
 - The Soong/Binder source contract passed for commit `d9e05000`. This remains a source contract, not a full AOSP build or phone test.
+
+
+## AOSP common product and first-boot source discovery update
+
+- Added `platform/mana_aosp16_common_product.mk`: common MANA brand/model properties, Soong namespaces and system package inclusion. It is an includable AOSP product fragment, not a fabricated RMX5566RU lunch target.
+- Added `device/RMX5566RU/README.md` as the deferred device-port workspace, with the exact files and evidence MANA must populate after source verification. No guessed BoardConfig, kernel, fstab, VINTF, vendor or AVB data is supplied.
+- Added `ManaGenesisSourceDiscoveryWorker`: bounded, read-only public GitHub repository metadata search for RMX5566/RE645F/SM6225 candidates; stores an unverified-candidate report in app-private storage. It never clones, downloads firmware or executes candidate content.
+- Updated WorkManager scheduling: online discovery requires network connectivity, runs once and is then scheduled nominally every 24 hours; offline capability inventory remains nominally every 12 hours. Android controls actual execution windows.
+- Expanded the dependency planner and tests with source-discovery and generic emulator-validation tasks. Exact hardware sources and device ROM remain blocked until their required evidence exists.
+- CI for these latest Kotlin changes is pending; no new Android build result is claimed yet.
