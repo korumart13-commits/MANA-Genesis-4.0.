@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 
 /** Owner-controlled GPT engineering workspace. It proposes diffs; it never applies them. */
 class ManaEngineeringActivity : ComponentActivity() {
-    private lateinit var provider: ManaCloudGateway
+    private lateinit var provider: ManaBrainEngineeringProvider
     private lateinit var github: ManaGitHubActionsConnector
     private lateinit var repositoryPaths: EditText
     private lateinit var objective: EditText
@@ -38,7 +38,7 @@ class ManaEngineeringActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        provider = ManaEngineProcessOwner.cloudGateway() ?: ManaCloudGateway(this, ManaAndroidKeyProvider())
+        provider = ManaBrainEngineeringProvider()
         github = ManaGitHubActionsConnector(this)
 
         val root = LinearLayout(this).apply {
@@ -51,7 +51,7 @@ class ManaEngineeringActivity : ComponentActivity() {
             "GPT помогает проектировать изменения MANA. Выбранные файлы отправляются настроенному облачному провайдеру только после отдельного подтверждения. Результат — предложение diff для проверки, не автоматическое изменение проекта.",
             12, 0xFF9CB6D4.toInt()
         ))
-        status = text("Провайдер: ${provider.selectedProvider()} • ${if (provider.isAvailable()) "готов" else "не настроен"}", 12, 0xFF69C6FF.toInt())
+        status = text("Провайдер: ${provider.statusLabel()} • ${if (provider.isAvailable()) "готов" else "не настроен"}", 12, 0xFF69C6FF.toInt())
         root.addView(status)
         objective = EditText(this).apply {
             hint = "Что нужно разработать или исправить в MANA?"
@@ -89,7 +89,7 @@ class ManaEngineeringActivity : ComponentActivity() {
         root.addView(button("Запустить CI и автоисправление (до 2 повторов)") { confirmAndRunEngineeringLoop() })
         root.addView(button("Попросить GPT подготовить патч") { confirmAndGenerate() })
         root.addView(button("Обновить статус облачного провайдера") {
-            status.text = "Провайдер: ${provider.selectedProvider()} • ${if (provider.isAvailable()) "готов" else "не настроен"}"
+            status.text = "Провайдер: ${provider.statusLabel()} • ${if (provider.isAvailable()) "готов" else "не настроен"}"
         })
         root.addView(text("Предложение MANA", 18, 0xFFFFFFFF.toInt(), true))
         result = text("Здесь появятся описание, diff, тест-план и риски.", 12, 0xFFEAF4FF.toInt())
@@ -155,7 +155,7 @@ class ManaEngineeringActivity : ComponentActivity() {
         )
         AlertDialog.Builder(this)
             .setTitle("Разрешить инженерный цикл MANA?")
-            .setMessage("MANA отправит выбранные исходники и задачу в ${provider.selectedProvider()}, предложит diff, запустит GitHub Actions и прочитает логи при ошибке. Разрешено не более 2 автоматических повторов (3 запуска CI всего). Изменения выполняются только во временном CI checkout: без commit, merge, установки APK или прошивки. Облачный запрос может тарифицироваться.")
+            .setMessage("MANA Brain сначала использует локальную LiteRT-LM модель. Если она недоступна, может использовать настроенный облачный резерв; это разрешение действует только на этот цикл. Brain предложит diff, запустит GitHub Actions и прочитает логи при ошибке. Разрешено не более 2 автоматических повторов (3 запуска CI всего). Изменения выполняются только во временном CI checkout: без commit, merge, установки APK или прошивки. Облачный запрос может тарифицироваться.")
             .setNegativeButton("Отмена", null)
             .setPositiveButton("Разрешить один цикл") { _, _ ->
                 status.text = "MANA получает SHA ветки и запускает проверку…"
@@ -223,14 +223,14 @@ class ManaEngineeringActivity : ComponentActivity() {
         if (goal.isBlank()) { status.text = "Сначала опиши задачу."; return }
         if (selectedFiles.isEmpty()) { status.text = "Сначала выбери исходные файлы."; return }
         if (!provider.isAvailable()) {
-            status.text = "Настрой и включи облачный провайдер в главном меню MANA."
+            status.text = "Запусти MANA Engine и загрузи локальную модель либо настрой разрешённый облачный резерв."
             return
         }
         val names = selectedFiles.joinToString("\n") { it.path }
         AlertDialog.Builder(this)
             .setTitle("Разрешить отправку исходников?")
             .setMessage(
-                "Провайдер: ${provider.selectedProvider()}\nМодель: ${provider.model()}\n\nЗадача: $goal\n\nФайлы:\n$names\n\nИх содержимое и описание задачи будут отправлены провайдеру. Возможна тарификация. MANA получит только предложение diff; оно не будет автоматически применено."
+                "Маршрут MANA Brain: ${provider.statusLabel()}\nМодель: ${provider.modelLabel()}\n\nЗадача: $goal\n\nФайлы:\n$names\n\nЛокальная модель имеет приоритет. Если она недоступна, содержимое файлов может быть отправлено настроенному облачному резерву после этого подтверждения. Возможна тарификация. MANA получит только предложение diff; оно не будет автоматически применено."
             )
             .setNegativeButton("Отмена", null)
             .setPositiveButton("Разрешить один запрос") { _, _ -> generateProposal(goal) }
