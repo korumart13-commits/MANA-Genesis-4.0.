@@ -47,9 +47,9 @@ data class GenesisDevelopmentPlan(
 /**
  * Durable-plan domain model for first-boot self-completion.
  *
- * The Android host is responsible for persisting snapshots and work items in the
- * encrypted MANA workspace. This planner never assumes missing hardware support,
- * grants permissions, runs generated code or installs system images.
+ * The Android host persists snapshots and work items in the encrypted MANA workspace.
+ * This planner never assumes missing hardware support, grants permissions, runs generated
+ * code or installs system images.
  */
 class ManaGenesisBacklog(private val workItems: List<GenesisWorkItem>) {
     init {
@@ -111,7 +111,7 @@ class ManaGenesisBacklog(private val workItems: List<GenesisWorkItem>) {
     }
 
     companion object {
-        /** Initial completion backlog. Statuses are intentionally conservative. */
+        /** Initial completion backlog. Hardware-specific work remains evidence-gated. */
         fun initial(): ManaGenesisBacklog = ManaGenesisBacklog(listOf(
             GenesisWorkItem("brain.gpt-link", "Connect MANA Brain to GPT",
                 "Reuse the official OpenAI API adapter; add owner-consented engineering sessions, patch review and build-log feedback.",
@@ -133,20 +133,29 @@ class ManaGenesisBacklog(private val workItems: List<GenesisWorkItem>) {
                 GenesisWorkPriority.CRITICAL, GenesisWorkStatus.INTEGRATION_PENDING,
                 dependencies = setOf("android.permission-onboarding"),
                 requiredEvidence = setOf("android16_aosp_checkout", "selinux_policy_tests")),
+            GenesisWorkItem("android.emulator-validation", "Validate MANA platform in Android emulator",
+                "Build a generic AOSP emulator target and exercise boot, package installation, Binder authorization, Brain callbacks, service reconnect, permission and update rollback flows. Emulator results do not prove RMX5566 hardware compatibility.",
+                GenesisWorkPriority.HIGH, GenesisWorkStatus.INTEGRATION_PENDING,
+                dependencies = setOf("android.platform-integration"),
+                requiredEvidence = setOf("android_emulator_image", "binder_emulator_tests")),
+            GenesisWorkItem("device.public-source-discovery", "Search public device and kernel source candidates",
+                "Search public repository metadata for RMX5566RU, RE645F and SM6225/bengal; preserve provenance and classify all hits as unverified until exact build compatibility is demonstrated.",
+                GenesisWorkPriority.HIGH, GenesisWorkStatus.INTEGRATION_PENDING),
             GenesisWorkItem("device.rmx5566.sources", "Verify exact RMX5566 hardware sources",
                 "Obtain matching OEM kernel, device tree, vendor interfaces, partition metadata and restore package.",
                 GenesisWorkPriority.CRITICAL, GenesisWorkStatus.BLOCKED,
+                dependencies = setOf("device.public-source-discovery"),
                 requiredEvidence = setOf("verified_rmx5566_kernel", "verified_device_tree", "verified_vendor", "stock_restore")),
             GenesisWorkItem("device.rom-build", "Build and validate RMX5566 system image",
                 "Build only after exact sources and restore path are verified; test boot, AVB, SELinux, hardware and rollback.",
                 GenesisWorkPriority.CRITICAL, GenesisWorkStatus.DEVICE_VALIDATION_PENDING,
-                dependencies = setOf("android.platform-integration", "device.rmx5566.sources"),
+                dependencies = setOf("android.platform-integration", "android.emulator-validation", "device.rmx5566.sources"),
                 requiredEvidence = setOf("aosp_product_build", "avb_verified", "device_boot_test", "rollback_test"),
                 ownerApprovalRequired = true),
             GenesisWorkItem("device.first-boot-self-completion", "Run first-boot MANA completion",
-                "Inventory installed capabilities, persist missing work, develop compatible modules, test and stage safe updates.",
+                "Inventory installed capabilities, persist missing work, research compatible modules, request GPT review when configured, test changes and stage safe updates.",
                 GenesisWorkPriority.HIGH, GenesisWorkStatus.INTEGRATION_PENDING,
-                dependencies = setOf("forge.patch-pipeline", "android.platform-integration"))
+                dependencies = setOf("forge.patch-pipeline", "android.platform-integration", "device.public-source-discovery"))
         ))
     }
 }
