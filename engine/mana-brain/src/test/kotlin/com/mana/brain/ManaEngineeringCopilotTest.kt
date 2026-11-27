@@ -93,6 +93,16 @@ class ManaEngineeringCopilotTest {
         }
     }
 
+    @Test fun rejectsChangesToFilesNotExplicitlySelectedForTheTask() = runBlocking {
+        val response = validResponse.replace(
+            "os/core/src/main/kotlin/com/mana/os/core/Example.kt",
+            "docs/unselected-file.md"
+        )
+        assertFailsWith<IllegalArgumentException> {
+            ManaEngineeringCopilot(FakeProvider(response)).propose(task())
+        }
+    }
+
     @Test fun refusesUnavailableProvider() = runBlocking {
         assertFailsWith<IllegalStateException> {
             ManaEngineeringCopilot(FakeProvider(validResponse, available = false)).propose(task())
