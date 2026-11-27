@@ -61,11 +61,6 @@ import com.mana.os.core.ManaFutureUpdateService
 import com.mana.os.core.ManaUpdateStage
 
 class MainActivity : Activity() {
-    companion object {
-        private const val OFFICIAL_GEMMA_4_E2B_SHA256 =
-            "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c"
-    }
-
     private val bg = Color.rgb(4, 7, 14)
     private val panel = Color.rgb(10, 22, 42)
     private val panelRaised = Color.rgb(13, 32, 59)
@@ -1778,6 +1773,8 @@ class MainActivity : Activity() {
     }
 
     companion object {
+        private const val OFFICIAL_GEMMA_4_E2B_SHA256 =
+            "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c"
         const val EXTRA_OPEN_AVATAR = "com.mana.launcher.OPEN_AVATAR_FROM_SYSTEM_ASSISTANT"
     }
 }
