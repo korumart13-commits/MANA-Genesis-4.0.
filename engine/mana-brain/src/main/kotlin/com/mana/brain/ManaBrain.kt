@@ -43,6 +43,8 @@ class ManaBrain(
         this(localProvider, listOfNotNull(cloudProvider))
 
     init {
+        require(localProvider.id.isNotBlank()) { "Local provider identifier must not be blank" }
+        require(cloudProviders.all { it.id.isNotBlank() }) { "Cloud provider identifiers must not be blank" }
         require(localTimeoutMs > 0) { "Local inference timeout must be positive" }
         require(cloudTimeoutMs > 0) { "Cloud inference timeout must be positive" }
         require(cloudProviders.map { canonicalProviderId(it.id) }.distinct().size == cloudProviders.size) {
