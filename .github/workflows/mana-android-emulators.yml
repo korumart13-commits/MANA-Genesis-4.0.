@@ -62,13 +62,17 @@ jobs:
 
       - name: Run Android API ${{ matrix.api-level }} emulator smoke test
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          ANDROID_I_WANT_MY_TCG: "yes"
         with:
           api-level: ${{ matrix.api-level }}
           arch: x86_64
           target: google_apis
-          profile: pixel_6
+          profile: pixel_2
           disable-animations: true
-          script: cd launcher && gradle :app:connectedDebugAndroidTest --stacktrace
+          emulator-boot-timeout: 1200
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -memory 3072 -cores 2
+          script: cd launcher && gradle --no-daemon :app:connectedDebugAndroidTest --stacktrace
 
       - name: Upload API ${{ matrix.api-level }} debug APK
         if: always()
