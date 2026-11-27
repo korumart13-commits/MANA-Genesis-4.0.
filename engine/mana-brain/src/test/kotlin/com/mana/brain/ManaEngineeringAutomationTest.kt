@@ -127,6 +127,36 @@ class ManaEngineeringAutomationTest {
         assertEquals(0, gateway.dispatches)
     }
 
+    @Test fun abortsRepairWhenBranchHeadChangesAfterFailedAttempt() = runBlocking {
+        val provider = FakeProvider()
+        var headReads = 0
+        var dispatches = 0
+        val gateway = object : GitHubActionsGateway {
+            override suspend fun currentHeadSha(branch: String): String {
+                headReads++
+                return if (headReads <= 2) head else "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            }
+            override suspend fun dispatchPatch(branch: String, patch: String, expectedHeadSha: String, clientRunId: String): GitHubWorkflowRun {
+                dispatches++
+                return GitHubWorkflowRun(77, expectedHeadSha, "queued", null, "https://github.com/example/repo/actions/runs/77")
+            }
+            override suspend fun awaitCompletion(run: GitHubWorkflowRun, timeoutMs: Long) =
+                run.copy(status = "completed", conclusion = "failure")
+            override suspend fun failedJobLogs(runId: Long, maxChars: Int) =
+                "Compilation failed".take(maxChars)
+        }
+
+        assertFailsWith<IllegalStateException> {
+            ManaEngineeringAutomation(
+                ManaEngineeringCopilot(provider), gateway,
+                "chatgpt/mana-asi-rmx5566-one-action-setup", maxRepairAttempts = 2
+            ).run(task(), head)
+        }
+        assertEquals(1, dispatches)
+        assertEquals(1, provider.calls)
+        assertEquals(3, headReads)
+    }
+
     @Test fun rejectsStaleBranchBeforeDispatch() = runBlocking {
         val provider = FakeProvider()
         val gateway = object : GitHubActionsGateway {
