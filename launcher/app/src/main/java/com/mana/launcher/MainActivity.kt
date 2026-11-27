@@ -387,8 +387,17 @@ class MainActivity : Activity() {
         openAvatarIfRequested(intent)
         ManaEngineProcessOwner.ensureSavedModelLoaded(this) { result ->
             runOnUiThread {
-                result.onSuccess { name -> modelStatus?.text = "Локальная модель готова: $name" }
-                    .onFailure { error -> modelStatus?.text = "Модель сохранена, но не загрузилась: ${error.message}" }
+                result.onSuccess { name ->
+                    modelStatus?.text = "Локальная модель готова: $name"
+                }.onFailure { error ->
+                    modelStatus?.text = "Локальная модель ещё не готова: ${error.message}"
+                    if (modelCatalog?.verifiedSavedModel() == null) {
+                        // Bring the required model's owner consent directly into the one-action
+                        // bootstrap flow; never accept model terms or start a multi-GB download
+                        // on the owner's behalf.
+                        downloadOfficialModel()
+                    }
+                }
             }
         }
     }
@@ -1435,7 +1444,7 @@ class MainActivity : Activity() {
         if (catalog == null) { showMessage("Хранилище загрузок Android недоступно."); return }
         AlertDialog.Builder(this)
             .setTitle("Условия модели Gemma 4 E2B")
-            .setMessage("Gemma 4 E2B распространяется под Apache 2.0. Перед загрузкой ознакомься с лицензией и официальной карточкой модели. Модель занимает 2,59 ГБ. Загрузка идёт только по Wi-Fi; после неё MANA проверит точный размер и SHA-256. Продолжая, ты подтверждаешь, что прочитал лицензию Apache 2.0.")
+            .setMessage("Модель занимает около 2,59 ГБ и загружается только по Wi-Fi. Репозиторий указывает Apache 2.0; исходные веса Gemma также подпадают под Gemma Terms of Use и Prohibited Use Policy. Перед загрузкой ознакомься с условиями на официальной карточке модели и правилами Gemma. После загрузки MANA проверит точный размер и SHA-256. Нажатие «Принимаю и скачать» означает твоё собственное подтверждение условий и запуск загрузки.")
             .setNegativeButton("Отмена", null)
              .setNeutralButton("Открыть карточку модели") { _, _ ->
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm")))
