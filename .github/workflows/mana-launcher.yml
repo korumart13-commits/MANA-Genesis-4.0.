@@ -236,40 +236,68 @@ jobs:
           set -euo pipefail
           mkdir -p release/offline
           git archive --format=zip --output=release/offline/MANA-Genesis-4.0-source-project.zip HEAD
-          MODEL="release/offline/MANA-Martynova-AI-Gemma4-E2B.litertlm"
+          PACKAGE="release/offline/MANA-Genesis-4.0"
+          mkdir -p "$PACKAGE/installer" "$PACKAGE/models/Gemma" "$PACKAGE/source" "$PACKAGE/docs"
+          MODEL="$PACKAGE/models/Gemma/Gemma4-E2B.litertlm"
           URL="https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm"
           curl --fail --location --retry 5 --retry-all-errors --connect-timeout 30 --max-time 3600 "$URL" --output "$MODEL"
           echo "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c  $MODEL" | sha256sum --check -
           test "$(stat -c '%s' "$MODEL")" -gt 2500000000
           test "$(stat -c '%s' "$MODEL")" -lt 3000000000
-          cp launcher/app/build/outputs/apk/debug/app-debug.apk release/offline/MANA-Martynova-Genesis-4.0.apk
-          cat > release/offline/README-FIRST-RU.txt <<'EOF'
-          MANA Genesis 4.0 — комплект приложения, локальной модели и исходников
+          cp launcher/app/build/outputs/apk/debug/app-debug.apk "$PACKAGE/installer/INSTALL_MANA.apk"
+          git archive --format=zip --output="$PACKAGE/source/MANA-Genesis-4.0-source-project.zip" HEAD
+          cp launcher/LOCAL_MODEL_SETUP.md "$PACKAGE/docs/LOCAL_MODEL_SETUP_RU.md"
+          cp docs/MANA_GENESIS_4_0_NON_NEGOTIABLE_REQUIREMENTS_AND_GAPS.md "$PACKAGE/docs/MASTER_REQUIREMENTS_RU.md"
+          cat > "$PACKAGE/README-FIRST-RU.txt" <<'EOF'
+          MANA Genesis 4.0 — понятный установочный комплект для realme C85 4G / RMX5566
 
-          В архиве:
-          - MANA-Martynova-Genesis-4.0.apk — подписанный debug APK для установки и проверки.
-          - MANA-Martynova-AI-Gemma4-E2B.litertlm — локальная LiteRT-LM модель.
-          - MANA-Genesis-4.0-source-project.zip — исходный проект на момент сборки.
-          - SHA256SUMS.txt — контрольные суммы файлов.
+          СТРУКТУРА:
+          installer/INSTALL_MANA.apk — единое приложение MANA со встроенным мастером установки.
+          models/Gemma/Gemma4-E2B.litertlm — официальная локальная модель LiteRT-LM.
+          source/MANA-Genesis-4.0-source-project.zip — исходный проект этой сборки.
+          docs/ — русская документация и обязательные требования проекта.
+          SHA256SUMS.txt — контрольные суммы файлов комплекта.
 
-          Установка и запуск одним действием:
-          1. Установи APK штатным установщиком Android.
-          2. Открой приложение MANA и нажми единственную основную кнопку «ЗАПУСТИТЬ MANA».
-          3. MANA проверит профиль realme RMX5566RU / RE645F, создаст локальные данные,
-             запустит доступные модули и подключит MANA Brain.
-          4. Если локальная модель ещё не установлена, MANA сама покажет лицензионное
-             подтверждение Gemma. После твоего согласия загрузка около 2,59 ГБ начнётся
-             автоматически только по Wi-Fi; затем MANA проверит SHA-256 и подключит модель.
-             Приложение не принимает лицензионные условия за владельца.
+          УСТАНОВКА:
+          1. Открой installer/INSTALL_MANA.apk и подтверди обычную установку Android.
+          2. Запусти MANA и нажми главную кнопку «УСТАНОВИТЬ MANA».
+          3. Перед первой загрузкой Gemma прочитай условия и подтверди их сам кнопкой
+             «Принимаю и скачать». MANA не принимает лицензию за владельца.
+          4. Android Download Manager загружает модель с возобновлением только по Wi-Fi;
+             ход загрузки показывает системное уведомление Android.
+          5. MANA проверяет размер и SHA-256 и подключает Gemma автоматически:
+             сразу по системному событию завершения загрузки, если приложение открыто,
+             либо при следующем открытии MANA, если Android завершил процесс приложения.
 
-          Целевое устройство: realme RMX5566RU / RE645F, Android 16, Snapdragon 685 / SM6225.
-          Другие модели не заявляются как поддерживаемые. Debug APK — установочная сборка
-          для проверки приложения, а не production release и не системная прошивка.
-          Полная AOSP ROM, OTA и автоматическая прошивка не входят в этот APK-пакет.
+          РУЧНЫЕ КОМАНДЫ TERMUX НЕ НУЖНЫ. Ручной выбор файла не является обычным сценарием.
+
+          ВАЖНЫЕ УСЛОВИЯ:
+          - Для загрузки модели требуется около 2,59 ГБ плюс запас свободного места.
+          - APK не может самостоятельно подтвердить лицензию, выдать себе разрешения,
+            назначить себя системным ассистентом или обойти ограничения Android.
+          - Android может показать штатные запросы разрешений/ролей; их подтверждает владелец.
+          - Это APK-прототип/приложение, не прошивка MANA OS и не ROM для прошивки.
+          - Совместимость и производительность Gemma на физическом realme C85 4G / RMX5566
+            ещё должны быть подтверждены аппаратным тестом.
           EOF
-          (cd release/offline && sha256sum MANA-Martynova-Genesis-4.0.apk MANA-Martynova-AI-Gemma4-E2B.litertlm MANA-Genesis-4.0-source-project.zip > SHA256SUMS.txt)
-          (cd release/offline && zip -0 -q ../MANA-Martynova-FULL-PACKAGE.zip MANA-Martynova-Genesis-4.0.apk MANA-Martynova-AI-Gemma4-E2B.litertlm MANA-Genesis-4.0-source-project.zip README-FIRST-RU.txt SHA256SUMS.txt)
+          cat > "$PACKAGE/INSTALL_REPORT_TEMPLATE.txt" <<'EOF'
+          MANA Genesis 4.0 — отчёт установки
+          Устройство: realme C85 4G / RMX5566
+          Дата установки: __________________
+          Версия Android / API: __________________
+          Свободное место до загрузки: __________________
+          Установка APK: НЕ ПРОВЕРЕНО
+          Согласие с условиями Gemma: НЕ ПРОВЕРЕНО
+          Загрузка Gemma: НЕ ПРОВЕРЕНО
+          SHA-256 Gemma: НЕ ПРОВЕРЕНО
+          Запуск LiteRT-LM: НЕ ПРОВЕРЕНО
+          Локальная генерация без интернета: НЕ ПРОВЕРЕНО
+          Примечания / ошибки: __________________
+          EOF
+          (cd "$PACKAGE" && sha256sum installer/INSTALL_MANA.apk models/Gemma/Gemma4-E2B.litertlm source/MANA-Genesis-4.0-source-project.zip docs/LOCAL_MODEL_SETUP_RU.md docs/MASTER_REQUIREMENTS_RU.md > SHA256SUMS.txt)
+          (cd release/offline && zip -0 -q -r ../MANA-Martynova-FULL-PACKAGE.zip MANA-Genesis-4.0/)
           sha256sum release/MANA-Martynova-FULL-PACKAGE.zip > release/MANA-Martynova-FULL-PACKAGE.zip.sha256
+
       - name: Upload complete offline MANA bundle (APK + 2.59 GB model)
         uses: actions/upload-artifact@v4
         with:
