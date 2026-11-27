@@ -241,14 +241,24 @@ jobs:
           mkdir -p release/offline
           git archive --format=zip --output=release/offline/MANA-Genesis-4.0-source-project.zip HEAD
           PACKAGE="release/offline/MANA-Genesis-4.0"
-          mkdir -p "$PACKAGE/installer" "$PACKAGE/models/Gemma" "$PACKAGE/source" "$PACKAGE/docs"
-          MODEL="$PACKAGE/models/Gemma/Gemma4-E2B.litertlm"
+          mkdir -p release/offline "$PACKAGE/installer" "$PACKAGE/models/Gemma" "$PACKAGE/source" "$PACKAGE/docs"
+          MODEL="release/offline/Gemma4-E2B.litertlm"
           URL="https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm"
           curl --fail --location --retry 5 --retry-all-errors --connect-timeout 30 --max-time 3600 "$URL" --output "$MODEL"
           echo "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c  $MODEL" | sha256sum --check -
           test "$(stat -c '%s' "$MODEL")" -gt 2500000000
           test "$(stat -c '%s' "$MODEL")" -lt 3000000000
           cp launcher/app/build/outputs/apk/debug/app-debug.apk "$PACKAGE/installer/INSTALL_MANA.apk"
+          cat > "$PACKAGE/models/Gemma/MODEL_MANIFEST_RU.txt" <<'EOF'
+          Локальная модель MANA Genesis 4.0
+          Имя файла: gemma-4-E2B-it.litertlm
+          Размер: 2 588 147 712 байт (около 2,59 ГБ)
+          SHA-256: 181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c
+          Источник: https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm
+          Лицензия/условия: Apache 2.0 для формата упаковки; исходные веса также регулируются Gemma Terms of Use и Prohibited Use Policy.
+          MANA скачивает модель автоматически через Android Download Manager после явного согласия владельца.
+          Пользователю не нужно распаковывать модель или выбирать файл вручную.
+          EOF
           git archive --format=zip --output="$PACKAGE/source/MANA-Genesis-4.0-source-project.zip" HEAD
           cp launcher/LOCAL_MODEL_SETUP.md "$PACKAGE/docs/LOCAL_MODEL_SETUP_RU.md"
           cp docs/MANA_GENESIS_4_0_NON_NEGOTIABLE_REQUIREMENTS_AND_GAPS.md "$PACKAGE/docs/MASTER_REQUIREMENTS_RU.md"
@@ -257,7 +267,7 @@ jobs:
 
           СТРУКТУРА:
           installer/INSTALL_MANA.apk — единое приложение MANA со встроенным мастером установки.
-          models/Gemma/Gemma4-E2B.litertlm — официальная локальная модель LiteRT-LM.
+          models/Gemma/MODEL_MANIFEST_RU.txt — источник, размер и SHA-256 модели Gemma; приложение загрузит её автоматически.
           source/MANA-Genesis-4.0-source-project.zip — исходный проект этой сборки.
           docs/ — русская документация и обязательные требования проекта.
           SHA256SUMS.txt — контрольные суммы файлов комплекта.
@@ -267,7 +277,7 @@ jobs:
           2. Запусти MANA и нажми главную кнопку «УСТАНОВИТЬ MANA».
           3. Перед первой загрузкой Gemma прочитай условия и подтверди их сам кнопкой
              «Принимаю и скачать». MANA не принимает лицензию за владельца.
-          4. Android Download Manager загружает модель с возобновлением только по Wi-Fi;
+          4. Android Download Manager автоматически загружает модель с возобновлением только по Wi-Fi;
              MANA показывает процент и объём загрузки на экране; Android Download Manager ведёт фоновую загрузку и сохраняет её состояние.
           5. MANA проверяет размер и SHA-256 и подключает Gemma автоматически:
              сразу по системному событию завершения загрузки, если приложение открыто,
@@ -298,14 +308,14 @@ jobs:
           Локальная генерация без интернета: НЕ ПРОВЕРЕНО
           Примечания / ошибки: __________________
           EOF
-          (cd "$PACKAGE" && sha256sum installer/INSTALL_MANA.apk models/Gemma/Gemma4-E2B.litertlm source/MANA-Genesis-4.0-source-project.zip docs/LOCAL_MODEL_SETUP_RU.md docs/MASTER_REQUIREMENTS_RU.md README-FIRST-RU.txt INSTALL_REPORT_TEMPLATE.txt > SHA256SUMS.txt)
+          (cd "$PACKAGE" && sha256sum installer/INSTALL_MANA.apk models/Gemma/MODEL_MANIFEST_RU.txt source/MANA-Genesis-4.0-source-project.zip docs/LOCAL_MODEL_SETUP_RU.md docs/MASTER_REQUIREMENTS_RU.md README-FIRST-RU.txt INSTALL_REPORT_TEMPLATE.txt > SHA256SUMS.txt)
           (cd release/offline && zip -0 -q -r ../MANA-Martynova-FULL-PACKAGE.zip MANA-Genesis-4.0/)
-          sha256sum release/MANA-Martynova-FULL-PACKAGE.zip > release/MANA-Martynova-FULL-PACKAGE.zip.sha256
+          sha256sum release/MANA-Genesis-4.0-INSTALLER-PACKAGE.zip > release/MANA-Genesis-4.0-INSTALLER-PACKAGE.zip.sha256
 
-      - name: Upload complete offline MANA bundle (APK + 2.59 GB model)
+      - name: Upload one-button MANA installer and source bundle
         uses: actions/upload-artifact@v4
         with:
-          name: MANA-Martynova-FULL-PACKAGE-APK-AND-AI
+          name: MANA-Genesis-4.0-One-Button-Installer
           path: |
             release/MANA-Martynova-FULL-PACKAGE.zip
             release/MANA-Martynova-FULL-PACKAGE.zip.sha256
