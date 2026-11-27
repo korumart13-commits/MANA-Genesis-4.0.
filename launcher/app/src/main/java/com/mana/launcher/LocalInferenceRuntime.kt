@@ -34,6 +34,6 @@ interface LocalInferenceRuntime {
     fun modelName(): String?
     fun load(modelFile: File, callback: (Result<String>) -> Unit)
     fun generate(prompt: String, onChunk: (String) -> Unit, callback: (Result<Unit>) -> Unit): LocalInferenceCancellation
-    /** Cancels the active generation when the caller's deadline or lifecycle ends. */
+    /** Cancels all outstanding work and releases native resources. */
     fun shutdown()
 }
