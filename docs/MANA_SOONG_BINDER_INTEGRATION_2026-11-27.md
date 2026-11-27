@@ -204,3 +204,8 @@ release or a product that silently omitted one side of the Binder chain.
 - Result, error, synchronous Binder failure and deadline all compete through the same atomic `ManaBrainTerminalCallbackGate.tryDeliver()`. The first terminal outcome wins; later backend callbacks are ignored. The timeout is removed when a result/error/failure wins.
 - Timeout returns `ENGINE_TIMEOUT` with a safe diagnostic. It guarantees a terminal response to the caller, but does not forcibly stop backend/native computation because the current AIDL backend contract has no per-request cancellation method. Local inference has its own coroutine/native cancellation deadline separately.
 - The change also corrects the service to use the extracted gate's actual `tryDeliver()` API consistently on every path. The source-contract workflow now checks the callback deadline and timeout error. No live Binder/Soong test has run yet.
+
+
+### End-to-end request deadline including queue wait
+
+The 185-second request deadline now starts when the Binder request is accepted, before it enters the bounded 32-item worker queue. Queue wait therefore counts toward the deadline instead of allowing a queued request to wait indefinitely behind earlier work. The same atomic terminal gate arbitrates timeout, backend result, backend error, unavailable backend, synchronous Binder failure, and queue overload. Expired queued tasks check the gate before contacting the backend and are discarded. Pending timeout callbacks are removed on terminal completion and service destruction. This remains source-level behavior until the AOSP host test and live Binder integration run on an actual Android product image.
