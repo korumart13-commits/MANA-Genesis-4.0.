@@ -47,4 +47,15 @@ class ManaServiceResiliencePolicyTest {
         assertFalse(policy.resetIfStable(100))
         assertEquals(2, policy.attempts())
     }
+    @Test fun jitterNeverExceedsConfiguredMaximum() {
+        val policy = ManaServiceResiliencePolicy(
+            maxAttempts = 3,
+            baseDelayMs = 1_000,
+            maxDelayMs = 1_200,
+            jitter = { it }
+        )
+        assertEquals(1_200L, policy.recordFailure(0).delayMs)
+        assertEquals(1_200L, policy.recordFailure(1).delayMs)
+    }
+
 }
