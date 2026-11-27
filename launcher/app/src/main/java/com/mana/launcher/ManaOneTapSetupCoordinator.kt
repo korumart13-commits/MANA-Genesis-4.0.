@@ -34,7 +34,7 @@ class ManaOneTapSetupCoordinator(context: Context) {
         val reportPath: String
     ) {
         fun toReadableText(): String = buildString {
-            appendLine("MANA GENESIS 4.0 — ПЕРВИЧНАЯ НАСТРОЙКА")
+            appendLine("MANA XZ — ПЕРВИЧНАЯ НАСТРОЙКА")
             appendLine("$deviceName • Android $androidVersion • API $apiLevel")
             appendLine("Целевой профиль realme C85 4G / RMX5566: ${if (isTargetDevice) "ПОДТВЕРЖДЁН" else "НЕ ПОДТВЕРЖДЁН"}")
             appendLine()
