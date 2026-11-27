@@ -1,0 +1,77 @@
+name: MANA Engineering Pipeline
+
+on:
+  push:
+    branches:
+      - "chatgpt/mana-asi-rmx5566-one-action-setup"
+    paths:
+      - "engine/mana-brain/**"
+      - ".github/workflows/mana-engineering-pipeline.yml"
+  pull_request:
+    paths:
+      - "engine/mana-brain/**"
+      - ".github/workflows/mana-engineering-pipeline.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mana-engineering-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-build-test:
+    name: Validate patch policy, test and package MANA Brain
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+
+      - name: Run patch policy and full JVM tests
+        run: gradle --no-daemon -p engine/mana-brain clean test
+
+      - name: Build distributable engine JAR
+        run: gradle --no-daemon -p engine/mana-brain jar
+
+      - name: Create SHA-256 manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp engine/mana-brain/build/libs/*.jar dist/
+          cd dist
+          sha256sum *.jar > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Attest build provenance (pushes only)
+        if: github.event_name == 'push'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/*.jar
+
+      - name: Upload tested candidate and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Brain-engine-candidate-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
