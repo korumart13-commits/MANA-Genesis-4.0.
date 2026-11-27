@@ -168,3 +168,8 @@ A source review found two false-positive risks and corrected them:
 
 The revised checks are covered by the Soong source-contract workflow. This is still
 source-level validation only; no Binder transaction has been executed on Android yet.
+
+
+The instrumentation test also counts callbacks and requires exactly one terminal callback
+per request. Its timeout is 180 seconds to accommodate first-run local inference on slower
+hardware; the no-model local-only path must return the explicit fallback diagnostic.
