@@ -185,6 +185,7 @@ class GitHubActionsRestClient(
             redirect = api.getHeaderField("Location") ?: error("GitHub job log redirect omitted its download URL.")
         } finally { api.disconnect() }
 
+        require(redirect.startsWith("https://")) { "GitHub job log redirect must use HTTPS." }
         val blob = URL(redirect).openConnection() as HttpURLConnection
         try {
             blob.instanceFollowRedirects = true
@@ -289,6 +290,9 @@ class ManaEngineeringAutomation(
     ): EngineeringAutomationResult {
         check(task.ownerApprovedContext) { "Owner approval is required for an engineering task." }
         require(expectedHeadSha.matches(Regex("[a-fA-F0-9]{40}")))
+        check(github.currentHeadSha(branch).equals(expectedHeadSha, ignoreCase = true)) {
+            "MANA branch head changed before engineering started; refusing to generate a patch against a stale source snapshot."
+        }
         val attempts = mutableListOf<EngineeringAttempt>()
         var objective = task.objective
         var latestRun: GitHubWorkflowRun? = null
