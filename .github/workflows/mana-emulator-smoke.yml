@@ -37,6 +37,8 @@ jobs:
         run: gradle --no-daemon :brain:test :core:test :app:testDebugUnitTest :app:assembleDebug
       - name: Run instrumentation tests, then install/launch MANA on Android API ${{ matrix.api-level }} emulator
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          ANDROID_I_WANT_MY_TCG: "yes"
         with:
           api-level: ${{ matrix.api-level }}
           target: google_apis
@@ -45,8 +47,6 @@ jobs:
           disable-animations: true
           emulator-boot-timeout: 900
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
-          env:
-            ANDROID_I_WANT_MY_TCG: "yes"
           script: |
             set -euo pipefail
             gradle --no-daemon -p launcher :app:connectedDebugAndroidTest
