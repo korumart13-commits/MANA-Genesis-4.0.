@@ -21,3 +21,14 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
+
+tasks.register<JavaExec>("validateEngineeringPatch") {
+    dependsOn(tasks.named("classes"))
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("com.mana.brain.EngineeringPatchPolicyCliKt")
+    doFirst {
+        val patchFile = System.getenv("MANA_PATCH_FILE")
+            ?: throw GradleException("MANA_PATCH_FILE must point to a proposed unified diff.")
+        args(patchFile)
+    }
+}

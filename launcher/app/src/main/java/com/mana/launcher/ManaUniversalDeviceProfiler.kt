@@ -62,10 +62,10 @@ data class ManaUniversalDeviceProfile(
     }
 
     fun toReadableReport(): String = buildString {
-        appendLine("MANA UNIVERSAL DEVICE AUDIT v$schemaVersion")
+        appendLine("MANA UNIVERSAL ANDROID DEVICE AUDIT v$schemaVersion")
         facts.forEach { appendLine("${it.key}: ${it.value} [${it.status}]") }
         appendLine()
-        appendLine("CAPABILITIES")
+        appendLine("CAPABILITIES ON THIS DEVICE")
         capabilities.forEach { appendLine("${it.id}: ${it.status} — ${it.reason}") }
     }
 }

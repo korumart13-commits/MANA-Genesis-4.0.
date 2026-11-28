@@ -1,8 +1,12 @@
 package com.mana.launcher
 
 import android.app.Activity
+import android.app.DownloadManager
 import android.Manifest
 import android.content.pm.PackageManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.IntentFilter
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -99,6 +103,20 @@ class MainActivity : Activity() {
     private var reconnectController: ManaEngineReconnectController? = null
     private var activityResumed = false
     private var uiInitialized = false
+    @Volatile private var setupStarted = false
+    @Volatile private var setupRunning = false
+    @Volatile private var modelActivationInProgress = false
+    private var modelDownloadReceiverRegistered = false
+    private val modelDownloadReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val downloadId = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L) ?: -1L
+            if (intent?.action == DownloadManager.ACTION_DOWNLOAD_COMPLETE &&
+                modelCatalog?.isTrackedDownload(downloadId) == true) {
+                activateCompletedModelDownload()
+            }
+        }
+    }
+    private var setupReport: ManaOneTapSetupCoordinator.Report? = null
     private val manaEngineConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as? ManaEngineService.LocalBinder ?: return
@@ -198,26 +216,118 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Start MANA's own safe completion loop from the single app entry point.
-        // WorkManager persists schedules across process death/reboot; Android controls
-        // execution timing and may defer work under battery/network restrictions.
-        runCatching {
-            ManaGenesisFirstBootService(applicationContext).refresh()
-        }.onFailure { error ->
-            android.util.Log.e("MANA", "Unable to checkpoint Genesis development backlog", error)
-        }
-        runCatching {
-            ManaGenesisWorkScheduler.ensureScheduled(applicationContext)
-        }.onFailure { error ->
-            android.util.Log.e("MANA", "Unable to schedule Genesis background tasks", error)
-        }
         window.statusBarColor = bg
         window.navigationBarColor = bg
         window.decorView.setBackgroundColor(bg)
         reconnectController = ManaEngineReconnectController(this) {
-            if (activityResumed) attemptEngineConnection()
+            if (activityResumed && setupStarted) attemptEngineConnection()
         }
-        showEngineUnavailableScreen("Подключение к MANA Engine…")
+        val setupPreferences = getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE)
+        val wasStarted = setupPreferences.getBoolean("setup_started", false)
+        val wasCompleted = setupPreferences.getBoolean("setup_completed", false)
+        setupStarted = wasStarted || wasCompleted
+        if (wasStarted && !wasCompleted) {
+            showOneTapSetupScreen("Возобновлю незавершённую настройку MANA автоматически.")
+        } else if (wasCompleted) {
+            showEngineUnavailableScreen("Базовая первичная подготовка завершена. Подключаю MANA Brain; локальная модель, системные разрешения и внешние интеграции могут требовать отдельных подтверждений.")
+        } else {
+            // The owner starts the complete app-level bootstrap with one explicit action.
+            showOneTapSetupScreen("Один запуск подготовит функции MANA, доступные на этом Android-устройстве.")
+        }
+    }
+
+    private fun showOneTapSetupScreen(message: String) {
+        val screen = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(28), dp(32), dp(28), dp(32))
+            setBackgroundColor(bg)
+        }
+        screen.addView(label("MANA", 38, textColor, true))
+        screen.addView(label("GENESIS 4.0", 12, accentSoft, true).apply {
+            setPadding(0, dp(6), 0, dp(22))
+        })
+        screen.addView(label("${Build.MANUFACTURER} ${Build.MODEL}  •  ANDROID ${Build.VERSION.RELEASE ?: "unknown"}", 11, muted, true).apply {
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(18))
+        })
+        screen.addView(label(message, 14, textColor, false).apply {
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(24))
+        })
+        val launch = action(if (setupRunning) "MANA НАСТРАИВАЕТСЯ…" else if (setupStarted) "ПРОДОЛЖИТЬ ЗАПУСК MANA" else "ЗАПУСТИТЬ MANA") {
+            startManaOneTapSetup()
+        }.apply {
+            textSize = 15f
+            setTextColor(Color.WHITE)
+            background = rounded(accent, 18)
+            isEnabled = !setupRunning
+        }
+        screen.addView(launch, LinearLayout.LayoutParams(-1, dp(58)))
+        setContentView(screen)
+    }
+
+    private fun startManaOneTapSetup() {
+        if (setupRunning) return
+        setupStarted = true
+        setupRunning = true
+        getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE).edit()
+            .putBoolean("setup_started", true)
+            .putBoolean("setup_completed", false)
+            .apply()
+        showOneTapSetupScreen("Проверяю совместимость устройства, целостность MANA, локальное хранилище и доступные компоненты…")
+        Thread({
+            var report: ManaOneTapSetupCoordinator.Report? = null
+            var failure: Throwable? = null
+            try {
+                report = ManaOneTapSetupCoordinator(applicationContext).run()
+                setupReport = report
+            } catch (error: Throwable) {
+                failure = error
+                android.util.Log.e("MANA", "One-action setup failed", error)
+            }
+            runOnUiThread {
+                setupRunning = false
+                if (failure != null) {
+                    showOneTapSetupScreen("Настройка прервалась: ${failure?.message ?: "неизвестная ошибка"}. Нажми одну кнопку, чтобы безопасно повторить.")
+                } else {
+                    val targetProfileMatched = report?.isTargetDevice == true
+                    getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE).edit()
+                        .putBoolean("setup_started", true)
+                        .putBoolean("setup_completed", true)
+                        .putBoolean("target_profile_matched", targetProfileMatched)
+                        .apply()
+                    val profileMessage = if (targetProfileMatched) {
+                        "Тестовый профиль realme C85 4G / RMX5566 подтверждён."
+                    } else {
+                        "Тестовый профиль realme C85 4G / RMX5566 не подтверждён; продолжаю универсальный режим приложения. Специфичные для устройства функции и прошивка остаются выключенными."
+                    }
+                    showEngineUnavailableScreen("$profileMessage Подключаю MANA Brain…")
+                    if (!targetProfileMatched) report?.let { showMessage(it.toReadableText()) }
+                    attemptEngineConnection()
+                }
+            }
+        }, "MANA-One-Action-Setup").start()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(modelDownloadReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(modelDownloadReceiver, filter)
+        }
+        modelDownloadReceiverRegistered = true
+    }
+
+    override fun onStop() {
+        if (modelDownloadReceiverRegistered) {
+            runCatching { unregisterReceiver(modelDownloadReceiver) }
+            modelDownloadReceiverRegistered = false
+        }
+        super.onStop()
     }
 
     override fun onPause() {
@@ -227,7 +337,7 @@ class MainActivity : Activity() {
     }
 
     private fun attemptEngineConnection() {
-        if (manaEngineBound) return
+        if (!setupStarted || manaEngineBound) return
         val engineIntent = Intent(this, ManaEngineService::class.java)
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(engineIntent) else startService(engineIntent)
@@ -257,12 +367,9 @@ class MainActivity : Activity() {
         fallback.addView(label(message, 14, textColor, false).apply {
             setPadding(0, 0, 0, dp(18))
         })
-        fallback.addView(action("Открыть диагностику MANA") {
-            startActivity(Intent(this, ManaSystemStatusActivity::class.java))
-        }, LinearLayout.LayoutParams(-1, dp(48)))
-        fallback.addView(action("Повторить подключение") {
-            attemptEngineConnection()
-        }, LinearLayout.LayoutParams(-1, dp(48)))
+        fallback.addView(action(if (setupRunning) "MANA НАСТРАИВАЕТСЯ…" else "ПОВТОРИТЬ ЗАПУСК MANA") {
+            if (!setupRunning) attemptEngineConnection()
+        }, LinearLayout.LayoutParams(-1, dp(56)))
         setContentView(fallback)
     }
 
@@ -316,8 +423,17 @@ class MainActivity : Activity() {
         openAvatarIfRequested(intent)
         ManaEngineProcessOwner.ensureSavedModelLoaded(this) { result ->
             runOnUiThread {
-                result.onSuccess { name -> modelStatus?.text = "Локальная модель готова: $name" }
-                    .onFailure { error -> modelStatus?.text = "Модель сохранена, но не загрузилась: ${error.message}" }
+                result.onSuccess { name ->
+                    modelStatus?.text = "Локальная модель готова: $name"
+                }.onFailure { error ->
+                    modelStatus?.text = "Локальная модель ещё не готова: ${error.message}"
+                    if (modelCatalog?.verifiedSavedModel() == null) {
+                        // Bring the required model's owner consent directly into the one-action
+                        // bootstrap flow; never accept model terms or start a multi-GB download
+                        // on the owner's behalf.
+                        downloadOfficialModel()
+                    }
+                }
             }
         }
     }
@@ -354,9 +470,14 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         activityResumed = true
-        if (manaEngineBound && manaEngineBinder?.isInitialized() == true) {
+        val setupPreferences = getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE)
+        val incompleteSetup = setupPreferences.getBoolean("setup_started", false) &&
+            !setupPreferences.getBoolean("setup_completed", false)
+        if (incompleteSetup && !setupRunning) {
+            startManaOneTapSetup()
+        } else if (setupStarted && manaEngineBound && manaEngineBinder?.isInitialized() == true) {
             reconnectController?.onConnected()
-        } else if (!manaEngineBound && manaEngineBinder == null) {
+        } else if (setupStarted && !manaEngineBound && manaEngineBinder == null) {
             attemptEngineConnection()
         }
         loadApps()
@@ -454,6 +575,40 @@ class MainActivity : Activity() {
             setPadding(dp(18), dp(18), dp(18), dp(18))
             background = rounded(panelRaised, 22)
         }
+        card.addView(action("Повторить безопасную настройку MANA") {
+            val report = runCatching { ManaOneTapSetupCoordinator(this).run() }
+            if (report.isSuccess) {
+                val result = report.getOrThrow()
+                AlertDialog.Builder(this)
+                    .setTitle("MANA Genesis 4.0")
+                    .setMessage(result.toReadableText())
+                    .setPositiveButton("Готово", null)
+                    .setNeutralButton("Открыть разрешения") { _, _ ->
+                        val permissions = mutableListOf<String>()
+                        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                            permissions += Manifest.permission.RECORD_AUDIO
+                        }
+                        if (Build.VERSION.SDK_INT >= 33 &&
+                            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                            permissions += Manifest.permission.POST_NOTIFICATIONS
+                        }
+                        if (permissions.isNotEmpty()) {
+                            requestPermissions(permissions.toTypedArray(), audioPermissionRequestCode)
+                        } else if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
+                            startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+                        } else {
+                            requestAssistantRole()
+                        }
+                    }
+                    .show()
+            } else {
+                AlertDialog.Builder(this)
+                    .setTitle("Не удалось завершить настройку")
+                    .setMessage(report.exceptionOrNull()?.message ?: "Неизвестная ошибка")
+                    .setPositiveButton("Закрыть", null)
+                    .show()
+            }
+        })
         card.addView(label("MANA ASSISTANT", 11, accentSoft, true))
         card.addView(label("Твой телефон. Твои правила.", 19, textColor, true))
         card.addView(action("Состояние MANA • диагностика и восстановление") {
@@ -1325,7 +1480,7 @@ class MainActivity : Activity() {
         if (catalog == null) { showMessage("Хранилище загрузок Android недоступно."); return }
         AlertDialog.Builder(this)
             .setTitle("Условия модели Gemma 4 E2B")
-            .setMessage("Gemma 4 E2B распространяется под Apache 2.0. Перед загрузкой ознакомься с лицензией и официальной карточкой модели. Модель занимает 2,59 ГБ. Загрузка идёт только по Wi-Fi; после неё MANA проверит точный размер и SHA-256. Продолжая, ты подтверждаешь, что прочитал лицензию Apache 2.0.")
+            .setMessage("Модель занимает около 2,59 ГБ и загружается только по Wi-Fi. Репозиторий указывает Apache 2.0; исходные веса Gemma также подпадают под Gemma Terms of Use и Prohibited Use Policy. Перед загрузкой ознакомься с условиями на официальной карточке модели и правилами Gemma. После загрузки MANA проверит точный размер и SHA-256. Нажатие «Принимаю и скачать» означает твоё собственное подтверждение условий и запуск загрузки.")
             .setNegativeButton("Отмена", null)
              .setNeutralButton("Открыть карточку модели") { _, _ ->
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm")))
@@ -1348,22 +1503,31 @@ class MainActivity : Activity() {
 
     private fun activateCompletedModelDownload() {
         val catalog = modelCatalog ?: return
+        if (localRuntime.isReady() || modelActivationInProgress) return
+        modelActivationInProgress = true
         Thread {
+            var loadStarted = false
             try {
-                val file = catalog.verifiedSavedModel() ?: catalog.verifyCompletedDownload() ?: return@Thread
-                localRuntime.load(file) { result ->
-                    runOnUiThread {
-                        result.onSuccess { name ->
-                            modelStatus?.text = "Официальная модель проверена и активна: " + name
-                            showMessage("Gemma 4 E2B прошла проверку SHA-256 и подключена к локальному MANA Brain.")
-                        }.onFailure { error ->
-                            modelStatus?.text = "Модель скачана, но не запустилась: " + error.message
-                            showMessage("LiteRT-LM не смог загрузить модель: " + error.message)
+                val file = catalog.verifiedSavedModel() ?: catalog.verifyCompletedDownload()
+                if (file != null) {
+                    loadStarted = true
+                    localRuntime.load(file) { result ->
+                        modelActivationInProgress = false
+                        runOnUiThread {
+                            result.onSuccess { name ->
+                                modelStatus?.text = "Официальная модель проверена и активна: " + name
+                                showMessage("Gemma 4 E2B прошла проверку SHA-256 и подключена к локальному MANA Brain.")
+                            }.onFailure { error ->
+                                modelStatus?.text = "Модель скачана, но не запустилась: " + error.message
+                                showMessage("LiteRT-LM не смог загрузить модель: " + error.message)
+                            }
                         }
                     }
                 }
             } catch (error: Exception) {
                 runOnUiThread { showMessage("Проверка загрузки модели не пройдена: " + error.message) }
+            } finally {
+                if (!loadStarted) modelActivationInProgress = false
             }
         }.start()
     }

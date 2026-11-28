@@ -18,7 +18,7 @@ object ManaEngineProcessOwner {
     @Volatile private var cloud: ManaCloudGateway? = null
     @Volatile private var yandex: ManaYandexAiStudioProvider? = null
     private var serviceOwners = 0
-    private var modelLoadRequested = false
+    private val modelLoadCallbacks = ManaModelLoadCallbackQueue()
 
     fun prepare(
         brainBridge: ManaBrainBridge,
@@ -64,20 +64,40 @@ object ManaEngineProcessOwner {
     }
 
     /**
-     * Load a previously saved/selected model. Catalog-managed models are hash-verified; model
-     * initialization run off the main thread; this method never downloads or accepts a license.
+     * Restore a previously verified model. Concurrent service/UI callers share one load.
+     * Every caller receives a completion, including the no-model case, so the UI can request
+     * the owner's explicit Gemma-terms consent instead of silently stalling.
      */
     fun ensureSavedModelLoaded(
         context: Context,
         callback: ((Result<String>) -> Unit)? = null
     ) {
         val app = context.applicationContext
+        var immediateResult: Result<String>? = null
         val local = synchronized(lock) {
-            val runtime = inference ?: return
-            if (runtime.isReady() || modelLoadRequested) return
-            modelLoadRequested = true
-            runtime
+            val runtime = inference
+            when {
+                runtime == null -> {
+                    immediateResult = Result.failure(
+                        IllegalStateException("MANA local inference runtime is not initialized.")
+                    )
+                    null
+                }
+                runtime.isReady() -> {
+                    immediateResult = Result.success(runtime.modelName() ?: "Local model is ready")
+                    null
+                }
+                !modelLoadCallbacks.joinOrStart(callback) -> null
+                else -> runtime
+            }
         }
+
+        immediateResult?.let { result ->
+            runCatching { callback?.invoke(result) }
+            return
+        }
+        if (local == null) return
+
         Thread({
             try {
                 val catalog = ManaModelCatalog(app)
@@ -85,16 +105,18 @@ object ManaEngineProcessOwner {
                     ?: java.io.File(app.filesDir, "mana-models/selected-model.litertlm")
                         .takeIf { it.isFile && it.canRead() }
                 if (model == null) {
-                    synchronized(lock) { modelLoadRequested = false }
+                    modelLoadCallbacks.complete(
+                        Result.failure(
+                            IllegalStateException(
+                                "No verified local model is installed. Owner consent is required before downloading Gemma 4 E2B."
+                            )
+                        )
+                    )
                     return@Thread
                 }
-                local.load(model) { result ->
-                    synchronized(lock) { modelLoadRequested = false }
-                    callback?.invoke(result)
-                }
+                local.load(model) { result -> modelLoadCallbacks.complete(result) }
             } catch (error: Exception) {
-                synchronized(lock) { modelLoadRequested = false }
-                callback?.invoke(Result.failure(error))
+                modelLoadCallbacks.complete(Result.failure(error))
             }
         }, "MANA-Model-Bootstrap").apply {
             isDaemon = true
@@ -183,6 +205,5 @@ object ManaEngineProcessOwner {
         memory = null
         cloud = null
         yandex = null
-        modelLoadRequested = false
     }
 }

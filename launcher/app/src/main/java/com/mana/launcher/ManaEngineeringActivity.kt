@@ -23,12 +23,15 @@ import kotlinx.coroutines.launch
 
 /** Owner-controlled GPT engineering workspace. It proposes diffs; it never applies them. */
 class ManaEngineeringActivity : ComponentActivity() {
-    private lateinit var provider: ManaCloudGateway
+    private lateinit var provider: ManaBrainEngineeringProvider
+    private lateinit var github: ManaGitHubActionsConnector
+    private lateinit var repositoryPaths: EditText
     private lateinit var objective: EditText
     private lateinit var status: TextView
     private lateinit var sourceSummary: TextView
     private lateinit var result: TextView
     private var selectedFiles: List<EngineeringSourceFile> = emptyList()
+    private var repositoryHeadSha: String? = null
 
     private val sourcePicker = registerForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments()
@@ -36,7 +39,8 @@ class ManaEngineeringActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        provider = ManaEngineProcessOwner.cloudGateway() ?: ManaCloudGateway(this, ManaAndroidKeyProvider())
+        provider = ManaBrainEngineeringProvider()
+        github = ManaGitHubActionsConnector(this)
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -45,10 +49,10 @@ class ManaEngineeringActivity : ComponentActivity() {
         }
         root.addView(text("MANA Engineering Lab", 23, 0xFFFFFFFF.toInt(), true))
         root.addView(text(
-            "GPT помогает проектировать изменения MANA. Выбранные файлы отправляются настроенному облачному провайдеру только после отдельного подтверждения. Результат — предложение diff для проверки, не автоматическое изменение проекта.",
+            "Инженерный запрос идёт через центральный MANA Brain: сначала локальная LiteRT-LM модель; если она недоступна, облачный резерв может использоваться только после отдельного подтверждения. Результат — diff для проверки, без автоматического изменения проекта.",
             12, 0xFF9CB6D4.toInt()
         ))
-        status = text("Провайдер: ${provider.selectedProvider()} • ${if (provider.isAvailable()) "готов" else "не настроен"}", 12, 0xFF69C6FF.toInt())
+        status = text("Провайдер: ${provider.statusLabel()} • ${if (provider.isAvailable()) "готов" else "не настроен"}", 12, 0xFF69C6FF.toInt())
         root.addView(status)
         objective = EditText(this).apply {
             hint = "Что нужно разработать или исправить в MANA?"
@@ -61,11 +65,33 @@ class ManaEngineeringActivity : ComponentActivity() {
         root.addView(button("Выбрать исходные файлы") {
             sourcePicker.launch(arrayOf("text/*", "application/json", "application/xml"))
         })
-        sourceSummary = text("Исходники не выбраны.", 12, 0xFF9CB6D4.toInt())
+        repositoryPaths = EditText(this).apply {
+            hint = "Пути файлов в GitHub, по одному на строку. Можно загружать без выбора локальных файлов."
+            setTextColor(0xFFFFFFFF.toInt())
+            setHintTextColor(0xFF9CB6D4.toInt())
+            minLines = 2
+            maxLines = 5
+        }
+        root.addView(repositoryPaths, LinearLayout.LayoutParams(-1, -2))
+        root.addView(button("Применить пути GitHub к выбранным файлам") { applyRepositoryPaths() })
+        root.addView(button("Загрузить точные исходники из GitHub") { loadRepositorySources() })
+        sourceSummary = text("Укажи путь исходника в GitHub и загрузи точную версию ветки.", 12, 0xFF9CB6D4.toInt())
         root.addView(sourceSummary)
+        root.addView(button("Подключить GitHub Actions") { configureGitHub() })
+        root.addView(button("Отключить GitHub и удалить токен") {
+            AlertDialog.Builder(this)
+                .setTitle("Удалить GitHub token?")
+                .setMessage("Зашифрованный токен и ключ Android Keystore будут удалены с этого устройства.")
+                .setNegativeButton("Отмена", null)
+                .setPositiveButton("Удалить") { _, _ ->
+                    try { github.removeCredentials(); status.text = "GitHub token удалён." }
+                    catch (error: Exception) { status.text = error.message ?: "Не удалось удалить токен." }
+                }.show()
+        })
+        root.addView(button("Запустить CI и автоисправление (до 2 повторов)") { confirmAndRunEngineeringLoop() })
         root.addView(button("Попросить GPT подготовить патч") { confirmAndGenerate() })
         root.addView(button("Обновить статус облачного провайдера") {
-            status.text = "Провайдер: ${provider.selectedProvider()} • ${if (provider.isAvailable()) "готов" else "не настроен"}"
+            status.text = "Провайдер: ${provider.statusLabel()} • ${if (provider.isAvailable()) "готов" else "не настроен"}"
         })
         root.addView(text("Предложение MANA", 18, 0xFFFFFFFF.toInt(), true))
         result = text("Здесь появятся описание, diff, тест-план и риски.", 12, 0xFFEAF4FF.toInt())
@@ -79,6 +105,106 @@ class ManaEngineeringActivity : ComponentActivity() {
             status.text = "Предложение скопировано. Оно ещё не применено."
         })
         setContentView(root)
+    }
+
+
+    private fun applyRepositoryPaths() {
+        if (selectedFiles.isEmpty()) { status.text = "Сначала выбери файлы."; return }
+        val paths = repositoryPaths.text.toString().lines().map { it.trim() }.filter { it.isNotBlank() }
+        if (paths.size != selectedFiles.size) {
+            status.text = "Укажи ровно ${selectedFiles.size} путей — по одному на каждый выбранный файл."
+            return
+        }
+        try {
+            selectedFiles = selectedFiles.mapIndexed { index, file -> file.copy(path = paths[index]) }
+            repositoryHeadSha = null
+            sourceSummary.text = "Подготовлено для GitHub:\n" + selectedFiles.joinToString("\n") { it.path }
+            status.text = "Пути применены. Они будут проверены политикой MANA перед отправкой."
+        } catch (error: Exception) { status.text = error.message ?: "Недопустимый путь." }
+    }
+
+    private fun loadRepositorySources() {
+        if (!github.isConfigured()) { status.text = "Сначала подключи GitHub Actions."; return }
+        val typedPaths = repositoryPaths.text.toString().lines().map { it.trim() }.filter { it.isNotBlank() }
+        val paths = typedPaths.ifEmpty { selectedFiles.map { it.path } }
+        if (paths.isEmpty()) { status.text = "Укажи хотя бы один путь к файлу в репозитории GitHub."; return }
+        if (paths.size > 12 || paths.distinct().size != paths.size) { status.text = "Нужно от 1 до 12 уникальных путей."; return }
+        status.text = "MANA загружает исходники и фиксирует SHA ветки GitHub…"
+        lifecycleScope.launch {
+            try {
+                val snapshot = github.fetchRepositorySources(paths)
+                selectedFiles = snapshot.files
+                repositoryHeadSha = snapshot.headSha
+                sourceSummary.text = "Загружено непосредственно из GitHub (${snapshot.files.size} файлов).\nБазовый commit: ${snapshot.headSha}\n" + snapshot.files.joinToString("\n") { it.path }
+                status.text = "Исходники синхронизированы с точным commit. Теперь можно запросить патч и запустить CI."
+            } catch (error: Exception) {
+                repositoryHeadSha = null
+                status.text = "Не удалось получить исходники GitHub: ${error.message}"
+            }
+        }
+    }
+
+    private fun configureGitHub() {
+        val input = EditText(this).apply {
+            hint = "Fine-grained GitHub token (Actions: read/write; Contents: read)"
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Подключить GitHub Actions")
+            .setMessage("Создай fine-grained token только для репозитория ${ManaGitHubActionsConnector.REPOSITORY}. Дай Actions: read/write и Contents: read. Токен будет зашифрован Android Keystore и не попадёт в исходники или CI-логи.")
+            .setView(input)
+            .setNegativeButton("Отмена", null)
+            .setPositiveButton("Сохранить") { _, _ ->
+                try {
+                    github.configure(input.text.toString())
+                    status.text = "GitHub Actions подключён. Токен хранится в Android Keystore-backed vault."
+                    input.setText("")
+                } catch (error: Exception) { status.text = error.message ?: "Не удалось сохранить токен." }
+            }.show()
+    }
+
+    private fun confirmAndRunEngineeringLoop() {
+        val goal = objective.text.toString().trim()
+        if (goal.isBlank() || selectedFiles.isEmpty()) { status.text = "Нужны описание задачи и выбранные исходники."; return }
+        if (repositoryHeadSha == null) { status.text = "Сначала нажми «Загрузить точные исходники из GitHub» после указания путей."; return }
+        if (!github.isConfigured()) { status.text = "Сначала подключи GitHub Actions."; return }
+        if (!provider.isAvailable()) { status.text = "Запусти MANA Engine и загрузи локальную модель либо включи разрешённый облачный резерв."; return }
+        val task = EngineeringTask(
+            id = "mana-auto-${System.currentTimeMillis()}",
+            objective = goal,
+            targetDevice = "realme RMX5566RU / RE645F",
+            targetBuild = "Android 16 / RMX5566_16.0.5.1310(EX01)",
+            sourceFiles = selectedFiles,
+            ownerApprovedContext = true,
+            allowCloud = true
+        )
+        AlertDialog.Builder(this)
+            .setTitle("Разрешить инженерный цикл MANA?")
+            .setMessage("MANA Brain сначала использует локальную LiteRT-LM модель. Если она недоступна, может использовать настроенный облачный резерв; это разрешение действует только на этот цикл. Brain предложит diff, запустит GitHub Actions и прочитает логи при ошибке. Разрешено не более 2 автоматических повторов (3 запуска CI всего). Изменения выполняются только во временном CI checkout: без commit, merge, установки APK или прошивки. Облачный запрос может тарифицироваться.")
+            .setNegativeButton("Отмена", null)
+            .setPositiveButton("Разрешить один цикл") { _, _ ->
+                status.text = "MANA получает SHA ветки и запускает проверку…"
+                lifecycleScope.launch {
+                    try {
+                        val outcome = github.run(provider, task, maxRepairAttempts = 2, expectedHeadSha = repositoryHeadSha)
+                        result.text = buildString {
+                            appendLine(if (outcome.succeeded) "CI: SUCCESS" else "CI: NOT PASSED")
+                            appendLine("Запусков: ${outcome.attempts.size} / максимум 3")
+                            outcome.attempts.forEach { attempt ->
+                                appendLine("\nПопытка ${attempt.attempt}: ${attempt.run.conclusion ?: attempt.run.status}")
+                                appendLine(attempt.patchSummary)
+                                appendLine(attempt.run.htmlUrl)
+                                attempt.failureLogExcerpt?.let { appendLine("Логи ошибки:\n" + it) }
+                            }
+                            appendLine("\nПатчи не были закоммичены или установлены. CI проверял их в одноразовой среде.")
+                        }
+                        status.text = if (outcome.succeeded) "GitHub Actions успешно проверил кандидат. Никаких изменений в ветку не записано." else "Автоисправление остановлено после ограниченного числа попыток. Требуется разбор отчёта."
+                    } catch (error: Exception) {
+                        status.text = "Инженерный цикл не выполнен: ${error.message}"
+                        result.text = "Нет подтверждённого успешного результата. Проверь права GitHub token, сеть и состояние workflow."
+                    }
+                }
+            }.show()
     }
 
     private fun loadSelectedSources(uris: List<Uri>) {
@@ -108,6 +234,7 @@ class ManaEngineeringActivity : ComponentActivity() {
                 EngineeringSourceFile("docs/owner-context/$safeName", content)
             }
             selectedFiles = loaded
+            repositoryHeadSha = null
             sourceSummary.text = "Выбрано файлов: ${loaded.size}\n" + loaded.joinToString("\n") { it.path }
             status.text = "Файлы прочитаны локально. Отправка ещё не выполнялась."
         } catch (error: Exception) {
@@ -122,14 +249,14 @@ class ManaEngineeringActivity : ComponentActivity() {
         if (goal.isBlank()) { status.text = "Сначала опиши задачу."; return }
         if (selectedFiles.isEmpty()) { status.text = "Сначала выбери исходные файлы."; return }
         if (!provider.isAvailable()) {
-            status.text = "Настрой и включи облачный провайдер в главном меню MANA."
+            status.text = "Запусти MANA Engine и загрузи локальную модель либо настрой разрешённый облачный резерв."
             return
         }
         val names = selectedFiles.joinToString("\n") { it.path }
         AlertDialog.Builder(this)
             .setTitle("Разрешить отправку исходников?")
             .setMessage(
-                "Провайдер: ${provider.selectedProvider()}\nМодель: ${provider.model()}\n\nЗадача: $goal\n\nФайлы:\n$names\n\nИх содержимое и описание задачи будут отправлены провайдеру. Возможна тарификация. MANA получит только предложение diff; оно не будет автоматически применено."
+                "Маршрут MANA Brain: ${provider.statusLabel()}\nМодель: ${provider.modelLabel()}\n\nЗадача: $goal\n\nФайлы:\n$names\n\nЛокальная модель имеет приоритет. Если она недоступна, содержимое файлов может быть отправлено настроенному облачному резерву после этого подтверждения. Возможна тарификация. MANA получит только предложение diff; оно не будет автоматически применено."
             )
             .setNegativeButton("Отмена", null)
             .setPositiveButton("Разрешить один запрос") { _, _ -> generateProposal(goal) }

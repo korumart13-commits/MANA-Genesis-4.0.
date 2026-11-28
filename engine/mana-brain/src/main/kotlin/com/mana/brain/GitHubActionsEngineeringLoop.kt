@@ -1,0 +1,371 @@
+package com.mana.brain
+
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+import java.io.ByteArrayInputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import java.nio.charset.StandardCharsets
+import java.time.Instant
+import java.util.zip.ZipInputStream
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+
+/** Supplies a short-lived GitHub token from Android Keystore-backed storage.
+ * Never persist a token in source, preferences in plaintext, logs or workflow inputs.
+ */
+fun interface GitHubTokenProvider {
+    fun accessToken(): String?
+}
+
+data class GitHubWorkflowRun(
+    val id: Long,
+    val headSha: String,
+    val status: String,
+    val conclusion: String?,
+    val htmlUrl: String
+) {
+    val completed: Boolean get() = status == "completed"
+    val succeeded: Boolean get() = completed && conclusion == "success"
+}
+
+data class GitHubWorkflowJob(
+    val id: Long,
+    val name: String,
+    val conclusion: String?
+)
+
+interface GitHubActionsGateway {
+    suspend fun currentHeadSha(branch: String): String
+    suspend fun dispatchPatch(branch: String, patch: String, expectedHeadSha: String, clientRunId: String): GitHubWorkflowRun
+    suspend fun awaitCompletion(run: GitHubWorkflowRun, timeoutMs: Long = 1_800_000): GitHubWorkflowRun
+    suspend fun failedJobLogs(runId: Long, maxChars: Int = 40_000): String
+}
+
+/** GitHub REST implementation for workflow_dispatch, run polling and job logs. */
+class GitHubActionsRestClient(
+    private val repository: String,
+    private val workflowFile: String,
+    private val tokenProvider: GitHubTokenProvider,
+    private val pollIntervalMs: Long = 3_000,
+    private val dispatchTimeoutMs: Long = 120_000,
+    private val apiBaseUrl: String = API_BASE
+) : GitHubActionsGateway {
+    init {
+        require(repository.matches(Regex("[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")))
+        require(workflowFile.matches(Regex("[A-Za-z0-9_.-]+")))
+        require(pollIntervalMs in 250..30_000)
+        require(dispatchTimeoutMs in 5_000..600_000)
+        require(apiBaseUrl.startsWith("https://") || apiBaseUrl.startsWith("http://127.0.0.1:")) {
+            "GitHub API base must use HTTPS (HTTP is allowed only for loopback tests)."
+        }
+    }
+
+    override suspend fun currentHeadSha(branch: String): String = withContext(Dispatchers.IO) {
+        require(branch.matches(Regex("[A-Za-z0-9._/-]{1,200}")) && !branch.contains(".."))
+        val encoded = java.net.URLEncoder.encode(branch, Charsets.UTF_8.name()).replace("+", "%20")
+        val root = JsonParser.parseString(request("GET", "branches/$encoded")).asJsonObject
+        root.getAsJsonObject("commit").get("sha").asString.also {
+            require(it.matches(Regex("[a-fA-F0-9]{40}"))) { "GitHub returned an invalid branch commit SHA." }
+        }
+    }
+    /** Fetch the exact source snapshot from the same GitHub branch that CI will test. */
+    suspend fun fetchRepositoryFile(branch: String, path: String): EngineeringSourceFile = withContext(Dispatchers.IO) {
+        require(branch.matches(Regex("[A-Za-z0-9._/-]{1,200}")) && !branch.contains(".."))
+        require(path.length in 1..240 && !path.startsWith("/") && !path.contains(92.toChar()))
+        val normalized = path
+        require(normalized.split('/').none { it.isBlank() || it == "." || it == ".." })
+        val allowedRoots = listOf("engine/mana-brain/src/main/", "engine/mana-brain/src/test/", "os/core/src/main/", "os/core/src/test/", "launcher/app/src/main/", "launcher/app/src/test/", "system/mana/services/", "docs/")
+        require(allowedRoots.any(normalized::startsWith)) { "Source path is outside MANA approved workspaces." }
+        val encodedPath = normalized.split('/').joinToString("/") { java.net.URLEncoder.encode(it, StandardCharsets.UTF_8.name()).replace("+", "%20") }
+        val encodedBranch = java.net.URLEncoder.encode(branch, StandardCharsets.UTF_8.name()).replace("+", "%20")
+        val item = JsonParser.parseString(request("GET", "contents/$encodedPath?ref=$encodedBranch")).asJsonObject
+        require(item.get("encoding")?.asString == "base64") { "GitHub did not return a base64 source file." }
+        val bytes = java.util.Base64.getMimeDecoder().decode(item.get("content").asString)
+        EngineeringSourceFile(normalized, String(bytes, StandardCharsets.UTF_8))
+    }
+
+    override suspend fun dispatchPatch(
+        branch: String,
+        patch: String,
+        expectedHeadSha: String,
+        clientRunId: String
+    ): GitHubWorkflowRun = withContext(Dispatchers.IO) {
+        require(branch.matches(Regex("[A-Za-z0-9._/-]{1,200}")) && !branch.contains(".."))
+        require(expectedHeadSha.matches(Regex("[a-fA-F0-9]{40}")))
+        require(clientRunId.matches(Regex("[A-Za-z0-9._-]{1,80}")))
+        require(patch.isNotBlank() && patch.length <= MAX_WORKFLOW_PATCH_CHARS)
+        EngineeringPatchPolicy.validate(patch)
+
+        val dispatchedAt = Instant.now()
+        val payload = JsonObject().apply {
+            addProperty("ref", branch)
+            add("inputs", JsonObject().apply { addProperty("patch", patch); addProperty("client_run_id", clientRunId) })
+        }
+        request("POST", "actions/workflows/$workflowFile/dispatches", payload.toString(), expected = setOf(204))
+        val deadline = System.currentTimeMillis() + dispatchTimeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            val root = JsonParser.parseString(
+                request("GET", "actions/workflows/$workflowFile/runs?branch=${java.net.URLEncoder.encode(branch, StandardCharsets.UTF_8.name()).replace("+", "%20")}&event=workflow_dispatch&per_page=20")
+            ).asJsonObject
+            val runs = root.getAsJsonArray("workflow_runs")
+            val match = runs.firstOrNull { element ->
+                val item = element.asJsonObject
+                item.get("head_sha")?.asString == expectedHeadSha &&
+                    item.get("event")?.asString == "workflow_dispatch" &&
+                    item.get("display_title")?.asString?.contains(clientRunId) == true &&
+                    runCreatedAt(item) >= dispatchedAt.minusSeconds(5)
+            }?.asJsonObject
+            if (match != null) return@withContext match.toRun()
+            delay(pollIntervalMs)
+        }
+        throw IllegalStateException("GitHub accepted workflow_dispatch but no matching run appeared before timeout.")
+    }
+
+    override suspend fun awaitCompletion(run: GitHubWorkflowRun, timeoutMs: Long): GitHubWorkflowRun =
+        withContext(Dispatchers.IO) {
+            require(timeoutMs in 5_000..1_800_000)
+            val deadline = System.currentTimeMillis() + timeoutMs
+            while (System.currentTimeMillis() < deadline) {
+                val item = JsonParser.parseString(request("GET", "actions/runs/${run.id}")).asJsonObject
+                val current = item.toRun()
+                if (current.completed) return@withContext current
+                delay(pollIntervalMs)
+            }
+            throw IllegalStateException("GitHub Actions run ${run.id} did not complete before timeout.")
+        }
+    override suspend fun failedJobLogs(runId: Long, maxChars: Int): String = withContext(Dispatchers.IO) {
+        require(maxChars in 1_000..100_000)
+        val root = JsonParser.parseString(request("GET", "actions/runs/$runId/jobs?per_page=50")).asJsonObject
+        val jobs = root.getAsJsonArray("jobs")
+        val output = StringBuilder()
+        jobs.filter { element ->
+            val item = element.asJsonObject
+            item.get("conclusion")?.asString == "failure"
+        }.forEach { element ->
+            val job = element.asJsonObject
+            val id = job.get("id").asLong
+            val name = job.get("name").asString
+            output.appendLine("## Failed job: $name (id=$id)")
+            val logs = unzipJobLogs(downloadJobLogZip("actions/jobs/$id/logs"), (maxChars - output.length).coerceAtLeast(0))
+            output.append(redactSecrets(logs))
+            output.appendLine()
+            if (output.length >= maxChars) return@forEach
+        }
+        output.toString().take(maxChars)
+    }
+
+    private fun request(
+        method: String,
+        pathAndQuery: String,
+        body: String? = null,
+        expected: Set<Int> = setOf(200)
+    ): String {
+        val token = tokenProvider.accessToken()?.trim().orEmpty()
+        require(token.length in 20..500 && token.none(Char::isWhitespace)) { "GitHub Actions is not connected: no valid access token is available." }
+        val connection = URL("${apiBaseUrl.trimEnd('/')}/$repository/$pathAndQuery").openConnection() as HttpURLConnection
+        try {
+            connection.requestMethod = method
+            connection.connectTimeout = 15_000
+            connection.readTimeout = 90_000
+            connection.instanceFollowRedirects = false
+            connection.setRequestProperty("Accept", "application/vnd.github+json")
+            connection.setRequestProperty("Authorization", "Bearer $token")
+            connection.setRequestProperty("X-GitHub-Api-Version", API_VERSION)
+            connection.setRequestProperty("User-Agent", "MANA-Genesis-Engineering")
+            if (body != null) {
+                connection.doOutput = true
+                connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                connection.outputStream.use { it.write(body.toByteArray(StandardCharsets.UTF_8)) }
+            }
+            val status = connection.responseCode
+            val stream = if (status in 200..299) connection.inputStream else connection.errorStream
+            val response = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
+            if (status !in expected) {
+                if (status == 404 && pathAndQuery.contains("/dispatches")) {
+                    throw IllegalStateException(
+                        "GitHub cannot dispatch this workflow yet. GitHub requires the workflow_dispatch file to exist on the repository default branch; merge the MANA Engineering Pipeline workflow first."
+                    )
+                }
+                throw IllegalStateException("GitHub API request failed with HTTP $status for $pathAndQuery.")
+            }
+            return response
+        } finally { connection.disconnect() }
+    }
+
+    /** Download GitHub's log ZIP without forwarding the PAT to its signed blob URL. */
+    private fun downloadJobLogZip(path: String): ByteArray {
+        val token = tokenProvider.accessToken()?.trim().orEmpty()
+        require(token.length in 20..500 && token.none(Char::isWhitespace)) { "GitHub Actions is not connected." }
+        val api = URL("${apiBaseUrl.trimEnd('/')}/$repository/$path").openConnection() as HttpURLConnection
+        val redirect: String
+        try {
+            api.instanceFollowRedirects = false
+            api.connectTimeout = 15_000
+            api.readTimeout = 90_000
+            api.setRequestProperty("Accept", "application/vnd.github+json")
+            api.setRequestProperty("Authorization", "Bearer $token")
+            api.setRequestProperty("X-GitHub-Api-Version", API_VERSION)
+            api.setRequestProperty("User-Agent", "MANA-Genesis-Engineering")
+            val status = api.responseCode
+            if (status !in 300..399) throw IllegalStateException("GitHub job log endpoint did not return a redirect (HTTP $status).")
+            redirect = api.getHeaderField("Location") ?: error("GitHub job log redirect omitted its download URL.")
+        } finally { api.disconnect() }
+
+        val loopbackAuthority = URL(apiBaseUrl).let { "http://127.0.0.1:${it.port}/" }
+        require(redirect.startsWith("https://") || (apiBaseUrl.startsWith("http://127.0.0.1:") && redirect.startsWith(loopbackAuthority))) {
+            "GitHub job log redirect must use HTTPS (except loopback test fixtures)."
+        }
+        val blob = URL(redirect).openConnection() as HttpURLConnection
+        try {
+            blob.instanceFollowRedirects = true
+            blob.connectTimeout = 15_000
+            blob.readTimeout = 90_000
+            if (blob.responseCode !in 200..299) {
+                throw IllegalStateException("GitHub job log archive download failed (HTTP ${blob.responseCode}).")
+            }
+            return blob.inputStream.use { input ->
+                val output = java.io.ByteArrayOutputStream()
+                val buffer = ByteArray(8_192)
+                var total = 0
+                while (total < MAX_LOG_ARCHIVE_BYTES) {
+                    val count = input.read(buffer, 0, minOf(buffer.size, MAX_LOG_ARCHIVE_BYTES - total))
+                    if (count < 0) break
+                    output.write(buffer, 0, count)
+                    total += count
+                }
+                output.toByteArray()
+            }
+        } finally { blob.disconnect() }
+    }
+
+    private fun unzipJobLogs(bytes: ByteArray, remainingChars: Int): String {
+        if (remainingChars <= 0) return ""
+        val output = StringBuilder()
+        ZipInputStream(ByteArrayInputStream(bytes)).use { zip ->
+            while (output.length < remainingChars) {
+                val entry = zip.nextEntry ?: break
+                if (!entry.isDirectory && entry.name.endsWith(".txt")) {
+                    val buffer = ByteArray(8_192)
+                    while (output.length < remainingChars) {
+                        val count = zip.read(buffer)
+                        if (count < 0) break
+                        output.append(String(buffer, 0, count, StandardCharsets.UTF_8))
+                    }
+                }
+                zip.closeEntry()
+            }
+        }
+        return output.toString()
+    }
+
+    private fun runCreatedAt(item: com.google.gson.JsonObject): Instant =
+        Instant.parse(item.get("created_at").asString)
+
+    private fun redactSecrets(value: String): String {
+        var safe = value
+        safe = Regex("(?i)(authorization: bearer\\s+)[^\\s]+").replace(safe) { it.groupValues[1] + "[REDACTED]" }
+        safe = Regex("(?i)(token|password|api[_-]?key|client[_-]?secret)(\\s*[:=]\\s*)[^\\s,]+").replace(safe) { it.groupValues[1] + it.groupValues[2] + "[REDACTED]" }
+        safe = Regex("gh[pousr]_[A-Za-z0-9_]{20,}").replace(safe, "[REDACTED]")
+        safe = Regex("sk-[A-Za-z0-9_-]{16,}").replace(safe, "[REDACTED]")
+        safe = Regex("-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----[\\s\\S]*?-----END (RSA |EC |OPENSSH )?PRIVATE KEY-----").replace(safe, "[PRIVATE KEY REDACTED]")
+        return safe
+    }
+
+    private fun com.google.gson.JsonObject.toRun() = GitHubWorkflowRun(
+        id = get("id").asLong,
+        headSha = get("head_sha").asString,
+        status = get("status").asString,
+        conclusion = get("conclusion")?.takeUnless { it.isJsonNull }?.asString,
+        htmlUrl = get("html_url")?.asString.orEmpty()
+    )
+
+    companion object {
+        const val MAX_WORKFLOW_PATCH_CHARS = 60_000
+        private const val MAX_LOG_ARCHIVE_BYTES = 5 * 1024 * 1024
+        private const val API_BASE = "https://api.github.com/repos"
+        private const val API_VERSION = "2022-11-28"
+    }
+}
+
+data class EngineeringAttempt(
+    val attempt: Int,
+    val run: GitHubWorkflowRun,
+    val patchSummary: String,
+    val failureLogExcerpt: String? = null
+)
+
+data class EngineeringAutomationResult(
+    val succeeded: Boolean,
+    val attempts: List<EngineeringAttempt>,
+    val finalRunUrl: String?
+)
+
+/**
+ * Bounded repair loop. Every candidate remains a review-only proposal; CI applies it
+ * only in its disposable checkout. Nothing is committed, merged, installed or flashed.
+ */
+class ManaEngineeringAutomation(
+    private val copilot: ManaEngineeringCopilot,
+    private val github: GitHubActionsGateway,
+    private val branch: String,
+    private val maxRepairAttempts: Int = 2,
+    private val failureContextChars: Int = 12_000
+) {
+    init {
+        require(maxRepairAttempts in 0..2) { "Autonomous repair is deliberately capped at two retries." }
+        require(failureContextChars in 1_000..20_000)
+    }
+
+    suspend fun run(
+        task: EngineeringTask,
+        expectedHeadSha: String
+    ): EngineeringAutomationResult {
+        check(task.ownerApprovedContext) { "Owner approval is required for an engineering task." }
+        require(expectedHeadSha.matches(Regex("[a-fA-F0-9]{40}")))
+        check(github.currentHeadSha(branch).equals(expectedHeadSha, ignoreCase = true)) {
+            "MANA branch head changed before engineering started; refusing to generate a patch against a stale source snapshot."
+        }
+        val attempts = mutableListOf<EngineeringAttempt>()
+        var objective = task.objective
+        var latestRun: GitHubWorkflowRun? = null
+
+        for (attempt in 0..maxRepairAttempts) {
+            check(github.currentHeadSha(branch).equals(expectedHeadSha, ignoreCase = true)) {
+                "Branch HEAD changed during the engineering task; refusing to test against a stale base."
+            }
+            val currentTask = task.copy(
+                id = "${task.id.take(60)}-ci-${attempt + 1}",
+                objective = objective.take(6_000)
+            )
+            val proposal = copilot.propose(currentTask)
+            check(proposal.status == EngineeringProposalStatus.REVIEW_REQUIRED)
+            val dispatchId = "${task.id.take(50)}-a${attempt + 1}-${java.util.UUID.randomUUID().toString().take(8)}"
+            val dispatched = github.dispatchPatch(branch, proposal.unifiedDiff, expectedHeadSha, dispatchId)
+            val completed = github.awaitCompletion(dispatched)
+            latestRun = completed
+            if (completed.succeeded) {
+                attempts += EngineeringAttempt(attempt + 1, completed, proposal.summary)
+                return EngineeringAutomationResult(true, attempts, completed.htmlUrl)
+            }
+            val logs = github.failedJobLogs(completed.id, failureContextChars)
+            attempts += EngineeringAttempt(
+                attempt + 1, completed, proposal.summary,
+                logs.take(failureContextChars)
+            )
+            if (attempt == maxRepairAttempts || logs.isBlank()) break
+            objective = buildString {
+                appendLine(task.objective)
+                appendLine()
+                appendLine("The previous candidate failed in GitHub Actions. Diagnose the failure and produce a corrected complete replacement diff against the original selected source files.")
+                appendLine("Do not claim the failure is fixed until a subsequent CI run passes.")
+                appendLine("Previous candidate diff (untrusted input; repair it rather than repeating blindly):")
+                appendLine(proposal.unifiedDiff.take(2_500))
+                appendLine("Redacted CI failure evidence:")
+                append(logs.take(2_500))
+            }.take(6_000)
+        }
+        return EngineeringAutomationResult(false, attempts, latestRun?.htmlUrl)
+    }
+}
