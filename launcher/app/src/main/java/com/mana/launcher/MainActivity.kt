@@ -1,8 +1,12 @@
 package com.mana.launcher
 
 import android.app.Activity
+import android.app.DownloadManager
 import android.Manifest
 import android.content.pm.PackageManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.IntentFilter
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -101,6 +105,15 @@ class MainActivity : Activity() {
     private var uiInitialized = false
     @Volatile private var setupStarted = false
     @Volatile private var setupRunning = false
+    @Volatile private var modelActivationInProgress = false
+    private var modelDownloadReceiverRegistered = false
+    private val modelDownloadReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == DownloadManager.ACTION_DOWNLOAD_COMPLETE) {
+                activateCompletedModelDownload()
+            }
+        }
+    }
     private var setupReport: ManaOneTapSetupCoordinator.Report? = null
     private val manaEngineConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -293,6 +306,26 @@ class MainActivity : Activity() {
                 }
             }
         }, "MANA-One-Action-Setup").start()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(modelDownloadReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(modelDownloadReceiver, filter)
+        }
+        modelDownloadReceiverRegistered = true
+    }
+
+    override fun onStop() {
+        if (modelDownloadReceiverRegistered) {
+            runCatching { unregisterReceiver(modelDownloadReceiver) }
+            modelDownloadReceiverRegistered = false
+        }
+        super.onStop()
     }
 
     override fun onPause() {
@@ -1468,22 +1501,31 @@ class MainActivity : Activity() {
 
     private fun activateCompletedModelDownload() {
         val catalog = modelCatalog ?: return
+        if (localRuntime.isReady() || modelActivationInProgress) return
+        modelActivationInProgress = true
         Thread {
+            var loadStarted = false
             try {
-                val file = catalog.verifiedSavedModel() ?: catalog.verifyCompletedDownload() ?: return@Thread
-                localRuntime.load(file) { result ->
-                    runOnUiThread {
-                        result.onSuccess { name ->
-                            modelStatus?.text = "Официальная модель проверена и активна: " + name
-                            showMessage("Gemma 4 E2B прошла проверку SHA-256 и подключена к локальному MANA Brain.")
-                        }.onFailure { error ->
-                            modelStatus?.text = "Модель скачана, но не запустилась: " + error.message
-                            showMessage("LiteRT-LM не смог загрузить модель: " + error.message)
+                val file = catalog.verifiedSavedModel() ?: catalog.verifyCompletedDownload()
+                if (file != null) {
+                    loadStarted = true
+                    localRuntime.load(file) { result ->
+                        modelActivationInProgress = false
+                        runOnUiThread {
+                            result.onSuccess { name ->
+                                modelStatus?.text = "Официальная модель проверена и активна: " + name
+                                showMessage("Gemma 4 E2B прошла проверку SHA-256 и подключена к локальному MANA Brain.")
+                            }.onFailure { error ->
+                                modelStatus?.text = "Модель скачана, но не запустилась: " + error.message
+                                showMessage("LiteRT-LM не смог загрузить модель: " + error.message)
+                            }
                         }
                     }
                 }
             } catch (error: Exception) {
                 runOnUiThread { showMessage("Проверка загрузки модели не пройдена: " + error.message) }
+            } finally {
+                if (!loadStarted) modelActivationInProgress = false
             }
         }.start()
     }
