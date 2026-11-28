@@ -20,8 +20,8 @@ import java.util.Random
 import java.util.concurrent.TimeUnit
 
 class ManaWallpaperStudioActivity : Activity() {
-    private val background = 0xFF071426.toInt()
-    private val foreground = 0xFFEAF4FF.toInt()
+    private val backgroundColor = 0xFF071426.toInt()
+    private val foregroundColor = 0xFFEAF4FF.toInt()
     private val accent = 0xFF54C8F5.toInt()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,7 +29,7 @@ class ManaWallpaperStudioActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(24, 28, 24, 24)
-            setBackgroundColor(background)
+            setBackgroundColor(backgroundColor)
         }
         root.addView(TextView(this).apply {
             text = "MANA • ОБОИ ЭКРАНА БЛОКИРОВКИ"
@@ -39,7 +39,7 @@ class ManaWallpaperStudioActivity : Activity() {
         root.addView(TextView(this).apply {
             text = "Мана сама создаёт новую иллюстрацию и обновляет только экран блокировки. Рабочий стол лаунчера не затрагивается. Генерация работает локально, без интернета."
             textSize = 14f
-            setTextColor(foreground)
+            setTextColor(foregroundColor)
             setPadding(0, 12, 0, 16)
         })
         val ram = ManaResourceGovernor.snapshot(this)
@@ -140,7 +140,7 @@ internal object ManaOfflineWallpaperRenderer {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        val random = Random(seed)
+        val random = Random(seed.toLong())
         val palettes = arrayOf(
             intArrayOf(0xFF071426.toInt(), 0xFF172D55.toInt(), 0xFF392B62.toInt()),
             intArrayOf(0xFF061A2B.toInt(), 0xFF123C5A.toInt(), 0xFF302C5B.toInt()),
