@@ -1,0 +1,191 @@
+{
+  "schema": "mana.genesis.config.v1",
+  "product": {
+    "name": "MANA XZ",
+    "identity": "MANA Genesis 4.0",
+    "codename": "GENESIS",
+    "version": "4.0",
+    "ui_language": "ru-RU",
+    "theme": {
+      "background": "#071426",
+      "surface": "#102B50",
+      "primary": "#1765A8",
+      "accent": "#54C8F5",
+      "text": "#EAF4FF",
+      "secondary": "#91A9C5"
+    }
+  },
+  "target_device": {
+    "model": "realme RMX5566",
+    "reported_marketing_name": "realme C85 4G",
+    "abi": "arm64-v8a",
+    "android_api_target": 36,
+    "device_specific_rom_build": false,
+    "note": "Hardware, vendor, kernel, VINTF, HAL, AVB and partition compatibility must be verified before any ROM image is built or flashed."
+  },
+  "mana_brain": {
+    "role": "single_central_agent",
+    "local_first": true,
+    "offline_mode": true,
+    "memory": {
+      "enabled": true,
+      "encrypted_at_rest": true,
+      "diary": true,
+      "local_knowledge_base": true
+    },
+    "cloud_providers": {
+      "enabled_by_default": false,
+      "providers": ["openai", "anthropic", "google_gemini", "xai_grok", "yandex"],
+      "require_user_api_key": true,
+      "require_confirmation_before_paid_request": true
+    },
+    "learning": {
+      "public_source_research": true,
+      "verify_sources": true,
+      "save_findings_locally": true,
+      "install_code_without_user_approval": false
+    }
+  },
+  "voice": {
+    "speaker_identity": "MANA",
+    "use_for_mana_responses_only": true,
+    "language": "ru-RU",
+    "style": "soft_expressive_feminine_anime_inspired",
+    "offline_required": true,
+    "network_voice_fallback": false,
+    "preferred_engine": "bundled_offline_tts",
+    "asset_directory": "assets/voice/ru-RU/mana/",
+    "voice_model_required": true,
+    "voice_model_status": "asset_not_yet_bundled",
+    "system_wide_android_tts_replacement": false,
+    "note": "The bundled voice must be licensed for redistribution and validated on the target ARM64 phone. Until then, MANA may use an installed Russian offline Android TTS voice. This setting does not replace the Android system voice for other apps."
+  },
+  "lock_screen_wallpaper": {
+    "enabled": true,
+    "target": "lock_screen_only",
+    "change_home_screen": false,
+    "self_create_artwork": true,
+    "offline_generation": true,
+    "generator": "mana_local_art_generator",
+    "refresh_interval_minutes": 30,
+    "allowed_intervals_minutes": [15, 30, 60, 180],
+    "respect_battery_saver": true,
+    "respect_android_background_limits": true,
+    "wallpaper_style": {
+      "character": "original_MANA",
+      "hair": "long_black",
+      "eyes": "blue_violet",
+      "clothing": "dark",
+      "identity_consistent": true,
+      "no_copied_game_assets": true
+    },
+    "generation_backend_status": "procedural_offline_renderer_currently; diffusion_model_not_yet_integrated"
+  },
+  "avatar_3d": {
+    "enabled": true,
+    "engine": "Godot",
+    "rendering": "3D",
+    "quality_profile": "adaptive_high_quality",
+    "offline": true,
+    "shared_identity_across_app_and_launcher": true,
+    "shared_brain": true,
+    "shared_memory": true,
+    "shared_voice": true,
+    "character_model": "assets/avatar/mana/mana.glb",
+    "environment": "assets/world/apartment/",
+    "animation_controller": "mana_brain_driven",
+    "mood_based_outfits": true,
+    "outfit_changes_preserve_identity": true,
+    "interactive_objects": true,
+    "facial_expressions": true,
+    "weather_display": true,
+    "godot_android_runtime_status": "source_integration_and_device_validation_required",
+    "high_quality_model_status": "model_asset_not_yet_verified"
+  },
+  "local_ai": {
+    "primary_runtime": "llama.cpp_or_compatible_arm64_backend",
+    "optional_runtime": "LiteRT-LM",
+    "model_directory": "files/mana-models/",
+    "offline_fallback": true,
+    "model_download_requires_user_consent": true,
+    "license_acceptance_requires_user_consent": true,
+    "model_format_must_match_runtime": true,
+    "do_not_rename_model_formats": true,
+    "runtime_status": "device_benchmark_and_backend_integration_required"
+  },
+  "resource_governor": {
+    "enabled": true,
+    "manage_only_owned_app_resources": true,
+    "monitor_ram": true,
+    "monitor_battery_and_thermal_state": true,
+    "adaptive_model_context": true,
+    "adaptive_inference_threads": true,
+    "pause_optional_tasks_under_memory_pressure": true,
+    "unload_idle_local_model_when_safe": true,
+    "restore_model_on_demand": true,
+    "prioritize_foreground_voice_and_avatar": true,
+    "never_kill_unrelated_apps": true,
+    "never_bypass_android_security": true,
+    "root_required": false,
+    "system_level_controls_status": "requires_privileged_rom_integration"
+  },
+  "modules": {
+    "launcher": true,
+    "mana_brain": true,
+    "avatar_3d": true,
+    "voice": true,
+    "encrypted_memory": true,
+    "diary": true,
+    "local_knowledge_base": true,
+    "resource_governor": true,
+    "wallpaper_lock_screen": true,
+    "smart_receptionist": true,
+    "contact_intelligence": true,
+    "life_manager": true,
+    "yandex_connector": true,
+    "vk_connector": true,
+    "game_intelligence": true,
+    "minecraft_integration": true,
+    "future_updates": true,
+    "module_installer": true
+  },
+  "installer": {
+    "package_format": ".manapack",
+    "verify_signature": true,
+    "verify_sha256": true,
+    "check_device_and_api_compatibility": true,
+    "check_dependencies": true,
+    "stage_before_activation": true,
+    "rollback_on_failed_activation": true,
+    "show_human_readable_module_cards": true,
+    "require_confirmation_for_install_and_update": true
+  },
+  "permissions_and_safety": {
+    "request_android_permissions_in_context": true,
+    "explain_each_permission": true,
+    "camera_and_microphone_require_runtime_consent": true,
+    "visible_camera_and_microphone_indicators": true,
+    "payments_require_confirmation": true,
+    "calls_messages_posts_and_deletion_require_confirmation": true,
+    "no_stealth_operation": true,
+    "no_silent_privilege_escalation": true,
+    "no_unapproved_rom_flashing": true,
+    "no_unapproved_code_installation": true
+  },
+  "integration_status": {
+    "configuration_file": "project_specification",
+    "not_a_flashable_rom": true,
+    "not_a_complete_system_image": true,
+    "not_an_apk_build_artifact": true,
+    "required_next_steps": [
+      "wire_config_to_android_app_and_brain_runtime",
+      "bundle_and_license_offline_russian_mana_voice",
+      "integrate_and_validate_godot_android_runtime",
+      "add_and_validate_original_high_quality_mana_3d_model",
+      "connect_resource_governor_to_model_load_unload_lifecycle",
+      "run_android_api_29_33_36_build_and_smoke_tests",
+      "build_and_test_on_realme_RMX5566",
+      "verify_device_tree_vendor_kernel_vintf_hal_avb_before_rom_work"
+    ]
+  }
+}
