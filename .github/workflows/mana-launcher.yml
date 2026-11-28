@@ -289,6 +289,11 @@ jobs:
           PACKAGE="release/offline/Ω"
           mkdir -p "$PACKAGE"
           cp -a "distribution/Ω/." "$PACKAGE/"
+          # One game-style root: preserve the entire tracked MANA source tree beside the runtime payload.
+          mkdir -p "$PACKAGE/Source/Project" "$PACKAGE/Launcher" "$PACKAGE/Engine/Runtime" "$PACKAGE/Data/Memory" "$PACKAGE/Data/Knowledge" "$PACKAGE/Data/Diary" "$PACKAGE/Data/Saves" "$PACKAGE/Assets/Textures" "$PACKAGE/Assets/Materials" "$PACKAGE/Assets/UI" "$PACKAGE/Audio/SFX" "$PACKAGE/Modules" "$PACKAGE/Config" "$PACKAGE/Updates" "$PACKAGE/Logs" "$PACKAGE/Docs"
+          git archive HEAD | tar -x -C "$PACKAGE/Source/Project"
+          cp "distribution/Ω/MANA_OMEGA_ENTRY.json" "$PACKAGE/MANA_OMEGA_ENTRY.json"
+          cp "distribution/Ω/START_HERE_RU.md" "$PACKAGE/START_HERE_RU.md"
           mkdir -p "$PACKAGE/installer" "$PACKAGE/models/Gemma" "$PACKAGE/source" "$PACKAGE/docs" "$PACKAGE/app" "$PACKAGE/avatar/characters" "$PACKAGE/engine" "$PACKAGE/game" "$PACKAGE/firmware/system" "$PACKAGE/firmware/device"
           cp launcher/app/build/outputs/apk/debug/app-debug.apk "$PACKAGE/app/MANA-Omega-debug.apk"
           cp -a launcher/app/build/generated/manaVoiceAssets/mana_voice/. "$PACKAGE/voice/ru/"
@@ -322,6 +327,7 @@ jobs:
           test "$(stat -c '%s' "$MODEL")" -gt 2500000000
           test "$(stat -c '%s' "$MODEL")" -lt 3000000000
           cp launcher/app/build/outputs/apk/debug/app-debug.apk "$PACKAGE/installer/INSTALL_MANA_XZ.apk"
+          cp launcher/app/build/outputs/apk/debug/app-debug.apk "$PACKAGE/Launcher/INSTALL_MANA_XZ.apk"
           cat > "$PACKAGE/models/Gemma/MODEL_MANIFEST_RU.txt" <<'EOF'
           Локальная модель MANA Genesis 4.0
           Имя файла: gemma-4-E2B-it.litertlm
@@ -427,6 +433,22 @@ jobs:
           Full AOSP ROM / flashable image: NOT BUILT.
           APK type: debug-signed installable Android prototype; not a firmware image.
           EOF
+          # Validate the central connector contract and ensure its source-tree entry point exists.
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path("release/offline/Ω")
+          entry = json.loads((root / "MANA_OMEGA_ENTRY.json").read_text(encoding="utf-8"))
+          assert entry["systemId"] == "com.mana.genesis.omega"
+          assert entry["entryPoint"]["apk"] == "Launcher/INSTALL_MANA_XZ.apk"
+          assert (root / "Launcher/INSTALL_MANA_XZ.apk").is_file()
+          assert (root / "Source/Project/launcher/settings.gradle.kts").is_file()
+          assert (root / "Source/Project/engine/mana-brain").is_dir()
+          assert (root / "Source/Project/os/core").is_dir()
+          assert (root / "Source/Project/system/mana/interfaces").is_dir()
+          assert (root / "Source/Project/distribution/Ω/MANA_OMEGA_ENTRY.json").is_file()
+          print("Validated single-root Omega package, connector manifest, APK entry point and complete tracked source tree.")
+          PY
           (cd "$PACKAGE" && find . -type f ! -path './SHA256SUMS.txt' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt)
           (cd "$PACKAGE" && sha256sum --check SHA256SUMS.txt)
           (cd release/offline && zip -0 -q -r ../MANA-Omega-FULL-INSTALLER.zip Ω/)
