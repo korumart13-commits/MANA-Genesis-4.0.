@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "packageId": "com.mana.xz.distribution",
+  "displayName": "MANA XZ",
+  "projectVersion": "4.0",
+  "codename": "GENESIS",
+  "target": {
+    "platform": "android",
+    "device": ["RMX5566", "RMX5566RU", "RE645F"],
+    "minimumAndroidApi": 29
+  },
+  "runtime": {
+    "offlineFirst": true,
+    "internetResearch": true,
+    "selfDevelopment": true,
+    "singleManaBrain": true,
+    "lockScreenWallpaper": true,
+    "offlineRussianVoice": true,
+    "avatar3D": true,
+    "resourceGovernor": true
+  },
+  "security": {
+    "verifyHashes": true,
+    "verifySignatures": true,
+    "requireConsentForConsequentialActions": true,
+    "cloudProvidersDisabledUntilConfigured": true
+  },
+  "note": "Distribution manifest only. Build/device compatibility and resource availability must be verified at install time."
+}
