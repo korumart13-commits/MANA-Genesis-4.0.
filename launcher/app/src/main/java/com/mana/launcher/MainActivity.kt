@@ -78,6 +78,7 @@ class MainActivity : Activity() {
     private lateinit var avatarButton: AvatarView
     private var avatarPanel: View? = null
     private var showingDrawer = false
+    private var appCategory = "Все"
     private var apps: List<ResolveInfo> = emptyList()
     private val voiceRequestCode = 4107
     private val modelRequestCode = 4108
@@ -862,13 +863,59 @@ class MainActivity : Activity() {
 
     private fun renderApps(filter: String) {
         content.removeAllViews()
-        content.addView(label("Все приложения", 23, textColor, true))
-        content.addView(label("${apps.size} приложений", 12, muted, false).apply {
-            setPadding(0, 0, 0, dp(12))
+        content.addView(label("ЦЕНТР ПРИЛОЖЕНИЙ MANA", 21, textColor, true))
+        content.addView(label("${apps.size} установленных приложений • поиск и категории", 12, muted, false).apply {
+            setPadding(0, dp(3), 0, dp(10))
         })
-        val filtered = apps.filter { it.loadLabel(packageManager).toString().contains(filter, true) }
+        val categories = listOf("Все", "Общение", "Игры", "Фото и видео", "Инструменты")
+        val categoryRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        categories.forEach { category ->
+            val selected = appCategory == category
+            categoryRow.addView(action(category, {
+                appCategory = category
+                renderApps(search.text?.toString().orEmpty())
+            }).apply {
+                textSize = 10f
+                setTextColor(if (selected) Color.WHITE else accentSoft)
+                background = rounded(if (selected) panelRaised else panel, 14)
+                setPadding(dp(10), dp(9), dp(10), dp(9))
+            }, LinearLayout.LayoutParams(-2, dp(38)).apply {
+                rightMargin = dp(5)
+            })
+        }
+        val categoryScroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(categoryRow)
+        }
+        content.addView(categoryScroll, LinearLayout.LayoutParams(-1, dp(44)).apply {
+            bottomMargin = dp(10)
+        })
+        val filtered = apps.filter { info ->
+            val label = info.loadLabel(packageManager).toString()
+            val matchesText = label.contains(filter, true) ||
+                info.activityInfo.packageName.contains(filter, true)
+            val matchesCategory = appCategory == "Все" || appCategoryFor(info) == appCategory
+            matchesText && matchesCategory
+        }
+        content.addView(label("${filtered.size} найдено", 11, accentSoft, true).apply {
+            setPadding(dp(2), 0, 0, dp(8))
+        })
         renderGrid(filtered)
-        if (filtered.isEmpty()) content.addView(label("Ничего не найдено", 14, muted, false))
+        if (filtered.isEmpty()) content.addView(label("В этой категории ничего не найдено", 14, muted, false))
+    }
+
+    private fun appCategoryFor(info: ResolveInfo): String {
+        val key = (info.activityInfo.packageName + " " + info.loadLabel(packageManager))
+            .lowercase(Locale.getDefault())
+        return when {
+            listOf("game", "minecraft", "play", "roblox", "pubg", "genshin").any(key::contains) -> "Игры"
+            listOf("camera", "photo", "gallery", "video", "media", "youtube", "tiktok").any(key::contains) -> "Фото и видео"
+            listOf("phone", "dialer", "contact", "message", "messenger", "telegram", "whatsapp", "mail").any(key::contains) -> "Общение"
+            else -> "Инструменты"
+        }
     }
 
     private fun renderGrid(items: List<ResolveInfo>) {
