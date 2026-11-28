@@ -1,0 +1,54 @@
+{
+  "format": "mana-omega-entry",
+  "formatVersion": 1,
+  "systemId": "com.mana.genesis.omega",
+  "name": "MANA Genesis 4.0 — Константа Омега",
+  "entryPoint": {
+    "androidPackage": "com.mana.launcher",
+    "apk": "Launcher/INSTALL_MANA_XZ.apk",
+    "activity": "com.mana.launcher.MainActivity"
+  },
+  "root": ".",
+  "sourceOfTruth": "Source/Project/",
+  "components": {
+    "brain": "Source/Project/engine/mana-brain/",
+    "osCore": "Source/Project/os/core/",
+    "androidApp": "Source/Project/launcher/",
+    "platformInterfaces": "Source/Project/system/mana/interfaces/",
+    "systemServices": "Source/Project/system/mana/services/",
+    "firmwareIntegration": "Source/Project/platform/",
+    "deviceProfile": "Source/Project/device/RMX5566RU/",
+    "avatar": "Assets/Avatar/",
+    "voice": "Audio/Voice/ru-RU/",
+    "localModel": "Engine/Inference/Models/Gemma/gemma-4-E2B-it.litertlm",
+    "gameWorld": "Worlds/MANA-Living-World/",
+    "minecraftPack": "Games/Minecraft-Bedrock/MANA_Companion_BP.mcpack",
+    "config": "Config/",
+    "memory": "Data/Memory/",
+    "knowledge": "Data/Knowledge/",
+    "updates": "Updates/",
+    "logs": "Logs/"
+  },
+  "loadingPolicy": {
+    "manifestIsAuthoritative": true,
+    "verifySha256BeforeImport": true,
+    "verifyExecutableModuleSignatures": true,
+    "loadOnlyDeclaredComponents": true,
+    "noCodeExecutionFromUntrustedExternalStorage": true,
+    "userConsentForModelImport": true,
+    "userConsentForConsequentialActions": true
+  },
+  "runtimeCapabilities": {
+    "apkStartsAndroidApplication": true,
+    "modelImportFromAndroidFilePicker": true,
+    "automaticMountOfAllExternalFolders": false,
+    "dynamicLoadingOfArbitrarySourceCode": false,
+    "reason": "Android APK currently imports the local model through SAF; the complete source tree is packaged for development and audit. A verified module/resource loader must be implemented and device-tested before claiming arbitrary folder mounting."
+  },
+  "target": {
+    "device": ["RMX5566", "RMX5566RU", "RE645F"],
+    "marketingName": "realme C85 4G",
+    "androidApi": 36,
+    "abi": ["arm64-v8a"]
+  }
+}
