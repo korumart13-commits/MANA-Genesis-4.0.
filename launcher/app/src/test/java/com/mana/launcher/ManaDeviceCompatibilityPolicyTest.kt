@@ -50,7 +50,7 @@ class ManaDeviceCompatibilityPolicyTest {
                 model = "RMX5566",
                 device = "RE645F",
                 product = "RE645F",
-                fingerprint = "realme/RMX5566RU/RE645F:16/custom-build",
+                fingerprint = "realme/RMX5566RU/RE645F:15/custom-build",
                 apiLevel = 36
             )
         )

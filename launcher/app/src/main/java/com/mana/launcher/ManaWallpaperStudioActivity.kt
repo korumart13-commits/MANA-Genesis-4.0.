@@ -24,29 +24,29 @@ import kotlin.random.Random
  * shapes; it does not pretend to run a diffusion model or capture the live 3D scene.
  */
 class ManaWallpaperStudioActivity : Activity() {
-    private val background = 0xFF071426.toInt()
-    private val foreground = 0xFFEAF4FF.toInt()
-    private val accent = 0xFF54C8F5.toInt()
+    private val backgroundColor = 0xFF071426.toInt()
+    private val foregroundColor = 0xFFEAF4FF.toInt()
+    private val accentColor = 0xFF54C8F5.toInt()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(24, 28, 24, 24)
-            setBackgroundColor(background)
+            setBackgroundColor(backgroundColor)
         }
         root.addView(TextView(this).apply {
             text = "MANA • ОБОИ ЭКРАНА БЛОКИРОВКИ"
             textSize = 21f
-            setTextColor(accent)
+            setTextColor(accentColor)
         })
         root.addView(TextView(this).apply {
             text = "Мана сама создаёт новую иллюстрацию и обновляет только экран блокировки. Рабочий стол лаунчера не затрагивается. Генерация работает локально, без интернета."
             textSize = 14f
-            setTextColor(foreground)
+            setTextColor(foregroundColor)
             setPadding(0, 12, 0, 16)
         })
-        val ram = ManaResourceGovernor.snapshot(this)
+        val ram = ManaResourceSnapshotReader.read(this)
         root.addView(TextView(this).apply {
             text = "РАСХОД ПАМЯТИ • доступно ${ram.availableRamMb} МБ из ${ram.totalRamMb} МБ • приложение ${ram.appPssMb} МБ"
             textSize = 12f
@@ -59,7 +59,7 @@ class ManaWallpaperStudioActivity : Activity() {
             recreate()
         })
         root.addView(button("Изменить частоту • сейчас ${rotationMinutes()} мин") {
-            val next = when (rotationMinutes()) { 15 -> 30; 30 -> 60; 60 -> 180; else -> 15 }
+            val next = when (rotationMinutes().toInt()) { 15 -> 30; 30 -> 60; 60 -> 180; else -> 15 }
             getSharedPreferences(PREFS, MODE_PRIVATE).edit().putInt(KEY_INTERVAL, next).apply()
             if (isRotationEnabled()) scheduleRotation()
             android.widget.Toast.makeText(this, "Новая частота: каждые $next минут", android.widget.Toast.LENGTH_SHORT).show()
