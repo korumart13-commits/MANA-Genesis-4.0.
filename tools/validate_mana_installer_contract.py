@@ -113,7 +113,7 @@ for required in (
     'cp -a platform "$PACKAGE/firmware/"',
     'cp -a system/mana "$PACKAGE/firmware/system/"',
     'cp -a device/RMX5566RU "$PACKAGE/firmware/device/"',
-    'MANA-Omega-debug.apk',
+    'Launcher/INSTALL_MANA_XZ.apk',
 ):
     assert required in workflow, f"Ω package component missing: {required}"
 assert "MANA-Martynova-FULL-PACKAGE.zip" not in workflow
