@@ -57,6 +57,7 @@ import com.mana.os.core.ManaLifeManagerService
 import com.mana.os.core.EncryptedFileManaMemoryStore
 import com.mana.os.core.ManaMemoryService
 import com.mana.os.core.ManaSmartReceptionistPolicy
+import com.mana.os.core.ManaReceptionistSettings
 import com.mana.os.core.EncryptedFileManaFutureUpdateStore
 import com.mana.os.core.ManaFutureUpdateService
 import com.mana.os.core.ManaUpdateStage
@@ -686,7 +687,8 @@ class MainActivity : Activity() {
         }
 
         content.addView(label("Телефон и связь", 17, accentSoft, true).apply { setPadding(0, dp(12), 0, dp(8)) })
-        addDashboardCard("Умный секретарь", "Настройки обработки входящих обращений и поддерживаемые функции.", "Открыть секретаря") { showReceptionist() }
+        addDashboardCard("Contact Intelligence", "Локальный поиск сохранённого контакта по номеру с разрешения владельца.", "Найти контакт") { showContactIntelligence() }
+        addDashboardCard("Умный секретарь", "Персональность, задержка 10 секунд, сводки и политика неизвестных номеров. Реальная обработка вызовов зависит от системной роли.", "Настроить секретаря") { showSmartReceptionist() }
         addDashboardCard("Устройства", "Часы, наушники, Bluetooth и автомобильные подключения.", "Управление устройствами") {
             startActivity(Intent(this, ManaDevicesActivity::class.java))
         }
@@ -696,10 +698,13 @@ class MainActivity : Activity() {
         addDashboardCard("Облачные AI-провайдеры", "Ключи хранятся локально; передача запроса требует отдельного подтверждения.", "Настройки облака") { showCloudSettings() }
 
         content.addView(label("Игры", 17, accentSoft, true).apply { setPadding(0, dp(12), 0, dp(8)) })
-        addDashboardCard("Game Intelligence", "Обнаружение активной игры и поддерживаемые игровые мосты.", "Проверить возможности") {
+        addDashboardCard("Game Intelligence", "Определение активного приложения-игры. Это пока мониторинг сеанса, а не управление игрой.", "Проверить возможности") {
             val monitor = ManaGameSessionMonitor(this)
             if (!monitor.hasUsageAccess()) showMessage("Для обнаружения активной игры Android попросит разрешение на статистику использования.")
             else showMessage("Активное приложение: ${monitor.foregroundPackage() ?: "не определено"}")
+        }
+        addDashboardCard("Minecraft Companion", "Отдельный Bedrock Behavior Pack с командами !mana. Связь с Android-приложением пока не подключена.", "Статус модуля") {
+            showMessage("Minecraft Companion — отдельный игровой прототип. Импортируй MANA_Companion_BP.mcpack в тестовый мир Bedrock; Android-мост ещё не реализован.")
         }
         addDashboardCard("Файлы и пакеты", "Импорт, проверка и карантин файлов MANA.", "Открыть хранилище") {
             startActivity(Intent(this, ManaDocumentStorageActivity::class.java))
@@ -848,7 +853,7 @@ class MainActivity : Activity() {
         avatarPanel = overlay
     }
 
-    private fun showReceptionist() {
+    private fun showContactIntelligence() {
         showingDrawer = false
         search.setText("")
         content.removeAllViews()
@@ -881,6 +886,49 @@ class MainActivity : Activity() {
         })
     }
 
+    private fun showSmartReceptionist() {
+        showingDrawer = false
+        search.setText("")
+        content.removeAllViews()
+        val preferences = getSharedPreferences("mana.smart_receptionist", MODE_PRIVATE)
+        val personality = preferences.getString("personality", "playful") ?: "playful"
+        val delaySeconds = preferences.getInt("auto_answer_delay_seconds", 10).coerceIn(0, 60)
+        val summarize = preferences.getBoolean("summarize_calls", true)
+        val handleUnknown = preferences.getBoolean("handle_unknown_numbers", true)
+        val settings = ManaReceptionistSettings(
+            personality = personality,
+            autoAnswerDelay = java.time.Duration.ofSeconds(delaySeconds.toLong()),
+            summarizeCalls = summarize,
+            handleUnknownNumbers = handleUnknown
+        )
+        val policy = ManaSmartReceptionistPolicy(settings)
+
+        content.addView(label("MANA SMART RECEPTIONIST", 22, textColor, true))
+        content.addView(label("Настройки поведения секретаря сохраняются локально. Они задают политику, но сами по себе не дают приложению права отвечать на реальные телефонные вызовы.", 12, muted, false))
+        content.addView(action("Характер: ${if (personality == "playful") "игривый" else "спокойный"}") {
+            preferences.edit().putString("personality", if (personality == "playful") "calm" else "playful").apply()
+            showSmartReceptionist()
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(12) })
+        content.addView(action("Задержка: ${delaySeconds} секунд") {
+            val next = when (delaySeconds) { 10 -> 15; 15 -> 20; 20 -> 10; else -> 10 }
+            preferences.edit().putInt("auto_answer_delay_seconds", next).apply()
+            showSmartReceptionist()
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
+        content.addView(action("Сводки разговоров: ${if (summarize) "включены" else "выключены"}") {
+            preferences.edit().putBoolean("summarize_calls", !summarize).apply()
+            showSmartReceptionist()
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
+        content.addView(action("Неизвестные номера: ${if (handleUnknown) "особая обработка включена" else "выключена"}") {
+            preferences.edit().putBoolean("handle_unknown_numbers", !handleUnknown).apply()
+            showSmartReceptionist()
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
+        content.addView(action("Проверить сценарий неизвестного номера") {
+            val decision = policy.onIncomingCall(numberKnown = false)
+            showMessage("Политика MANA: задержка ${decision.delay.seconds} сек.; неизвестный номер: ${if (decision.unknownCaller) "особая обработка" else "обычная обработка"}; сводка: ${if (decision.offerSummary) "предложить" else "не предлагать"}. Любое действие требует подтверждения владельца.")
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(14) })
+        content.addView(label("СТАТУС ТЕЛЕФОНИИ", 14, accentSoft, true).apply { setPadding(0, dp(18), 0, dp(6)) })
+        content.addView(label("Политика и настройки работают локально. Автоматический ответ, запись/сводка реальных звонков и Call Screening пока не подключены: для них нужны поддерживаемая Android/realme роль, разрешения и отдельная проверка. MANA не выдаёт себе эти права.", 11, muted, false))
+    }
     private fun showFutureUpdates() {
         val service = futureUpdateService
         if (service == null) { showMessage("Модуль будущих обновлений недоступен."); return }
