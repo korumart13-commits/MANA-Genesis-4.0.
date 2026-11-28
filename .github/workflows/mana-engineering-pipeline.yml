@@ -35,10 +35,10 @@ jobs:
     name: Validate patch policy, test and package MANA Brain
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    # Deliberately no OIDC/attestation permission here: this job applies and
+    # executes proposed source/test changes in Gradle.
     permissions:
       contents: read
-      id-token: write
-      attestations: write
     steps:
       - name: Checkout exact commit
         uses: actions/checkout@v4
@@ -67,10 +67,10 @@ jobs:
           git -C "$fixture" init -q
           git -C "$fixture" config user.name "MANA CI"
           git -C "$fixture" config user.email "mana-ci@users.noreply.github.com"
-          printf '%s\n' 'package com.mana.brain' 'class PipelineFixture' > "$fixture/engine/mana-brain/src/main/kotlin/com/mana/brain/PipelineFixture.kt"
+          printf '%s\\n' 'package com.mana.brain' 'class PipelineFixture' > "$fixture/engine/mana-brain/src/main/kotlin/com/mana/brain/PipelineFixture.kt"
           git -C "$fixture" add .
           git -C "$fixture" commit -qm "fixture baseline"
-          printf '%s\n' '// patch applied in disposable CI workspace' >> "$fixture/engine/mana-brain/src/main/kotlin/com/mana/brain/PipelineFixture.kt"
+          printf '%s\\n' '// patch applied in disposable CI workspace' >> "$fixture/engine/mana-brain/src/main/kotlin/com/mana/brain/PipelineFixture.kt"
           git -C "$fixture" diff --binary > "$MANA_PATCH_FILE"
           git -C "$fixture" checkout -- .
           MANA_PATCH_FILE="$MANA_PATCH_FILE" gradle --no-daemon -p engine/mana-brain validateEngineeringPatch
@@ -127,12 +127,6 @@ jobs:
           sha256sum *.jar > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
-      - name: Attest build provenance (pushes only)
-        if: github.event_name != 'pull_request'
-        uses: actions/attest-build-provenance@v2
-        with:
-          subject-path: dist/*.jar
-
       - name: Write machine-readable CI diagnostics
         if: always()
         shell: bash
@@ -145,15 +139,15 @@ jobs:
           set -euo pipefail
           mkdir -p ci-report
           PATCH_SHA="$(printf '%s' "$PATCH_INPUT" | sha256sum | awk '{print $1}')"
-          jq -n \
-            --arg task_id "${CLIENT_RUN_ID:-push-$GITHUB_RUN_ID}" \
-            --arg run_id "$GITHUB_RUN_ID" \
-            --arg commit "$GITHUB_SHA" \
-            --arg event "$GITHUB_EVENT_NAME" \
-            --arg test_outcome "${TEST_OUTCOME:-not_run}" \
-            --arg jar_outcome "${JAR_OUTCOME:-not_run}" \
-            --arg patch_sha256 "$PATCH_SHA" \
-            '{task_id:$task_id,run_id:$run_id,commit:$commit,event:$event,test_outcome:$test_outcome,jar_outcome:$jar_outcome,patch_sha256:$patch_sha256,review_only:true,firmware_install_performed:false}' \
+          jq -n \\
+            --arg task_id "${CLIENT_RUN_ID:-push-$GITHUB_RUN_ID}" \\
+            --arg run_id "$GITHUB_RUN_ID" \\
+            --arg commit "$GITHUB_SHA" \\
+            --arg event "$GITHUB_EVENT_NAME" \\
+            --arg test_outcome "${TEST_OUTCOME:-not_run}" \\
+            --arg jar_outcome "${JAR_OUTCOME:-not_run}" \\
+            --arg patch_sha256 "$PATCH_SHA" \\
+            '{task_id:$task_id,run_id:$run_id,commit:$commit,event:$event,test_outcome:$test_outcome,jar_outcome:$jar_outcome,patch_sha256:$patch_sha256,review_only:true,firmware_install_performed:false}' \\
             > ci-report/mana-ci-report.json
           cat ci-report/mana-ci-report.json
 
@@ -173,3 +167,24 @@ jobs:
           path: dist/
           if-no-files-found: error
           retention-days: 30
+
+  attest:
+    name: Attest the tested MANA Brain candidate
+    if: github.event_name != 'pull_request'
+    needs: validate-build-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Download candidate from the completed test job
+        uses: actions/download-artifact@v4
+        with:
+          name: MANA-Brain-engine-candidate-${{ github.sha }}
+          path: dist/
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/*.jar
