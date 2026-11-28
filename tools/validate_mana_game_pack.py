@@ -29,7 +29,7 @@ for name in (
     "mana_avatar_genesis_evening_no_accessory.gltf",
 ):
     game_asset = ROOT / "assets/characters" / name
-    android_asset = ROOT.parents[2] / "launcher/app/src/main/assets" / name
+    android_asset = ROOT.parents[1] / "launcher/app/src/main/assets" / name
     assert game_asset.is_file() and android_asset.is_file(), f"Missing shared avatar: {name}"
     assert hashlib.sha256(game_asset.read_bytes()).digest() == hashlib.sha256(android_asset.read_bytes()).digest(), f"Game avatar differs from launcher: {name}"
     document = json.loads(game_asset.read_text(encoding="utf-8"))
