@@ -314,7 +314,7 @@ jobs:
           curl --fail --location --retry 5 --retry-all-errors --connect-timeout 30 --max-time 3600 "$URL" --output "$MODEL"
           echo "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c  $MODEL" | sha256sum --check -
           cp "$MODEL" "$PACKAGE/Engine/Inference/Models/Gemma/gemma-4-E2B-it.litertlm"
-          test "$(stat -c '%s' "$PACKAGE/models/Gemma/gemma-4-E2B-it.litertlm")" = "2588147712"
+          test "$(stat -c '%s' "$PACKAGE/Engine/Inference/Models/Gemma/gemma-4-E2B-it.litertlm")" = "2588147712"
           curl --fail --location --retry 5 --connect-timeout 30 --max-time 120 https://www.apache.org/licenses/LICENSE-2.0.txt --output "$PACKAGE/Engine/Inference/Models/Gemma/LICENSE-APACHE-2.0.txt"
           cat > "$PACKAGE/Engine/Inference/Models/Gemma/NOTICE.txt" <<'NOTICE'
           Gemma 4 E2B instruction-tuned model weights by Google DeepMind.
@@ -358,7 +358,7 @@ jobs:
           Центральная карта: MANA_OMEGA_ENTRY.json. Контрольные суммы: SHA256SUMS.txt.
 
           ВАЖНО:
-          - LiteRT-LM runtime и Piper Irina offline voice входят в APK; файл Gemma (2,588,147,712 байт) находится отдельно в models/Gemma.
+          - LiteRT-LM runtime и Piper Irina offline voice входят в APK; файл Gemma (2,588,147,712 байт) находится в Engine/Inference/Models/Gemma.
           - Рекомендуется около 8 ГБ свободного места для распаковки и импорта модели.
           - MANA проверяет доступную физическую RAM. Динамическое расширение памяти не считается физической RAM.
           - APK — debug-подписанный Android-прототип, не прошивка. Папку firmware/ нельзя прошивать или копировать в системный раздел.
@@ -421,14 +421,14 @@ jobs:
 
           Не прошивать содержимое firmware/ и не копировать его в системные разделы Android.
           EOF
-          APK_SHA256="$(sha256sum "$PACKAGE/app/MANA-Omega-debug.apk" | awk '{print $1}')"
+          APK_SHA256="$(sha256sum "$PACKAGE/Launcher/INSTALL_MANA_XZ.apk" | awk '{print $1}')"
           MODEL_SHA256="$(sha256sum "$PACKAGE/Engine/Inference/Models/Gemma/gemma-4-E2B-it.litertlm" | awk '{print $1}')"
           cat > "$PACKAGE/BUILD_REPORT_RU.txt" <<EOF
           MANA XZ — Ω build report
           Branch: $GITHUB_REF_NAME
           Commit: $GITHUB_SHA
           GitHub Actions run: $GITHUB_RUN_ID
-          APK: app/MANA-Omega-debug.apk
+          APK: Launcher/INSTALL_MANA_XZ.apk
           APK SHA-256: $APK_SHA256
           Gemma file: Engine/Inference/Models/Gemma/gemma-4-E2B-it.litertlm
           Gemma SHA-256: $MODEL_SHA256
