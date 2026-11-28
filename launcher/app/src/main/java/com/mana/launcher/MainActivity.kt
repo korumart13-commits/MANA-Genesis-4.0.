@@ -701,37 +701,7 @@ class MainActivity : Activity() {
     }
 
     private fun showLockScreenPreview() {
-        showingDrawer = false
-        search.setText("")
-        content.removeAllViews()
-        val preview = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(dp(20), dp(34), dp(20), dp(28))
-            background = rounded(Color.rgb(5, 18, 45), 28)
-        }
-        preview.addView(label("ПРЕДПРОСМОТР • ЭКРАН БЛОКИРОВКИ", 11, accent, true))
-        preview.addView(AvatarView(this), LinearLayout.LayoutParams(dp(150), dp(150)).apply {
-            topMargin = dp(24)
-            bottomMargin = dp(12)
-        })
-        preview.addView(label(java.text.SimpleDateFormat("HH:mm", Locale.getDefault()).format(java.util.Date()), 42, textColor, true))
-        preview.addView(label(java.text.SimpleDateFormat("EEEE, d MMMM", Locale.getDefault()).format(java.util.Date()), 13, accentSoft, false))
-        preview.addView(label("MANA  •  КОНСТАНТА ОМЕГА Ω", 15, accent, true).apply {
-            setPadding(0, dp(24), 0, dp(8))
-        })
-        preview.addView(label("«Мечтай. Исследуй. Создавай.»", 13, textColor, false))
-        preview.addView(action("⌑   ПЕРЕЙТИ К РАЗБЛОКИРОВКЕ") {
-            requestSystemUnlockForMANA()
-        }.apply {
-            background = rounded(panelRaised, 16)
-            setTextColor(textColor)
-            setPadding(dp(16), dp(14), dp(16), dp(14))
-        }, LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(28) })
-        content.addView(preview, LinearLayout.LayoutParams(-1, -2))
-        content.addView(label("Это предпросмотр внутри приложения, а не замена системного экрана блокировки Android. Для настоящей разблокировки используется защита телефона.", 11, muted, false).apply {
-            setPadding(dp(4), dp(12), dp(4), 0)
-        })
+        startActivity(Intent(this, ManaLockScreenActivity::class.java))
     }
 
     private fun requestSystemUnlockForMANA() {
