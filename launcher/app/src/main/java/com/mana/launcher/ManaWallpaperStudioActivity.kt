@@ -1,3 +1,24 @@
+package com.mana.launcher
+
+import android.app.Activity
+import android.app.WallpaperManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.Shader
+import android.os.Bundle
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import java.util.Random
+import java.util.concurrent.TimeUnit
+
 class ManaWallpaperStudioActivity : Activity() {
     private val background = 0xFF071426.toInt()
     private val foreground = 0xFFEAF4FF.toInt()
@@ -34,7 +55,7 @@ class ManaWallpaperStudioActivity : Activity() {
             recreate()
         })
         root.addView(button("Изменить частоту • сейчас ${rotationMinutes()} мин") {
-            val next = when (rotationMinutes()) { 15 -> 30; 30 -> 60; 60 -> 180; else -> 15 }
+            val next = when (rotationMinutes()) { 15L -> 30; 30L -> 60; 60L -> 180; else -> 15 }
             getSharedPreferences(PREFS, MODE_PRIVATE).edit().putInt(KEY_INTERVAL, next).apply()
             if (isRotationEnabled()) scheduleRotation()
             android.widget.Toast.makeText(this, "Новая частота: каждые $next минут", android.widget.Toast.LENGTH_SHORT).show()
@@ -137,7 +158,7 @@ internal object ManaOfflineWallpaperRenderer {
 
         // Soft atmospheric lights and stars.
         repeat(34) {
-            paint.color = Color.argb(random.nextInt(35, 115), 120, 190, 255)
+            paint.color = Color.argb(random.nextInt(80) + 35, 120, 190, 255)
             val radius = random.nextFloat() * width * 0.012f + 2f
             val x = random.nextFloat() * width
             val y = random.nextFloat() * height * 0.65f
@@ -225,7 +246,7 @@ internal object ManaOfflineWallpaperRenderer {
         paint.color = 0xFFB76D83.toInt()
         paint.strokeWidth = (width * 0.0025f).coerceAtLeast(2f)
         paint.style = Paint.Style.STROKE
-        canvas.drawArc(cx - headW * 0.18f, headY + headH * 0.72f, cx + headW * 0.18f, headY + headH * (expression == 2 ? 1.02f : 0.91f), 15f, if (expression == 3) 110f else 150f, false, paint)
+        canvas.drawArc(cx - headW * 0.18f, headY + headH * 0.72f, cx + headW * 0.18f, headY + headH * (if (expression == 2) 1.02f else 0.91f), 15f, if (expression == 3) 110f else 150f, false, paint)
         paint.style = Paint.Style.FILL
         paint.color = 0xFF54C8F5.toInt()
         canvas.drawCircle(cx + headW * 0.92f, headY - headH * 0.2f, width * 0.018f, paint)
