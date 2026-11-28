@@ -827,6 +827,7 @@ class MainActivity : Activity() {
         }
         controls.addView(action("Отправить") { sendToLocalModel() }, LinearLayout.LayoutParams(0, dp(42), 1f))
         controls.addView(action("Голос") { startVoiceInput() }, LinearLayout.LayoutParams(0, dp(42), 1f))
+        controls.addView(action("Голос Маны") { showManaVoiceSettings() }, LinearLayout.LayoutParams(0, dp(42), 1f))
         controls.addView(action("Закрыть") {
             avatarPanel?.let(rootFrame::removeView)
             avatarPanel = null
@@ -1658,11 +1659,21 @@ class MainActivity : Activity() {
                 val languageResult = engine.setLanguage(russian)
                 engine.setSpeechRate(0.92f)
                 engine.setPitch(1.06f)
-                val preferred = engine.voices?.firstOrNull { voice ->
-                    voice.locale.language == "ru" &&
-                        listOf("female", "woman", "жен", "alena", "irina").any { voice.name.contains(it, true) }
-                }
-                if (preferred != null) engine.voice = preferred
+                val russianVoices = engine.voices.orEmpty().filter { it.locale.language == "ru" }
+                val preferences = getSharedPreferences("mana.settings", MODE_PRIVATE)
+                val savedVoiceName = preferences.getString("mana_voice_name", null)
+                val selectedVoice = russianVoices.firstOrNull { it.name == savedVoiceName }
+                    ?: ManaVoiceProfile.choose(russianVoices.map { voice ->
+                        ManaVoiceProfile.Candidate(
+                            name = voice.name,
+                            localeTag = voice.locale.toLanguageTag(),
+                            quality = voice.quality,
+                            requiresNetwork = voice.isNetworkConnectionRequired
+                        )
+                    })?.let { candidate -> russianVoices.firstOrNull { it.name == candidate.name } }
+                if (selectedVoice != null) engine.voice = selectedVoice
+                engine.setSpeechRate(preferences.getFloat("mana_voice_rate", 0.92f).coerceIn(0.75f, 1.15f))
+                engine.setPitch(preferences.getFloat("mana_voice_pitch", 1.06f).coerceIn(0.85f, 1.25f))
                 voiceReady = languageResult != TextToSpeech.LANG_MISSING_DATA &&
                     languageResult != TextToSpeech.LANG_NOT_SUPPORTED
                 engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
@@ -1686,6 +1697,51 @@ class MainActivity : Activity() {
                 })
             }
         }
+    }
+
+    private fun showManaVoiceSettings() {
+        val engine = textToSpeech
+        if (engine == null || !voiceReady) {
+            AlertDialog.Builder(this)
+                .setTitle("Голос Маны")
+                .setMessage("Русский синтез речи пока не готов. Проверь установленный движок синтеза речи и русские голосовые данные Android.")
+                .setPositiveButton("Понятно", null)
+                .show()
+            return
+        }
+        val voices = engine.voices.orEmpty()
+            .filter { it.locale.language == "ru" }
+            .sortedWith(compareByDescending<android.speech.tts.Voice> { !it.isNetworkConnectionRequired }
+                .thenByDescending { it.quality }
+                .thenBy { it.name })
+        val labels = listOf("Автоматически — лучший доступный русский голос") +
+            voices.map { voice ->
+                val mode = if (voice.isNetworkConnectionRequired) "онлайн" else "офлайн"
+                "${voice.name} · ${mode} · качество ${voice.quality}"
+            }
+        val prefs = getSharedPreferences("mana.settings", MODE_PRIVATE)
+        val current = prefs.getString("mana_voice_name", null)
+        val selected = voices.indexOfFirst { it.name == current }.let { if (it < 0) 0 else it + 1 }
+        AlertDialog.Builder(this)
+            .setTitle("Голос Маны")
+            .setSingleChoiceItems(labels.toTypedArray(), selected) { dialog, which ->
+                val chosen = if (which == 0) {
+                    prefs.edit().remove("mana_voice_name").apply()
+                    ManaVoiceProfile.choose(voices.map { voice ->
+                        ManaVoiceProfile.Candidate(voice.name, voice.locale.toLanguageTag(), voice.quality, voice.isNetworkConnectionRequired)
+                    })?.let { candidate -> voices.firstOrNull { it.name == candidate.name } }
+                } else {
+                    voices[which - 1].also { prefs.edit().putString("mana_voice_name", it.name).apply() }
+                }
+                if (chosen != null) {
+                    engine.voice = chosen
+                    engine.setLanguage(Locale("ru", "RU"))
+                    speakResponse("Привет. Я Мана. Теперь ты слышишь мой выбранный голос.")
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton("Закрыть", null)
+            .show()
     }
 
     private fun speakResponse(text: String) {
