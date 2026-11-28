@@ -116,9 +116,17 @@ object ManaEngineProcessOwner {
 
             try {
                 val catalog = ManaModelCatalog(app)
-                val model = catalog.verifiedSavedModel()
-                    ?: java.io.File(app.filesDir, "mana-models/selected-model.litertlm")
-                        .takeIf { it.isFile && it.canRead() }
+                val importedDirectory = java.io.File(app.filesDir, "mana-models")
+                val importedModel = java.io.File(importedDirectory, "selected-model.litertlm")
+                val verifiedImportedModel = importedModel.takeIf {
+                    ModelArtifactIntegrity.matches(
+                        it,
+                        ManaModelCatalog.MODEL_SIZE,
+                        ManaModelCatalog.SHA256,
+                        importedDirectory
+                    )
+                }
+                val model = catalog.verifiedSavedModel() ?: verifiedImportedModel
 
                 if (model == null) {
                     complete(
