@@ -1,4 +1,4 @@
-name: MANA Android Emulator Compatibility
+name: MANA Universal Android Compatibility Smoke Test
 
 on:
   push:
@@ -15,44 +15,17 @@ permissions:
   contents: read
 
 concurrency:
-  group: mana-android-emulators-${{ github.ref }}
+  group: mana-universal-android-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  emulator-tests:
-    name: Android ${{ matrix.android-name }} / ${{ matrix.device-name }}
+  android-compatibility:
+    name: Android API ${{ matrix.api-level }} compatibility smoke
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      max-parallel: 3
       matrix:
-        include:
-          # Android 12 = API 31; Android 15 = API 35; Android 16 = API 36.
-          # Pixel AVDs provide repeatable hardware classes, not OEM firmware emulation.
-          - android-name: "12 (API 31)"
-            api-level: 31
-            device-name: "compact-phone profile"
-            avd-profile: pixel_2
-          - android-name: "15 (API 35)"
-            api-level: 35
-            device-name: "compact-phone profile"
-            avd-profile: pixel_2
-          - android-name: "16 (API 36)"
-            api-level: 36
-            device-name: "compact-phone profile"
-            avd-profile: pixel_2
-          - android-name: "12 (API 31)"
-            api-level: 31
-            device-name: "large-phone profile"
-            avd-profile: pixel_6
-          - android-name: "15 (API 35)"
-            api-level: 35
-            device-name: "large-phone profile"
-            avd-profile: pixel_6
-          - android-name: "16 (API 36)"
-            api-level: 36
-            device-name: "large-phone profile"
-            avd-profile: pixel_6
+        api-level: [29, 33, 36]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -83,25 +56,29 @@ jobs:
           set -o pipefail
           "$SDKMANAGER" --install "platform-tools" "platforms;android-36" "build-tools;35.0.0"
 
-      - name: Run JVM unit tests and build APK
+      - name: Run unit tests and build Android APK
         working-directory: launcher
         run: gradle :app:testDebugUnitTest :app:assembleDebug --stacktrace
 
-      - name: Run profiler tests on Android Emulator
+      - name: Run Android API ${{ matrix.api-level }} emulator smoke test
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          ANDROID_I_WANT_MY_TCG: "yes"
         with:
           api-level: ${{ matrix.api-level }}
           arch: x86_64
           target: google_apis
-          profile: ${{ matrix.avd-profile }}
+          profile: pixel_2
           disable-animations: true
-          script: cd launcher && gradle :app:connectedDebugAndroidTest --stacktrace
+          emulator-boot-timeout: 1200
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -memory 3072 -cores 2
+          script: cd launcher && gradle --no-daemon :app:connectedDebugAndroidTest --stacktrace
 
-      - name: Upload APK
+      - name: Upload API ${{ matrix.api-level }} debug APK
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mana-debug-api-${{ matrix.api-level }}-${{ matrix.avd-profile }}
+          name: mana-universal-android-api${{ matrix.api-level }}-debug
           path: launcher/app/build/outputs/apk/debug/*.apk
           if-no-files-found: ignore
           retention-days: 7

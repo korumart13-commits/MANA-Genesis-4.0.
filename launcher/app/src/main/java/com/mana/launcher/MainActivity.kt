@@ -1,11 +1,14 @@
 package com.mana.launcher
 
 import android.app.Activity
+import android.app.DownloadManager
 import android.Manifest
 import android.content.pm.PackageManager
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.ServiceConnection
 import android.os.IBinder
@@ -99,6 +102,20 @@ class MainActivity : Activity() {
     private var reconnectController: ManaEngineReconnectController? = null
     private var activityResumed = false
     private var uiInitialized = false
+    @Volatile private var setupStarted = false
+    @Volatile private var setupRunning = false
+    private var setupReport: ManaOneTapSetupCoordinator.Report? = null
+    @Volatile private var modelActivationInProgress = false
+    private val modelProgressHandler by lazy { android.os.Handler(mainLooper) }
+    private var modelProgressRunnable: Runnable? = null
+    private var modelDownloadReceiverRegistered = false
+    private val modelDownloadReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            if (intent?.action == DownloadManager.ACTION_DOWNLOAD_COMPLETE) {
+                activateCompletedModelDownload()
+            }
+        }
+    }
     private val manaEngineConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as? ManaEngineService.LocalBinder ?: return
@@ -198,36 +215,113 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Start MANA's own safe completion loop from the single app entry point.
-        // WorkManager persists schedules across process death/reboot; Android controls
-        // execution timing and may defer work under battery/network restrictions.
-        runCatching {
-            ManaGenesisFirstBootService(applicationContext).refresh()
-        }.onFailure { error ->
-            android.util.Log.e("MANA", "Unable to checkpoint Genesis development backlog", error)
-        }
-        runCatching {
-            ManaGenesisWorkScheduler.ensureScheduled(applicationContext)
-        }.onFailure { error ->
-            android.util.Log.e("MANA", "Unable to schedule Genesis background tasks", error)
-        }
         window.statusBarColor = bg
         window.navigationBarColor = bg
         window.decorView.setBackgroundColor(bg)
         reconnectController = ManaEngineReconnectController(this) {
-            if (activityResumed) attemptEngineConnection()
+            if (activityResumed && setupStarted) attemptEngineConnection()
         }
-        showEngineUnavailableScreen("Подключение к MANA Engine…")
+        val setupPreferences = getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE)
+        val wasStarted = setupPreferences.getBoolean("setup_started", false)
+        val wasCompleted = setupPreferences.getBoolean("setup_completed", false)
+        setupStarted = wasStarted || wasCompleted
+        if (wasStarted && !wasCompleted) {
+            showOneTapSetupScreen("Возобновлю незавершённую настройку MANA автоматически.")
+        } else if (wasCompleted) {
+            showEngineUnavailableScreen("Настройка MANA уже выполнена. Подключаю центральный Brain…")
+        } else {
+            // The owner starts the complete app-level bootstrap with one explicit action.
+            showOneTapSetupScreen("Одна кнопка установит и настроит функции MANA, доступные на realme C85 4G.")
+        }
+    }
+
+    private fun showOneTapSetupScreen(message: String) {
+        val screen = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(28), dp(32), dp(28), dp(32))
+            setBackgroundColor(bg)
+        }
+        screen.addView(label("MANA XZ", 38, textColor, true))
+        screen.addView(label("GENESIS 4.0", 12, accentSoft, true).apply {
+            setPadding(0, dp(6), 0, dp(22))
+        })
+        screen.addView(label("REALME C85 4G  •  RMX5566  •  ANDROID 16", 11, muted, true).apply {
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(18))
+        })
+        screen.addView(label(message, 14, textColor, false).apply {
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(24))
+        })
+        val launch = action(if (setupRunning) "MANA XZ УСТАНАВЛИВАЕТСЯ…" else if (setupStarted) "ПРОДОЛЖИТЬ УСТАНОВКУ MANA XZ" else "УСТАНОВИТЬ MANA XZ") {
+            startManaOneTapSetup()
+        }.apply {
+            textSize = 15f
+            setTextColor(Color.WHITE)
+            background = rounded(accent, 18)
+            isEnabled = !setupRunning
+        }
+        screen.addView(launch, LinearLayout.LayoutParams(-1, dp(58)))
+        setContentView(screen)
+    }
+
+    private fun startManaOneTapSetup() {
+        if (setupRunning) return
+        setupStarted = true
+        setupRunning = true
+        getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE).edit()
+            .putBoolean("setup_started", true)
+            .putBoolean("setup_completed", false)
+            .apply()
+        showOneTapSetupScreen("Проверяю realme C85 4G / RMX5566, хранилище и компоненты MANA…")
+        Thread({
+            var report: ManaOneTapSetupCoordinator.Report? = null
+            var failure: Throwable? = null
+            try {
+                report = ManaOneTapSetupCoordinator(applicationContext).run()
+                setupReport = report
+            } catch (error: Throwable) {
+                failure = error
+                android.util.Log.e("MANA", "One-action setup failed", error)
+            }
+            runOnUiThread {
+                setupRunning = false
+                if (failure != null) {
+                    showOneTapSetupScreen("Настройка прервалась: ${failure?.message ?: "неизвестная ошибка"}. Нажми одну кнопку, чтобы безопасно повторить.")
+                } else if (report?.isTargetDevice != true) {
+                    setupStarted = false
+                    getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE).edit()
+                        .putBoolean("setup_started", false)
+                        .putBoolean("setup_completed", false)
+                        .apply()
+                    showOneTapSetupScreen("Не удалось подтвердить realme C85 4G / RMX5566 с Android 16 и ARM64. Настройка целевого устройства остановлена.")
+                    showMessage(report?.toReadableText() ?: "Профиль целевого устройства не подтверждён.")
+                } else {
+                    getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE).edit()
+                        .putBoolean("setup_started", true)
+                        .putBoolean("setup_completed", true)
+                        .apply()
+                    showEngineUnavailableScreen("Профиль realme C85 4G / RMX5566 подтверждён. Подключаю MANA Brain…")
+                    attemptEngineConnection()
+                }
+            }
+        }, "MANA-One-Action-Setup").start()
     }
 
     override fun onPause() {
         activityResumed = false
         reconnectController?.cancel()
+        stopModelProgressUpdates()
+        if (modelDownloadReceiverRegistered) {
+            runCatching { unregisterReceiver(modelDownloadReceiver) }
+            modelDownloadReceiverRegistered = false
+        }
         super.onPause()
     }
 
     private fun attemptEngineConnection() {
-        if (manaEngineBound) return
+        if (!setupStarted || manaEngineBound) return
         val engineIntent = Intent(this, ManaEngineService::class.java)
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(engineIntent) else startService(engineIntent)
@@ -250,19 +344,16 @@ class MainActivity : Activity() {
             setPadding(dp(24), dp(28), dp(24), dp(28))
             setBackgroundColor(bg)
         }
-        fallback.addView(label("MANA", 34, textColor, true))
+        fallback.addView(label("MANA XZ", 34, textColor, true))
         fallback.addView(label("GENESIS 4.0", 12, accentSoft, true).apply {
             setPadding(0, dp(4), 0, dp(18))
         })
         fallback.addView(label(message, 14, textColor, false).apply {
             setPadding(0, 0, 0, dp(18))
         })
-        fallback.addView(action("Открыть диагностику MANA") {
-            startActivity(Intent(this, ManaSystemStatusActivity::class.java))
-        }, LinearLayout.LayoutParams(-1, dp(48)))
-        fallback.addView(action("Повторить подключение") {
-            attemptEngineConnection()
-        }, LinearLayout.LayoutParams(-1, dp(48)))
+        fallback.addView(action(if (setupRunning) "MANA XZ УСТАНАВЛИВАЕТСЯ…" else "ПОВТОРИТЬ ЗАПУСК MANA XZ") {
+            if (!setupRunning) attemptEngineConnection()
+        }, LinearLayout.LayoutParams(-1, dp(56)))
         setContentView(fallback)
     }
 
@@ -316,8 +407,16 @@ class MainActivity : Activity() {
         openAvatarIfRequested(intent)
         ManaEngineProcessOwner.ensureSavedModelLoaded(this) { result ->
             runOnUiThread {
-                result.onSuccess { name -> modelStatus?.text = "Локальная модель готова: $name" }
-                    .onFailure { error -> modelStatus?.text = "Модель сохранена, но не загрузилась: ${error.message}" }
+                result.onSuccess { name ->
+                    modelStatus?.text = "Локальная модель готова: $name"
+                }.onFailure { error ->
+                    modelStatus?.text = "Локальная модель ещё не готова: ${error.message}"
+                    if (modelCatalog?.verifiedSavedModel() == null) {
+                        // Offer the bundled, hash-verified model first; automatic Wi-Fi
+                        // download remains available as a fallback after owner confirmation.
+                        downloadOfficialModel()
+                    }
+                }
             }
         }
     }
@@ -353,10 +452,17 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        registerModelDownloadReceiver()
+        startModelProgressUpdates()
         activityResumed = true
-        if (manaEngineBound && manaEngineBinder?.isInitialized() == true) {
+        val setupPreferences = getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE)
+        val incompleteSetup = setupPreferences.getBoolean("setup_started", false) &&
+            !setupPreferences.getBoolean("setup_completed", false)
+        if (incompleteSetup && !setupRunning) {
+            startManaOneTapSetup()
+        } else if (setupStarted && manaEngineBound && manaEngineBinder?.isInitialized() == true) {
             reconnectController?.onConnected()
-        } else if (!manaEngineBound && manaEngineBinder == null) {
+        } else if (setupStarted && !manaEngineBound && manaEngineBinder == null) {
             attemptEngineConnection()
         }
         loadApps()
@@ -389,7 +495,7 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setPadding(0, dp(7), 0, dp(18))
         }
-        header.addView(label("MANA", 35, textColor, true))
+        header.addView(label("MANA XZ", 35, textColor, true))
         header.addView(label("GENESIS 4.0  •  ТВОЁ ПРОСТРАНСТВО", 10, accentSoft, true))
         page.addView(header)
 
@@ -421,12 +527,14 @@ class MainActivity : Activity() {
 
         val nav = LinearLayout(this).apply {
             gravity = Gravity.CENTER
-            setPadding(0, dp(8), 0, dp(2))
+            setPadding(dp(4), dp(4), dp(4), dp(4))
             background = rounded(panel, 18)
         }
-        nav.addView(action("Главная") { showHome() }, LinearLayout.LayoutParams(0, dp(46), 1f))
-        nav.addView(action("Приложения") { showDrawer() }, LinearLayout.LayoutParams(0, dp(46), 1f))
-        page.addView(nav, LinearLayout.LayoutParams(-1, dp(50)))
+        nav.addView(action("Главная") { showHome() }, LinearLayout.LayoutParams(0, dp(48), 1f))
+        nav.addView(action("Чат") { toggleAvatarPanel() }, LinearLayout.LayoutParams(0, dp(48), 1f))
+        nav.addView(action("Модули") { showModules() }, LinearLayout.LayoutParams(0, dp(48), 1f))
+        nav.addView(action("Приложения") { showDrawer() }, LinearLayout.LayoutParams(0, dp(48), 1f))
+        page.addView(nav, LinearLayout.LayoutParams(-1, dp(56)))
 
         rootFrame.addView(page, FrameLayout.LayoutParams(-1, -1))
         avatarButton = AvatarView(this).apply {
@@ -442,125 +550,164 @@ class MainActivity : Activity() {
         setContentView(rootFrame)
     }
 
+    private fun dashboardCard(title: String, description: String, buttonText: String, onClick: () -> Unit): LinearLayout {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(15), dp(16), dp(12))
+            background = rounded(panelRaised, 20)
+            addView(label(title, 16, textColor, true))
+            addView(label(description, 12, muted, false).apply {
+                setPadding(0, dp(5), 0, dp(8))
+            })
+            addView(action(buttonText, onClick), LinearLayout.LayoutParams(-1, dp(48)))
+        }
+    }
+
+    private fun addDashboardCard(title: String, description: String, buttonText: String, onClick: () -> Unit) {
+        content.addView(
+            dashboardCard(title, description, buttonText, onClick),
+            LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) }
+        )
+    }
+
     private fun showHome() {
         showingDrawer = false
         search.setText("")
         content.removeAllViews()
-        content.addView(label("Добро пожаловать", 24, textColor, true))
-        content.addView(label("Я рядом. Нажми на мой аватар, чтобы открыть MANA.", 13, muted, false))
+        content.addView(label("Добро пожаловать", 25, textColor, true))
+        content.addView(label("Твоё пространство. Один помощник. Все инструменты рядом.", 13, muted, false).apply {
+            setPadding(0, dp(4), 0, dp(16))
+        })
 
-        val card = LinearLayout(this).apply {
+        val ready = localRuntime.isReady()
+        val status = if (ready) "Локальный интеллект активен • ${localRuntime.modelName()}" else "Локальная модель ожидает подключения"
+        val hero = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(18), dp(18), dp(18))
-            background = rounded(panelRaised, 22)
+            setPadding(dp(18), dp(18), dp(18), dp(16))
+            background = rounded(panelRaised, 24)
+            addView(label("MANA XZ", 12, accentSoft, true))
+            addView(label("Я рядом. С чего начнём?", 21, textColor, true).apply {
+                setPadding(0, dp(8), 0, dp(5))
+            })
+            addView(label(status, 12, if (ready) accentSoft else muted, false))
+            addView(action("ОТКРЫТЬ ДИАЛОГ  ›") { toggleAvatarPanel() }, LinearLayout.LayoutParams(-1, dp(54)).apply {
+                topMargin = dp(14)
+            })
         }
-        card.addView(label("MANA ASSISTANT", 11, accentSoft, true))
-        card.addView(label("Твой телефон. Твои правила.", 19, textColor, true))
-        card.addView(action("Состояние MANA • диагностика и восстановление") {
-            startActivity(Intent(this, ManaSystemStatusActivity::class.java))
-        })
-        card.addView(action(if (getSharedPreferences("mana.settings", MODE_PRIVATE).getBoolean("floating_avatar_enabled", false)) "Выключить плавающий 3D-аватар" else "Включить плавающий 3D-аватар") { requestFloatingAvatar() })
-        card.addView(action("Открыть полноценную 3D-модель MANA") {
-            startActivity(Intent(this, ManaAvatarPreviewActivity::class.java))
-        })
-        card.addView(action("Сменить наряд MANA") {
-            val preferences = getSharedPreferences("mana.settings", MODE_PRIVATE)
-            val next = (preferences.getInt("avatar_outfit_index", 0) + 1) % 3
-            preferences.edit().putInt("avatar_outfit_index", next).apply()
-            ManaAvatar3DView.outfitIndex = next
-            refreshFloatingAvatarStyle()
-            showMessage("Наряд аватара изменён. Лицо и голос остались прежними.")
-        })
-        card.addView(action("Переключить аксессуар аватара") {
-            val preferences = getSharedPreferences("mana.settings", MODE_PRIVATE)
-            val enabled = !preferences.getBoolean("avatar_accessory_enabled", true)
-            preferences.edit().putBoolean("avatar_accessory_enabled", enabled).apply()
-            ManaAvatar3DView.accessoryEnabled = enabled
-            refreshFloatingAvatarStyle()
-            showMessage(if (enabled) "Аксессуар включён." else "Аксессуар скрыт.")
-        })
-        card.addView(action("Сменить выражение лица MANA") {
-            val next = (ManaAvatarState.expressionIndex + 1) % 3
-            ManaAvatarState.expressionIndex = next
-            ManaAvatar3DView.expressionIndex = next
-            showMessage("Выражение лица изменено.")
-        })
-        card.addView(action("Назначить MANA системным ассистентом") { requestAssistantRole() })
-        card.addView(label("После назначения жест или долгое нажатие питания откроет MANA только если прошивка realme передаёт его выбранному ассистенту.", 11, muted, false))
-        card.addView(action("Открыть зашифрованный дневник MANA") { showDiary() })
-        card.addView(action("Открыть MANA Life Manager") { showLifeManager() })
-        card.addView(action("Открыть MANA Future Updates") {
-            startActivity(Intent(this, ManaFutureUpdatesActivity::class.java))
-        })
-        card.addView(action("Открыть MANA Adaptive Intelligence") {
-            startActivity(Intent(this, ManaAdaptiveLearningActivity::class.java))
-        })
-        card.addView(action("Открыть локальную память MANA") { showMemory() })
-        card.addView(action("Управление файлами и карантин MANA") { startActivity(Intent(this, ManaDocumentStorageActivity::class.java)) })
-        card.addView(action("Идеи и будущие обновления MANA") { showFutureUpdates() })
-        card.addView(action("MANA Engineering Lab • совместная разработка с GPT") {
-            startActivity(Intent(this, ManaEngineeringActivity::class.java))
-        })
-        card.addView(action("Настроить облачный резерв ИИ") { showCloudSettings() })
-        card.addView(action("Использовать облачную модель для следующего сообщения") {
-            if (cloudGateway.isAvailable() || yandexProvider.isAvailable()) {
-                useCloudForNextPrompt = true
-                showMessage("Следующее сообщение предложит выбрать облачного провайдера. Отправка произойдёт только после отдельного подтверждения.")
-            } else {
-                showMessage("Сначала настрой и включи облачного провайдера.")
-            }
-        })
-        card.addView(action("Настроить Yandex AI Studio и VK") { startActivity(Intent(this, ManaIntegrationSettingsActivity::class.java)) })
-        card.addView(action("Устройства MANA • часы, наушники, автомобиль") { startActivity(Intent(this, ManaDevicesActivity::class.java)) })
-        card.addView(label("Локальный движок LiteRT-LM включён в APK. Для офлайн-ответов отдельно загрузи официальную модель Gemma 4 E2B (2,59 ГБ).", 12, accentSoft, true))
-        card.addView(action("Загрузить и подключить локальную модель Gemma 4 E2B (2,59 ГБ)") { downloadOfficialModel() })
-        card.addView(action("Открыть Smart Receptionist") { showReceptionist() })
-        card.addView(label(if (localRuntime.isReady()) "Локальная модель активна: ${localRuntime.modelName()}" else "Движок готов; веса модели ещё не установлены. Подключи Gemma 4 E2B через Wi-Fi.", 12, muted, false))
-        val p = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(19) }
-        content.addView(card, p)
+        content.addView(hero, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
 
-        content.addView(label("Избранное", 18, textColor, true).apply {
-            setPadding(0, dp(23), 0, dp(9))
+        content.addView(label("Быстрый доступ", 18, textColor, true).apply {
+            setPadding(0, 0, 0, dp(9))
+        })
+        val quickRows = listOf(
+            listOf("Голос", "Спросить MANA") to { toggleAvatarPanel() },
+            listOf("Память", "Личные заметки") to { showMemory() },
+            listOf("Задачи", "Планы и дела") to { showLifeManager() },
+            listOf("Дневник", "Личные записи") to { showDiary() }
+        )
+        quickRows.forEach { (pair, callback) ->
+            val tile = dashboardCard(pair[0], pair[1], "Открыть", callback)
+            content.addView(tile, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(9) })
+        }
+        addDashboardCard(
+            "Живые обои Маны",
+            "Оригинальные изображения создаются прямо на телефоне без интернета; можно менять главный экран и экран блокировки.",
+            "Открыть студию обоев"
+        ) { startActivity(Intent(this, ManaWallpaperStudioActivity::class.java)) }
+
+        content.addView(label("Состояние системы", 18, textColor, true).apply {
+            setPadding(0, dp(9), 0, dp(9))
+        })
+        addDashboardCard(
+            "MANA Engine",
+            if (ready) "Локальная модель подключена и доступна." else "Движок приложения доступен; локальная модель ещё не активна.",
+            "Диагностика и восстановление"
+        ) { startActivity(Intent(this, ManaSystemStatusActivity::class.java)) }
+        addDashboardCard(
+            "Настройка телефона",
+            "Проверка разрешений, роли ассистента и доступных возможностей Android.",
+            "Проверить настройку"
+        ) {
+            val report = runCatching { ManaOneTapSetupCoordinator(this).run() }
+            if (report.isSuccess) {
+                AlertDialog.Builder(this)
+                    .setTitle("MANA XZ • настройка")
+                    .setMessage(report.getOrThrow().toReadableText())
+                    .setPositiveButton("Готово", null)
+                    .setNeutralButton("Разрешения") { _, _ ->
+                        val permissions = mutableListOf<String>()
+                        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) permissions += Manifest.permission.RECORD_AUDIO
+                        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) permissions += Manifest.permission.POST_NOTIFICATIONS
+                        if (permissions.isNotEmpty()) requestPermissions(permissions.toTypedArray(), audioPermissionRequestCode)
+                        else if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+                        else requestAssistantRole()
+                    }.show()
+            } else showMessage(report.exceptionOrNull()?.message ?: "Не удалось выполнить проверку")
+        }
+
+        content.addView(label("Избранные приложения", 18, textColor, true).apply {
+            setPadding(0, dp(14), 0, dp(8))
         })
         val favorites = apps.filter {
             val n = it.loadLabel(packageManager).toString().lowercase(Locale.getDefault())
             listOf("phone", "camera", "settings", "chrome", "messages", "телефон", "камера", "настройки", "сообщ").any(n::contains)
         }.take(8)
         renderGrid(favorites)
-        content.addView(label("MANA GAME INTELLIGENCE", 18, textColor, true).apply {
-            setPadding(0, dp(23), 0, dp(7))
+        content.addView(action("Все приложения  ›") { showDrawer() }, LinearLayout.LayoutParams(-1, dp(48)))
+        content.addView(label("Все возможности MANA собраны во вкладке «Модули».", 12, muted, false).apply {
+            setPadding(0, dp(12), 0, dp(8))
         })
-        val games = apps.filter { it.activityInfo.applicationInfo.category == android.content.pm.ApplicationInfo.CATEGORY_GAME }
-        if (games.isEmpty()) {
-            content.addView(label("Игры появятся здесь после установки. MANA сможет работать с ними через поддерживаемые игровые адаптеры.", 12, muted, false))
-        } else {
-            content.addView(label("${games.size} игр в списке приложений", 12, muted, false))
-            renderGrid(games.take(8))
+    }
+
+    private fun showModules() {
+        showingDrawer = false
+        search.setText("")
+        content.removeAllViews()
+        content.addView(label("Модули MANA", 25, textColor, true))
+        content.addView(label("Инструменты собраны по задачам. Статус каждого модуля показан честно.", 13, muted, false).apply {
+            setPadding(0, dp(4), 0, dp(16))
+        })
+
+        content.addView(label("Личное пространство", 17, accentSoft, true).apply { setPadding(0, 0, 0, dp(8)) })
+        addDashboardCard("Локальная память", "Зашифрованные сведения, которыми MANA может пользоваться по твоему разрешению.", "Открыть память") { showMemory() }
+        addDashboardCard("Обои и ресурсы", "Офлайн-обои, расписание смены и контроль доступной оперативной памяти.", "Настроить") {
+            startActivity(Intent(this, ManaWallpaperStudioActivity::class.java))
         }
-        content.addView(label("Запуск игр доступен сейчас. Управление игровым миром подключается только через официальные API или разрешённый серверный мост.", 11, muted, false).apply {
-            setPadding(0, dp(8), 0, dp(5))
-        })
-        content.addView(action("Разрешить обнаружение активной игры") {
-            startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-        }, LinearLayout.LayoutParams(-1, dp(42)))
-        content.addView(action("Проверить текущую игру") {
+        addDashboardCard("Дневник", "Личные записи хранятся локально и защищаются шифрованием.", "Открыть дневник") { showDiary() }
+        addDashboardCard("Задачи и планы", "Локальный список дел и управление выполнением.", "Открыть задачи") { showLifeManager() }
+
+        content.addView(label("Интеллект и развитие", 17, accentSoft, true).apply { setPadding(0, dp(12), 0, dp(8)) })
+        addDashboardCard("Исследование и знания", "Поиск информации, проверка источников и база знаний.", "Открыть исследование") {
+            startActivity(Intent(this, ManaAdaptiveLearningActivity::class.java))
+        }
+        addDashboardCard("Будущие обновления", "Идеи, этапы разработки, проверки и запросы на улучшения.", "Открыть обновления") {
+            startActivity(Intent(this, ManaFutureUpdatesActivity::class.java))
+        }
+        addDashboardCard("Инженерная лаборатория", "Совместная разработка, диагностика и отчёты проекта.", "Открыть лабораторию") {
+            startActivity(Intent(this, ManaEngineeringActivity::class.java))
+        }
+
+        content.addView(label("Телефон и связь", 17, accentSoft, true).apply { setPadding(0, dp(12), 0, dp(8)) })
+        addDashboardCard("Умный секретарь", "Настройки обработки входящих обращений и поддерживаемые функции.", "Открыть секретаря") { showReceptionist() }
+        addDashboardCard("Устройства", "Часы, наушники, Bluetooth и автомобильные подключения.", "Управление устройствами") {
+            startActivity(Intent(this, ManaDevicesActivity::class.java))
+        }
+        addDashboardCard("Интеграции", "Yandex, VK и подключаемые облачные модели. Облако выключено по умолчанию.", "Настроить подключения") {
+            startActivity(Intent(this, ManaIntegrationSettingsActivity::class.java))
+        }
+        addDashboardCard("Облачные AI-провайдеры", "Ключи хранятся локально; передача запроса требует отдельного подтверждения.", "Настройки облака") { showCloudSettings() }
+
+        content.addView(label("Игры", 17, accentSoft, true).apply { setPadding(0, dp(12), 0, dp(8)) })
+        addDashboardCard("Game Intelligence", "Обнаружение активной игры и поддерживаемые игровые мосты.", "Проверить возможности") {
             val monitor = ManaGameSessionMonitor(this)
-            if (!monitor.hasUsageAccess()) {
-                showMessage("Сначала разреши MANA доступ к статистике использования приложений.")
-            } else {
-                val activePackage = monitor.foregroundPackage()
-                val activeGame = games.firstOrNull { it.activityInfo.packageName == activePackage }
-                showMessage(
-                    if (activeGame != null) "Сейчас запущена игра: ${activeGame.loadLabel(packageManager)}"
-                    else "Активная игра не обнаружена. Пакет переднего приложения: ${activePackage ?: "не определён"}"
-                )
-            }
-        }, LinearLayout.LayoutParams(-1, dp(42)))
-        content.addView(action("Открыть MANA Companion для Minecraft Bedrock") {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/workflows/mana-minecraft-pack.yml")))
-        }, LinearLayout.LayoutParams(-1, dp(42)))
-        content.addView(label("Полный список приложений — во вкладке «Приложения».", 12, muted, false).apply {
-            setPadding(0, dp(17), 0, 0)
+            if (!monitor.hasUsageAccess()) showMessage("Для обнаружения активной игры Android попросит разрешение на статистику использования.")
+            else showMessage("Активное приложение: ${monitor.foregroundPackage() ?: "не определено"}")
+        }
+        addDashboardCard("Файлы и пакеты", "Импорт, проверка и карантин файлов MANA.", "Открыть хранилище") {
+            startActivity(Intent(this, ManaDocumentStorageActivity::class.java))
+        }
+        content.addView(label("Некоторые возможности требуют разрешений, подключения или ещё находятся в разработке. MANA не будет показывать их как готовые, пока это не подтверждено тестами.", 11, muted, false).apply {
+            setPadding(0, dp(12), 0, dp(18))
         })
     }
 
@@ -659,7 +806,7 @@ class MainActivity : Activity() {
         overlay.addView(action("Каталог Gemma 4 E2B • около 2,58 ГБ") {
             AlertDialog.Builder(this)
                 .setTitle("Локальная модель MANA")
-                .setMessage("Gemma 4 E2B IT — кандидат для проверки на этом телефоне. Загрузка около 2,58 ГБ. Производительность на RMX5566RU ещё не измерена. Открыть официальный репозиторий модели?")
+                .setMessage("Gemma 4 E2B IT — кандидат для проверки на этом телефоне. Загрузка около 2,58 ГБ. Производительность на RMX5566 ещё не измерена. Открыть официальный репозиторий модели?")
                 .setNegativeButton("Не сейчас", null)
                 .setPositiveButton("Открыть источник") { _, _ ->
                     startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm")))
@@ -688,6 +835,7 @@ class MainActivity : Activity() {
         }
         controls.addView(action("Отправить") { sendToLocalModel() }, LinearLayout.LayoutParams(0, dp(42), 1f))
         controls.addView(action("Голос") { startVoiceInput() }, LinearLayout.LayoutParams(0, dp(42), 1f))
+        controls.addView(action("Голос Маны") { showManaVoiceSettings() }, LinearLayout.LayoutParams(0, dp(42), 1f))
         controls.addView(action("Закрыть") {
             avatarPanel?.let(rootFrame::removeView)
             avatarPanel = null
@@ -1107,7 +1255,7 @@ class MainActivity : Activity() {
                             }
                         }
                     }
-                    require(copied > 0L) { "Файл модели пуст." }
+                    require(copied == ManaModelCatalog.MODEL_SIZE) { "Размер Gemma не совпадает с официальным: ожидалось ${ManaModelCatalog.MODEL_SIZE} байт, получено $copied." }
                     val hash = digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
                     require(hash == OFFICIAL_GEMMA_4_E2B_SHA256) {
                         "Контрольная сумма не совпадает с официальной Gemma 4 E2B. Файл не установлен."
@@ -1122,10 +1270,12 @@ class MainActivity : Activity() {
                     localRuntime.load(target) { result ->
                         runOnUiThread {
                             result.onSuccess { name ->
+                                stopModelProgressUpdates()
                                 modelStatus?.text = "Локальная модель готова: $name"
                                 chatOutput?.text = "MANA подключена к локальному движку LiteRT-LM. Можешь написать сообщение."
                                 showMessage("Локальная модель загружена.")
                             }.onFailure { error ->
+                                stopModelProgressUpdates()
                                 modelStatus?.text = "Ошибка загрузки модели"
                                 chatOutput?.text = error.message ?: "Не удалось загрузить модель."
                                 showMessage("Не удалось запустить модель: ${error.message}")
@@ -1323,47 +1473,108 @@ class MainActivity : Activity() {
     private fun downloadOfficialModel() {
         val catalog = modelCatalog
         if (catalog == null) { showMessage("Хранилище загрузок Android недоступно."); return }
+        val message = if (catalog.hasAcknowledgedGemmaLicense()) {
+            "Gemma 4 E2B уже включена в установочный ZIP и распространяется по Apache 2.0. Выбери её файл в распакованной папке MANA — приложение скопирует модель в защищённое хранилище, проверит точный размер и SHA-256, а затем подключит её. Если ZIP недоступен, можно скачать модель по Wi-Fi."
+        } else {
+            "Gemma 4 E2B занимает около 2,59 ГБ и уже включена в полный установочный ZIP. Перед импортом ознакомься с лицензией Apache 2.0, включённой в ZIP. После выбора файла MANA проверит точный размер и SHA-256. Нажатие одной из кнопок подтверждает, что ты ознакомился с лицензией. Если не хочешь импортировать файл из ZIP, MANA может загрузить его автоматически по Wi-Fi."
+        }
         AlertDialog.Builder(this)
-            .setTitle("Условия модели Gemma 4 E2B")
-            .setMessage("Gemma 4 E2B распространяется под Apache 2.0. Перед загрузкой ознакомься с лицензией и официальной карточкой модели. Модель занимает 2,59 ГБ. Загрузка идёт только по Wi-Fi; после неё MANA проверит точный размер и SHA-256. Продолжая, ты подтверждаешь, что прочитал лицензию Apache 2.0.")
+            .setTitle("Gemma 4 E2B · лицензия Apache 2.0")
+            .setMessage(message)
             .setNegativeButton("Отмена", null)
-             .setNeutralButton("Открыть карточку модели") { _, _ ->
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm")))
+            .setNeutralButton("Скачать по Wi-Fi") { _, _ ->
+                catalog.acknowledgeGemmaLicense()
+                startGemmaDownload(catalog)
             }
-            .setPositiveButton("Принимаю и скачать") { _, _ ->
-                try {
-                    val id = catalog.enqueueGemma4E2B(licenseAccepted = true)
-                    if (id == -1L) {
-                        activateCompletedModelDownload()
-                        showMessage("Официальная модель проверена. Подключаю её к локальному движку…")
-                    } else {
-                        showMessage("Загрузка Gemma 4 E2B началась через Android Download Manager. Загрузка разрешена только по Wi-Fi. После завершения вернись в MANA — файл будет проверен и подключён.")
-                    }
-                } catch (error: Exception) {
-                    showMessage("Не удалось начать загрузку: " + error.message)
-                }
+            .setPositiveButton("Выбрать Gemma из комплекта") { _, _ ->
+                catalog.acknowledgeGemmaLicense()
+                chooseModelFile()
             }
             .show()
     }
 
+    private fun startGemmaDownload(catalog: ManaModelCatalog) {
+        try {
+            val id = catalog.enqueueGemma4E2B(licenseAcknowledged = true)
+            if (id == -1L) {
+                activateCompletedModelDownload()
+                showMessage("Официальная модель проверена. Подключаю её к локальному движку…")
+            } else {
+                showMessage("Загрузка Gemma 4 E2B выполняется или возобновлена через Android Download Manager по Wi-Fi. Прогресс виден на экране MANA; после завершения MANA проверит SHA-256 и подключит модель автоматически.")
+                startModelProgressUpdates()
+                activateCompletedModelDownload()
+            }
+        } catch (error: Exception) {
+            showMessage("Не удалось начать загрузку: " + error.message)
+        }
+    }
+
+    private fun startModelProgressUpdates() {
+        if (modelProgressRunnable != null) return
+        val task = object : Runnable {
+            override fun run() {
+                val status = modelCatalog?.downloadProgressText()
+                if (status == null) {
+                    modelProgressRunnable = null
+                    return
+                }
+                modelStatus?.text = status
+                modelProgressHandler.postDelayed(this, 1000L)
+            }
+        }
+        modelProgressRunnable = task
+        modelProgressHandler.post(task)
+    }
+
+    private fun stopModelProgressUpdates() {
+        modelProgressRunnable?.let(modelProgressHandler::removeCallbacks)
+        modelProgressRunnable = null
+    }
+
+    private fun registerModelDownloadReceiver() {
+        if (modelDownloadReceiverRegistered) return
+        val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(modelDownloadReceiver, filter, android.content.Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(modelDownloadReceiver, filter)
+        }
+        modelDownloadReceiverRegistered = true
+    }
+
     private fun activateCompletedModelDownload() {
         val catalog = modelCatalog ?: return
+        synchronized(this) {
+            if (modelActivationInProgress) return
+            modelActivationInProgress = true
+        }
         Thread {
+            var loadCallbackExpected = false
             try {
-                val file = catalog.verifiedSavedModel() ?: catalog.verifyCompletedDownload() ?: return@Thread
-                localRuntime.load(file) { result ->
-                    runOnUiThread {
-                        result.onSuccess { name ->
-                            modelStatus?.text = "Официальная модель проверена и активна: " + name
-                            showMessage("Gemma 4 E2B прошла проверку SHA-256 и подключена к локальному MANA Brain.")
-                        }.onFailure { error ->
-                            modelStatus?.text = "Модель скачана, но не запустилась: " + error.message
-                            showMessage("LiteRT-LM не смог загрузить модель: " + error.message)
+                val file = catalog.verifiedSavedModel() ?: catalog.verifyCompletedDownload()
+                if (file == null) {
+                    runOnUiThread { startModelProgressUpdates() }
+                } else {
+                    stopModelProgressUpdates()
+                    loadCallbackExpected = true
+                    localRuntime.load(file) { result ->
+                        synchronized(this) { modelActivationInProgress = false }
+                        runOnUiThread {
+                            result.onSuccess { name ->
+                                modelStatus?.text = "Официальная модель проверена и активна: " + name
+                                showMessage("Gemma 4 E2B прошла проверку SHA-256 и подключена к локальному MANA Brain.")
+                            }.onFailure { error ->
+                                modelStatus?.text = "Модель скачана, но не запустилась: " + error.message
+                                showMessage("LiteRT-LM не смог загрузить модель: " + error.message)
+                            }
                         }
                     }
                 }
             } catch (error: Exception) {
                 runOnUiThread { showMessage("Проверка загрузки модели не пройдена: " + error.message) }
+            } finally {
+                if (!loadCallbackExpected) synchronized(this) { modelActivationInProgress = false }
             }
         }.start()
     }
@@ -1456,13 +1667,24 @@ class MainActivity : Activity() {
                 val languageResult = engine.setLanguage(russian)
                 engine.setSpeechRate(0.92f)
                 engine.setPitch(1.06f)
-                val preferred = engine.voices?.firstOrNull { voice ->
-                    voice.locale.language == "ru" &&
-                        listOf("female", "woman", "жен", "alena", "irina").any { voice.name.contains(it, true) }
-                }
-                if (preferred != null) engine.voice = preferred
+                val russianVoices = engine.voices.orEmpty().filter { it.locale.language == "ru" && !it.isNetworkConnectionRequired }
+                val preferences = getSharedPreferences("mana.settings", MODE_PRIVATE)
+                val savedVoiceName = preferences.getString("mana_voice_name", null)
+                val selectedVoice = russianVoices.firstOrNull { it.name == savedVoiceName }
+                    ?: ManaVoiceProfile.choose(russianVoices.map { voice ->
+                        ManaVoiceProfile.Candidate(
+                            name = voice.name,
+                            localeTag = voice.locale.toLanguageTag(),
+                            quality = voice.quality,
+                            requiresNetwork = voice.isNetworkConnectionRequired
+                        )
+                    })?.let { candidate -> russianVoices.firstOrNull { it.name == candidate.name } }
+                if (selectedVoice != null) engine.voice = selectedVoice
+                engine.setSpeechRate(preferences.getFloat("mana_voice_rate", 0.92f).coerceIn(0.75f, 1.15f))
+                engine.setPitch(preferences.getFloat("mana_voice_pitch", 1.06f).coerceIn(0.85f, 1.25f))
                 voiceReady = languageResult != TextToSpeech.LANG_MISSING_DATA &&
-                    languageResult != TextToSpeech.LANG_NOT_SUPPORTED
+                    languageResult != TextToSpeech.LANG_NOT_SUPPORTED &&
+                    selectedVoice?.isNetworkConnectionRequired == false
                 engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) {
                         ManaAvatar3DView.isSpeaking = true
@@ -1484,6 +1706,58 @@ class MainActivity : Activity() {
                 })
             }
         }
+    }
+
+    private fun showManaVoiceSettings() {
+        val engine = textToSpeech
+        if (engine == null || !voiceReady) {
+            AlertDialog.Builder(this)
+                .setTitle("Голос Маны")
+                .setMessage("Русский синтез речи пока не готов. Проверь установленный движок синтеза речи и русские голосовые данные Android.")
+                .setPositiveButton("Понятно", null)
+                .show()
+            return
+        }
+        val voices = engine.voices.orEmpty()
+            .filter { it.locale.language == "ru" && !it.isNetworkConnectionRequired }
+            .sortedWith(compareByDescending<android.speech.tts.Voice> { it.quality }
+                .thenBy { it.name })
+        if (voices.isEmpty()) {
+            AlertDialog.Builder(this)
+                .setTitle("Нужен офлайн-голос")
+                .setMessage("На устройстве пока нет русского офлайн-голоса. Установи русские голосовые данные в настройках движка Android TTS. Онлайн-голоса MANA не выбирает.")
+                .setPositiveButton("Открыть настройки TTS") { _, _ ->
+                    runCatching { startActivity(Intent("com.android.settings.TTS_SETTINGS")) }
+                }
+                .setNegativeButton("Позже", null)
+                .show()
+            return
+        }
+        val labels = listOf("Автоматически — лучший доступный русский голос") +
+            voices.map { voice -> "${voice.name} · офлайн · качество ${voice.quality}" }
+        val prefs = getSharedPreferences("mana.settings", MODE_PRIVATE)
+        val current = prefs.getString("mana_voice_name", null)
+        val selected = voices.indexOfFirst { it.name == current }.let { if (it < 0) 0 else it + 1 }
+        AlertDialog.Builder(this)
+            .setTitle("Голос Маны")
+            .setSingleChoiceItems(labels.toTypedArray(), selected) { dialog, which ->
+                val chosen = if (which == 0) {
+                    prefs.edit().remove("mana_voice_name").apply()
+                    ManaVoiceProfile.choose(voices.map { voice ->
+                        ManaVoiceProfile.Candidate(voice.name, voice.locale.toLanguageTag(), voice.quality, voice.isNetworkConnectionRequired)
+                    })?.let { candidate -> voices.firstOrNull { it.name == candidate.name } }
+                } else {
+                    voices[which - 1].also { prefs.edit().putString("mana_voice_name", it.name).apply() }
+                }
+                if (chosen != null) {
+                    engine.voice = chosen
+                    engine.setLanguage(Locale("ru", "RU"))
+                    speakResponse("Привет. Я Мана. Теперь ты слышишь мой выбранный голос.")
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton("Закрыть", null)
+            .show()
     }
 
     private fun speakResponse(text: String) {

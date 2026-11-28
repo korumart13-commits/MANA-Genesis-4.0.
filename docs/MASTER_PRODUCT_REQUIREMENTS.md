@@ -111,3 +111,18 @@ This section overrides earlier plans only for the immediate release. The long-te
 - Built-in dialer/phone-number dialing/call UI remains prohibited in the MANA APK.
 
 Detailed implementation requirements and acceptance tests are in [MANA OS Revised Scope and Self-Audit](MANA_OS_REVISED_SCOPE_AND_SELF_AUDIT_RU.md). This immediate-release override does not delete deferred MANA modules from the long-term product roadmap.
+
+
+## 13. Owner direction superseding the temporary immediate-APK scope — 2026-11-27
+
+The earlier Section 12 described a temporary design/update APK scope that excluded the AI runtime and model. The owner's latest explicit direction is to preserve and implement the **complete MANA Genesis 4.0 concept**, not to reduce the product to that temporary APK-only scope. Therefore:
+
+- MANA Brain, the local MANA Engine, Shogun orchestration, Hydra capability heads, local memory, model runtime, self-development, Microworld, Cloud Home/Internet Presence, and all previously requested modules remain in the full product target.
+- The intended final product remains a complete MANA OS / AOSP-derived system for the exact RMX5566RU target, with an automated, signed, compatibility-checked OTA update and rollback path.
+- A portable APK may be used as a bootstrap/development milestone, but it is not the final product and must not replace the full ROM/OTA objective.
+- Local inference direction: llama.cpp ARM64 CPU-first is the primary target; LiteRT-LM remains an optional secondary runtime until measured parity and device tests justify a change. Gemma 4 E2B is one candidate model, not the only intelligence or a claim of device readiness.
+- Cloud providers remain optional connectors. The local Brain must work without paid subscriptions or API keys. The architecture may scale to 100 connectors over time; that is a capacity goal, not a current completion claim.
+- Cloud Home or an owner-controlled host is the optional path for permitted 24/7 work; the phone alone cannot guarantee continuous execution under Android/OEM power and lifecycle restrictions.
+- The full target includes the previously requested Diary, Smart Receptionist (playful; 10-second delay; summaries enabled; unknown-number handling enabled), Contact Intelligence, Life Manager, Yandex, VK, Google ecosystem integrations, game/Minecraft intelligence, connected devices, avatar and voice, security/Deadman, diagnostics, update/recovery and adaptive device discovery.
+
+This latest owner direction supersedes the earlier immediate-APK exclusion list as the final product scope. The historical section remains for traceability but is not the current release acceptance definition. All features must be labelled honestly by evidence: implemented, tested, partial, blocked or not implemented.

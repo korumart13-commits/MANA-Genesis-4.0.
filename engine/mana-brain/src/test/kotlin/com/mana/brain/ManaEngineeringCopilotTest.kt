@@ -32,7 +32,7 @@ class ManaEngineeringCopilotTest {
 
     private val validResponse = """{
         "summary":"Add a small example change",
-        "unifiedDiff":"--- a/os/core/src/main/kotlin/com/mana/os/core/Example.kt\n+++ b/os/core/src/main/kotlin/com/mana/os/core/Example.kt\n@@ -1 +1,2 @@\n class Example\n+// reviewed proposal",
+        "unifiedDiff":"diff --git a/os/core/src/main/kotlin/com/mana/os/core/Example.kt b/os/core/src/main/kotlin/com/mana/os/core/Example.kt\n--- a/os/core/src/main/kotlin/com/mana/os/core/Example.kt\n+++ b/os/core/src/main/kotlin/com/mana/os/core/Example.kt\n@@ -1 +1,2 @@\n class Example\n+// reviewed proposal",
         "testPlan":["Run JVM unit tests"],
         "riskNotes":["Review API compatibility"]
     }"""
@@ -93,6 +93,16 @@ class ManaEngineeringCopilotTest {
         }
     }
 
+    @Test fun rejectsChangesToFilesNotExplicitlySelectedForTheTask() = runBlocking {
+        val response = validResponse.replace(
+            "os/core/src/main/kotlin/com/mana/os/core/Example.kt",
+            "docs/unselected-file.md"
+        )
+        assertFailsWith<IllegalArgumentException> {
+            ManaEngineeringCopilot(FakeProvider(response)).propose(task())
+        }
+    }
+
     @Test fun refusesUnavailableProvider() = runBlocking {
         assertFailsWith<IllegalStateException> {
             ManaEngineeringCopilot(FakeProvider(validResponse, available = false)).propose(task())
@@ -104,7 +114,9 @@ class ManaEngineeringCopilotTest {
             "os/core/src/main/kotlin/com/mana/os/core/Example.kt",
             "system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java"
         )
-        val proposal = ManaEngineeringCopilot(FakeProvider(response)).propose(task())
+        val proposal = ManaEngineeringCopilot(FakeProvider(response)).propose(task(
+            path = "system/mana/services/ManaBrainService/src/com/mana/system/brain/ManaBrainService.java"
+        ))
         assertTrue(proposal.changedPaths.all { it.startsWith("system/mana/") })
         assertEquals(EngineeringProposalStatus.REVIEW_REQUIRED, proposal.status)
     }

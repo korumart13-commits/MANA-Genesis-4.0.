@@ -8,8 +8,8 @@ android {
     compileSdk = 36
     defaultConfig {
         applicationId = "com.mana.launcher"
-        minSdk = 26
-        targetSdk = 35
+        minSdk = 29
+        targetSdk = 36
         versionCode = 4
         versionName = "4.0.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

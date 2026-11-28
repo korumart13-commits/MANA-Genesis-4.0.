@@ -1,0 +1,175 @@
+name: MANA Engineering Pipeline
+run-name: MANA Engineering CI ${{ inputs.client_run_id || github.run_id }}
+
+on:
+  push:
+    branches:
+      - "chatgpt/mana-asi-rmx5566-one-action-setup"
+    paths:
+      - "engine/mana-brain/**"
+      - ".github/workflows/mana-engineering-pipeline.yml"
+  pull_request:
+    paths:
+      - "engine/mana-brain/**"
+      - ".github/workflows/mana-engineering-pipeline.yml"
+  workflow_dispatch:
+    inputs:
+      client_run_id:
+        description: "Unique MANA engineering task ID used to correlate this run."
+        required: true
+        type: string
+      patch:
+        description: "Standard git diff produced by MANA. Max 60 KB; source-only changes."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mana-engineering-${{ inputs.client_run_id || github.ref }}-${{ github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  validate-build-test:
+    name: Validate patch policy, test and package MANA Brain
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+
+      - name: Exercise policy, git apply and isolated patch application
+        shell: bash
+        env:
+          MANA_PATCH_FILE: ${{ runner.temp }}/mana-fixture.patch
+        run: |
+          set -euo pipefail
+          fixture="$RUNNER_TEMP/mana-patch-fixture"
+          mkdir -p "$fixture/engine/mana-brain/src/main/kotlin/com/mana/brain"
+          git -C "$fixture" init -q
+          git -C "$fixture" config user.name "MANA CI"
+          git -C "$fixture" config user.email "mana-ci@users.noreply.github.com"
+          printf '%s\n' 'package com.mana.brain' 'class PipelineFixture' > "$fixture/engine/mana-brain/src/main/kotlin/com/mana/brain/PipelineFixture.kt"
+          git -C "$fixture" add .
+          git -C "$fixture" commit -qm "fixture baseline"
+          printf '%s\n' '// patch applied in disposable CI workspace' >> "$fixture/engine/mana-brain/src/main/kotlin/com/mana/brain/PipelineFixture.kt"
+          git -C "$fixture" diff --binary > "$MANA_PATCH_FILE"
+          git -C "$fixture" checkout -- .
+          MANA_PATCH_FILE="$MANA_PATCH_FILE" gradle --no-daemon -p engine/mana-brain validateEngineeringPatch
+          git -C "$fixture" apply --check --whitespace=error-all "$MANA_PATCH_FILE"
+          git -C "$fixture" apply --whitespace=error-all "$MANA_PATCH_FILE"
+          grep -q 'patch applied in disposable CI workspace' "$fixture/engine/mana-brain/src/main/kotlin/com/mana/brain/PipelineFixture.kt"
+      - name: Validate and apply proposed patch in disposable CI checkout
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.patch != '' }}
+        env:
+          MANA_PATCH: ${{ inputs.patch }}
+          MANA_PATCH_FILE: ${{ runner.temp }}/mana-proposed.patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "$MANA_PATCH" > "$MANA_PATCH_FILE"
+          gradle --no-daemon -p engine/mana-brain validateEngineeringPatch
+          git apply --check --whitespace=error-all "$MANA_PATCH_FILE"
+          git apply --whitespace=error-all "$MANA_PATCH_FILE"
+          git diff --check
+          git status --short
+
+      - name: Run patch policy and full JVM tests
+        id: tests
+        run: gradle --no-daemon -p engine/mana-brain clean test
+
+      - name: Preserve JVM test report even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Brain-test-report-${{ github.sha }}
+          path: engine/mana-brain/build/reports/tests/test/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Build distributable engine JAR
+        id: jar
+        run: gradle --no-daemon -p engine/mana-brain jar
+
+      - name: Preserve reviewed patch in candidate bundle
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.patch != '' }}
+        env:
+          MANA_PATCH: ${{ inputs.patch }}
+        run: |
+          mkdir -p dist
+          printf '%s' "$MANA_PATCH" > dist/proposed.patch
+
+      - name: Create SHA-256 manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp engine/mana-brain/build/libs/*.jar dist/
+          cd dist
+          sha256sum *.jar > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Attest build provenance (pushes only)
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/*.jar
+
+      - name: Write machine-readable CI diagnostics
+        if: always()
+        shell: bash
+        env:
+          TEST_OUTCOME: ${{ steps.tests.outcome }}
+          JAR_OUTCOME: ${{ steps.jar.outcome }}
+          PATCH_INPUT: ${{ inputs.patch }}
+          CLIENT_RUN_ID: ${{ inputs.client_run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p ci-report
+          PATCH_SHA="$(printf '%s' "$PATCH_INPUT" | sha256sum | awk '{print $1}')"
+          jq -n \
+            --arg task_id "${CLIENT_RUN_ID:-push-$GITHUB_RUN_ID}" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg commit "$GITHUB_SHA" \
+            --arg event "$GITHUB_EVENT_NAME" \
+            --arg test_outcome "${TEST_OUTCOME:-not_run}" \
+            --arg jar_outcome "${JAR_OUTCOME:-not_run}" \
+            --arg patch_sha256 "$PATCH_SHA" \
+            '{task_id:$task_id,run_id:$run_id,commit:$commit,event:$event,test_outcome:$test_outcome,jar_outcome:$jar_outcome,patch_sha256:$patch_sha256,review_only:true,firmware_install_performed:false}' \
+            > ci-report/mana-ci-report.json
+          cat ci-report/mana-ci-report.json
+
+      - name: Upload machine-readable CI diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-CI-diagnostics-${{ github.run_id }}
+          path: ci-report/mana-ci-report.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload tested candidate and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Brain-engine-candidate-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30

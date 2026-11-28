@@ -1,0 +1,7 @@
+[submodule "third_party/open-jarvis"]
+	path = third_party/open-jarvis
+	url = https://github.com/tokenarc/open-jarvis.git
+
+[submodule "third_party/nyral"]
+	path = third_party/nyral
+	url = https://github.com/aixtin/nyral.git

@@ -11,7 +11,11 @@ on:
       - 'engine/mana-brain/**'
       - 'os/core/**'
       - '.github/workflows/mana-launcher.yml'
+      - '.github/workflows/mana-emulator-smoke.yml'
       - 'tools/validate_mana_gltf.py'
+      - 'tools/validate_mana_installer_contract.py'
+      - 'tools/validate_mana_game_pack.py'
+      - 'game/mana-xz-world/**'
       - 'tools/stage_mana_aosp_prebuilt.sh'
       - 'tools/test_stage_mana_aosp_prebuilt.sh'
       - 'tools/verify_mana_platform_signature.sh'
@@ -25,6 +29,10 @@ on:
       - 'engine/mana-brain/**'
       - 'os/core/**'
       - '.github/workflows/mana-launcher.yml'
+      - '.github/workflows/mana-emulator-smoke.yml'
+      - 'tools/validate_mana_installer_contract.py'
+      - 'tools/validate_mana_game_pack.py'
+      - 'game/mana-xz-world/**'
   workflow_dispatch:
 
 permissions:
@@ -65,6 +73,7 @@ jobs:
           service = Path("launcher/app/src/main/java/com/mana/launcher/ManaEngineService.kt").read_text()
           bridge = Path("launcher/app/src/main/java/com/mana/launcher/ManaEngineBridgeService.kt").read_text()
           owner = Path("launcher/app/src/main/java/com/mana/launcher/ManaEngineProcessOwner.kt").read_text()
+          catalog = Path("launcher/app/src/main/java/com/mana/launcher/ManaModelCatalog.kt").read_text()
           manifest = Path("launcher/app/src/main/AndroidManifest.xml").read_text()
           assert "ManaEngineProcessOwner.acquire(this, ManaAndroidKeyProvider())" in service
           assert "ManaEngineProcessOwner.release()" in service
@@ -81,6 +90,13 @@ jobs:
           assert "fun ensureSavedModelLoaded(" in owner
           assert "ManaEngineProcessOwner.ensureSavedModelLoaded(this)" in bridge
           assert "MANA-Model-Bootstrap" in owner
+          assert "modelLoadCallbacks" in owner
+          assert "Локальная модель ещё не установлена" in owner
+          assert "pendingCallbacks.forEach" in owner
+          assert "fun acknowledgeGemmaLicense()" in catalog
+          assert "Выбрать Gemma из комплекта" in activity
+          assert "catalog.acknowledgeGemmaLicense()" in activity
+          assert "copied == ManaModelCatalog.MODEL_SIZE" in activity
           assert "initializeFromService(" not in activity
           assert "initializeDependenciesFromService(" not in activity
           assert "LocalModelRuntime(" not in activity
@@ -202,9 +218,27 @@ jobs:
           for model in launcher/app/src/main/assets/mana_avatar_genesis*.gltf; do
             python3 tools/validate_mana_gltf.py "$model"
           done
+      - name: Validate MANA XZ game companion package
+        run: python3 tools/validate_mana_game_pack.py
+      - name: Package standalone MANA XZ game source
+        run: |
+          mkdir -p release
+          zip -qr release/MANA-XZ-GAME-PACK.zip game/mana-xz-world
+          sha256sum release/MANA-XZ-GAME-PACK.zip > release/MANA-XZ-GAME-PACK.zip.sha256
+      - name: Upload standalone MANA XZ game source
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-XZ-GAME-PACK
+          path: |
+            release/MANA-XZ-GAME-PACK.zip
+            release/MANA-XZ-GAME-PACK.zip.sha256
+          if-no-files-found: error
+          retention-days: 30
       - name: Test canonical MANA Brain and OS core
         working-directory: launcher
         run: gradle --no-daemon :brain:test :core:test
+      - name: Validate one-button installer contract for realme C85 4G
+        run: python3 tools/validate_mana_installer_contract.py
       - name: Compile Android launcher and test app
         working-directory: launcher
         run: gradle --no-daemon :app:assembleDebug :app:testDebugUnitTest
@@ -219,6 +253,9 @@ jobs:
           test -n "$APKANALYZER"
           DEBUG_APK="app/build/outputs/apk/debug/app-debug.apk"
           test -f "$DEBUG_APK"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs "$DEBUG_APK"
           for CANDIDATE in "$APK" "$DEBUG_APK"; do
             test "$("$APKANALYZER" manifest application-id "$CANDIDATE")" = "com.mana.launcher"
             MANIFEST="$("$APKANALYZER" manifest print "$CANDIDATE")"
@@ -235,59 +272,110 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release/offline
-          git archive --format=zip --output=release/offline/MANA-Genesis-4.0-source-project.zip HEAD
-          MODEL="release/offline/MANA-Martynova-AI-Gemma4-E2B.litertlm"
-          URL="https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm"
+          PACKAGE="release/offline/MANA-XZ"
+          mkdir -p release/offline "$PACKAGE/installer" "$PACKAGE/models/Gemma" "$PACKAGE/source" "$PACKAGE/docs"
+          MODEL="release/offline/Gemma4-E2B.litertlm"
+          URL="https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/21c646194210256750db12cfa1e4fdf22bd3ddf1/gemma-4-E2B-it.litertlm"
           curl --fail --location --retry 5 --retry-all-errors --connect-timeout 30 --max-time 3600 "$URL" --output "$MODEL"
           echo "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c  $MODEL" | sha256sum --check -
+          cp "$MODEL" "$PACKAGE/models/Gemma/gemma-4-E2B-it.litertlm"
+          test "$(stat -c '%s' "$PACKAGE/models/Gemma/gemma-4-E2B-it.litertlm")" = "2588147712"
+          curl --fail --location --retry 5 --connect-timeout 30 --max-time 120 https://www.apache.org/licenses/LICENSE-2.0.txt --output "$PACKAGE/models/Gemma/LICENSE-APACHE-2.0.txt"
+          cat > "$PACKAGE/models/Gemma/NOTICE.txt" <<'NOTICE'
+          Gemma 4 E2B instruction-tuned model weights by Google DeepMind.
+          LiteRT-LM package published by litert-community.
+          Licensed under the Apache License, Version 2.0; see LICENSE-APACHE-2.0.txt.
+          This distribution is not endorsed by Google.
+          NOTICE
           test "$(stat -c '%s' "$MODEL")" -gt 2500000000
           test "$(stat -c '%s' "$MODEL")" -lt 3000000000
-          cp launcher/app/build/outputs/apk/debug/app-debug.apk release/offline/MANA-Martynova-Genesis-4.0.apk
-          cat > release/offline/README-FIRST-RU.txt <<'EOF'
-          MANA Martynova — полный установочный комплект
-          
-          Содержимое единого архива:
-          - MANA-Martynova-Genesis-4.0.apk — устанавливаемый APK приложения MANA.
-          - MANA-Martynova-AI-Gemma4-E2B.litertlm — локальная модель ИИ Gemma 4 E2B (это файл модели, не APK).
-          - MANA-Genesis-4.0-source-project.zip — полный отслеживаемый исходный проект, модули,
-            системные интерфейсы, задачи, документация и GitHub Actions на момент сборки.
-          
-          Установка:
-          1. Распакуйте этот архив в память телефона.
-          2. Установите MANA-Martynova-Genesis-4.0.apk (название приложения на телефоне: MANA Martynova).
-          3. Откройте MANA, предоставьте необходимые разрешения.
-          4. В разделе локальной модели выберите импорт файла .litertlm и укажите MANA-Martynova-AI-Gemma4-E2B.litertlm.
-          5. Дождитесь проверки SHA-256 и загрузки модели в LiteRT-LM.
-          
-          Модель не встроена внутрь APK: она поставляется рядом в этом едином архиве,
-          чтобы Android Package Installer не пытался установить многогигабайтный APK.
-          Для импорта потребуется свободное место под архив, распакованную модель
-          и рабочие данные. Производительность Gemma на RMX5566RU ещё должна быть
-          проверена на самом устройстве.
-          
-          Модель: https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm
-          Лицензия модели: Apache-2.0. Движок LiteRT-LM поставляется как Android dependency.
-          
-          Это APK + локальная модель + исходный проект, не прошивка и не OTA-образ RMX5566RU.
+          cp launcher/app/build/outputs/apk/debug/app-debug.apk "$PACKAGE/installer/INSTALL_MANA_XZ.apk"
+          cat > "$PACKAGE/models/Gemma/MODEL_MANIFEST_RU.txt" <<'EOF'
+          Локальная модель MANA Genesis 4.0
+          Имя файла: gemma-4-E2B-it.litertlm
+          Размер: 2 588 147 712 байт (около 2,59 ГБ)
+          SHA-256: 181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c
+          Источник: https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm
+          Закреплённый файл: https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/21c646194210256750db12cfa1e4fdf22bd3ddf1/gemma-4-E2B-it.litertlm
+          Лицензия модели Gemma 4: Apache License 2.0; копия лицензии находится в LICENSE-APACHE-2.0.txt.
+          Полный файл модели включён в models/Gemma/gemma-4-E2B-it.litertlm внутри этого ZIP.
+          После явного согласия владелец выбирает этот файл в системном Android-пикере; MANA копирует его в закрытое хранилище, проверяет размер и SHA-256, затем подключает.
+          Альтернативно MANA может загрузить ту же закреплённую версию через Android Download Manager по Wi-Fi.
           EOF
-          (cd release/offline && sha256sum MANA-Martynova-Genesis-4.0.apk MANA-Martynova-AI-Gemma4-E2B.litertlm MANA-Genesis-4.0-source-project.zip > SHA256SUMS.txt)
-          (cd release/offline && zip -0 -q ../MANA-Martynova-FULL-PACKAGE.zip MANA-Martynova-Genesis-4.0.apk MANA-Martynova-AI-Gemma4-E2B.litertlm MANA-Genesis-4.0-source-project.zip README-FIRST-RU.txt SHA256SUMS.txt)
-          sha256sum release/MANA-Martynova-FULL-PACKAGE.zip > release/MANA-Martynova-FULL-PACKAGE.zip.sha256
-      - name: Upload complete offline MANA bundle (APK + 2.59 GB model)
+          git archive --format=zip --output="$PACKAGE/source/MANA-XZ-source-project.zip" HEAD
+          cp launcher/LOCAL_MODEL_SETUP.md "$PACKAGE/docs/LOCAL_MODEL_SETUP_RU.md"
+          cp docs/MANA_GENESIS_4_0_NON_NEGOTIABLE_REQUIREMENTS_AND_GAPS.md "$PACKAGE/docs/MASTER_REQUIREMENTS_RU.md"
+          cat > "$PACKAGE/README-FIRST-RU.txt" <<'EOF'
+          MANA XZ — полный установочный комплект (MANA Genesis 4.0) для realme C85 4G / RMX5566
+
+          СТРУКТУРА:
+          installer/INSTALL_MANA_XZ.apk — единое приложение MANA XZ со встроенным мастером установки.
+          models/Gemma/gemma-4-E2B-it.litertlm — полный файл Gemma 4 E2B (2,588,147,712 байт).
+          models/Gemma/MODEL_MANIFEST_RU.txt — источник, лицензия и SHA-256 модели.
+          models/Gemma/LICENSE-APACHE-2.0.txt и NOTICE.txt — лицензия и уведомление об авторстве Gemma 4.
+          source/MANA-XZ-source-project.zip — исходный проект этой сборки.
+          docs/ — русская документация и обязательные требования проекта.
+          SHA256SUMS.txt — контрольные суммы, включая сам файл Gemma.
+
+          УСТАНОВКА:
+          1. Полностью распакуй ZIP на телефоне.
+          2. Открой installer/INSTALL_MANA_XZ.apk и подтверди штатную установку Android.
+          3. Запусти MANA и нажми главную кнопку «УСТАНОВИТЬ MANA XZ».
+          4. Ознакомься с Apache License 2.0 в папке models/Gemma. В системном окне выбора Android укажи
+             models/Gemma/gemma-4-E2B-it.litertlm из распакованной папки.
+          5. MANA скопирует модель в своё закрытое хранилище, проверит точный размер и SHA-256,
+             затем автоматически подключит её к локальному движку LiteRT-LM.
+          6. Если файл комплекта недоступен, выбери «Скачать по Wi-Fi» — загрузка возобновляется
+             через Android Download Manager, а проверка и подключение выполняются автоматически.
+
+          Это одна кнопка запуска установки внутри MANA. Системное окно выбора файла и
+          подтверждения Android остаётся под контролем Android; приложение не обходит защиту ОС.
+          РУЧНЫЕ КОМАНДЫ TERMUX И САМОСТОЯТЕЛЬНАЯ СБОРКА НЕ НУЖНЫ.
+
+          ВАЖНЫЕ УСЛОВИЯ:
+          - Для распаковки архива и импорта Gemma рекомендуется иметь около 8 ГБ свободного места
+            временно. После успешного импорта можно удалить ZIP и распакованную копию модели.
+          - INSTALL_MANA_XZ.apk — тестовая debug-сборка, подпись проверяется apksigner в CI. Для постоянных обновлений нужна отдельная стабильная release-подпись; тестовый сертификат CI может меняться между сборками. Android не установит APK с другим сертификатом поверх старой версии; может потребоваться удалить прежнюю тестовую версию, что удалит её локальные данные.
+          - APK не может самостоятельно подтвердить лицензию, выдать себе разрешения,
+            назначить себя системным ассистентом или обойти ограничения Android.
+          - Android может показать штатные запросы разрешений/ролей; их подтверждает владелец.
+          - Это APK-прототип/приложение, не прошивка MANA OS и не ROM для прошивки.
+          - Совместимость и производительность Gemma на физическом realme C85 4G / RMX5566
+            ещё должны быть подтверждены аппаратным тестом.
+          EOF
+          cat > "$PACKAGE/INSTALL_REPORT_TEMPLATE.txt" <<'EOF'
+          MANA Genesis 4.0 — отчёт установки
+          Устройство: realme C85 4G / RMX5566
+          Дата установки: __________________
+          Версия Android / API: __________________
+          Свободное место до загрузки: __________________
+          Установка APK: НЕ ПРОВЕРЕНО
+          Согласие с условиями Gemma: НЕ ПРОВЕРЕНО
+          Загрузка Gemma: НЕ ПРОВЕРЕНО
+          SHA-256 Gemma: НЕ ПРОВЕРЕНО
+          Запуск LiteRT-LM: НЕ ПРОВЕРЕНО
+          Локальная генерация без интернета: НЕ ПРОВЕРЕНО
+          Примечания / ошибки: __________________
+          EOF
+          (cd "$PACKAGE" && sha256sum installer/INSTALL_MANA_XZ.apk models/Gemma/gemma-4-E2B-it.litertlm models/Gemma/LICENSE-APACHE-2.0.txt models/Gemma/NOTICE.txt models/Gemma/MODEL_MANIFEST_RU.txt source/MANA-XZ-source-project.zip docs/LOCAL_MODEL_SETUP_RU.md docs/MASTER_REQUIREMENTS_RU.md README-FIRST-RU.txt INSTALL_REPORT_TEMPLATE.txt > SHA256SUMS.txt)
+          (cd release/offline && zip -0 -q -r ../MANA-XZ-FULL-INSTALLER.zip MANA-XZ/)
+          sha256sum release/MANA-XZ-FULL-INSTALLER.zip > release/MANA-XZ-FULL-INSTALLER.zip.sha256
+
+      - name: Upload one-button MANA installer and source bundle
         uses: actions/upload-artifact@v4
         with:
-          name: MANA-Martynova-FULL-PACKAGE-APK-AND-AI
+          name: MANA-XZ-FULL-INSTALLER
           path: |
-            release/MANA-Martynova-FULL-PACKAGE.zip
-            release/MANA-Martynova-FULL-PACKAGE.zip.sha256
+            release/MANA-XZ-FULL-INSTALLER.zip
+            release/MANA-XZ-FULL-INSTALLER.zip.sha256
           if-no-files-found: error
           compression-level: 0
           retention-days: 14
       - name: Package complete tracked MANA source tree
         run: |
           mkdir -p release
-          git archive --format=zip --output=release/MANA-Genesis-4.0-source.zip HEAD
-          sha256sum release/MANA-Genesis-4.0-source.zip > release/SHA256SUMS.txt
+          git archive --format=zip --output=release/MANA-XZ-source.zip HEAD
+          sha256sum release/MANA-XZ-source.zip > release/SHA256SUMS.txt
           cat > release/BUILD_SCOPE.txt <<'EOF'
           MANA Genesis 4.0 — source bundle
           This archive contains the tracked source project at the workflow commit.
@@ -300,9 +388,9 @@ jobs:
       - name: Upload source project bundle
         uses: actions/upload-artifact@v4
         with:
-          name: MANA-Genesis-4.0-source-project
+          name: MANA-XZ-source-project
           path: |
-            release/MANA-Genesis-4.0-source.zip
+            release/MANA-XZ-source.zip
             release/SHA256SUMS.txt
             release/BUILD_SCOPE.txt
           if-no-files-found: error
@@ -325,4 +413,5 @@ jobs:
           retention-days: 14
 
 # Re-run source verification after repairing the unified bundle SDK setup.
+# Diagnostics bridge changes are compiled and covered by :app:testDebugUnitTest.
 # Trigger complete-bundle rebuild after fixing setup-android package parsing.
