@@ -26,8 +26,6 @@ import android.app.role.RoleManager
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.RecognitionListener
-import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -90,7 +88,7 @@ class MainActivity : Activity() {
     private var chatInput: EditText? = null
     private var chatOutput: TextView? = null
     private var modelStatus: TextView? = null
-    private var textToSpeech: TextToSpeech? = null
+    private var offlineVoiceEngine: ManaOfflineVoiceEngine? = null
     @Volatile private var voiceReady = false
     private var diaryService: ManaDiaryService? = null
     private var lifeManager: ManaLifeManagerService? = null
@@ -1660,101 +1658,29 @@ class MainActivity : Activity() {
     }
 
     private fun initializeVoice() {
-        textToSpeech = TextToSpeech(this) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                val engine = textToSpeech ?: return@TextToSpeech
-                val russian = Locale("ru", "RU")
-                val languageResult = engine.setLanguage(russian)
-                engine.setSpeechRate(0.92f)
-                engine.setPitch(1.06f)
-                val russianVoices = engine.voices.orEmpty().filter { it.locale.language == "ru" && !it.isNetworkConnectionRequired }
-                val preferences = getSharedPreferences("mana.settings", MODE_PRIVATE)
-                val savedVoiceName = preferences.getString("mana_voice_name", null)
-                val selectedVoice = russianVoices.firstOrNull { it.name == savedVoiceName }
-                    ?: ManaVoiceProfile.choose(russianVoices.map { voice ->
-                        ManaVoiceProfile.Candidate(
-                            name = voice.name,
-                            localeTag = voice.locale.toLanguageTag(),
-                            quality = voice.quality,
-                            requiresNetwork = voice.isNetworkConnectionRequired
-                        )
-                    })?.let { candidate -> russianVoices.firstOrNull { it.name == candidate.name } }
-                if (selectedVoice != null) engine.voice = selectedVoice
-                engine.setSpeechRate(preferences.getFloat("mana_voice_rate", 0.92f).coerceIn(0.75f, 1.15f))
-                engine.setPitch(preferences.getFloat("mana_voice_pitch", 1.06f).coerceIn(0.85f, 1.25f))
-                voiceReady = languageResult != TextToSpeech.LANG_MISSING_DATA &&
-                    languageResult != TextToSpeech.LANG_NOT_SUPPORTED &&
-                    selectedVoice?.isNetworkConnectionRequired == false
-                engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                    override fun onStart(utteranceId: String?) {
-                        ManaAvatar3DView.isSpeaking = true
-                        ManaAvatarState.isSpeaking = true
+        offlineVoiceEngine = ManaOfflineVoiceEngine(this).also { voice ->
+            voice.initialize { result ->
+                runOnUiThread {
+                    voiceReady = result.isSuccess
+                    result.onFailure { error ->
+                        android.util.Log.e("MANA-Voice", "Bundled offline voice failed to initialize", error)
                     }
-                    override fun onDone(utteranceId: String?) {
-                        ManaAvatar3DView.isSpeaking = false
-                        ManaAvatarState.isSpeaking = false
-                    }
-                    @Deprecated("Deprecated in Android")
-                    override fun onError(utteranceId: String?) {
-                        ManaAvatar3DView.isSpeaking = false
-                        ManaAvatarState.isSpeaking = false
-                    }
-                    override fun onError(utteranceId: String?, errorCode: Int) {
-                        ManaAvatar3DView.isSpeaking = false
-                        ManaAvatarState.isSpeaking = false
-                    }
-                })
+                }
             }
         }
     }
 
     private fun showManaVoiceSettings() {
-        val engine = textToSpeech
-        if (engine == null || !voiceReady) {
-            AlertDialog.Builder(this)
-                .setTitle("Голос Маны")
-                .setMessage("Русский синтез речи пока не готов. Проверь установленный движок синтеза речи и русские голосовые данные Android.")
-                .setPositiveButton("Понятно", null)
-                .show()
-            return
+        val message = if (voiceReady) {
+            "Встроенный голос Маны: русский женский Piper Irina, нейросетевой синтез на телефоне. Работает без интернета; голосовая модель включена в установочный APK."
+        } else {
+            "Офлайн-голос Маны загружается или не смог инициализироваться. Проверь журнал MANA Voice и целостность встроенной голосовой модели."
         }
-        val voices = engine.voices.orEmpty()
-            .filter { it.locale.language == "ru" && !it.isNetworkConnectionRequired }
-            .sortedWith(compareByDescending<android.speech.tts.Voice> { it.quality }
-                .thenBy { it.name })
-        if (voices.isEmpty()) {
-            AlertDialog.Builder(this)
-                .setTitle("Нужен офлайн-голос")
-                .setMessage("На устройстве пока нет русского офлайн-голоса. Установи русские голосовые данные в настройках движка Android TTS. Онлайн-голоса MANA не выбирает.")
-                .setPositiveButton("Открыть настройки TTS") { _, _ ->
-                    runCatching { startActivity(Intent("com.android.settings.TTS_SETTINGS")) }
-                }
-                .setNegativeButton("Позже", null)
-                .show()
-            return
-        }
-        val labels = listOf("Автоматически — лучший доступный русский голос") +
-            voices.map { voice -> "${voice.name} · офлайн · качество ${voice.quality}" }
-        val prefs = getSharedPreferences("mana.settings", MODE_PRIVATE)
-        val current = prefs.getString("mana_voice_name", null)
-        val selected = voices.indexOfFirst { it.name == current }.let { if (it < 0) 0 else it + 1 }
         AlertDialog.Builder(this)
-            .setTitle("Голос Маны")
-            .setSingleChoiceItems(labels.toTypedArray(), selected) { dialog, which ->
-                val chosen = if (which == 0) {
-                    prefs.edit().remove("mana_voice_name").apply()
-                    ManaVoiceProfile.choose(voices.map { voice ->
-                        ManaVoiceProfile.Candidate(voice.name, voice.locale.toLanguageTag(), voice.quality, voice.isNetworkConnectionRequired)
-                    })?.let { candidate -> voices.firstOrNull { it.name == candidate.name } }
-                } else {
-                    voices[which - 1].also { prefs.edit().putString("mana_voice_name", it.name).apply() }
-                }
-                if (chosen != null) {
-                    engine.voice = chosen
-                    engine.setLanguage(Locale("ru", "RU"))
-                    speakResponse("Привет. Я Мана. Теперь ты слышишь мой выбранный голос.")
-                }
-                dialog.dismiss()
+            .setTitle("Голос Маны • офлайн")
+            .setMessage(message)
+            .setPositiveButton("Проверить голос") { _, _ ->
+                speakResponse("Привет. Я Мана. Мой голос работает локально, даже если телефон не подключён к интернету.")
             }
             .setNegativeButton("Закрыть", null)
             .show()
@@ -1763,10 +1689,24 @@ class MainActivity : Activity() {
     private fun speakResponse(text: String) {
         val clean = text.trim()
         if (!voiceReady || clean.isEmpty()) return
-        ManaAvatar3DView.isSpeaking = true
-        ManaAvatarState.isSpeaking = true
-        val result = textToSpeech?.speak(clean, TextToSpeech.QUEUE_FLUSH, null, "mana-response-${System.nanoTime()}")
-        if (result == TextToSpeech.ERROR) { ManaAvatar3DView.isSpeaking = false; ManaAvatarState.isSpeaking = false }
+        offlineVoiceEngine?.speak(
+            clean,
+            onStarted = {
+                runOnUiThread {
+                    ManaAvatar3DView.isSpeaking = true
+                    ManaAvatarState.isSpeaking = true
+                }
+            },
+            onFinished = {
+                runOnUiThread {
+                    ManaAvatar3DView.isSpeaking = false
+                    ManaAvatarState.isSpeaking = false
+                }
+            },
+            onError = { error ->
+                android.util.Log.e("MANA-Voice", "Offline speech synthesis failed", error)
+            }
+        )
     }
 
     private fun startVoiceInput() {
@@ -1893,8 +1833,7 @@ class MainActivity : Activity() {
         ManaAvatarState.isSpeaking = false
         speechRecognizer?.destroy()
         speechRecognizer = null
-        textToSpeech?.stop()
-        textToSpeech?.shutdown()
+        offlineVoiceEngine?.close()
         super.onDestroy()
     }
 
