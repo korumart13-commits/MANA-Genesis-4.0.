@@ -290,12 +290,11 @@ jobs:
           mkdir -p "$PACKAGE"
           cp -a "distribution/Ω/." "$PACKAGE/"
           # One game-style root: preserve the entire tracked MANA source tree beside the runtime payload.
-          mkdir -p "$PACKAGE/Source/Project" "$PACKAGE/Launcher" "$PACKAGE/Engine/Runtime" "$PACKAGE/Data/Memory" "$PACKAGE/Data/Knowledge" "$PACKAGE/Data/Diary" "$PACKAGE/Data/Saves" "$PACKAGE/Assets/Textures" "$PACKAGE/Assets/Materials" "$PACKAGE/Assets/UI" "$PACKAGE/Audio/SFX" "$PACKAGE/Modules" "$PACKAGE/Config" "$PACKAGE/Updates" "$PACKAGE/Logs" "$PACKAGE/Docs"
+          mkdir -p "$PACKAGE/Source/Project" "$PACKAGE/Launcher" "$PACKAGE/Engine/Brain" "$PACKAGE/Engine/Runtime" "$PACKAGE/Engine/Inference/Models/Gemma" "$PACKAGE/Data/Memory" "$PACKAGE/Data/Knowledge" "$PACKAGE/Data/Diary" "$PACKAGE/Data/Saves" "$PACKAGE/Assets/Avatar" "$PACKAGE/Assets/Textures" "$PACKAGE/Assets/Materials" "$PACKAGE/Assets/UI" "$PACKAGE/Audio/Voice/ru-RU" "$PACKAGE/Audio/SFX" "$PACKAGE/Worlds/MANA-Living-World" "$PACKAGE/Games/Minecraft-Bedrock" "$PACKAGE/Modules" "$PACKAGE/Config" "$PACKAGE/Updates" "$PACKAGE/Logs" "$PACKAGE/Docs"
           git archive HEAD | tar -x -C "$PACKAGE/Source/Project"
           cp "distribution/Ω/MANA_OMEGA_ENTRY.json" "$PACKAGE/MANA_OMEGA_ENTRY.json"
           cp "distribution/Ω/START_HERE_RU.md" "$PACKAGE/START_HERE_RU.md"
-          mkdir -p "$PACKAGE/installer" "$PACKAGE/models/Gemma" "$PACKAGE/source" "$PACKAGE/docs" "$PACKAGE/app" "$PACKAGE/avatar/characters" "$PACKAGE/engine" "$PACKAGE/game" "$PACKAGE/firmware/system" "$PACKAGE/firmware/device"
-          cp launcher/app/build/outputs/apk/debug/app-debug.apk "$PACKAGE/app/MANA-Omega-debug.apk"
+          mkdir -p "$PACKAGE/models/Gemma" "$PACKAGE/docs" "$PACKAGE/avatar/characters" "$PACKAGE/engine" "$PACKAGE/game" "$PACKAGE/firmware/system" "$PACKAGE/firmware/device"
           cp -a launcher/app/build/generated/manaVoiceAssets/mana_voice/. "$PACKAGE/voice/ru/"
           cp launcher/app/src/main/assets/mana_avatar_genesis*.gltf "$PACKAGE/avatar/characters/"
           cp -a engine/mana-brain "$PACKAGE/engine/"
@@ -326,8 +325,13 @@ jobs:
           NOTICE
           test "$(stat -c '%s' "$MODEL")" -gt 2500000000
           test "$(stat -c '%s' "$MODEL")" -lt 3000000000
-          cp launcher/app/build/outputs/apk/debug/app-debug.apk "$PACKAGE/installer/INSTALL_MANA_XZ.apk"
           cp launcher/app/build/outputs/apk/debug/app-debug.apk "$PACKAGE/Launcher/INSTALL_MANA_XZ.apk"
+          cp -a engine/mana-brain/. "$PACKAGE/Engine/Brain/"
+          cp -a launcher/app/src/main/assets/mana_avatar_genesis*.gltf "$PACKAGE/Assets/Avatar/"
+          cp -a launcher/app/build/generated/manaVoiceAssets/mana_voice/. "$PACKAGE/Audio/Voice/ru-RU/"
+          cp -a game/mana-xz-world/. "$PACKAGE/Worlds/MANA-Living-World/"
+          cp -a game/minecraft-bedrock/. "$PACKAGE/Games/Minecraft-Bedrock/"
+          cp "$MODEL" "$PACKAGE/Engine/Inference/Models/Gemma/gemma-4-E2B-it.litertlm" 2>/dev/null || true
           cat > "$PACKAGE/models/Gemma/MODEL_MANIFEST_RU.txt" <<'EOF'
           Локальная модель MANA Genesis 4.0
           Имя файла: gemma-4-E2B-it.litertlm
@@ -340,17 +344,20 @@ jobs:
           После явного согласия владелец выбирает этот файл в системном Android-пикере; MANA копирует его в закрытое хранилище, проверяет размер и SHA-256, затем подключает.
           Альтернативно MANA может загрузить ту же закреплённую версию через Android Download Manager по Wi-Fi.
           EOF
-          git archive --format=zip --output="$PACKAGE/source/MANA-XZ-source-project.zip" HEAD
           cp launcher/LOCAL_MODEL_SETUP.md "$PACKAGE/docs/LOCAL_MODEL_SETUP_RU.md"
           cp docs/MANA_GENESIS_4_0_NON_NEGOTIABLE_REQUIREMENTS_AND_GAPS.md "$PACKAGE/docs/MASTER_REQUIREMENTS_RU.md"
           cat > "$PACKAGE/README-FIRST-RU.txt" <<'EOF'
-          MANA XZ — Ω / MANA Genesis 4.0 — полный Android-комплект для realme C85 4G / RMX5566
+          MANA Genesis 4.0 — Константа Омега / MANA Design Launcher
+          Цель: realme C85 4G / RMX5566 / Android 16 / ARM64.
 
-          1. Полностью распакуй архив. В корне находится папка Ω.
-          2. Установи installer/INSTALL_MANA_XZ.apk и подтверди стандартный запрос Android.
-          3. Запусти MANA. В мастере локальной модели выбери models/Gemma/gemma-4-E2B-it.litertlm.
-          4. Дождись копирования в приватное хранилище и полной проверки SHA-256.
-          5. После импорта локальный Gemma runtime работает без интернета; интернет нужен для исследований и включённых облачных сервисов.
+          1. Распакуй архив полностью. Все компоненты находятся внутри одной папки Ω.
+          2. Установи Launcher/INSTALL_MANA_XZ.apk.
+          3. Открой MANA Design Launcher и выполни первоначальную настройку.
+          4. Подтверди лицензию Gemma и выбери Engine/Inference/Models/Gemma/gemma-4-E2B-it.litertlm в Android-пикере.
+          5. Дождись импорта и проверки SHA-256. После успешной загрузки модель можно использовать офлайн.
+          6. 3D-аватар и Piper Irina находятся в APK и дублируются в Assets/Avatar и Audio/Voice/ru-RU для комплекта и аудита.
+
+          Центральная карта: MANA_OMEGA_ENTRY.json. Контрольные суммы: SHA256SUMS.txt.
 
           ВАЖНО:
           - LiteRT-LM runtime и Piper Irina offline voice входят в APK; файл Gemma (2,588,147,712 байт) находится отдельно в models/Gemma.
@@ -387,21 +394,21 @@ jobs:
           Это полный Android-комплект MANA XZ / MANA Genesis 4.0.
 
           ## Что находится в папке
-          - app/MANA-Omega-debug.apk и installer/INSTALL_MANA_XZ.apk — один и тот же устанавливаемый debug APK.
+          - Launcher/INSTALL_MANA_XZ.apk — единственная точка установки Android-приложения MANA Design Launcher.
           - LiteRT-LM Android runtime, sherpa-onnx Piper runtime и Filament/SceneView входят в APK.
           - models/Gemma/gemma-4-E2B-it.litertlm — локальные веса Gemma 4 E2B IT (2,588,147,712 байт); импортируются один раз через Android file picker.
-          - voice/ru/ — ресурсы Piper Irina; те же ресурсы упакованы в APK.
-          - avatar/characters/ — glTF-модели постоянного 3D-аватара МАНЫ; они также находятся в APK.
-          - engine/ — исходники MANA Brain, OS Core и экспериментальной llama.cpp ветки.
-          - game/ — Godot world source, Minecraft Bedrock source и MANA_Companion_BP.mcpack.
+          - Audio/Voice/ru-RU/ — ресурсы Piper Irina; они также упакованы в APK.
+          - Assets/Avatar/ — glTF-модели постоянного 3D-аватара МАНЫ; они также находятся в APK.
+          - Engine/Brain/ и Source/Project/ — исходники MANA Brain и полный исходный проект.
+          - Worlds/ и Games/ — проект MANA Living World и Minecraft Bedrock companion pack.
           - firmware/ — AOSP local manifest, MANA system modules и RMX5566RU профиль для будущей ROM-интеграции.
           - design/ и config/ — визуальная система, настройки и статусы всех модулей.
           - source/MANA-XZ-source-project.zip — полный исходный проект на commit этого CI запуска.
 
           ## Установка
           1. Распакуй архив на телефоне; желательно иметь около 8 ГБ свободного места.
-          2. Установи installer/INSTALL_MANA_XZ.apk.
-          3. Запусти MANA и выбери models/Gemma/gemma-4-E2B-it.litertlm в системном Android file picker.
+          2. Установи Launcher/INSTALL_MANA_XZ.apk.
+          3. Запусти MANA Design Launcher и выбери Engine/Inference/Models/Gemma/gemma-4-E2B-it.litertlm в системном Android file picker.
           4. MANA проверит размер и SHA-256 и импортирует модель в приватное хранилище.
           5. После успешного импорта основной диалог работает локально. Голос Piper и 3D-аватар уже находятся в APK.
 
