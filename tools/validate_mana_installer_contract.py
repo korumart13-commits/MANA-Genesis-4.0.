@@ -122,3 +122,10 @@ for emulator_workflow in (root / '.github/workflows/mana-android-emulators.yml',
     emulator_text = emulator_workflow.read_text()
     assert 'disable-linux-hw-accel: false' in emulator_text, f'{emulator_workflow} must allow KVM acceleration'
     assert 'pre-emulator-launch-script:' in emulator_text and 'chmod 666 /dev/kvm' in emulator_text, f'{emulator_workflow} must initialize KVM/ADB before boot'
+
+emulator_smoke_script = root / 'tools/run_mana_emulator_smoke.sh'
+assert emulator_smoke_script.is_file(), 'The emulator launch smoke script must be a tracked source file'
+assert 'script: bash "$GITHUB_WORKSPACE/tools/run_mana_emulator_smoke.sh"' in (root / '.github/workflows/mana-emulator-smoke.yml').read_text()
+assert 'connectedDebugAndroidTest' in emulator_smoke_script.read_text()
+assert 'adb install -r "$APK"' in emulator_smoke_script.read_text()
+assert 'adb shell monkey -p com.mana.launcher' in emulator_smoke_script.read_text()

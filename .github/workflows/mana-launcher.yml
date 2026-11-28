@@ -13,6 +13,7 @@ on:
       - '.github/workflows/mana-launcher.yml'
       - '.github/workflows/mana-android-build.yml'
       - '.github/workflows/mana-emulator-smoke.yml'
+      - 'tools/run_mana_emulator_smoke.sh'
       - 'tools/validate_mana_gltf.py'
       - 'tools/validate_mana_installer_contract.py'
       - 'tools/validate_mana_game_pack.py'
