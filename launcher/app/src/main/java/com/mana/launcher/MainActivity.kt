@@ -617,6 +617,11 @@ class MainActivity : Activity() {
         })
         hero.addView(intro, LinearLayout.LayoutParams(0, -2, 1f))
         content.addView(hero, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+        addDashboardCard(
+            "MANA как главный экран",
+            "Назначь MANA приложением главного экрана Android. Выбор подтверждается в системных настройках и его можно изменить обратно.",
+            "Выбрать MANA"
+        ) { openHomeAppSettings() }
 
         val statusRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         val battery = dashboardCard("УСТРОЙСТВО", "Android 16 • realme C85 4G", "Диагностика") {
@@ -752,6 +757,15 @@ class MainActivity : Activity() {
         }
         addDashboardCard("Разрешения MANA", "Управление разрешениями приложения через Android.", "Открыть разрешения") {
             startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+        }
+    }
+
+    private fun openHomeAppSettings() {
+        runCatching {
+            startActivity(Intent(Settings.ACTION_HOME_SETTINGS))
+        }.onFailure {
+            runCatching { startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)) }
+                .onFailure { showMessage("Открой настройки приложений Android и выбери MANA как приложение главного экрана.") }
         }
     }
 
