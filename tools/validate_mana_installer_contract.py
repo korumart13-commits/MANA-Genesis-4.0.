@@ -10,6 +10,8 @@ activity = (root / "launcher/app/src/main/java/com/mana/launcher/MainActivity.kt
 coordinator = (root / "launcher/app/src/main/java/com/mana/launcher/ManaOneTapSetupCoordinator.kt").read_text()
 catalog = (root / "launcher/app/src/main/java/com/mana/launcher/ManaModelCatalog.kt").read_text()
 setup_doc = (root / "launcher/LOCAL_MODEL_SETUP.md").read_text()
+wallpaper_studio = (root / "launcher/app/src/main/java/com/mana/launcher/ManaWallpaperStudioActivity.kt").read_text()
+wallpaper_worker = (root / "launcher/app/src/main/java/com/mana/launcher/ManaWallpaperWorker.kt").read_text()
 requirements = (root / "docs/MANA_GENESIS_4_0_NON_NEGOTIABLE_REQUIREMENTS_AND_GAPS.md").read_text()
 workflow = (root / ".github/workflows/mana-launcher.yml").read_text()
 
@@ -55,6 +57,12 @@ assert "models/Gemma/MODEL_MANIFEST_RU.txt" in workflow
 assert "SHA256SUMS.txt" in workflow
 assert "MANA-Omega-FULL-INSTALLER.zip" in workflow
 assert "MANA-Omega-FULL-INSTALLER" in workflow
+for wallpaper_source in (wallpaper_studio, wallpaper_worker):
+    assert "WallpaperManager.FLAG_LOCK" in wallpaper_source
+    assert "FLAG_SYSTEM" not in wallpaper_source
+assert "PeriodicWorkRequestBuilder<ManaWallpaperWorker>" in wallpaper_studio
+assert "coerceIn(15, 180)" in wallpaper_studio
+assert "coerceIn(15, 180)" in wallpaper_worker
 for required in (
     "private fun showContactIntelligence()",
     "private fun showSmartReceptionist()",
