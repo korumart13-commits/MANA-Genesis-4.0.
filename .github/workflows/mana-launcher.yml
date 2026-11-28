@@ -16,6 +16,7 @@ on:
       - 'tools/validate_mana_installer_contract.py'
       - 'tools/validate_mana_game_pack.py'
       - 'game/mana-xz-world/**'
+      - 'distribution/**'
       - 'tools/stage_mana_aosp_prebuilt.sh'
       - 'tools/test_stage_mana_aosp_prebuilt.sh'
       - 'tools/verify_mana_platform_signature.sh'
@@ -272,8 +273,20 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release/offline
-          PACKAGE="release/offline/MANA-XZ"
-          mkdir -p release/offline "$PACKAGE/installer" "$PACKAGE/models/Gemma" "$PACKAGE/source" "$PACKAGE/docs"
+          PACKAGE="release/offline/Ω"
+          mkdir -p "$PACKAGE"
+          cp -a "distribution/Ω/." "$PACKAGE/"
+          mkdir -p "$PACKAGE/installer" "$PACKAGE/models/Gemma" "$PACKAGE/source" "$PACKAGE/docs" "$PACKAGE/app" "$PACKAGE/avatar/characters" "$PACKAGE/engine"
+          cp launcher/app/build/outputs/apk/debug/app-debug.apk "$PACKAGE/app/MANA-Omega-debug.apk"
+          cp -a launcher/app/build/generated/manaVoiceAssets/mana_voice/. "$PACKAGE/voice/ru/"
+          cp launcher/app/src/main/assets/mana_avatar_genesis*.gltf "$PACKAGE/avatar/characters/"
+          cp -a engine/mana-brain "$PACKAGE/engine/"
+          cp -a os/core "$PACKAGE/engine/os-core/"
+          cp docs/MANA_XZ_MOBILE_UX_RESEARCH_AND_DESIGN_RU.md "$PACKAGE/docs/"
+          cp docs/MANA_GENESIS_4_0_COMPLETE_USER_VISION_RU.md "$PACKAGE/docs/"
+          cp docs/MANA_GENESIS_4_0_NON_NEGOTIABLE_REQUIREMENTS_AND_GAPS.md "$PACKAGE/docs/"
+          cp os/FULL_ROM_RELEASE_TARGET.md "$PACKAGE/docs/"
+          cp device/RMX5566RU_TARGET_PROFILE.md "$PACKAGE/docs/"
           MODEL="release/offline/Gemma4-E2B.litertlm"
           URL="https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/21c646194210256750db12cfa1e4fdf22bd3ddf1/gemma-4-E2B-it.litertlm"
           curl --fail --location --retry 5 --retry-all-errors --connect-timeout 30 --max-time 3600 "$URL" --output "$MODEL"
@@ -309,11 +322,11 @@ jobs:
           MANA XZ — полный установочный комплект (MANA Genesis 4.0) для realme C85 4G / RMX5566
 
           СТРУКТУРА:
-          installer/INSTALL_MANA_XZ.apk — единое приложение MANA XZ со встроенным мастером установки.
-          models/Gemma/gemma-4-E2B-it.litertlm — полный файл Gemma 4 E2B (2,588,147,712 байт).
+          app/MANA-Omega-debug.apk — APK приложения MANA XZ; installer/INSTALL_MANA_XZ.apk — копия для установки.
+          models/Gemma/gemma-4-E2B-it.litertlm — локальная модель Gemma 4 E2B (2,588,147,712 байт).
           models/Gemma/MODEL_MANIFEST_RU.txt — источник, лицензия и SHA-256 модели.
           models/Gemma/LICENSE-APACHE-2.0.txt и NOTICE.txt — лицензия и уведомление об авторстве Gemma 4.
-          source/MANA-XZ-source-project.zip — исходный проект этой сборки.
+          source/MANA-XZ-source-project.zip — полный исходный проект этой сборки. engine/ — исходники локального MANA Brain и OS core; voice/ru/ и avatar/characters/ — ресурсы, также встроенные в APK.
           docs/ — русская документация и обязательные требования проекта.
           SHA256SUMS.txt — контрольные суммы, включая сам файл Gemma.
 
@@ -322,7 +335,7 @@ jobs:
           2. Открой installer/INSTALL_MANA_XZ.apk и подтверди штатную установку Android.
           3. Запусти MANA и нажми главную кнопку «УСТАНОВИТЬ MANA XZ».
           4. Ознакомься с Apache License 2.0 в папке models/Gemma. В системном окне выбора Android укажи
-             models/Gemma/gemma-4-E2B-it.litertlm из распакованной папки.
+             Ω/models/Gemma/gemma-4-E2B-it.litertlm из распакованной папки.
           5. MANA скопирует модель в своё закрытое хранилище, проверит точный размер и SHA-256,
              затем автоматически подключит её к локальному движку LiteRT-LM.
           6. Если файл комплекта недоступен, выбери «Скачать по Wi-Fi» — загрузка возобновляется
@@ -357,9 +370,10 @@ jobs:
           Локальная генерация без интернета: НЕ ПРОВЕРЕНО
           Примечания / ошибки: __________________
           EOF
-          (cd "$PACKAGE" && sha256sum installer/INSTALL_MANA_XZ.apk models/Gemma/gemma-4-E2B-it.litertlm models/Gemma/LICENSE-APACHE-2.0.txt models/Gemma/NOTICE.txt models/Gemma/MODEL_MANIFEST_RU.txt source/MANA-XZ-source-project.zip docs/LOCAL_MODEL_SETUP_RU.md docs/MASTER_REQUIREMENTS_RU.md README-FIRST-RU.txt INSTALL_REPORT_TEMPLATE.txt > SHA256SUMS.txt)
-          (cd release/offline && zip -0 -q -r ../MANA-XZ-FULL-INSTALLER.zip MANA-XZ/)
-          sha256sum release/MANA-XZ-FULL-INSTALLER.zip > release/MANA-XZ-FULL-INSTALLER.zip.sha256
+          (cd "$PACKAGE" && find . -type f ! -path './SHA256SUMS.txt' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt)
+          (cd "$PACKAGE" && sha256sum --check SHA256SUMS.txt)
+          (cd release/offline && zip -0 -q -r ../MANA-Omega-FULL-INSTALLER.zip Ω/)
+          sha256sum release/MANA-Omega-FULL-INSTALLER.zip > release/MANA-XZ-FULL-INSTALLER.zip.sha256
 
       - name: Upload one-button MANA installer and source bundle
         uses: actions/upload-artifact@v4
