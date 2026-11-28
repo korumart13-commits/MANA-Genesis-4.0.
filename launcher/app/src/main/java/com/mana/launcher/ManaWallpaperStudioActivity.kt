@@ -96,6 +96,7 @@ class ManaWallpaperStudioActivity : Activity() {
                 System.currentTimeMillis().toInt()
             )
             WallpaperManager.getInstance(this).setBitmap(bitmap, null, true, flags)
+            getSharedPreferences(PREFS, MODE_PRIVATE).edit().putInt("target_flags", flags).apply()
             bitmap.recycle()
             status("Обои Маны установлены.")
         } catch (error: Exception) {
