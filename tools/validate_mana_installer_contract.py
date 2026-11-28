@@ -15,6 +15,10 @@ catalog = (root / "launcher/app/src/main/java/com/mana/launcher/ManaModelCatalog
 setup_doc = (root / "launcher/LOCAL_MODEL_SETUP.md").read_text()
 wallpaper_studio = (root / "launcher/app/src/main/java/com/mana/launcher/ManaWallpaperStudioActivity.kt").read_text()
 wallpaper_worker = (root / "launcher/app/src/main/java/com/mana/launcher/ManaWallpaperWorker.kt").read_text()
+avatar_studio = (root / "launcher/app/src/main/java/com/mana/launcher/ManaAvatarPreviewActivity.kt").read_text()
+control_center = (root / "launcher/app/src/main/java/com/mana/launcher/ManaControlCenterActivity.kt").read_text()
+android_manifest = (root / "launcher/app/src/main/AndroidManifest.xml").read_text()
+app_gradle = (root / "launcher/app/build.gradle.kts").read_text()
 requirements = (root / "docs/MANA_GENESIS_4_0_NON_NEGOTIABLE_REQUIREMENTS_AND_GAPS.md").read_text()
 workflow = (root / ".github/workflows/mana-launcher.yml").read_text()
 bootstrap = (root / "platform/bootstrap_aosp16.sh").read_text()
@@ -72,6 +76,25 @@ for wallpaper_source in (wallpaper_studio, wallpaper_worker):
 assert "PeriodicWorkRequestBuilder<ManaWallpaperWorker>" in wallpaper_studio
 assert "coerceIn(15, 180)" in wallpaper_studio
 assert "coerceIn(15, 180)" in wallpaper_worker
+for required in (
+    "MANA AVATAR STUDIO",
+    "avatar_outfit_index",
+    "avatar_accessory_enabled",
+    "ManaFloatingAvatarService",
+    "Settings.canDrawOverlays",
+):
+    assert required in avatar_studio, f"Avatar studio feature missing: {required}"
+for required in (
+    "MANA • CONTROL CENTER",
+    "ACTION_WIFI_SETTINGS",
+    "ACTION_BLUETOOTH_SETTINGS",
+    "ACTION_SECURITY_SETTINGS",
+    "ACTION_APPLICATION_DETAILS_SETTINGS",
+):
+    assert required in control_center, f"Control center feature missing: {required}"
+assert ".ManaControlCenterActivity" in android_manifest
+assert "androidx.compose.material3:material3" in app_gradle
+
 for required in (
     "private fun showContactIntelligence()",
     "private fun showSmartReceptionist()",
