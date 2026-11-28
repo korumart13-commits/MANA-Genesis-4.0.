@@ -1,28 +1,3 @@
-package com.mana.launcher
-
-import android.app.Activity
-import android.app.WallpaperManager
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.LinearGradient
-import android.graphics.Paint
-import android.graphics.Path
-import android.graphics.Shader
-import android.os.Bundle
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.TextView
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
-import java.util.concurrent.TimeUnit
-import kotlin.random.Random
-
-/**
- * Offline wallpaper studio. Artwork is generated locally from original vector-like
- * shapes; it does not pretend to run a diffusion model or capture the live 3D scene.
- */
 class ManaWallpaperStudioActivity : Activity() {
     private val background = 0xFF071426.toInt()
     private val foreground = 0xFFEAF4FF.toInt()
@@ -36,34 +11,37 @@ class ManaWallpaperStudioActivity : Activity() {
             setBackgroundColor(background)
         }
         root.addView(TextView(this).apply {
-            text = "MANA • ЖИВЫЕ ОБОИ"
-            textSize = 23f
+            text = "MANA • ОБОИ ЭКРАНА БЛОКИРОВКИ"
+            textSize = 21f
             setTextColor(accent)
         })
         root.addView(TextView(this).apply {
-            text = "Мана создаёт новые оригинальные изображения офлайн и может менять их по расписанию. Это локальная иллюстрация, не снимок 3D-модели и не генерация нейросетью."
+            text = "Мана сама создаёт новую иллюстрацию и обновляет только экран блокировки. Рабочий стол лаунчера не затрагивается. Генерация работает локально, без интернета."
             textSize = 14f
             setTextColor(foreground)
-            setPadding(0, 12, 0, 12)
+            setPadding(0, 12, 0, 16)
         })
         val ram = ManaResourceGovernor.snapshot(this)
         root.addView(TextView(this).apply {
-            text = "ОПЕРАТИВНАЯ ПАМЯТЬ\\nВсего: ${ram.totalRamMb} МБ • доступно: ${ram.availableRamMb} МБ\\nПамять приложения: ${ram.appPssMb} МБ\\nПрофиль: ${ram.recommendedProfile}"
-            textSize = 13f
+            text = "РАСХОД ПАМЯТИ • доступно ${ram.availableRamMb} МБ из ${ram.totalRamMb} МБ • приложение ${ram.appPssMb} МБ"
+            textSize = 12f
             setTextColor(0xFF9EDCFF.toInt())
-            setPadding(0, 0, 0, 18)
+            setPadding(0, 0, 0, 16)
         })
-        root.addView(button("Создать и поставить на главный экран") { applyWallpaper(WallpaperManager.FLAG_SYSTEM) })
-        root.addView(button("Создать и поставить на экран блокировки") { applyWallpaper(WallpaperManager.FLAG_LOCK) })
-        root.addView(button("Поставить на оба экрана") {
-            applyWallpaper(WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK)
-        })
-        root.addView(button(if (isRotationEnabled()) "Выключить ежедневную смену" else "Включить ежедневную смену") {
+        root.addView(button("Создать новую обложку сейчас") { applyLockWallpaper() })
+        root.addView(button(if (isRotationEnabled()) "Остановить автосмену" else "Запустить автосмену каждые 15 минут") {
             toggleRotation()
             recreate()
         })
+        root.addView(button("Изменить частоту • сейчас ${rotationMinutes()} мин") {
+            val next = when (rotationMinutes()) { 15 -> 30; 30 -> 60; 60 -> 180; else -> 15 }
+            getSharedPreferences(PREFS, MODE_PRIVATE).edit().putInt(KEY_INTERVAL, next).apply()
+            if (isRotationEnabled()) scheduleRotation()
+            android.widget.Toast.makeText(this, "Новая частота: каждые $next минут", android.widget.Toast.LENGTH_SHORT).show()
+            recreate()
+        })
         root.addView(TextView(this).apply {
-            text = "Автосмена: один раз в сутки (Android может отложить фоновую задачу ради батареи). Работает без сети. Для полноценной генерации фотореалистичных 3D-кадров понадобится отдельная локальная модель и интеграция Godot."
+            text = "Частота: 15 / 30 / 60 / 180 минут. Android ограничивает точное время фоновой работы и может задерживать обновление в режиме энергосбережения. Иллюстрации создаются процедурным офлайн-генератором MANA; это пока не нейросетевая генерация и не кадр из 3D-сцены."
             textSize = 12f
             setTextColor(0xFF9BB2CC.toInt())
             setPadding(0, 18, 0, 0)
@@ -79,35 +57,48 @@ class ManaWallpaperStudioActivity : Activity() {
     private fun isRotationEnabled(): Boolean =
         getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(KEY_ROTATION, false)
 
+    private fun rotationMinutes(): Long =
+        getSharedPreferences(PREFS, MODE_PRIVATE).getInt(KEY_INTERVAL, 15).toLong().coerceIn(15, 180)
+
+    private fun scheduleRotation() {
+        val interval = rotationMinutes()
+        val request = PeriodicWorkRequestBuilder<ManaWallpaperWorker>(interval, TimeUnit.MINUTES).build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            ManaWallpaperWorker.UNIQUE_WORK, ExistingPeriodicWorkPolicy.UPDATE, request
+        )
+    }
+
     private fun toggleRotation() {
         val work = WorkManager.getInstance(this)
         if (isRotationEnabled()) {
             work.cancelUniqueWork(ManaWallpaperWorker.UNIQUE_WORK)
             getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(KEY_ROTATION, false).apply()
-            status("Ежедневная смена обоев выключена.")
+            status("Автосмена обоев блокировки выключена.")
         } else {
-            val request = PeriodicWorkRequestBuilder<ManaWallpaperWorker>(24, TimeUnit.HOURS)
-                .setInitialDelay(24, TimeUnit.HOURS)
-                .build()
-            work.enqueueUniquePeriodicWork(ManaWallpaperWorker.UNIQUE_WORK, ExistingPeriodicWorkPolicy.KEEP, request)
-            getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(KEY_ROTATION, true).apply()
-            status("Ежедневная смена включена. Первое обновление запланировано примерно через сутки.")
+            getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                .putBoolean(KEY_ROTATION, true)
+                .putInt(KEY_TARGET_FLAGS, WallpaperManager.FLAG_LOCK)
+                .apply()
+            applyLockWallpaper()
+            scheduleRotation()
+            status("Мана будет создавать новые обои блокировки каждые ${rotationMinutes()} минут (насколько позволит Android).")
         }
     }
 
-    private fun applyWallpaper(flags: Int) {
+    private fun applyLockWallpaper() {
         try {
+            val interval = rotationMinutes() * 60_000L
             val bitmap = ManaOfflineWallpaperRenderer.render(
                 resources.displayMetrics.widthPixels.coerceAtLeast(720),
                 resources.displayMetrics.heightPixels.coerceAtLeast(1280),
-                System.currentTimeMillis().toInt()
+                (System.currentTimeMillis() / interval).toInt()
             )
-            WallpaperManager.getInstance(this).setBitmap(bitmap, null, true, flags)
-            getSharedPreferences(PREFS, MODE_PRIVATE).edit().putInt("target_flags", flags).apply()
+            WallpaperManager.getInstance(this).setBitmap(bitmap, null, true, WallpaperManager.FLAG_LOCK)
             bitmap.recycle()
-            status("Обои Маны установлены.")
+            getSharedPreferences(PREFS, MODE_PRIVATE).edit().putInt(KEY_TARGET_FLAGS, WallpaperManager.FLAG_LOCK).apply()
+            status("Новая обложка Маны установлена только на экран блокировки.")
         } catch (error: Exception) {
-            status("Не удалось установить обои: ${error.message ?: error.javaClass.simpleName}")
+            status("Не удалось обновить экран блокировки: ${error.message ?: error.javaClass.simpleName}")
         }
     }
 
@@ -117,7 +108,9 @@ class ManaWallpaperStudioActivity : Activity() {
 
     companion object {
         const val PREFS = "mana.wallpaper"
-        const val KEY_ROTATION = "daily_rotation"
+        const val KEY_ROTATION = "lockscreen_rotation"
+        const val KEY_INTERVAL = "lockscreen_interval_minutes"
+        const val KEY_TARGET_FLAGS = "target_flags"
     }
 }
 
