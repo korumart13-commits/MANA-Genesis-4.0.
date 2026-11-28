@@ -38,10 +38,12 @@ PR: [#22](https://github.com/korumart13-commits/MANA-Genesis-4.0./pull/22)
 Для более позднего кодового снимка `fc6795a20847da9dc48e4b176f767e508bbdb0d2` на момент последней проверки:
 - [JNI ARM64 build `46125402757`](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/46125402757) — **success**.
 - [OS Core JVM `46125402705`](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/46125402705) — **success**.
-- [Launcher Gradle `46125398366`](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/46125398366) — **in progress**.
-- Brain Engine `46125402770`, Engineering CI `46125402745`, Microworld, Soong/Binder, API 29/33/36 smoke и emulator install/launch matrix `46125398361` — **queued**; дублирующие PR runs для части workflow были cancelled при одновременных push/PR запусках, это не считается тестовым провалом.
-- После добавления audit log появился ещё один Engineering CI run `46125640446` на документальном head `982b5b6366e7d765a1df4e63da132c294fb5d367`; на момент проверки он **queued**.
-- Успех промежуточного SHA не выдаётся за успех последнего снимка; актуальные queued/in-progress проверки должны завершиться.
+- [Microworld Core JVM `46125402742`](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/46125402742) — **success**.
+- [Launcher Gradle `46125398366`](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/46125398366) — **in progress**, сейчас собирает unsigned release APK для последующей AOSP platform signing.
+- [Android API 36 smoke `46125398394`](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/46125398394) — **in progress** на шаге emulator install/launch; API 29 и 33 ещё queued.
+- Brain Engine `46125402770`, Engineering CI `46125402745` и emulator install/launch matrix `46125398361` — **queued**. Дублирующие PR runs для части workflow были cancelled при одновременных push/PR запусках, это не считается тестовым провалом.
+- После создания audit log запуски на документальном head `982b5b6366e7d765a1df4e63da132c294fb5d367` были queued; после обновления CI-раздела новые запуски для head `21bdfad1b4ab73e680813fade62bbb15fc4bd57d` тоже начались: OS Core JVM `46125765603` — **in progress**, остальные соответствующие runs пока **queued**.
+- Успех промежуточного SHA не выдаётся за успех последнего снимка; актуальные queued/in-progress проверки должны завершиться. Отдельно: unsigned APK не является обычным installable release APK или прошивкой.
 
 ## Матрица реального статуса
 
