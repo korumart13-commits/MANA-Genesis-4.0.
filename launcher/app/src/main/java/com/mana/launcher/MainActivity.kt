@@ -109,7 +109,9 @@ class MainActivity : Activity() {
     private var modelDownloadReceiverRegistered = false
     private val modelDownloadReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == DownloadManager.ACTION_DOWNLOAD_COMPLETE) {
+            val downloadId = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L) ?: -1L
+            if (intent?.action == DownloadManager.ACTION_DOWNLOAD_COMPLETE &&
+                modelCatalog?.isTrackedDownload(downloadId) == true) {
                 activateCompletedModelDownload()
             }
         }
