@@ -21,7 +21,6 @@ object ManaResourceGovernor {
 
     fun canLoadModel(context: Context, modelFile: java.io.File): Boolean {
         val state = snapshot(context)
-        val modelMb = (modelFile.length() / (1024L * 1024L)).coerceAtLeast(1L)
         // LiteRT-LM memory-maps a significant part of the quantized weights. Requiring
         // twice the on-disk file size would incorrectly reject many 8 GB phones.
         val minimumFreeMb = minimumAvailableRamMbForModel(modelFile.length())
