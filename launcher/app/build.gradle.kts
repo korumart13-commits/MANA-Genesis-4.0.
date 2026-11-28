@@ -14,8 +14,8 @@ android {
         applicationId = "com.mana.launcher"
         minSdk = 29
         targetSdk = 36
-        versionCode = 4
-        versionName = "4.0.3"
+        versionCode = 5
+        versionName = "4.0.4"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {
