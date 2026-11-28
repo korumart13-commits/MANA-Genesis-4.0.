@@ -294,7 +294,7 @@ jobs:
           git archive HEAD | tar -x -C "$PACKAGE/Source/Project"
           cp "distribution/Ω/MANA_OMEGA_ENTRY.json" "$PACKAGE/MANA_OMEGA_ENTRY.json"
           cp "distribution/Ω/START_HERE_RU.md" "$PACKAGE/START_HERE_RU.md"
-          mkdir -p "$PACKAGE/models/Gemma" "$PACKAGE/docs" "$PACKAGE/avatar/characters" "$PACKAGE/engine" "$PACKAGE/game" "$PACKAGE/firmware/system" "$PACKAGE/firmware/device"
+          mkdir -p "$PACKAGE/docs" "$PACKAGE/avatar/characters" "$PACKAGE/engine" "$PACKAGE/game" "$PACKAGE/firmware/system" "$PACKAGE/firmware/device"
           cp launcher/app/src/main/assets/mana_avatar_genesis*.gltf "$PACKAGE/avatar/characters/"
           cp -a engine/mana-brain "$PACKAGE/engine/"
           cp -a os/core "$PACKAGE/engine/os-core/"
@@ -313,11 +313,10 @@ jobs:
           URL="https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/21c646194210256750db12cfa1e4fdf22bd3ddf1/gemma-4-E2B-it.litertlm"
           curl --fail --location --retry 5 --retry-all-errors --connect-timeout 30 --max-time 3600 "$URL" --output "$MODEL"
           echo "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c  $MODEL" | sha256sum --check -
-          cp "$MODEL" "$PACKAGE/models/Gemma/gemma-4-E2B-it.litertlm"
           cp "$MODEL" "$PACKAGE/Engine/Inference/Models/Gemma/gemma-4-E2B-it.litertlm"
           test "$(stat -c '%s' "$PACKAGE/models/Gemma/gemma-4-E2B-it.litertlm")" = "2588147712"
-          curl --fail --location --retry 5 --connect-timeout 30 --max-time 120 https://www.apache.org/licenses/LICENSE-2.0.txt --output "$PACKAGE/models/Gemma/LICENSE-APACHE-2.0.txt"
-          cat > "$PACKAGE/models/Gemma/NOTICE.txt" <<'NOTICE'
+          curl --fail --location --retry 5 --connect-timeout 30 --max-time 120 https://www.apache.org/licenses/LICENSE-2.0.txt --output "$PACKAGE/Engine/Inference/Models/Gemma/LICENSE-APACHE-2.0.txt"
+          cat > "$PACKAGE/Engine/Inference/Models/Gemma/NOTICE.txt" <<'NOTICE'
           Gemma 4 E2B instruction-tuned model weights by Google DeepMind.
           LiteRT-LM package published by litert-community.
           Licensed under the Apache License, Version 2.0; see LICENSE-APACHE-2.0.txt.
@@ -331,7 +330,7 @@ jobs:
           cp -a launcher/app/build/generated/manaVoiceAssets/mana_voice/. "$PACKAGE/Audio/Voice/ru-RU/"
           cp -a game/mana-xz-world/. "$PACKAGE/Worlds/MANA-Living-World/"
           cp -a game/minecraft-bedrock/. "$PACKAGE/Games/Minecraft-Bedrock/"
-          cat > "$PACKAGE/models/Gemma/MODEL_MANIFEST_RU.txt" <<'EOF'
+          cat > "$PACKAGE/Engine/Inference/Models/Gemma/MODEL_MANIFEST_RU.txt" <<'EOF'
           Локальная модель MANA Genesis 4.0
           Имя файла: gemma-4-E2B-it.litertlm
           Размер: 2 588 147 712 байт (около 2,59 ГБ)
@@ -339,7 +338,7 @@ jobs:
           Источник: https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm
           Закреплённый файл: https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/21c646194210256750db12cfa1e4fdf22bd3ddf1/gemma-4-E2B-it.litertlm
           Лицензия модели Gemma 4: Apache License 2.0; копия лицензии находится в LICENSE-APACHE-2.0.txt.
-          Полный файл модели включён в models/Gemma/gemma-4-E2B-it.litertlm внутри этого ZIP.
+          Полный файл модели включён в Engine/Inference/Models/Gemma/gemma-4-E2B-it.litertlm внутри этого ZIP.
           После явного согласия владелец выбирает этот файл в системном Android-пикере; MANA копирует его в закрытое хранилище, проверяет размер и SHA-256, затем подключает.
           Альтернативно MANA может загрузить ту же закреплённую версию через Android Download Manager по Wi-Fi.
           EOF
@@ -395,7 +394,7 @@ jobs:
           ## Что находится в папке
           - Launcher/INSTALL_MANA_XZ.apk — единственная точка установки Android-приложения MANA Design Launcher.
           - LiteRT-LM Android runtime, sherpa-onnx Piper runtime и Filament/SceneView входят в APK.
-          - models/Gemma/gemma-4-E2B-it.litertlm — локальные веса Gemma 4 E2B IT (2,588,147,712 байт); импортируются один раз через Android file picker.
+          - Engine/Inference/Models/Gemma/gemma-4-E2B-it.litertlm — локальные веса Gemma 4 E2B IT (2,588,147,712 байт); импортируются один раз через Android file picker.
           - Audio/Voice/ru-RU/ — ресурсы Piper Irina; они также упакованы в APK.
           - Assets/Avatar/ — glTF-модели постоянного 3D-аватара МАНЫ; они также находятся в APK.
           - Engine/Brain/ и Source/Project/ — исходники MANA Brain и полный исходный проект.
@@ -423,7 +422,7 @@ jobs:
           Не прошивать содержимое firmware/ и не копировать его в системные разделы Android.
           EOF
           APK_SHA256="$(sha256sum "$PACKAGE/app/MANA-Omega-debug.apk" | awk '{print $1}')"
-          MODEL_SHA256="$(sha256sum "$PACKAGE/models/Gemma/gemma-4-E2B-it.litertlm" | awk '{print $1}')"
+          MODEL_SHA256="$(sha256sum "$PACKAGE/Engine/Inference/Models/Gemma/gemma-4-E2B-it.litertlm" | awk '{print $1}')"
           cat > "$PACKAGE/BUILD_REPORT_RU.txt" <<EOF
           MANA XZ — Ω build report
           Branch: $GITHUB_REF_NAME
@@ -431,7 +430,7 @@ jobs:
           GitHub Actions run: $GITHUB_RUN_ID
           APK: app/MANA-Omega-debug.apk
           APK SHA-256: $APK_SHA256
-          Gemma file: models/Gemma/gemma-4-E2B-it.litertlm
+          Gemma file: Engine/Inference/Models/Gemma/gemma-4-E2B-it.litertlm
           Gemma SHA-256: $MODEL_SHA256
           Piper archive SHA-256 pinned by Gradle: 1fc0f54e5e084fe287c07909f2f6e0ba6d857864cf800e3ab80286a4e8233008
           Checks completed before packaging: MANA Brain tests, OS Core tests, Android app unit tests, debug APK build, unsigned release build, Gemma file size/SHA-256 verification, Piper archive SHA-256 verification, source/package contract validation.
