@@ -116,3 +116,9 @@ assert default_settings["autonomy"]["level"] == "maximum"
 assert default_settings["integrations"]["requiresGoogleMobileServices"] is False
 for required in ("node --check game/minecraft-bedrock/MANA_Companion_BP/scripts/main.js", "MANA_Companion_BP.mcpack", 'cat > "$PACKAGE/README_RU.md"', 'cat > "$PACKAGE/BUILD_REPORT_RU.txt"', "game/minecraft-bedrock/**", "compression-level: 0"):
     assert required in workflow, f"Omega archive contract missing: {required}"
+
+assert '.github/workflows/mana-android-build.yml' in workflow
+for emulator_workflow in (root / '.github/workflows/mana-android-emulators.yml', root / '.github/workflows/mana-emulator-smoke.yml'):
+    emulator_text = emulator_workflow.read_text()
+    assert 'disable-linux-hw-accel: false' in emulator_text, f'{emulator_workflow} must allow KVM acceleration'
+    assert 'pre-emulator-launch-script:' in emulator_text and 'chmod 666 /dev/kvm' in emulator_text, f'{emulator_workflow} must initialize KVM/ADB before boot'

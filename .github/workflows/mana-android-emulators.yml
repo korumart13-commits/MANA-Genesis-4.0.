@@ -22,6 +22,7 @@ jobs:
   android-compatibility:
     name: Android API ${{ matrix.api-level }} compatibility smoke
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -71,6 +72,10 @@ jobs:
           profile: pixel_2
           disable-animations: true
           emulator-boot-timeout: 1200
+          disable-linux-hw-accel: false
+          pre-emulator-launch-script: |
+            sudo chmod 666 /dev/kvm 2>/dev/null || true
+            adb start-server
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -memory 3072 -cores 2
           script: cd launcher && gradle --no-daemon :app:connectedDebugAndroidTest --stacktrace
 

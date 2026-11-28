@@ -11,6 +11,7 @@ on:
       - 'engine/mana-brain/**'
       - 'os/core/**'
       - '.github/workflows/mana-launcher.yml'
+      - '.github/workflows/mana-android-build.yml'
       - '.github/workflows/mana-emulator-smoke.yml'
       - 'tools/validate_mana_gltf.py'
       - 'tools/validate_mana_installer_contract.py'
@@ -37,6 +38,7 @@ on:
       - 'game/mana-xz-world/**'
       - 'game/minecraft-bedrock/**'
       - 'distribution/**'
+      - '.github/workflows/mana-android-build.yml'
   workflow_dispatch:
 
 permissions:

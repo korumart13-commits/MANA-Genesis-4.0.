@@ -39,3 +39,6 @@ LiteRT-LM runtime находится внутри APK; файл Gemma — отд
 - Порог MANA для запуска локальной модели — ориентировочно 3 548 MB доступной физической RAM по внутренней консервативной оценке. Это не официальное требование Gemma и не заменяет тест на RMX5566. Динамическое расширение RAM не считается физической памятью.
 
 Не копировать `firmware/` в системный раздел и не пытаться прошивать телефон этим ZIP.
+
+
+CI also inspects the APK archive itself for the LiteRT-LM native runtime, Piper ONNX voice assets, eSpeak data and the MANA glTF avatar. The AOSP bootstrap/manifest is pinned to the `Final` development branch snapshot; `main` remains untouched.
