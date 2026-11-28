@@ -75,6 +75,7 @@
         <activity
             android:name=".ManaAvatarPreviewActivity"
             android:exported="false" />
+        <activity android:name=".ManaControlCenterActivity" android:exported="false" />
         <activity android:name=".ManaSystemStatusActivity" android:exported="false" />
         <activity android:name=".ManaDiagnosticsActivity" android:exported="false" />
         <provider
