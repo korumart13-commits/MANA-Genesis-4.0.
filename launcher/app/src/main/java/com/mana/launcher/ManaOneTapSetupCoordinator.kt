@@ -8,6 +8,9 @@ import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.nio.file.AtomicMoveNotSupportedException
 
 /**
  * Idempotent one-action bootstrap for the portable MANA APK.
@@ -166,13 +169,22 @@ class ManaOneTapSetupCoordinator(context: Context) {
             stream.write(contents.toByteArray(StandardCharsets.UTF_8))
             stream.fd.sync()
         }
-        if (reportFile.exists() && !reportFile.delete()) {
+        try {
+            try {
+                Files.move(
+                    temp.toPath(), reportFile.toPath(),
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING
+                )
+            } catch (_: AtomicMoveNotSupportedException) {
+                Files.move(temp.toPath(), reportFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
+        } catch (error: Exception) {
             temp.delete()
-            error("Cannot replace previous MANA setup report")
-        }
-        if (!temp.renameTo(reportFile)) {
-            temp.delete()
-            error("Cannot publish MANA setup report")
+            throw IllegalStateException(
+                "Unable to publish MANA setup report; the previous report is preserved.",
+                error
+            )
         }
     }
 }
