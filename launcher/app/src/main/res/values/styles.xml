@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Samsung One UI-inspired visual language with MANA's midnight-blue identity. -->
+    <!-- Android-first dark navy theme for MANA XZ Omega. -->
     <style name="ManaOneUiTheme" parent="@android:style/Theme.Material.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:colorAccent">#54C8F5</item>
