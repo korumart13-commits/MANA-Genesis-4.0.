@@ -31,6 +31,8 @@ on:
       - '.github/workflows/mana-launcher.yml'
       - '.github/workflows/mana-emulator-smoke.yml'
       - 'tools/validate_mana_installer_contract.py'
+      - 'tools/validate_mana_game_pack.py'
+      - 'game/mana-xz-world/**'
   workflow_dispatch:
 
 permissions:
@@ -218,6 +220,20 @@ jobs:
           done
       - name: Validate MANA XZ game companion package
         run: python3 tools/validate_mana_game_pack.py
+      - name: Package standalone MANA XZ game source
+        run: |
+          mkdir -p release
+          zip -qr release/MANA-XZ-GAME-PACK.zip game/mana-xz-world
+          sha256sum release/MANA-XZ-GAME-PACK.zip > release/MANA-XZ-GAME-PACK.zip.sha256
+      - name: Upload standalone MANA XZ game source
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-XZ-GAME-PACK
+          path: |
+            release/MANA-XZ-GAME-PACK.zip
+            release/MANA-XZ-GAME-PACK.zip.sha256
+          if-no-files-found: error
+          retention-days: 30
       - name: Test canonical MANA Brain and OS core
         working-directory: launcher
         run: gradle --no-daemon :brain:test :core:test
