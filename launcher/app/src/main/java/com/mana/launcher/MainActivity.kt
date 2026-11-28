@@ -650,6 +650,11 @@ class MainActivity : Activity() {
             setPadding(dp(2), dp(13), 0, dp(8))
         })
         addDashboardCard(
+            "3D-аватар MANA",
+            "Одна постоянная внешность, выбор одежды и аксессуаров, выражения лица и плавающий аватар по разрешению Android.",
+            "Открыть студию аватара"
+        ) { startActivity(Intent(this, ManaAvatarPreviewActivity::class.java)) }
+        addDashboardCard(
             "Экран блокировки MANA",
             "Предпросмотр оформления, времени, аватара и безопасного перехода к системной разблокировке.",
             "Посмотреть экран блокировки"
