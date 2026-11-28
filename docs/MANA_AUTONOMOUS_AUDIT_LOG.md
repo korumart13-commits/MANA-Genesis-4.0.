@@ -28,13 +28,20 @@ PR: [#22](https://github.com/korumart13-commits/MANA-Genesis-4.0./pull/22)
 - [MANA Brain Engine — JVM verification](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/46125053080)
 - [MANA llama.cpp JNI — Android ARM64 build](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/46125053032)
 - [Soong and Binder integration contract](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/46125053067)
+- [MANA Engineering CI](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/46125053060)
+
+Для проверки hardening workflow:
+- Первичный run `46124755303` завершился ошибкой только на записи machine-readable diagnostics и загрузке этого отчёта. Причина была в shell escaping в YAML.
+- После исправления escaping [push run `46124835779`](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/46124835779) прошёл полностью, включая отдельный OIDC provenance-attestation job.
+- [PR run `46125268933`](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/46125268933) прошёл validation, JVM tests и JAR build; attestation был корректно пропущен для pull_request.
 
 Для более позднего кодового снимка `fc6795a20847da9dc48e4b176f767e508bbdb0d2` на момент последней проверки:
-- JNI ARM64 build `46125402757` — **in progress**.
-- OS Core JVM `46125402705` — **in progress**.
-- Brain Engine, Microworld, Launcher Gradle, Engineering CI, Soong/Binder и API 29/33/36 smoke — **queued**.
-- Emulator install/launch matrix `46125398361` — **queued**.
-- На этих новых запусках ещё не получено окончательное заключение. Успех промежуточного SHA не выдаётся за успех последнего снимка.
+- [JNI ARM64 build `46125402757`](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/46125402757) — **success**.
+- [OS Core JVM `46125402705`](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/46125402705) — **success**.
+- [Launcher Gradle `46125398366`](https://github.com/korumart13-commits/MANA-Genesis-4.0./actions/runs/46125398366) — **in progress**.
+- Brain Engine `46125402770`, Engineering CI `46125402745`, Microworld, Soong/Binder, API 29/33/36 smoke и emulator install/launch matrix `46125398361` — **queued**; дублирующие PR runs для части workflow были cancelled при одновременных push/PR запусках, это не считается тестовым провалом.
+- После добавления audit log появился ещё один Engineering CI run `46125640446` на документальном head `982b5b6366e7d765a1df4e63da132c294fb5d367`; на момент проверки он **queued**.
+- Успех промежуточного SHA не выдаётся за успех последнего снимка; актуальные queued/in-progress проверки должны завершиться.
 
 ## Матрица реального статуса
 
