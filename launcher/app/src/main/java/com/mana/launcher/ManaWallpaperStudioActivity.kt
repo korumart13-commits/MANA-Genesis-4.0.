@@ -44,7 +44,14 @@ class ManaWallpaperStudioActivity : Activity() {
             text = "Мана создаёт новые оригинальные изображения офлайн и может менять их по расписанию. Это локальная иллюстрация, не снимок 3D-модели и не генерация нейросетью."
             textSize = 14f
             setTextColor(foreground)
-            setPadding(0, 12, 0, 18)
+            setPadding(0, 12, 0, 12)
+        })
+        val ram = ManaResourceGovernor.snapshot(this)
+        root.addView(TextView(this).apply {
+            text = "ОПЕРАТИВНАЯ ПАМЯТЬ\\nВсего: ${ram.totalRamMb} МБ • доступно: ${ram.availableRamMb} МБ\\nПамять приложения: ${ram.appPssMb} МБ\\nПрофиль: ${ram.recommendedProfile}"
+            textSize = 13f
+            setTextColor(0xFF9EDCFF.toInt())
+            setPadding(0, 0, 0, 18)
         })
         root.addView(button("Создать и поставить на главный экран") { applyWallpaper(WallpaperManager.FLAG_SYSTEM) })
         root.addView(button("Создать и поставить на экран блокировки") { applyWallpaper(WallpaperManager.FLAG_LOCK) })
