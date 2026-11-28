@@ -2,13 +2,6 @@ name: MANA Universal Android Emulator — install and launch matrix
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'launcher/**'
-      - 'engine/mana-brain/**'
-      - 'os/core/**'
-      - '.github/workflows/mana-emulator-smoke.yml'
-      - 'tools/run_mana_emulator_smoke.sh'
 
 permissions:
   contents: read
