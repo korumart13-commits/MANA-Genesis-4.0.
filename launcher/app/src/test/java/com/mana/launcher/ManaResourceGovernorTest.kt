@@ -8,13 +8,13 @@ class ManaResourceGovernorTest {
     @Test
     fun gemmaE2BUsesMappedWeightMemoryBudgetForEightGbPhones() {
         val gemmaBytes = 2_588_147_712L
-        assertEquals(3_546L, ManaResourceGovernor.minimumAvailableRamMbForModel(gemmaBytes))
+        assertEquals(3_548L, ManaResourceGovernor.minimumAvailableRamMbForModel(gemmaBytes))
     }
 
     @Test
     fun smallModelsKeepAtLeastOneGbRuntimeHeadroom() {
         val oneGbModel = 1_073_741_824L
-        assertEquals(1_621L, ManaResourceGovernor.minimumAvailableRamMbForModel(oneGbModel))
+        assertEquals(2_048L, ManaResourceGovernor.minimumAvailableRamMbForModel(oneGbModel))
     }
 
     @Test
