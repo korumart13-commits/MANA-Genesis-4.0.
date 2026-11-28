@@ -609,6 +609,11 @@ class MainActivity : Activity() {
             val tile = dashboardCard(pair[0], pair[1], "Открыть", callback)
             content.addView(tile, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(9) })
         }
+        addDashboardCard(
+            "Живые обои Маны",
+            "Оригинальные изображения создаются прямо на телефоне без интернета; можно менять главный экран и экран блокировки.",
+            "Открыть студию обоев"
+        ) { startActivity(Intent(this, ManaWallpaperStudioActivity::class.java)) }
 
         content.addView(label("Состояние системы", 18, textColor, true).apply {
             setPadding(0, dp(9), 0, dp(9))
@@ -665,6 +670,9 @@ class MainActivity : Activity() {
 
         content.addView(label("Личное пространство", 17, accentSoft, true).apply { setPadding(0, 0, 0, dp(8)) })
         addDashboardCard("Локальная память", "Зашифрованные сведения, которыми MANA может пользоваться по твоему разрешению.", "Открыть память") { showMemory() }
+        addDashboardCard("Обои и ресурсы", "Офлайн-обои, расписание смены и контроль доступной оперативной памяти.", "Настроить") {
+            startActivity(Intent(this, ManaWallpaperStudioActivity::class.java))
+        }
         addDashboardCard("Дневник", "Личные записи хранятся локально и защищаются шифрованием.", "Открыть дневник") { showDiary() }
         addDashboardCard("Задачи и планы", "Локальный список дел и управление выполнением.", "Открыть задачи") { showLifeManager() }
 
@@ -1659,7 +1667,7 @@ class MainActivity : Activity() {
                 val languageResult = engine.setLanguage(russian)
                 engine.setSpeechRate(0.92f)
                 engine.setPitch(1.06f)
-                val russianVoices = engine.voices.orEmpty().filter { it.locale.language == "ru" }
+                val russianVoices = engine.voices.orEmpty().filter { it.locale.language == "ru" && !it.isNetworkConnectionRequired }
                 val preferences = getSharedPreferences("mana.settings", MODE_PRIVATE)
                 val savedVoiceName = preferences.getString("mana_voice_name", null)
                 val selectedVoice = russianVoices.firstOrNull { it.name == savedVoiceName }
@@ -1675,7 +1683,8 @@ class MainActivity : Activity() {
                 engine.setSpeechRate(preferences.getFloat("mana_voice_rate", 0.92f).coerceIn(0.75f, 1.15f))
                 engine.setPitch(preferences.getFloat("mana_voice_pitch", 1.06f).coerceIn(0.85f, 1.25f))
                 voiceReady = languageResult != TextToSpeech.LANG_MISSING_DATA &&
-                    languageResult != TextToSpeech.LANG_NOT_SUPPORTED
+                    languageResult != TextToSpeech.LANG_NOT_SUPPORTED &&
+                    selectedVoice?.isNetworkConnectionRequired == false
                 engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) {
                         ManaAvatar3DView.isSpeaking = true
@@ -1710,15 +1719,22 @@ class MainActivity : Activity() {
             return
         }
         val voices = engine.voices.orEmpty()
-            .filter { it.locale.language == "ru" }
-            .sortedWith(compareByDescending<android.speech.tts.Voice> { !it.isNetworkConnectionRequired }
-                .thenByDescending { it.quality }
+            .filter { it.locale.language == "ru" && !it.isNetworkConnectionRequired }
+            .sortedWith(compareByDescending<android.speech.tts.Voice> { it.quality }
                 .thenBy { it.name })
+        if (voices.isEmpty()) {
+            AlertDialog.Builder(this)
+                .setTitle("Нужен офлайн-голос")
+                .setMessage("На устройстве пока нет русского офлайн-голоса. Установи русские голосовые данные в настройках движка Android TTS. Онлайн-голоса MANA не выбирает.")
+                .setPositiveButton("Открыть настройки TTS") { _, _ ->
+                    runCatching { startActivity(Intent("com.android.settings.TTS_SETTINGS")) }
+                }
+                .setNegativeButton("Позже", null)
+                .show()
+            return
+        }
         val labels = listOf("Автоматически — лучший доступный русский голос") +
-            voices.map { voice ->
-                val mode = if (voice.isNetworkConnectionRequired) "онлайн" else "офлайн"
-                "${voice.name} · ${mode} · качество ${voice.quality}"
-            }
+            voices.map { voice -> "${voice.name} · офлайн · качество ${voice.quality}" }
         val prefs = getSharedPreferences("mana.settings", MODE_PRIVATE)
         val current = prefs.getString("mana_voice_name", null)
         val selected = voices.indexOfFirst { it.name == current }.let { if (it < 0) 0 else it + 1 }
