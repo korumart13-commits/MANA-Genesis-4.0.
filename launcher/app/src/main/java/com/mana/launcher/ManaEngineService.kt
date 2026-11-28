@@ -108,6 +108,11 @@ class ManaEngineService : Service() {
         }
     }
 
+    override fun onTrimMemory(level: Int) {
+        ManaEngineProcessOwner.localModelRuntime()?.onTrimMemory(level)
+        super.onTrimMemory(level)
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_NOT_STICKY
 
     override fun onBind(intent: Intent?): IBinder = localBinder
