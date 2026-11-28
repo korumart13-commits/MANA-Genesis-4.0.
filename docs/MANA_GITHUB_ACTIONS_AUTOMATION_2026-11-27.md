@@ -31,6 +31,7 @@ The Android Engineering Lab exposes the same flow through `ManaGitHubActionsConn
 - The workflow does not push, commit, merge or publish the patch to the repository.
 - This loop does not install APKs, flash partitions, unlock bootloaders or install firmware. Firmware OTA remains gated by the separate RMX5566RU bring-up and recovery requirements.
 - Retries are hard-capped at two. A branch-head change aborts the task. Patches remain subject to the same source-only validation policy on every attempt.
+- The patch-execution job receives only `contents: read`; OIDC `id-token: write` and `attestations: write` are isolated in a separate post-test job that downloads the candidate artifact and does not execute the proposed source. This prevents patched Gradle/test code from reading an OIDC token.
 
 ## CI workflow contract
 
