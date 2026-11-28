@@ -44,6 +44,7 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import android.widget.FrameLayout
 import android.widget.GridLayout
+import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -857,6 +858,7 @@ class MainActivity : Activity() {
 
     private fun showDrawer() {
         showingDrawer = true
+        appCategory = "Все"
         search.setText("")
         renderApps("")
     }
