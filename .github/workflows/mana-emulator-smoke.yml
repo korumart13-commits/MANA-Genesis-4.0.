@@ -7,6 +7,7 @@ on:
       - 'launcher/**'
       - 'engine/mana-brain/**'
       - 'os/core/**'
+      - 'tools/mana_emulator_smoke.sh'
       - '.github/workflows/mana-emulator-smoke.yml'
 
 permissions:
@@ -47,25 +48,9 @@ jobs:
           profile: pixel_2
           disable-animations: true
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
-          script: |
-            set -euo pipefail
-            APK="launcher/app/build/outputs/apk/debug/app-debug.apk"
-            test -s "$APK"
-            adb wait-for-device
-            adb shell getprop sys.boot_completed | grep -q 1
-            adb install -r "$APK"
-            adb shell pm path com.mana.launcher
-            adb shell monkey -p com.mana.launcher -c android.intent.category.LAUNCHER 1
-            sleep 20
-            adb shell pidof com.mana.launcher
-            if adb logcat -d -t 12000 | grep -E 'FATAL EXCEPTION|Fatal signal [0-9]+|Process: com.mana.launcher' ; then
-              echo "A fatal application crash was detected in the emulator log." >&2
-              exit 1
-            fi
-            adb shell dumpsys activity activities | grep -E 'com.mana.launcher|mResumedActivity'
-            echo "PASS: emulator booted, APK installed, MANA launch process observed, no fatal crash signature found."
+          script: bash tools/mana_emulator_smoke.sh
 
-      - name: Upload RMX5566RU-targeted Android 16 debug APK
+      - name: Upload MANA universal Android debug APK (API ${{ matrix.api-level }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
