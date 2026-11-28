@@ -13,7 +13,10 @@ object ManaVoiceProfile {
 
     fun choose(candidates: List<Candidate>): Candidate? =
         candidates
-            .filter { it.localeTag.substringBefore('-').substringBefore('_').equals("ru", ignoreCase = true) }
+            .filter {
+                it.localeTag.substringBefore('-').substringBefore('_').equals("ru", ignoreCase = true) &&
+                    !it.requiresNetwork
+            }
             .maxWithOrNull(
                 compareBy<Candidate> { if (femaleMarkers.any { marker -> it.name.contains(marker, ignoreCase = true) }) 1 else 0 }
                     .thenBy { if (!it.requiresNetwork) 1 else 0 }
