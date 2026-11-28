@@ -14,6 +14,19 @@ object ManaResourceGovernor {
         val recommendedProfile: String
     )
 
+    fun shouldUnloadModel(context: Context): Boolean {
+        val state = snapshot(context)
+        return state.lowMemory || state.availableRamMb < maxOf(384L, state.totalRamMb / 10L)
+    }
+
+    fun canLoadModel(context: Context, modelFile: java.io.File): Boolean {
+        val state = snapshot(context)
+        val modelMb = (modelFile.length() / (1024L * 1024L)).coerceAtLeast(1L)
+        // LiteRT-LM needs working memory in addition to the model file; keep a 512 MB floor.
+        val estimatedWorkingSetMb = maxOf(512L, modelMb * 2L)
+        return !state.lowMemory && state.availableRamMb >= estimatedWorkingSetMb + 256L
+    }
+
     fun snapshot(context: Context): Snapshot {
         val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val memory = ActivityManager.MemoryInfo()
