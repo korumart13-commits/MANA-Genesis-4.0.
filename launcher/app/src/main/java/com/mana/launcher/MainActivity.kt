@@ -674,6 +674,11 @@ class MainActivity : Activity() {
             setPadding(dp(2), dp(13), 0, dp(8))
         })
         addDashboardCard(
+            "Центр управления",
+            "Быстрые переходы к Wi-Fi, Bluetooth, звуку, экрану и безопасности через штатные настройки Android.",
+            "Открыть центр управления"
+        ) { startActivity(Intent(this, ManaControlCenterActivity::class.java)) }
+        addDashboardCard(
             "Настройки MANA",
             "Голос, аватар, память, разрешения, подключаемые сервисы и состояние движка.",
             "Открыть настройки"
