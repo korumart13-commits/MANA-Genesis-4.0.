@@ -1,16 +1,177 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "project": "MANA XZ — Ω",
+  "modulePolicy": {
+    "oneCentralBrain": true,
+    "localInferenceRequired": true,
+    "optionalCloudFallback": true,
+    "statusMustBeShownInApp": true,
+    "unavailableModulesMustNotPretendToWork": true
+  },
   "modules": [
-    {"id":"brain.core","name":"MANA Brain","required":true,"mode":"local-first"},
-    {"id":"brain.internet","name":"Internet research and knowledge sync","required":false,"requiresNetwork":true},
-    {"id":"brain.self_development","name":"Skill research, tests and update proposals","required":true},
-    {"id":"voice.ru.offline","name":"Russian offline voice","required":true,"resource":"../voice/ru/"},
-    {"id":"avatar.runtime","name":"3D avatar runtime","required":true,"resource":"../avatar/"},
-    {"id":"lockscreen.live_wallpaper","name":"MANA lock-screen live wallpaper","required":true,"resource":"../lockscreen/"},
-    {"id":"resources.governor","name":"RAM and thermal resource governor","required":true},
-    {"id":"memory.local","name":"Encrypted local memory","required":true},
-    {"id":"knowledge.local","name":"Local knowledge base","required":true},
-    {"id":"updates.verified","name":"Signed updates and rollback","required":true},
-    {"id":"connectors.cloud","name":"Optional cloud AI providers","required":false,"requiresUserKeys":true}
+    {
+      "id": "brain.core",
+      "name": "MANA Brain",
+      "required": true,
+      "mode": "local-first",
+      "status": "source_present_runtime_verification_pending",
+      "delivery": "compiled_into_android_app_from_engine_and_os_core_sources"
+    },
+    {
+      "id": "brain.local_inference",
+      "name": "Local AI engine and Gemma model",
+      "required": true,
+      "mode": "offline",
+      "status": "LiteRT_LM_runtime_in_source_model_in_full_archive_device_test_pending",
+      "engine": "LiteRT-LM Android 0.16.1",
+      "model": "../models/Gemma/gemma-4-E2B-it.litertlm",
+      "delivery": "APK_runtime_plus_separate_model_file"
+    },
+    {
+      "id": "brain.internet_research",
+      "name": "Internet research and knowledge sync",
+      "required": false,
+      "requiresNetwork": true,
+      "status": "source_present_integration_verification_pending"
+    },
+    {
+      "id": "brain.self_development",
+      "name": "Skill research, tests and update proposals",
+      "required": true,
+      "status": "orchestration_and_policy_source_present_full_autonomous_loop_pending"
+    },
+    {
+      "id": "memory.local",
+      "name": "Encrypted local memory",
+      "required": true,
+      "status": "source_present_persistence_and_recovery_tests_pending"
+    },
+    {
+      "id": "diary",
+      "name": "MANA Diary",
+      "required": false,
+      "status": "service_and_ui_source_present_end_to_end_test_pending"
+    },
+    {
+      "id": "life_manager",
+      "name": "MANA Life Manager",
+      "required": false,
+      "status": "service_and_ui_source_present_end_to_end_test_pending"
+    },
+    {
+      "id": "smart_receptionist",
+      "name": "MANA Smart Receptionist",
+      "required": false,
+      "status": "policy_source_present_android_call_screening_role_not_granted"
+    },
+    {
+      "id": "contact_intelligence",
+      "name": "Contact Intelligence",
+      "required": false,
+      "status": "source_present_permission_and_device_test_pending"
+    },
+    {
+      "id": "voice.ru.offline",
+      "name": "Russian offline female voice — Piper Irina",
+      "required": true,
+      "resource": "../voice/ru/",
+      "status": "gradle_asset_download_and_hash_check_configured_build_verification_pending",
+      "offline": true
+    },
+    {
+      "id": "avatar.runtime",
+      "name": "MANA 3D avatar",
+      "required": true,
+      "resource": "../avatar/characters/",
+      "status": "procedural_floating_avatar_and_shared_gltf_assets_present_visual_acceptance_pending",
+      "preserveIdentity": true
+    },
+    {
+      "id": "lockscreen.live_wallpaper",
+      "name": "MANA lock-screen wallpaper generator",
+      "required": true,
+      "resource": "../lockscreen/",
+      "status": "lock_screen_only_static_generated_images_workmanager_interval_15_to_180_minutes",
+      "target": "lock",
+      "note": "True animated live-wallpaper service and OEM lock-screen support are not yet verified."
+    },
+    {
+      "id": "resources.governor",
+      "name": "RAM, thermal and battery resource governor",
+      "required": true,
+      "status": "monitoring_and_safe_model_unload_source_present_device_tuning_pending"
+    },
+    {
+      "id": "knowledge.local",
+      "name": "Local knowledge base",
+      "required": true,
+      "status": "schema_and_service_source_present_full_retrieval_validation_pending"
+    },
+    {
+      "id": "updates.verified",
+      "name": "Signed updates, package verification and rollback",
+      "required": true,
+      "status": "verification_and_installer_source_present_end_to_end_update_test_pending"
+    },
+    {
+      "id": "future_updates",
+      "name": "MANA Future Updates",
+      "required": false,
+      "status": "source_present_workflow_verification_pending"
+    },
+    {
+      "id": "connectors.yandex",
+      "name": "Yandex search and AI integration",
+      "required": false,
+      "requiresNetwork": true,
+      "status": "adapter_source_present_credentials_and_live_api_test_pending"
+    },
+    {
+      "id": "connectors.vk",
+      "name": "VK integration",
+      "required": false,
+      "requiresNetwork": true,
+      "status": "read_only_connector_source_present_live_api_test_pending"
+    },
+    {
+      "id": "connectors.cloud",
+      "name": "OpenAI, Anthropic, Google Gemini and xAI Grok",
+      "required": false,
+      "requiresNetwork": true,
+      "requiresUserKeys": true,
+      "status": "adapter_source_present_provider_account_and_live_api_tests_pending"
+    },
+    {
+      "id": "game.intelligence",
+      "name": "MANA Game Intelligence",
+      "required": false,
+      "status": "game_source_prototype_not_integrated_into_android_runtime"
+    },
+    {
+      "id": "game.minecraft",
+      "name": "Minecraft companion and world bridge",
+      "required": false,
+      "status": "bedrock_pack_source_present_game_client_compatibility_test_pending"
+    },
+    {
+      "id": "devices.companions",
+      "name": "Smartwatch, earbuds, Bluetooth and car integrations",
+      "required": false,
+      "status": "integration_architecture_source_present_each_device_connector_pending"
+    },
+    {
+      "id": "os.aosp_system",
+      "name": "MANA OS / AOSP system integration",
+      "required": false,
+      "status": "Soong_AIDL_product_source_present_full_AOSP_build_and_device_bringup_blocked",
+      "delivery": "future_rom_only_not_apk"
+    },
+    {
+      "id": "os.recovery_ota",
+      "name": "MANA Recovery, Verified Boot and OTA",
+      "required": false,
+      "status": "architecture_and_verification_gates_only_no_flashable_rom",
+      "delivery": "future_rom_only_not_apk"
+    }
   ]
 }
