@@ -17,6 +17,7 @@ on:
       - 'tools/validate_mana_game_pack.py'
       - 'game/mana-xz-world/**'
       - 'distribution/**'
+      - 'distribution/**'
       - 'tools/stage_mana_aosp_prebuilt.sh'
       - 'tools/test_stage_mana_aosp_prebuilt.sh'
       - 'tools/verify_mana_platform_signature.sh'
@@ -276,12 +277,18 @@ jobs:
           PACKAGE="release/offline/Ω"
           mkdir -p "$PACKAGE"
           cp -a "distribution/Ω/." "$PACKAGE/"
-          mkdir -p "$PACKAGE/installer" "$PACKAGE/models/Gemma" "$PACKAGE/source" "$PACKAGE/docs" "$PACKAGE/app" "$PACKAGE/avatar/characters" "$PACKAGE/engine"
+          mkdir -p "$PACKAGE/installer" "$PACKAGE/models/Gemma" "$PACKAGE/source" "$PACKAGE/docs" "$PACKAGE/app" "$PACKAGE/avatar/characters" "$PACKAGE/engine" "$PACKAGE/game" "$PACKAGE/firmware/system" "$PACKAGE/firmware/device"
           cp launcher/app/build/outputs/apk/debug/app-debug.apk "$PACKAGE/app/MANA-Omega-debug.apk"
           cp -a launcher/app/build/generated/manaVoiceAssets/mana_voice/. "$PACKAGE/voice/ru/"
           cp launcher/app/src/main/assets/mana_avatar_genesis*.gltf "$PACKAGE/avatar/characters/"
           cp -a engine/mana-brain "$PACKAGE/engine/"
           cp -a os/core "$PACKAGE/engine/os-core/"
+          cp -a os/native/llama-jni "$PACKAGE/engine/native-llama-jni/"
+          cp -a game/mana-xz-world "$PACKAGE/game/"
+          cp -a game/minecraft-bedrock "$PACKAGE/game/"
+          cp -a platform "$PACKAGE/firmware/"
+          cp -a system/mana "$PACKAGE/firmware/system/"
+          cp -a device/RMX5566RU "$PACKAGE/firmware/device/"
           cp docs/MANA_XZ_MOBILE_UX_RESEARCH_AND_DESIGN_RU.md "$PACKAGE/docs/"
           cp docs/MANA_GENESIS_4_0_COMPLETE_USER_VISION_RU.md "$PACKAGE/docs/"
           cp docs/MANA_GENESIS_4_0_NON_NEGOTIABLE_REQUIREMENTS_AND_GAPS.md "$PACKAGE/docs/"
@@ -326,7 +333,7 @@ jobs:
           models/Gemma/gemma-4-E2B-it.litertlm — локальная модель Gemma 4 E2B (2,588,147,712 байт).
           models/Gemma/MODEL_MANIFEST_RU.txt — источник, лицензия и SHA-256 модели.
           models/Gemma/LICENSE-APACHE-2.0.txt и NOTICE.txt — лицензия и уведомление об авторстве Gemma 4.
-          source/MANA-XZ-source-project.zip — полный исходный проект этой сборки. engine/ — исходники локального MANA Brain и OS core; voice/ru/ и avatar/characters/ — ресурсы, также встроенные в APK.
+          source/MANA-XZ-source-project.zip — полный исходный проект этой сборки. engine/ — локальный MANA Brain, OS core и экспериментальный llama.cpp; voice/ru/ и avatar/characters/ — ресурсы, также встроенные в APK. game/ — Godot и Minecraft исходники. firmware/ — AOSP, системные модули и профиль устройства для будущей ROM-интеграции.
           docs/ — русская документация и обязательные требования проекта.
           SHA256SUMS.txt — контрольные суммы, включая сам файл Gemma.
 
