@@ -93,6 +93,20 @@ for required in (
 ):
     assert required in control_center, f"Control center feature missing: {required}"
 assert ".ManaControlCenterActivity" in android_manifest
+lock_screen = (root / "launcher/app/src/main/java/com/mana/launcher/ManaLockScreenActivity.kt").read_text()
+for required in (
+    "MANA  •  GENESIS 4.0",
+    "SimpleDateFormat(\"HH:mm\"",
+    "BatteryManager.BATTERY_PROPERTY_CAPACITY",
+    "createConfirmDeviceCredentialIntent",
+    "Settings.ACTION_SECURITY_SETTINGS",
+):
+    assert required in lock_screen, f"MANA lock screen feature missing: {required}"
+assert ".ManaLockScreenActivity" in android_manifest
+assert "Intent(this, ManaLockScreenActivity::class.java)" in activity
+assert 'private var appCategory = "Все"' in activity
+assert "appCategoryFor(info)" in activity
+assert "ЦЕНТР ПРИЛОЖЕНИЙ MANA" in activity
 assert "androidx.compose.material3:material3" in app_gradle
 
 for required in (
