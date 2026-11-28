@@ -11,7 +11,7 @@
   "root": ".",
   "sourceOfTruth": "Source/Project/",
   "components": {
-    "brain": "Source/Project/engine/mana-brain/",
+    "brain": "Engine/Brain/",
     "osCore": "Source/Project/os/core/",
     "androidApp": "Source/Project/launcher/",
     "platformInterfaces": "Source/Project/system/mana/interfaces/",
