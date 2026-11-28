@@ -55,6 +55,19 @@ assert "models/Gemma/MODEL_MANIFEST_RU.txt" in workflow
 assert "SHA256SUMS.txt" in workflow
 assert "MANA-Omega-FULL-INSTALLER.zip" in workflow
 assert "MANA-Omega-FULL-INSTALLER" in workflow
+for required in (
+    'PACKAGE="release/offline/Ω"',
+    'cp -a "distribution/Ω/." "$PACKAGE/"',
+    'cp -a launcher/app/build/generated/manaVoiceAssets/mana_voice/.',
+    'cp -a engine/mana-brain',
+    'cp -a game/mana-xz-world "$PACKAGE/game/"',
+    'cp -a game/minecraft-bedrock "$PACKAGE/game/"',
+    'cp -a platform "$PACKAGE/firmware/"',
+    'cp -a system/mana "$PACKAGE/firmware/system/"',
+    'cp -a device/RMX5566RU "$PACKAGE/firmware/device/"',
+    'MANA-Omega-debug.apk',
+):
+    assert required in workflow, f"Ω package component missing: {required}"
 assert "MANA-Martynova-FULL-PACKAGE.zip" not in workflow
 
 print("Validated static one-button MANA XZ installer contract for realme C85 4G / RMX5566.")
