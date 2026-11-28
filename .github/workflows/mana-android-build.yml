@@ -1,4 +1,4 @@
-name: MANA XZ Android build
+name: MANA XZ Omega Android build
 
 on:
   push:
@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   build:
-    name: Unit tests and debug APK
+    name: Unit tests and Omega debug package
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -53,26 +53,26 @@ jobs:
       - name: Assemble debug APK
         run: gradle -p launcher --no-daemon assembleDebug
 
-      - name: Assemble game-style MANA XZ folder
+      - name: Assemble Omega distribution folder
         run: |
-          mkdir -p distribution/MANA_XZ/app
-          cp launcher/app/build/outputs/apk/debug/*.apk distribution/MANA_XZ/app/MANA_XZ-debug.apk
+          mkdir -p "distribution/Ω/app"
+          cp launcher/app/build/outputs/apk/debug/*.apk "distribution/Ω/app/MANA-Omega-debug.apk"
           cd distribution
-          zip -qr ../MANA_XZ-Android-folder.zip MANA_XZ
+          zip -qr ../MANA-Omega-Android-folder.zip "Ω"
           cd ..
 
-      - name: Upload complete MANA XZ folder
+      - name: Upload complete Omega folder
         uses: actions/upload-artifact@v4
         with:
-          name: MANA-XZ-game-style-folder
-          path: MANA_XZ-Android-folder.zip
+          name: MANA-Omega-complete-folder
+          path: MANA-Omega-Android-folder.zip
           if-no-files-found: error
           retention-days: 14
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: MANA-XZ-debug-RMX5566-prototype
+          name: MANA-Omega-debug-RMX5566-prototype
           path: launcher/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
