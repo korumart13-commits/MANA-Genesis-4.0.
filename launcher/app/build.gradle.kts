@@ -59,8 +59,8 @@ dependencies {
 }
 
 
-// Bundles the MIT-licensed Russian female Piper voice into the APK so speech works offline
-// from first launch. The ONNX payload is checked against the upstream published MD5.
+// Bundles the Russian Piper voice into the APK so speech works offline from first launch.
+// The upstream sherpa-onnx release archive is pinned by its published GitHub SHA-256 digest.
 val prepareManaOfflineVoice by tasks.registering {
     val archive = layout.buildDirectory.file("downloads/vits-piper-ru_RU-irina-medium.tar.bz2")
     val unpackDir = layout.buildDirectory.dir("tmp/mana-offline-voice")
@@ -73,6 +73,19 @@ val prepareManaOfflineVoice by tasks.registering {
             URL("https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-ru_RU-irina-medium.tar.bz2")
                 .openStream().use { input -> archiveFile.outputStream().use { output -> input.copyTo(output) } }
         }
+        val archiveDigest = MessageDigest.getInstance("SHA-256")
+        val actualArchiveSha256 = archiveFile.inputStream().use { input ->
+            val buffer = ByteArray(1024 * 1024)
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                archiveDigest.update(buffer, 0, count)
+            }
+            archiveDigest.digest().joinToString("") { "%02x".format(it) }
+        }
+        check(actualArchiveSha256 == "1fc0f54e5e084fe287c07909f2f6e0ba6d857864cf800e3ab80286a4e8233008") {
+            "Pinned sherpa-onnx Piper archive SHA-256 mismatch: $actualArchiveSha256"
+        }
         val unpack = unpackDir.get().asFile
         project.delete(unpack)
         unpack.mkdirs()
@@ -80,16 +93,9 @@ val prepareManaOfflineVoice by tasks.registering {
             "untar"("src" to archiveFile, "dest" to unpack, "compression" to "bzip2")
         }
         val model = unpack.walkTopDown().firstOrNull { it.isFile && it.name == "ru_RU-irina-medium.onnx" }
-            ?: error("Russian Piper ONNX voice model is missing from the official archive")
-        val md5 = MessageDigest.getInstance("MD5")
-        val actualMd5 = model.inputStream().use { input ->
-            val digest = md5
-            val buffer = ByteArray(1024 * 1024)
-            while (true) { val count = input.read(buffer); if (count < 0) break; digest.update(buffer, 0, count) }
-            digest.digest().joinToString("") { "%02x".format(it) }
-        }
-        check(actualMd5 == "21fbe77fdc68bdc35d7adb6bf4f52199") {
-            "Russian Piper model checksum mismatch: $actualMd5"
+            ?: error("Russian Piper ONNX voice model is missing from the pinned archive")
+        check(model.length() in 50_000_000L..80_000_000L) {
+            "Russian Piper model has an unexpected size: ${model.length()} bytes"
         }
         val voiceDir = model.parentFile
         check(File(voiceDir, "tokens.txt").isFile && File(voiceDir, "espeak-ng-data").isDirectory) {
