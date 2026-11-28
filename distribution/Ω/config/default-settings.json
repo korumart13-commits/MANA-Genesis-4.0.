@@ -1,13 +1,107 @@
 {
-  "theme": "dark_navy",
+  "schemaVersion": 2,
+  "theme": {
+    "name": "mana_dark_navy",
+    "background": "#071426",
+    "surface": "#102B50",
+    "primary": "#1765A8",
+    "accent": "#54C8F5",
+    "text": "#EAF4FF",
+    "secondary": "#91A9C5",
+    "style": "Android-first Material 3, not an iOS imitation"
+  },
   "language": "ru-RU",
   "offlineFirst": true,
-  "internetResearch": {"enabled": true, "background": true, "wifiPreferred": true},
-  "selfDevelopment": {"enabled": true, "autoResearch": true, "autoInstallChanges": false, "requireTests": true, "requireOwnerApprovalForSystemChanges": true},
-  "lockScreen": {"manaLiveWallpaper": true, "autoGenerate": true, "intervalHours": 24, "target": "lock"},
-  "voice": {"language": "ru-RU", "offlineRequired": true, "preferredEngine": "piper"},
-  "avatar": {"enabled": true, "preserveExistingBehavior": true},
-  "resourceGovernor": {"enabled": true, "respectBattery": true, "respectThermalLimits": true},
-  "cloudAI": {"enabled": false, "providers": ["openai", "anthropic", "google", "xai"]},
-  "confirmations": {"payments": true, "messages": true, "installs": true, "deletions": true, "systemChanges": true}
+  "localInference": {
+    "required": true,
+    "preferredEngine": "LiteRT-LM",
+    "preferredModel": "Gemma 4 E2B IT",
+    "backendOrder": ["GPU", "CPU"],
+    "cloudFallback": false,
+    "doNotPretendReadyWithoutModel": true
+  },
+  "internetResearch": {
+    "enabled": true,
+    "background": true,
+    "wifiPreferred": true,
+    "verifySources": true,
+    "treatWebContentAsUntrusted": true
+  },
+  "selfDevelopment": {
+    "enabled": true,
+    "autoResearch": true,
+    "autoInstallChanges": false,
+    "requireTests": true,
+    "requireIsolatedValidation": true,
+    "requireOwnerApprovalForSystemChanges": true,
+    "rollbackRequired": true
+  },
+  "lockScreen": {
+    "manaWallpaper": true,
+    "autoGenerate": true,
+    "intervalMinutes": 15,
+    "allowedIntervalsMinutes": [15, 30, 60, 180],
+    "target": "lock",
+    "neverChangeHomeScreen": true,
+    "renderMode": "generated_static_image",
+    "note": "WorkManager timing is controlled by Android and may be delayed; true animated lock-screen wallpaper is not yet verified."
+  },
+  "voice": {
+    "language": "ru-RU",
+    "offlineRequired": true,
+    "preferredEngine": "Piper",
+    "voice": "ru_RU-irina-medium",
+    "bundledInApkAfterSuccessfulBuild": true
+  },
+  "avatar": {
+    "enabled": true,
+    "identity": "one_persistent_MANA_character",
+    "preserveExistingBehavior": true,
+    "allowOutfitAndAccessoryChanges": true
+  },
+  "navigation": {
+    "style": "compact_android_navigation",
+    "sections": ["Главная", "Чат", "Модули", "Приложения"]
+  },
+  "accessibility": {
+    "minimumTouchTargetDp": 48,
+    "supportLargeText": true,
+    "supportTalkBack": true,
+    "avoidGestureOnlyActions": true
+  },
+  "resourceGovernor": {
+    "enabled": true,
+    "respectBattery": true,
+    "respectThermalLimits": true,
+    "allowSafeModelUnload": true
+  },
+  "cloudAI": {
+    "enabled": false,
+    "providers": ["openai", "anthropic", "google", "xai"],
+    "userSuppliedKeysOnly": true
+  },
+  "integrations": {
+    "yandex": "optional_owner_configured",
+    "vk": "optional_owner_configured",
+    "minecraft": "optional",
+    "wearables": "optional",
+    "earbuds": "optional",
+    "carBluetooth": "optional"
+  },
+  "confirmations": {
+    "payments": true,
+    "messages": true,
+    "calls": true,
+    "posts": true,
+    "installs": true,
+    "deletions": true,
+    "systemChanges": true,
+    "firmwareAndRecovery": true
+  },
+  "firmware": {
+    "target": "AOSP Android 16 for exact RMX5566RU / RE645F",
+    "preserveAsProjectGoal": true,
+    "flashableImageAvailable": false,
+    "releaseBlockedUntilDeviceInputsAndRecoveryAreVerified": true
+  }
 }
