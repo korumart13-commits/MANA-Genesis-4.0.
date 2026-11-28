@@ -217,7 +217,7 @@ class MainActivity : Activity() {
             showEngineUnavailableScreen("Настройка MANA уже выполнена. Подключаю центральный Brain…")
         } else {
             // The owner starts the complete app-level bootstrap with one explicit action.
-            showOneTapSetupScreen("Один запуск подготовит все функции MANA, доступные на RMX5566RU.")
+            showOneTapSetupScreen("Один запуск подготовит функции MANA, доступные на этом Android-устройстве.")
         }
     }
 
@@ -232,7 +232,7 @@ class MainActivity : Activity() {
         screen.addView(label("GENESIS 4.0", 12, accentSoft, true).apply {
             setPadding(0, dp(6), 0, dp(22))
         })
-        screen.addView(label("REALME RMX5566RU  •  ANDROID 16", 11, muted, true).apply {
+        screen.addView(label("${Build.MANUFACTURER} ${Build.MODEL}  •  ANDROID ${Build.VERSION.RELEASE ?: "unknown"}", 11, muted, true).apply {
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, dp(18))
         })
@@ -260,7 +260,7 @@ class MainActivity : Activity() {
             .putBoolean("setup_started", true)
             .putBoolean("setup_completed", false)
             .apply()
-        showOneTapSetupScreen("Проверяю RMX5566RU, целостность MANA, локальное хранилище и запускаю доступные компоненты…")
+        showOneTapSetupScreen("Проверяю совместимость устройства, целостность MANA, локальное хранилище и доступные компоненты…")
         Thread({
             var report: ManaOneTapSetupCoordinator.Report? = null
             var failure: Throwable? = null
@@ -275,20 +275,20 @@ class MainActivity : Activity() {
                 setupRunning = false
                 if (failure != null) {
                     showOneTapSetupScreen("Настройка прервалась: ${failure?.message ?: "неизвестная ошибка"}. Нажми одну кнопку, чтобы безопасно повторить.")
-                } else if (report?.isTargetDevice != true) {
-                    setupStarted = false
-                    getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE).edit()
-                        .putBoolean("setup_started", false)
-                        .putBoolean("setup_completed", false)
-                        .apply()
-                    showOneTapSetupScreen("Это не подтверждённый RMX5566RU / RE645F с Android 16. Настройка целевого устройства остановлена.")
-                    showMessage(report?.toReadableText() ?: "Профиль целевого устройства не подтверждён.")
                 } else {
+                    val targetProfileMatched = report?.isTargetDevice == true
                     getSharedPreferences("mana.one_tap_setup", MODE_PRIVATE).edit()
                         .putBoolean("setup_started", true)
                         .putBoolean("setup_completed", true)
+                        .putBoolean("target_profile_matched", targetProfileMatched)
                         .apply()
-                    showEngineUnavailableScreen("Профиль RMX5566RU подтверждён. Настройка завершена; подключаю MANA Brain…")
+                    val profileMessage = if (targetProfileMatched) {
+                        "Тестовый профиль realme C85 4G / RMX5566 подтверждён."
+                    } else {
+                        "Тестовый профиль realme C85 4G / RMX5566 не подтверждён; продолжаю универсальный режим приложения. Специфичные для устройства функции и прошивка остаются выключенными."
+                    }
+                    showEngineUnavailableScreen("$profileMessage Подключаю MANA Brain…")
+                    if (!targetProfileMatched) report?.let { showMessage(it.toReadableText()) }
                     attemptEngineConnection()
                 }
             }

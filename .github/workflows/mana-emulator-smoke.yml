@@ -37,8 +37,11 @@ jobs:
         run: gradle --no-daemon :brain:test :core:test :app:testDebugUnitTest :app:assembleDebug
       - name: Boot Android API ${{ matrix.api-level }} emulator and install/launch MANA
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          ANDROID_I_WANT_MY_TCG: "yes"
         with:
           api-level: ${{ matrix.api-level }}
+          emulator-boot-timeout: 1200
           target: google_apis
           arch: x86_64
           profile: pixel_2
