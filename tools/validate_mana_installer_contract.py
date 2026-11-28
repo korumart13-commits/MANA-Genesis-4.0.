@@ -53,8 +53,8 @@ assert "УСТАНОВИТЬ MANA XZ" in requirements
 assert "INSTALL_MANA_XZ.apk" in workflow
 assert "models/Gemma/MODEL_MANIFEST_RU.txt" in workflow
 assert "SHA256SUMS.txt" in workflow
-assert "MANA-XZ-FULL-INSTALLER.zip" in workflow
-assert "MANA-XZ-FULL-INSTALLER" in workflow
+assert "MANA-Omega-FULL-INSTALLER.zip" in workflow
+assert "MANA-Omega-FULL-INSTALLER" in workflow
 assert "MANA-Martynova-FULL-PACKAGE.zip" not in workflow
 
 print("Validated static one-button MANA XZ installer contract for realme C85 4G / RMX5566.")
