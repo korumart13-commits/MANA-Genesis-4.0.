@@ -45,6 +45,10 @@ class ManaModelCatalog(context: Context) {
 
     fun savedModelPath(): String? = if (prefs.getBoolean(KEY_LICENSE_ACCEPTED, false)) prefs.getString(KEY_ACTIVE_PATH, null) else null
 
+    /** Matches only this catalog's active DownloadManager request. */
+    fun isTrackedDownload(downloadId: Long): Boolean =
+        downloadId >= 0L && prefs.getLong(KEY_DOWNLOAD_ID, -1L) == downloadId
+
     fun verifiedSavedModel(): File? {
         if (!prefs.getBoolean(KEY_LICENSE_ACCEPTED, false)) return null
         val path = savedModelPath() ?: return null
