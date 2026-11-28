@@ -229,7 +229,7 @@ class MainActivity : Activity() {
         if (wasStarted && !wasCompleted) {
             showOneTapSetupScreen("Возобновлю незавершённую настройку MANA автоматически.")
         } else if (wasCompleted) {
-            showEngineUnavailableScreen("Настройка MANA уже выполнена. Подключаю центральный Brain…")
+            showEngineUnavailableScreen("Базовая первичная подготовка завершена. Подключаю MANA Brain; локальная модель, системные разрешения и внешние интеграции могут требовать отдельных подтверждений.")
         } else {
             // The owner starts the complete app-level bootstrap with one explicit action.
             showOneTapSetupScreen("Один запуск подготовит функции MANA, доступные на этом Android-устройстве.")
