@@ -14,6 +14,8 @@ on:
       - '.github/workflows/mana-emulator-smoke.yml'
       - 'tools/validate_mana_gltf.py'
       - 'tools/validate_mana_installer_contract.py'
+      - 'tools/validate_mana_game_pack.py'
+      - 'game/mana-xz-world/**'
       - 'tools/stage_mana_aosp_prebuilt.sh'
       - 'tools/test_stage_mana_aosp_prebuilt.sh'
       - 'tools/verify_mana_platform_signature.sh'
@@ -214,6 +216,8 @@ jobs:
           for model in launcher/app/src/main/assets/mana_avatar_genesis*.gltf; do
             python3 tools/validate_mana_gltf.py "$model"
           done
+      - name: Validate MANA XZ game companion package
+        run: python3 tools/validate_mana_game_pack.py
       - name: Test canonical MANA Brain and OS core
         working-directory: launcher
         run: gradle --no-daemon :brain:test :core:test
