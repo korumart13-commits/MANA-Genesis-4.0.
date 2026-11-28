@@ -27,4 +27,10 @@ class ManaVoiceProfileTest {
             ManaVoiceProfile.Candidate("en-female", "en-US", 500, false)
         )))
     }
+
+    @Test fun neverSelectsNetworkOnlyRussianVoice() {
+        assertNull(ManaVoiceProfile.choose(listOf(
+            ManaVoiceProfile.Candidate("ru-online-female", "ru-RU", 500, true)
+        )))
+    }
 }
