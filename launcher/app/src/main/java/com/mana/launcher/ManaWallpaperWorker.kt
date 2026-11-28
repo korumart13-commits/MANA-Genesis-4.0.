@@ -17,10 +17,13 @@ class ManaWallpaperWorker(context: Context, params: WorkerParameters) : Worker(c
             val bitmap = ManaOfflineWallpaperRenderer.render(
                 metrics.widthPixels.coerceAtLeast(720), metrics.heightPixels.coerceAtLeast(1280), generationSlot
             )
-            WallpaperManager.getInstance(applicationContext).setBitmap(
-                bitmap, null, true, WallpaperManager.FLAG_LOCK
-            )
-            bitmap.recycle()
+            try {
+                WallpaperManager.getInstance(applicationContext).setBitmap(
+                    bitmap, null, true, WallpaperManager.FLAG_LOCK
+                )
+            } finally {
+                bitmap.recycle()
+            }
             Result.success()
         } catch (_: SecurityException) {
             Result.failure()
