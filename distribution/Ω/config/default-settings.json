@@ -16,9 +16,14 @@
     "required": true,
     "preferredEngine": "LiteRT-LM",
     "preferredModel": "Gemma 4 E2B IT",
-    "backendOrder": ["GPU", "CPU"],
+    "backendOrder": [
+      "GPU",
+      "CPU"
+    ],
     "cloudFallback": false,
-    "doNotPretendReadyWithoutModel": true
+    "doNotPretendReadyWithoutModel": true,
+    "minimumAvailablePhysicalRamMb": 3548,
+    "memoryGateType": "conservative_estimate_not_vendor_minimum"
   },
   "internetResearch": {
     "enabled": true,
@@ -40,7 +45,12 @@
     "manaWallpaper": true,
     "autoGenerate": true,
     "intervalMinutes": 15,
-    "allowedIntervalsMinutes": [15, 30, 60, 180],
+    "allowedIntervalsMinutes": [
+      15,
+      30,
+      60,
+      180
+    ],
     "target": "lock",
     "neverChangeHomeScreen": true,
     "renderMode": "generated_static_image",
@@ -61,7 +71,12 @@
   },
   "navigation": {
     "style": "compact_android_navigation",
-    "sections": ["Главная", "Чат", "Модули", "Приложения"]
+    "sections": [
+      "Главная",
+      "Чат",
+      "Модули",
+      "Приложения"
+    ]
   },
   "accessibility": {
     "minimumTouchTargetDp": 48,
@@ -77,7 +92,12 @@
   },
   "cloudAI": {
     "enabled": false,
-    "providers": ["openai", "anthropic", "google", "xai"],
+    "providers": [
+      "openai",
+      "anthropic",
+      "google",
+      "xai"
+    ],
     "userSuppliedKeysOnly": true
   },
   "integrations": {
@@ -86,7 +106,9 @@
     "minecraft": "optional",
     "wearables": "optional",
     "earbuds": "optional",
-    "carBluetooth": "optional"
+    "carBluetooth": "optional",
+    "googleServices": "optional_owner_authorized_oauth",
+    "requiresGoogleMobileServices": false
   },
   "confirmations": {
     "payments": true,
@@ -102,6 +124,25 @@
     "target": "AOSP Android 16 for exact RMX5566RU / RE645F",
     "preserveAsProjectGoal": true,
     "flashableImageAvailable": false,
-    "releaseBlockedUntilDeviceInputsAndRecoveryAreVerified": true
+    "releaseBlockedUntilDeviceInputsAndRecoveryAreVerified": true,
+    "bootBranding": "MANA_future_ROM_requirement"
+  },
+  "autonomy": {
+    "level": "maximum",
+    "policy": "within_Android_permissions_and_owner_consent",
+    "requireOwnerConfirmationForConsequentialActions": true
+  },
+  "backgroundExecution": {
+    "target": "continuous_research_and_learning",
+    "mode": "WorkManager_plus_user_visible_foreground_service",
+    "guaranteed24x7": false,
+    "note": "Android may delay or stop background work; no hidden persistence or battery-policy bypass."
+  },
+  "systemIdentity": {
+    "productName": "MANA",
+    "assistantName": "MANA",
+    "userFacingAboutName": "MANA",
+    "hideLLMLabelInUserFacingSettings": true,
+    "bootBrandingTarget": "MANA_future_ROM"
   }
 }

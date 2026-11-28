@@ -6,7 +6,9 @@ set -Eeuo pipefail
 
 AOSP_URL="https://android.googlesource.com/platform/manifest"
 AOSP_BRANCH="android16-release"
-MANA_MANIFEST_URL="https://raw.githubusercontent.com/korumart13-commits/MANA-Genesis-4.0./main/platform/local_manifests/mana.xml"
+MANA_SOURCE_REF="${MANA_SOURCE_REF:-Final}"
+MANA_MANIFEST_URL="https://raw.githubusercontent.com/korumart13-commits/MANA-Genesis-4.0./${MANA_SOURCE_REF}/platform/local_manifests/mana.xml"
+echo "MANA source ref: ${MANA_SOURCE_REF}"
 MIN_FREE_GIB="${MANA_MIN_FREE_GIB:-250}"
 JOBS="${MANA_SYNC_JOBS:-8}"
 TOP="${1:-$PWD/aosp-mana}"

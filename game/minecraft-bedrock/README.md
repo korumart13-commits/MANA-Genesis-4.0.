@@ -34,3 +34,7 @@ The Android app does not yet connect to this Behavior Pack. A future phone bridg
 
 - Source validation and packaging: .github/workflows/mana-minecraft-pack.yml
 - The pack is syntax-checked and uploaded as a .mcpack artifact; this does not replace testing inside the exact Bedrock version installed on the owner's phone.
+
+## Ω distribution
+
+The complete MANA Ω Android package includes a generated `game/MANA_Companion_BP.mcpack` for import into a Bedrock world. The pack remains a world-side prototype; there is no live bridge from this pack to the Android MANA Brain yet. The chat event used by the adapter may be marked pre-release by the Minecraft Script API, so check the target Bedrock version and enable the required experimental APIs only in a test world.

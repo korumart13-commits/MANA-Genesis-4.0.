@@ -4,6 +4,9 @@
 This validates source/documentation wiring only; it is not a device or model-runtime test.
 """
 from pathlib import Path
+import json
+import re
+import subprocess
 
 root = Path(__file__).resolve().parents[1]
 activity = (root / "launcher/app/src/main/java/com/mana/launcher/MainActivity.kt").read_text()
@@ -14,6 +17,11 @@ wallpaper_studio = (root / "launcher/app/src/main/java/com/mana/launcher/ManaWal
 wallpaper_worker = (root / "launcher/app/src/main/java/com/mana/launcher/ManaWallpaperWorker.kt").read_text()
 requirements = (root / "docs/MANA_GENESIS_4_0_NON_NEGOTIABLE_REQUIREMENTS_AND_GAPS.md").read_text()
 workflow = (root / ".github/workflows/mana-launcher.yml").read_text()
+bootstrap = (root / "platform/bootstrap_aosp16.sh").read_text()
+manifest_root = __import__("xml.etree.ElementTree", fromlist=["ElementTree"]).parse(root / "platform/local_manifests/mana.xml").getroot()
+package_manifest = json.loads((root / "distribution/Ω/config/mana-package.json").read_text())
+module_manifest = json.loads((root / "distribution/Ω/config/modules.json").read_text())
+default_settings = json.loads((root / "distribution/Ω/config/default-settings.json").read_text())
 
 for required in (
     '"УСТАНОВИТЬ MANA XZ"',
@@ -88,3 +96,23 @@ assert "MANA-Martynova-FULL-PACKAGE.zip" not in workflow
 
 print("Validated static one-button MANA XZ installer contract for realme C85 4G / RMX5566.")
 print("This does not prove physical-device compatibility or successful Gemma inference.")
+
+assert 'MANA_SOURCE_REF="${MANA_SOURCE_REF:-Final}"' in bootstrap
+assert '/${MANA_SOURCE_REF}/platform/local_manifests/mana.xml' in bootstrap
+manifest_project = manifest_root.find("project")
+assert manifest_project is not None
+pinned_revision = manifest_project.attrib.get("revision", "")
+assert re.fullmatch(r"[0-9a-f]{40}", pinned_revision)
+subprocess.run(["git", "cat-file", "-e", f"{pinned_revision}^{{commit}}"], cwd=root, check=True)
+subprocess.run(["git", "merge-base", "--is-ancestor", pinned_revision, "HEAD"], cwd=root, check=True)
+assert package_manifest["runtime"]["localInferenceRequired"] is True
+assert package_manifest["delivery"]["romPathPreserved"] is True
+assert package_manifest["runtime"]["requiresGoogleMobileServices"] is False
+assert package_manifest["productIdentity"]["productName"] == "MANA"
+module_ids = {module["id"] for module in module_manifest["modules"]}
+for module_id in ("brain.core", "brain.local_inference", "brain.shogun", "brain.hydra", "brain.microworld", "connectors.google_services", "os.launcher", "os.settings", "os.control_center", "os.system_ui", "os.boot_branding", "os.adaptive_system_merge", "os.recovery_ota"):
+    assert module_id in module_ids, f"Ω module registry missing: {module_id}"
+assert default_settings["autonomy"]["level"] == "maximum"
+assert default_settings["integrations"]["requiresGoogleMobileServices"] is False
+for required in ("node --check game/minecraft-bedrock/MANA_Companion_BP/scripts/main.js", "MANA_Companion_BP.mcpack", 'cat > "$PACKAGE/README_RU.md"', 'cat > "$PACKAGE/BUILD_REPORT_RU.txt"', "game/minecraft-bedrock/**", "compression-level: 0"):
+    assert required in workflow, f"Omega archive contract missing: {required}"

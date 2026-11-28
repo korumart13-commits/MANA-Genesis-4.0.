@@ -43,3 +43,10 @@ The target phone reports realme RMX5566RU / RE645F, Qualcomm SM6225 (bengal), An
 ## Build outputs
 
 The MANA build pipeline must build Android platform targets and MANA system packages, not mislabel a separate launcher APK as an OS. Image packaging and signing remain disabled until device partition metadata, AVB chain, kernel and vendor compatibility are verified. No boot, vendor_boot, dtbo, vbmeta, recovery, super or OTA image may be produced for flashing from an unverified target.
+
+
+### MANA source branch and immutable pin
+
+The bootstrap script fetches the local manifest from the repository's `Final` branch by default. This is deliberate: the working Omega project is maintained on `Final`, while `main` is not modified or used as the development source. The manifest pins `vendor/mana/genesis` to commit `6d62fe8f015212a1de84c9cbe5744b4915680c23` for reproducible AOSP sync. To use a different reviewed snapshot, update the manifest pin and validate that the commit is an ancestor of the selected source branch.
+
+The source manifest is not a flashable ROM. Device-specific kernel, device tree, vendor blobs, VINTF, AVB signing, SELinux policy integration, recovery and stock-restore validation remain mandatory release gates.

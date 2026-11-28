@@ -16,7 +16,7 @@ on:
       - 'tools/validate_mana_installer_contract.py'
       - 'tools/validate_mana_game_pack.py'
       - 'game/mana-xz-world/**'
-      - 'distribution/**'
+      - 'game/minecraft-bedrock/**'
       - 'distribution/**'
       - 'tools/stage_mana_aosp_prebuilt.sh'
       - 'tools/test_stage_mana_aosp_prebuilt.sh'
@@ -35,6 +35,8 @@ on:
       - 'tools/validate_mana_installer_contract.py'
       - 'tools/validate_mana_game_pack.py'
       - 'game/mana-xz-world/**'
+      - 'game/minecraft-bedrock/**'
+      - 'distribution/**'
   workflow_dispatch:
 
 permissions:
@@ -239,6 +241,11 @@ jobs:
       - name: Test canonical MANA Brain and OS core
         working-directory: launcher
         run: gradle --no-daemon :brain:test :core:test
+      - name: Validate Minecraft Bedrock companion pack
+        run: |
+          node --check game/minecraft-bedrock/MANA_Companion_BP/scripts/main.js
+          node --check game/minecraft-bedrock/scripts/mana_bridge.js
+          python3 -c 'import json; json.load(open("game/minecraft-bedrock/MANA_Companion_BP/manifest.json", encoding="utf-8"))'
       - name: Validate one-button installer contract for realme C85 4G
         run: python3 tools/validate_mana_installer_contract.py
       - name: Compile Android launcher and test app
@@ -269,7 +276,7 @@ jobs:
             fi
           done
           sha256sum "$APK" > app/build/outputs/apk/release/SHA256SUMS.txt
-      - name: Download and verify official Gemma 4 E2B LiteRT-LM weights
+      - name: Assemble complete Omega folder and verify official Gemma 4 E2B LiteRT-LM weights
         timeout-minutes: 60
         run: |
           set -euo pipefail
@@ -326,42 +333,24 @@ jobs:
           cp launcher/LOCAL_MODEL_SETUP.md "$PACKAGE/docs/LOCAL_MODEL_SETUP_RU.md"
           cp docs/MANA_GENESIS_4_0_NON_NEGOTIABLE_REQUIREMENTS_AND_GAPS.md "$PACKAGE/docs/MASTER_REQUIREMENTS_RU.md"
           cat > "$PACKAGE/README-FIRST-RU.txt" <<'EOF'
-          MANA XZ — полный установочный комплект (MANA Genesis 4.0) для realme C85 4G / RMX5566
+          MANA XZ — Ω / MANA Genesis 4.0 — полный Android-комплект для realme C85 4G / RMX5566
 
-          СТРУКТУРА:
-          app/MANA-Omega-debug.apk — APK приложения MANA XZ; installer/INSTALL_MANA_XZ.apk — копия для установки.
-          models/Gemma/gemma-4-E2B-it.litertlm — локальная модель Gemma 4 E2B (2,588,147,712 байт).
-          models/Gemma/MODEL_MANIFEST_RU.txt — источник, лицензия и SHA-256 модели.
-          models/Gemma/LICENSE-APACHE-2.0.txt и NOTICE.txt — лицензия и уведомление об авторстве Gemma 4.
-          source/MANA-XZ-source-project.zip — полный исходный проект этой сборки. engine/ — локальный MANA Brain, OS core и экспериментальный llama.cpp; voice/ru/ и avatar/characters/ — ресурсы, также встроенные в APK. game/ — Godot и Minecraft исходники. firmware/ — AOSP, системные модули и профиль устройства для будущей ROM-интеграции.
-          docs/ — русская документация и обязательные требования проекта.
-          SHA256SUMS.txt — контрольные суммы, включая сам файл Gemma.
+          1. Полностью распакуй архив. В корне находится папка Ω.
+          2. Установи installer/INSTALL_MANA_XZ.apk и подтверди стандартный запрос Android.
+          3. Запусти MANA. В мастере локальной модели выбери models/Gemma/gemma-4-E2B-it.litertlm.
+          4. Дождись копирования в приватное хранилище и полной проверки SHA-256.
+          5. После импорта локальный Gemma runtime работает без интернета; интернет нужен для исследований и включённых облачных сервисов.
 
-          УСТАНОВКА:
-          1. Полностью распакуй ZIP на телефоне.
-          2. Открой installer/INSTALL_MANA_XZ.apk и подтверди штатную установку Android.
-          3. Запусти MANA и нажми главную кнопку «УСТАНОВИТЬ MANA XZ».
-          4. Ознакомься с Apache License 2.0 в папке models/Gemma. В системном окне выбора Android укажи
-             Ω/models/Gemma/gemma-4-E2B-it.litertlm из распакованной папки.
-          5. MANA скопирует модель в своё закрытое хранилище, проверит точный размер и SHA-256,
-             затем автоматически подключит её к локальному движку LiteRT-LM.
-          6. Если файл комплекта недоступен, выбери «Скачать по Wi-Fi» — загрузка возобновляется
-             через Android Download Manager, а проверка и подключение выполняются автоматически.
-
-          Это одна кнопка запуска установки внутри MANA. Системное окно выбора файла и
-          подтверждения Android остаётся под контролем Android; приложение не обходит защиту ОС.
-          РУЧНЫЕ КОМАНДЫ TERMUX И САМОСТОЯТЕЛЬНАЯ СБОРКА НЕ НУЖНЫ.
-
-          ВАЖНЫЕ УСЛОВИЯ:
-          - Для распаковки архива и импорта Gemma рекомендуется иметь около 8 ГБ свободного места
-            временно. После успешного импорта можно удалить ZIP и распакованную копию модели.
-          - INSTALL_MANA_XZ.apk — тестовая debug-сборка, подпись проверяется apksigner в CI. Для постоянных обновлений нужна отдельная стабильная release-подпись; тестовый сертификат CI может меняться между сборками. Android не установит APK с другим сертификатом поверх старой версии; может потребоваться удалить прежнюю тестовую версию, что удалит её локальные данные.
-          - APK не может самостоятельно подтвердить лицензию, выдать себе разрешения,
-            назначить себя системным ассистентом или обойти ограничения Android.
-          - Android может показать штатные запросы разрешений/ролей; их подтверждает владелец.
-          - Это APK-прототип/приложение, не прошивка MANA OS и не ROM для прошивки.
-          - Совместимость и производительность Gemma на физическом realme C85 4G / RMX5566
-            ещё должны быть подтверждены аппаратным тестом.
+          ВАЖНО:
+          - LiteRT-LM runtime и Piper Irina offline voice входят в APK; файл Gemma (2,588,147,712 байт) находится отдельно в models/Gemma.
+          - Рекомендуется около 8 ГБ свободного места для распаковки и импорта модели.
+          - MANA проверяет доступную физическую RAM. Динамическое расширение памяти не считается физической RAM.
+          - APK — debug-подписанный Android-прототип, не прошивка. Папку firmware/ нельзя прошивать или копировать в системный раздел.
+          - MANA Wallpaper генерирует статические изображения только для экрана блокировки; анимированный live wallpaper пока не подтверждён.
+          - Smart Receptionist пока содержит локальную политику/настройки; реальное автоответное обслуживание звонков не подключено.
+          - Minecraft .mcpack — отдельный Bedrock прототип; Android-мост к MANA Brain ещё не реализован.
+          - Фоновые задачи Android не гарантируют непрерывную работу 24/7.
+          - Реальный запуск и производительность на физическом RMX5566 ещё требуют проверки.
           EOF
           cat > "$PACKAGE/INSTALL_REPORT_TEMPLATE.txt" <<'EOF'
           MANA Genesis 4.0 — отчёт установки
@@ -377,6 +366,62 @@ jobs:
           Локальная генерация без интернета: НЕ ПРОВЕРЕНО
           Примечания / ошибки: __________________
           EOF
+          node --check game/minecraft-bedrock/MANA_Companion_BP/scripts/main.js
+          node --check game/minecraft-bedrock/scripts/mana_bridge.js
+          python3 -c 'import json; json.load(open("game/minecraft-bedrock/MANA_Companion_BP/manifest.json", encoding="utf-8"))'
+          (cd game/minecraft-bedrock/MANA_Companion_BP && zip -qr "$GITHUB_WORKSPACE/$PACKAGE/game/MANA_Companion_BP.mcpack" manifest.json scripts)
+          cat > "$PACKAGE/README_RU.md" <<'EOF'
+          # MANA XZ — Ω (OMEGA FINAL)
+
+          Это полный Android-комплект MANA XZ / MANA Genesis 4.0.
+
+          ## Что находится в папке
+          - app/MANA-Omega-debug.apk и installer/INSTALL_MANA_XZ.apk — один и тот же устанавливаемый debug APK.
+          - LiteRT-LM Android runtime, sherpa-onnx Piper runtime и Filament/SceneView входят в APK.
+          - models/Gemma/gemma-4-E2B-it.litertlm — локальные веса Gemma 4 E2B IT (2,588,147,712 байт); импортируются один раз через Android file picker.
+          - voice/ru/ — ресурсы Piper Irina; те же ресурсы упакованы в APK.
+          - avatar/characters/ — glTF-модели постоянного 3D-аватара МАНЫ; они также находятся в APK.
+          - engine/ — исходники MANA Brain, OS Core и экспериментальной llama.cpp ветки.
+          - game/ — Godot world source, Minecraft Bedrock source и MANA_Companion_BP.mcpack.
+          - firmware/ — AOSP local manifest, MANA system modules и RMX5566RU профиль для будущей ROM-интеграции.
+          - design/ и config/ — визуальная система, настройки и статусы всех модулей.
+          - source/MANA-XZ-source-project.zip — полный исходный проект на commit этого CI запуска.
+
+          ## Установка
+          1. Распакуй архив на телефоне; желательно иметь около 8 ГБ свободного места.
+          2. Установи installer/INSTALL_MANA_XZ.apk.
+          3. Запусти MANA и выбери models/Gemma/gemma-4-E2B-it.litertlm в системном Android file picker.
+          4. MANA проверит размер и SHA-256 и импортирует модель в приватное хранилище.
+          5. После успешного импорта основной диалог работает локально. Голос Piper и 3D-аватар уже находятся в APK.
+
+          ## Реальные ограничения
+          - APK — debug-прототип приложения, не системная прошивка.
+          - Полноценный AOSP ROM не собран. Firmware tree — исходники/план, не flashable image.
+          - Реальная обработка телефонных вызовов секретарём, Android–Minecraft bridge, Google services OAuth, wearable/car adapters, Shogun/Hydra/Microworld и Adaptive System Merge не выдаются за готовые функции; их состояния перечислены в config/modules.json.
+          - Wallpaper сейчас автоматически создаёт статические изображения только для lock screen с интервалами 15/30/60/180 минут; Android может задерживать WorkManager.
+          - Фоновые исследования работают в рамках ограничений Android; гарантий непрерывной работы 24/7 нет.
+          - MANA Resource Governor использует ориентир 3,548 MB доступной физической RAM для этой модели. Это консервативная внутренняя оценка, не официальное требование Gemma; тест на реальном RMX5566 обязателен.
+          - 16 GB динамического расширения памяти не считается физической RAM.
+
+          Не прошивать содержимое firmware/ и не копировать его в системные разделы Android.
+          EOF
+          APK_SHA256="$(sha256sum "$PACKAGE/app/MANA-Omega-debug.apk" | awk '{print $1}')"
+          MODEL_SHA256="$(sha256sum "$PACKAGE/models/Gemma/gemma-4-E2B-it.litertlm" | awk '{print $1}')"
+          cat > "$PACKAGE/BUILD_REPORT_RU.txt" <<EOF
+          MANA XZ — Ω build report
+          Branch: $GITHUB_REF_NAME
+          Commit: $GITHUB_SHA
+          GitHub Actions run: $GITHUB_RUN_ID
+          APK: app/MANA-Omega-debug.apk
+          APK SHA-256: $APK_SHA256
+          Gemma file: models/Gemma/gemma-4-E2B-it.litertlm
+          Gemma SHA-256: $MODEL_SHA256
+          Piper archive SHA-256 pinned by Gradle: 1fc0f54e5e084fe287c07909f2f6e0ba6d857864cf800e3ab80286a4e8233008
+          Checks completed before packaging: MANA Brain tests, OS Core tests, Android app unit tests, debug APK build, unsigned release build, Gemma file size/SHA-256 verification, Piper archive SHA-256 verification, source/package contract validation.
+          Physical RMX5566 test: NOT PERFORMED by this CI run.
+          Full AOSP ROM / flashable image: NOT BUILT.
+          APK type: debug-signed installable Android prototype; not a firmware image.
+          EOF
           (cd "$PACKAGE" && find . -type f ! -path './SHA256SUMS.txt' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt)
           (cd "$PACKAGE" && sha256sum --check SHA256SUMS.txt)
           (cd release/offline && zip -0 -q -r ../MANA-Omega-FULL-INSTALLER.zip Ω/)
@@ -391,7 +436,7 @@ jobs:
             release/MANA-Omega-FULL-INSTALLER.zip.sha256
           if-no-files-found: error
           compression-level: 0
-          retention-days: 14
+          retention-days: 30
       - name: Package complete tracked MANA source tree
         run: |
           mkdir -p release
@@ -424,14 +469,14 @@ jobs:
             launcher/app/build/outputs/apk/release/app-release-unsigned.apk
             launcher/app/build/outputs/apk/release/SHA256SUMS.txt
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
       - name: Upload Android debug prototype separately
         uses: actions/upload-artifact@v4
         with:
           name: MANA-Android-debug-prototype-NOT-ROM
           path: launcher/app/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 30
 
 # Re-run source verification after repairing the unified bundle SDK setup.
 # Diagnostics bridge changes are compiled and covered by :app:testDebugUnitTest.

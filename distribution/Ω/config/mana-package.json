@@ -6,12 +6,19 @@
   "codename": "GENESIS OMEGA",
   "target": {
     "platform": "android",
-    "device": ["RMX5566", "RMX5566RU", "RE645F"],
+    "device": [
+      "RMX5566",
+      "RMX5566RU",
+      "RE645F"
+    ],
     "marketingDevice": "realme C85 4G",
     "soc": "Qualcomm SM6225 / Snapdragon 685",
-    "abi": ["arm64-v8a"],
+    "abi": [
+      "arm64-v8a"
+    ],
     "androidApi": 36,
-    "minimumAndroidApi": 29
+    "minimumAndroidApi": 29,
+    "ownerReportedMemory": "8 GB physical RAM + 16 GB dynamic expansion; exact runtime memory must be verified on device"
   },
   "delivery": {
     "current": "Android APK plus complete Ω folder archive",
@@ -26,7 +33,10 @@
     "localInferenceRequired": true,
     "localInference": {
       "engine": "LiteRT-LM Android 0.16.1",
-      "backendOrder": ["GPU", "CPU"],
+      "backendOrder": [
+        "GPU",
+        "CPU"
+      ],
       "model": "Gemma 4 E2B IT LiteRT-LM",
       "file": "models/Gemma/gemma-4-E2B-it.litertlm",
       "sizeBytes": 2588147712,
@@ -34,7 +44,9 @@
       "includedInFullOmegaArchive": true,
       "ownerMustConfirmLicenseAndImport": true,
       "offlineAfterSuccessfulImport": true,
-      "physicalDeviceBenchmarkRequired": true
+      "physicalDeviceBenchmarkRequired": true,
+      "minimumAvailablePhysicalRamMb": 3548,
+      "memoryGate": "conservative_app_estimate_not_vendor_minimum"
     },
     "internetResearch": true,
     "selfDevelopment": true,
@@ -52,7 +64,17 @@
     "vkIntegration": true,
     "gameIntelligence": true,
     "minecraftBridge": true,
-    "wearableAndCarIntegrations": true
+    "wearableAndCarIntegrations": true,
+    "autonomy": "maximum_with_owner_consent_gates",
+    "continuousLearningTarget": true,
+    "continuous24x7Guaranteed": false,
+    "requiresGoogleMobileServices": false,
+    "googleServicesConnectors": "optional_owner_authorized_not_required",
+    "adaptiveSystemMerge": "architecture_target_pending",
+    "bootBranding": "MANA_future_ROM_requirement",
+    "shogunOrchestrator": "planned_internal_subsystem",
+    "hydraCapabilityLayer": "planned_internal_subsystem",
+    "microworld": "planned"
   },
   "security": {
     "verifyHashes": true,
@@ -68,6 +90,25 @@
     "The APK includes the local inference runtime and offline Russian voice assets; the Gemma model is a separate file inside the complete Ω archive and must be imported through Android's file picker after license acknowledgement.",
     "The presence of source code and model weights does not prove that inference is stable on the physical RMX5566 device.",
     "Android background scheduling is best-effort and does not guarantee uninterrupted 24/7 execution.",
-    "A full ROM remains a separate future deliverable requiring exact OEM platform inputs and device validation."
-  ]
+    "A full ROM remains a separate future deliverable requiring exact OEM platform inputs and device validation.",
+    "The 16 GB dynamic RAM expansion reported by the owner is not treated as physical RAM; the app governor reads Android ActivityManager memory.",
+    "The 3,548 MB free-memory gate is an internal MANA estimate, not an official Gemma minimum. Actual RMX5566 performance and memory use require a physical-device benchmark.",
+    "Shogun, Hydra, Microworld, Adaptive System Merge, Google services connectors and MANA boot branding are architecture targets; see config/modules.json for truthful implementation states.",
+    "Android WorkManager and foreground-service scheduling are best-effort; uninterrupted 24/7 operation is not guaranteed by Android."
+  ],
+  "productIdentity": {
+    "productName": "MANA",
+    "assistantName": "MANA",
+    "userFacingAboutName": "MANA",
+    "hideLLMLabelInUserFacingSettings": true,
+    "bootBrandingTarget": "MANA",
+    "bootBrandingStatus": "future_ROM_requirement_not_yet_built"
+  },
+  "architectureTargets": {
+    "shogun": "planned_internal_orchestrator_inside_one_MANA_Brain",
+    "hydra": "planned_capability_bounded_tool_and_specialist_layer_not_independent_personas",
+    "microworld": "planned_persistent_world_state_model_not_yet_implemented",
+    "adaptiveSystemMerge": "planned_safe_AOSP_integration_and_merge_pipeline",
+    "googleServices": "optional_owner_authorized_connectors_not_required_for_core_or_offline_mode"
+  }
 }

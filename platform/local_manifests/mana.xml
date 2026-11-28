@@ -2,9 +2,9 @@
 <manifest>
     <remote name="mana-github" fetch="https://github.com/" />
     <default remote="mana-github" revision="refs/heads/main" sync-j="4" />
-    <!-- Immutable previously tested snapshot containing the platform bootstrap scripts. -->
+    <!-- Immutable MANA source snapshot from the Final branch; platform source is pinned for reproducible AOSP sync. -->
     <project
         name="korumart13-commits/MANA-Genesis-4.0."
         path="vendor/mana/genesis"
-        revision="2a1e61013bb485b2214c62c77d76ee7696a95f20" />
+        revision="6d62fe8f015212a1de84c9cbe5744b4915680c23" />
 </manifest>

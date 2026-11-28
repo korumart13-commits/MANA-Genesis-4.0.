@@ -6,7 +6,10 @@
     "localInferenceRequired": true,
     "optionalCloudFallback": true,
     "statusMustBeShownInApp": true,
-    "unavailableModulesMustNotPretendToWork": true
+    "unavailableModulesMustNotPretendToWork": true,
+    "noIndependentPersonas": true,
+    "maximumAutonomyWithConsent": true,
+    "requiresGoogleMobileServices": false
   },
   "modules": [
     {
@@ -172,6 +175,77 @@
       "required": false,
       "status": "architecture_and_verification_gates_only_no_flashable_rom",
       "delivery": "future_rom_only_not_apk"
+    },
+    {
+      "id": "brain.shogun",
+      "name": "MANA Shogun orchestration layer",
+      "required": false,
+      "status": "planned_internal_orchestrator_not_yet_implemented",
+      "note": "Internal subsystem of the single MANA Brain, not a separate assistant identity."
+    },
+    {
+      "id": "brain.hydra",
+      "name": "MANA Hydra capability layer",
+      "required": false,
+      "status": "planned_capability_bounded_tool_layer_not_yet_implemented",
+      "note": "Specialist tools remain under one MANA Brain and the same consent/security policy."
+    },
+    {
+      "id": "brain.microworld",
+      "name": "MANA Microworld persistent world model",
+      "required": false,
+      "status": "planned_world_state_model_not_yet_implemented"
+    },
+    {
+      "id": "connectors.google_services",
+      "name": "Optional Google services connectors",
+      "required": false,
+      "requiresNetwork": true,
+      "requiresUserOAuth": true,
+      "status": "architecture_reserved_oauth_scopes_and_provider_adapter_not_implemented",
+      "note": "Google Mobile Services are not required for local inference or core app operation."
+    },
+    {
+      "id": "os.launcher",
+      "name": "MANA OS Launcher",
+      "required": false,
+      "delivery": "future_rom_only",
+      "status": "Soong_source_present_product_integration_pending"
+    },
+    {
+      "id": "os.settings",
+      "name": "MANA OS Settings",
+      "required": false,
+      "delivery": "future_rom_only",
+      "status": "Soong_source_present_product_integration_pending"
+    },
+    {
+      "id": "os.control_center",
+      "name": "MANA OS Control Center",
+      "required": false,
+      "delivery": "future_rom_only",
+      "status": "Soong_source_present_product_integration_pending"
+    },
+    {
+      "id": "os.system_ui",
+      "name": "MANA OS System UI",
+      "required": false,
+      "delivery": "future_rom_only",
+      "status": "service_and_binder_architecture_present_full_system_ui_not_implemented"
+    },
+    {
+      "id": "os.boot_branding",
+      "name": "MANA boot animation and product identity",
+      "required": false,
+      "delivery": "future_rom_only",
+      "status": "requirement_preserved_bootanimation_assets_and_product_branding_not_implemented"
+    },
+    {
+      "id": "os.adaptive_system_merge",
+      "name": "Adaptive System Merge",
+      "required": false,
+      "delivery": "future_rom_only",
+      "status": "design_target_not_implemented"
     }
   ]
 }

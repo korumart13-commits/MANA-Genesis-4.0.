@@ -90,6 +90,30 @@ jobs:
           test -x "$APKSIGNER"
           test "$("$APKANALYZER" manifest application-id "$APK")" = "com.mana.launcher"
           "$APKSIGNER" verify --verbose "$APK"
+          unzip -Z1 "$APK" > "$RUNNER_TEMP/mana-apk-files.txt"
+          grep -Eq '(^|/)liblitertlm_jni\.so
+      - name: Upload verified debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Omega-debug-APK
+          path: launcher/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+ "$RUNNER_TEMP/mana-apk-files.txt"
+          grep -Eq '(^|/)libsherpa-onnx-jni\.so
+      - name: Upload verified debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-Omega-debug-APK
+          path: launcher/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+ "$RUNNER_TEMP/mana-apk-files.txt"
+          grep -qx 'assets/mana_voice/ru_RU-irina-medium.onnx' "$RUNNER_TEMP/mana-apk-files.txt"
+          grep -qx 'assets/mana_voice/tokens.txt' "$RUNNER_TEMP/mana-apk-files.txt"
+          grep -qx 'assets/mana_avatar_genesis.gltf' "$RUNNER_TEMP/mana-apk-files.txt"
+          grep -q '^assets/mana_voice/espeak-ng-data/' "$RUNNER_TEMP/mana-apk-files.txt"
           sha256sum "$APK"
 
       - name: Upload verified debug APK
