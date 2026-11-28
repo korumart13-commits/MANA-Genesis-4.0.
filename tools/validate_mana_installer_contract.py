@@ -56,6 +56,14 @@ assert "SHA256SUMS.txt" in workflow
 assert "MANA-Omega-FULL-INSTALLER.zip" in workflow
 assert "MANA-Omega-FULL-INSTALLER" in workflow
 for required in (
+    "private fun showContactIntelligence()",
+    "private fun showSmartReceptionist()",
+    "ManaSmartReceptionistPolicy(settings)",
+    "Minecraft Companion",
+    "Локальный поиск сохранённого контакта",
+):
+    assert required in activity, f"Module UI missing: {required}"
+for required in (
     'PACKAGE="release/offline/Ω"',
     'cp -a "distribution/Ω/." "$PACKAGE/"',
     'cp -a launcher/app/build/generated/manaVoiceAssets/mana_voice/.',
