@@ -1,14 +1,6 @@
 name: MANA Universal Android Compatibility Smoke Test
 
 on:
-  push:
-    paths:
-      - "launcher/**"
-      - ".github/workflows/mana-android-emulators.yml"
-  pull_request:
-    paths:
-      - "launcher/**"
-      - ".github/workflows/mana-android-emulators.yml"
   workflow_dispatch:
 
 permissions:
