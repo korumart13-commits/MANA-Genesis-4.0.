@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "modules": [
+    {"id":"brain.core","name":"MANA Brain","required":true,"mode":"local-first"},
+    {"id":"brain.internet","name":"Internet research and knowledge sync","required":false,"requiresNetwork":true},
+    {"id":"brain.self_development","name":"Skill research, tests and update proposals","required":true},
+    {"id":"voice.ru.offline","name":"Russian offline voice","required":true,"resource":"../voice/ru/"},
+    {"id":"avatar.runtime","name":"3D avatar runtime","required":true,"resource":"../avatar/"},
+    {"id":"lockscreen.live_wallpaper","name":"MANA lock-screen live wallpaper","required":true,"resource":"../lockscreen/"},
+    {"id":"resources.governor","name":"RAM and thermal resource governor","required":true},
+    {"id":"memory.local","name":"Encrypted local memory","required":true},
+    {"id":"knowledge.local","name":"Local knowledge base","required":true},
+    {"id":"updates.verified","name":"Signed updates and rollback","required":true},
+    {"id":"connectors.cloud","name":"Optional cloud AI providers","required":false,"requiresUserKeys":true}
+  ]
+}
