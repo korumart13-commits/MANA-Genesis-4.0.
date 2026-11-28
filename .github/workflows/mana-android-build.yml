@@ -10,6 +10,7 @@ on:
       - "system/**"
       - "game/**"
       - "tools/validate_mana_game_pack.py"
+      - "tools/validate_mana_installer_contract.py"
       - "distribution/**"
       - ".github/workflows/mana-android-build.yml"
   pull_request:
@@ -69,6 +70,7 @@ jobs:
       - name: Validate game assets and package layout
         run: |
           python3 tools/validate_mana_game_pack.py
+          python3 tools/validate_mana_installer_contract.py
           python3 tools/validate_mana_gltf.py launcher/app/src/main/assets/mana_avatar_genesis.gltf
 
       - name: Test MANA Brain and OS core, test Android app, build APK
