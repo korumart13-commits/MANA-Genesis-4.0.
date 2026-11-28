@@ -145,7 +145,7 @@ object ManaEngineProcessOwner {
         synchronized(lock) {
             if (brain != null && inference != null && memory != null) return
             val app = context.applicationContext
-            val local = LocalModelRuntime(java.io.File(app.cacheDir, "mana-litert-cache"))
+            val local = LocalModelRuntime(java.io.File(app.cacheDir, "mana-litert-cache"), app)
             val cloudGateway = ManaCloudGateway(app, keyProvider)
             val yandexProvider = ManaYandexAiStudioProvider(app)
             val brainBridge = ManaBrainBridge(local, listOf(cloudGateway, yandexProvider))
