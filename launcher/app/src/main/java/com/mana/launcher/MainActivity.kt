@@ -610,8 +610,8 @@ class MainActivity : Activity() {
             content.addView(tile, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(9) })
         }
         addDashboardCard(
-            "Живые обои Маны",
-            "Оригинальные изображения создаются прямо на телефоне без интернета; можно менять главный экран и экран блокировки.",
+            "Обои Маны на экране блокировки",
+            "Мана создаёт новые локальные иллюстрации и обновляет только экран блокировки; рабочий стол не меняется.",
             "Открыть студию обоев"
         ) { startActivity(Intent(this, ManaWallpaperStudioActivity::class.java)) }
 
@@ -670,7 +670,7 @@ class MainActivity : Activity() {
 
         content.addView(label("Личное пространство", 17, accentSoft, true).apply { setPadding(0, 0, 0, dp(8)) })
         addDashboardCard("Локальная память", "Зашифрованные сведения, которыми MANA может пользоваться по твоему разрешению.", "Открыть память") { showMemory() }
-        addDashboardCard("Обои и ресурсы", "Офлайн-обои, расписание смены и контроль доступной оперативной памяти.", "Настроить") {
+        addDashboardCard("Обои и ресурсы", "Офлайн-обои экрана блокировки, расписание смены и контроль доступной оперативной памяти.", "Настроить") {
             startActivity(Intent(this, ManaWallpaperStudioActivity::class.java))
         }
         addDashboardCard("Дневник", "Личные записи хранятся локально и защищаются шифрованием.", "Открыть дневник") { showDiary() }
