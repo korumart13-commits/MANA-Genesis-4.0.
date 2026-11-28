@@ -72,6 +72,7 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="User-enabled persistent floating MANA avatar overlay" />
         </service>
+        <activity android:name=".ManaLockScreenActivity" android:exported="false" />
         <activity
             android:name=".ManaAvatarPreviewActivity"
             android:exported="false" />
