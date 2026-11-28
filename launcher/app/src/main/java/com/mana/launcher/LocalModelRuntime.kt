@@ -1,5 +1,7 @@
 package com.mana.launcher
 
+import android.content.Context
+import android.content.ComponentCallbacks2
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
@@ -18,13 +20,17 @@ import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 
 /** Owns LiteRT-LM Engine and Conversation on one dedicated background thread. */
-class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntime {
+class LocalModelRuntime(
+    private val cacheDirectory: File,
+    private val appContext: Context? = null
+) : LocalInferenceRuntime {
     private val executor = Executors.newSingleThreadExecutor { task -> Thread(task, "MANA-LiteRT-LM") }
     private val closed = AtomicBoolean(false)
     @Volatile private var engine: Engine? = null
     @Volatile private var conversation: Conversation? = null
     @Volatile private var loadedModel: File? = null
     @Volatile private var loadedBackend: String? = null
+    @Volatile private var selectedModelFile: File? = null
     private val activeJobs = java.util.concurrent.ConcurrentHashMap.newKeySet<Job>()
 
 
@@ -45,12 +51,18 @@ class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntim
                 try {
                     require(modelFile.isFile && modelFile.canRead()) { "Файл модели недоступен для чтения." }
                     require(modelFile.extension.equals("litertlm", ignoreCase = true)) { "Выбери файл с расширением .litertlm." }
+                    appContext?.let { context ->
+                        require(ManaResourceGovernor.canLoadModel(context, modelFile)) {
+                            "Недостаточно свободной оперативной памяти для безопасной загрузки модели. MANA отложила запуск модулей, чтобы не перегружать телефон."
+                        }
+                    }
                     closeLoaded()
                     cacheDirectory.mkdirs()
                     val (candidate, newConversation, backendName) = createEngineWithFallback(modelFile)
                     engine = candidate
                     conversation = newConversation
                     loadedModel = modelFile
+                    selectedModelFile = modelFile
                     loadedBackend = backendName
                     complete(Result.success("${modelFile.name} · ${backendName}"))
                 } catch (error: Exception) {
@@ -78,7 +90,11 @@ class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntim
             executor.execute {
                 if (cancellation.isCancelled()) return@execute
                 try {
-                    val active = conversation ?: error("Сначала загрузи файл модели .litertlm.")
+                    if (appContext != null && ManaResourceGovernor.shouldUnloadModel(appContext)) {
+                        closeLoaded()
+                        error("MANA выгрузила локальную модель из-за нехватки RAM. Освободи память; при следующем запросе MANA попробует загрузить её снова.")
+                    }
+                    val active = conversation ?: restoreSelectedConversation()
                     require(prompt.isNotBlank()) { "Пустой запрос." }
                     runBlocking {
                         val generationJob = checkNotNull(coroutineContext[Job])
@@ -100,6 +116,33 @@ class LocalModelRuntime(private val cacheDirectory: File) : LocalInferenceRuntim
             complete(Result.failure(IllegalStateException("MANA local inference runtime is shutting down", rejected)))
         }
         return cancellation
+    }
+
+    private fun restoreSelectedConversation(): Conversation {
+        val modelFile = selectedModelFile ?: error("Сначала загрузи файл модели .litertlm.")
+        appContext?.let { context ->
+            require(ManaResourceGovernor.canLoadModel(context, modelFile)) {
+                "Свободной RAM пока недостаточно. MANA отложила загрузку локальной модели."
+            }
+        }
+        val (candidate, restoredConversation, backendName) = createEngineWithFallback(modelFile)
+        engine = candidate
+        conversation = restoredConversation
+        loadedModel = modelFile
+        loadedBackend = backendName
+        return restoredConversation
+    }
+
+    fun onTrimMemory(level: Int) {
+        if (level < ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) return
+        runCatching {
+            executor.execute {
+                if (appContext == null || ManaResourceGovernor.shouldUnloadModel(appContext) ||
+                    level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL) {
+                    closeLoaded()
+                }
+            }
+        }
     }
 
     private fun closeLoaded() {
