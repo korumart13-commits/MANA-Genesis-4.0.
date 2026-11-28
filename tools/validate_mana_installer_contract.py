@@ -61,7 +61,8 @@ assert "УСТАНОВИТЬ MANA XZ" in setup_doc
 assert "Termux" in requirements
 assert "УСТАНОВИТЬ MANA XZ" in requirements
 assert "INSTALL_MANA_XZ.apk" in workflow
-assert "models/Gemma/MODEL_MANIFEST_RU.txt" in workflow
+assert "Engine/Inference/Models/Gemma/MODEL_MANIFEST_RU.txt" in workflow
+assert "models/Gemma/MODEL_MANIFEST_RU.txt" not in workflow
 assert "SHA256SUMS.txt" in workflow
 assert "MANA-Omega-FULL-INSTALLER.zip" in workflow
 assert "MANA-Omega-FULL-INSTALLER" in workflow
