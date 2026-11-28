@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.SET_WALLPAPER" />
     <uses-permission android:name="com.mana.permission.BIND_BRAIN" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -94,6 +95,9 @@
             android:exported="false" />
         <activity
             android:name=".ManaAdaptiveLearningActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ManaWallpaperStudioActivity"
             android:exported="false" />
         <activity
             android:name=".MainActivity"
