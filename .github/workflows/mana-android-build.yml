@@ -10,6 +10,7 @@ on:
       - "engine/**"
       - "os/**"
       - "system/**"
+      - "distribution/**"
       - ".github/workflows/mana-android-build.yml"
   workflow_dispatch:
 
@@ -51,6 +52,22 @@ jobs:
 
       - name: Assemble debug APK
         run: gradle -p launcher --no-daemon assembleDebug
+
+      - name: Assemble game-style MANA XZ folder
+        run: |
+          mkdir -p distribution/MANA_XZ/app
+          cp launcher/app/build/outputs/apk/debug/*.apk distribution/MANA_XZ/app/MANA_XZ-debug.apk
+          cd distribution
+          zip -qr ../MANA_XZ-Android-folder.zip MANA_XZ
+          cd ..
+
+      - name: Upload complete MANA XZ folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: MANA-XZ-game-style-folder
+          path: MANA_XZ-Android-folder.zip
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
