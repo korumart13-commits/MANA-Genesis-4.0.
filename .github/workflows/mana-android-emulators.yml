@@ -4,10 +4,12 @@ on:
   push:
     paths:
       - "launcher/**"
+      - "tools/mana_emulator_smoke.sh"
       - ".github/workflows/mana-android-emulators.yml"
   pull_request:
     paths:
       - "launcher/**"
+      - "tools/mana_emulator_smoke.sh"
       - ".github/workflows/mana-android-emulators.yml"
   workflow_dispatch:
 
@@ -60,7 +62,7 @@ jobs:
         working-directory: launcher
         run: gradle :app:testDebugUnitTest :app:assembleDebug --stacktrace
 
-      - name: Run Android API ${{ matrix.api-level }} emulator smoke test
+      - name: Run Android API ${{ matrix.api-level }} emulator install/launch smoke test
         uses: reactivecircus/android-emulator-runner@v2
         env:
           ANDROID_I_WANT_MY_TCG: "yes"
@@ -69,9 +71,10 @@ jobs:
           emulator-boot-timeout: 1200
           arch: x86_64
           target: google_apis
-          profile: pixel_6
+          profile: pixel_2
           disable-animations: true
-          script: cd launcher && gradle :app:connectedDebugAndroidTest --stacktrace
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot
+          script: bash tools/mana_emulator_smoke.sh
 
       - name: Upload API ${{ matrix.api-level }} debug APK
         if: always()
