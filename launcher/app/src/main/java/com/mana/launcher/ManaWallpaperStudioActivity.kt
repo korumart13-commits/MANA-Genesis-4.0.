@@ -126,6 +126,11 @@ internal object ManaOfflineWallpaperRenderer {
             intArrayOf(0xFF101426.toInt(), 0xFF2A315B.toInt(), 0xFF4A315A.toInt())
         )
         val palette = palettes[random.nextInt(palettes.size)]
+        val outfitColors = intArrayOf(0xFF101A2D.toInt(), 0xFF18243B.toInt(), 0xFF24203C.toInt(), 0xFF0D2636.toInt(), 0xFF302039.toInt())
+        val outfit = outfitColors[random.nextInt(outfitColors.size)]
+        val eyeColor = intArrayOf(0xFF6258C8.toInt(), 0xFF536FE0.toInt(), 0xFF7763D8.toInt())[random.nextInt(3)]
+        val expression = random.nextInt(4)
+        val scene = random.nextInt(4)
         paint.shader = LinearGradient(0f, 0f, width.toFloat(), height.toFloat(), palette, null, Shader.TileMode.CLAMP)
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
         paint.shader = null
@@ -139,7 +144,20 @@ internal object ManaOfflineWallpaperRenderer {
             canvas.drawCircle(x, y, radius, paint)
         }
         paint.color = 0x332D8BCB
-        canvas.drawCircle(width * 0.78f, height * 0.22f, width * 0.28f, paint)
+        canvas.drawCircle(width * (0.72f + random.nextFloat() * 0.12f), height * (0.18f + random.nextFloat() * 0.12f), width * 0.24f, paint)
+        if (scene == 0) {
+            paint.color = 0x553F83B8
+            canvas.drawRoundRect(width * 0.07f, height * 0.12f, width * 0.93f, height * 0.44f, 28f, 28f, paint)
+            paint.color = 0x6654C8F5
+            canvas.drawRect(width * 0.49f, height * 0.12f, width * 0.50f, height * 0.44f, paint)
+            canvas.drawRect(width * 0.07f, height * 0.28f, width * 0.93f, height * 0.29f, paint)
+        } else if (scene == 1) {
+            paint.color = 0x667B4C91
+            canvas.drawCircle(width * 0.5f, height * 0.22f, width * 0.22f, paint)
+        } else if (scene == 2) {
+            paint.color = 0x553C7895
+            canvas.drawRoundRect(width * 0.05f, height * 0.08f, width * 0.95f, height * 0.48f, 40f, 40f, paint)
+        }
 
         val cx = width * 0.5f
         val headY = height * 0.43f
@@ -159,7 +177,7 @@ internal object ManaOfflineWallpaperRenderer {
         canvas.drawPath(hair, paint)
 
         // Shoulders and dark outfit.
-        paint.color = 0xFF101A2D.toInt()
+        paint.color = outfit
         canvas.drawRoundRect(cx - headW * 1.65f, headY + headH * 1.65f, cx + headW * 1.65f, height * 0.91f, headW * 0.55f, headW * 0.55f, paint)
         paint.color = 0xFF253E69.toInt()
         canvas.drawRoundRect(cx - headW * 0.12f, headY + headH * 1.7f, cx + headW * 0.12f, height * 0.88f, 12f, 12f, paint)
@@ -181,16 +199,33 @@ internal object ManaOfflineWallpaperRenderer {
         canvas.drawPath(bangs, paint)
 
         // Blue-violet eyes and small highlights.
-        paint.color = 0xFF6258C8.toInt()
-        canvas.drawOval(cx - headW * 0.49f, headY + headH * 0.35f, cx - headW * 0.13f, headY + headH * 0.64f, paint)
-        canvas.drawOval(cx + headW * 0.13f, headY + headH * 0.35f, cx + headW * 0.49f, headY + headH * 0.64f, paint)
+        paint.color = eyeColor
+        val eyeHeight = if (expression == 1) headH * 0.16f else headH * 0.29f
+        val eyeTop = headY + headH * 0.35f
+        canvas.drawOval(cx - headW * 0.49f, eyeTop, cx - headW * 0.13f, eyeTop + eyeHeight, paint)
+        canvas.drawOval(cx + headW * 0.13f, eyeTop, cx + headW * 0.49f, eyeTop + eyeHeight, paint)
         paint.color = Color.WHITE
         canvas.drawCircle(cx - headW * 0.28f, headY + headH * 0.43f, headW * 0.045f, paint)
         canvas.drawCircle(cx + headW * 0.34f, headY + headH * 0.43f, headW * 0.045f, paint)
+        // Mood-specific accessory and hair highlights create distinct daily portraits.
+        paint.color = 0xFF17233A.toInt()
+        if (scene == 3) {
+            canvas.drawRoundRect(cx - headW * 1.04f, headY - headH * 0.72f, cx - headW * 0.55f, headY - headH * 0.42f, 12f, 12f, paint)
+        } else if (scene == 1) {
+            canvas.drawCircle(cx + headW * 0.83f, headY - headH * 0.34f, headW * 0.19f, paint)
+        }
+        paint.color = 0xFF334B73.toInt()
+        paint.strokeWidth = (width * 0.004f).coerceAtLeast(2f)
+        paint.style = Paint.Style.STROKE
+        repeat(5) { index ->
+            val x = cx - headW * 0.72f + index * headW * 0.34f
+            canvas.drawLine(x, headY + headH * 0.2f, x + headW * 0.08f, headY + headH * (1.7f + random.nextFloat() * 0.9f), paint)
+        }
+        paint.style = Paint.Style.FILL
         paint.color = 0xFFB76D83.toInt()
         paint.strokeWidth = (width * 0.0025f).coerceAtLeast(2f)
         paint.style = Paint.Style.STROKE
-        canvas.drawArc(cx - headW * 0.18f, headY + headH * 0.72f, cx + headW * 0.18f, headY + headH * 0.91f, 15f, 150f, false, paint)
+        canvas.drawArc(cx - headW * 0.18f, headY + headH * 0.72f, cx + headW * 0.18f, headY + headH * (expression == 2 ? 1.02f : 0.91f), 15f, if (expression == 3) 110f else 150f, false, paint)
         paint.style = Paint.Style.FILL
         paint.color = 0xFF54C8F5.toInt()
         canvas.drawCircle(cx + headW * 0.92f, headY - headH * 0.2f, width * 0.018f, paint)
