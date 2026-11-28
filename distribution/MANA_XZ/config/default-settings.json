@@ -1,0 +1,13 @@
+{
+  "theme": "dark_navy",
+  "language": "ru-RU",
+  "offlineFirst": true,
+  "internetResearch": {"enabled": true, "background": true, "wifiPreferred": true},
+  "selfDevelopment": {"enabled": true, "autoResearch": true, "autoInstallChanges": false, "requireTests": true, "requireOwnerApprovalForSystemChanges": true},
+  "lockScreen": {"manaLiveWallpaper": true, "autoGenerate": true, "intervalHours": 24, "target": "lock"},
+  "voice": {"language": "ru-RU", "offlineRequired": true, "preferredEngine": "piper"},
+  "avatar": {"enabled": true, "preserveExistingBehavior": true},
+  "resourceGovernor": {"enabled": true, "respectBattery": true, "respectThermalLimits": true},
+  "cloudAI": {"enabled": false, "providers": ["openai", "anthropic", "google", "xai"]},
+  "confirmations": {"payments": true, "messages": true, "installs": true, "deletions": true, "systemChanges": true}
+}
