@@ -39,7 +39,7 @@ class ManaSystemModuleCatalogTest {
             "mana.yandex", "mana.vk", "mana.diary", "mana.lifemanager",
             "mana.contacts", "mana.receptionist", "mana.gameintelligence",
             "mana.launcher", "mana.systemui", "mana.settings", "mana.controlcenter",
-            "mana.updater", "mana.recovery", "mana.localnode",
+            "mana.updater", "mana.packmanager", "mana.recovery", "mana.localnode",
             "mana.deviceecosystem", "mana.developercenter"
         )
         assertTrue(ids.containsAll(required), "Missing owner-requested modules: ${required - ids}")

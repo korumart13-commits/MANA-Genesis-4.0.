@@ -35,25 +35,40 @@ jobs:
       - name: Run MANA Brain, OS core and Android app unit tests; build debug APK
         working-directory: launcher
         run: gradle --no-daemon :brain:test :core:test :app:testDebugUnitTest :app:assembleDebug
-      - name: Boot Android API ${{ matrix.api-level }} emulator and install/launch MANA
+      - name: Run instrumentation tests, then install/launch MANA on Android API ${{ matrix.api-level }} emulator
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          ANDROID_I_WANT_MY_TCG: "yes"
         with:
           api-level: ${{ matrix.api-level }}
           target: google_apis
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+          emulator-boot-timeout: 1200
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -memory 3072 -cores 2
           script: |
             set -euo pipefail
-            APK="launcher/app/build/outputs/apk/debug/app-debug.apk"
+            gradle --no-daemon -p "$GITHUB_WORKSPACE/launcher" :app:connectedDebugAndroidTest
+            APK="$GITHUB_WORKSPACE/launcher/app/build/outputs/apk/debug/app-debug.apk"
             test -s "$APK"
             adb wait-for-device
-            adb shell getprop sys.boot_completed | grep -q 1
+            for attempt in $(seq 1 120); do
+              if [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then
+                break
+              fi
+              sleep 5
+            done
+            test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1"
             adb install -r "$APK"
             adb shell pm path com.mana.launcher
             adb shell monkey -p com.mana.launcher -c android.intent.category.LAUNCHER 1
-            sleep 20
+            for attempt in $(seq 1 30); do
+              if adb shell pidof com.mana.launcher >/dev/null 2>&1; then
+                break
+              fi
+              sleep 2
+            done
             adb shell pidof com.mana.launcher
             if adb logcat -d -t 12000 | grep -E 'FATAL EXCEPTION|Fatal signal [0-9]+|Process: com.mana.launcher' ; then
               echo "A fatal application crash was detected in the emulator log." >&2

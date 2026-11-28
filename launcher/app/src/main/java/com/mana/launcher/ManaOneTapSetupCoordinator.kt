@@ -34,9 +34,9 @@ class ManaOneTapSetupCoordinator(context: Context) {
         val reportPath: String
     ) {
         fun toReadableText(): String = buildString {
-            appendLine("MANA GENESIS 4.0 — ПЕРВИЧНАЯ НАСТРОЙКА")
+            appendLine("MANA XZ — ПЕРВИЧНАЯ НАСТРОЙКА")
             appendLine("$deviceName • Android $androidVersion • API $apiLevel")
-            appendLine("Целевой профиль RMX5566RU: ${if (isTargetDevice) "ПОДТВЕРЖДЁН" else "НЕ ПОДТВЕРЖДЁН"}")
+            appendLine("Целевой профиль realme C85 4G / RMX5566: ${if (isTargetDevice) "ПОДТВЕРЖДЁН" else "НЕ ПОДТВЕРЖДЁН"}")
             appendLine()
             appendLine("ВЫПОЛНЕНО АВТОМАТИЧЕСКИ")
             completed.forEach { appendLine("✓ $it") }
@@ -62,12 +62,12 @@ class ManaOneTapSetupCoordinator(context: Context) {
         val unavailable = mutableListOf<String>()
 
         val profile = ManaUniversalDeviceProfiler.inspect(app)
-        val targetMatch = isExactRmx5566Target()
+        val targetMatch = isTargetRmx5566()
         completed += "Автоматически определены производитель, модель, версия Android, ABI, память, хранилище и аппаратные возможности."
         if (targetMatch) {
-            completed += "Подтверждён целевой аппарат realme RMX5566RU / RE645F на Android 16."
+            completed += "Подтверждена модель realme C85 4G / RMX5566 на Android 16 (API 36, ARM64)."
         } else {
-            unavailable += "Этот релиз предназначен только для realme RMX5566RU / RE645F на Android 16 (Snapdragon 685 / SM6225). Настройка целевых функций остановлена."
+            unavailable += "Целевой профиль — realme C85 4G / RMX5566, Android 16 (API 36), ARM64. Фактический профиль устройства не совпал; целевая настройка остановлена."
         }
 
         if (targetMatch) {
@@ -119,7 +119,7 @@ class ManaOneTapSetupCoordinator(context: Context) {
             .put("product", Build.PRODUCT)
             .put("androidRelease", Build.VERSION.RELEASE)
             .put("apiLevel", Build.VERSION.SDK_INT)
-            .put("targetDevice", "realme RMX5566RU / RE645F")
+            .put("targetDevice", "realme C85 4G / RMX5566")
             .put("targetDeviceMatch", targetMatch)
             .put("profile", JSONObject(profile.toJson()))
             .put("completed", JSONArray(completed))
@@ -145,15 +145,15 @@ class ManaOneTapSetupCoordinator(context: Context) {
         )
     }
 
-    private fun isExactRmx5566Target(): Boolean {
+    private fun isTargetRmx5566(): Boolean {
+        // Retail firmware may expose different internal product/device/fingerprint
+        // aliases for the same model. Match the user-confirmed model and platform
+        // without requiring one undocumented alias.
         val manufacturerMatches = Build.MANUFACTURER.equals("realme", ignoreCase = true)
         val modelMatches = Build.MODEL.contains("RMX5566", ignoreCase = true)
-        val deviceMatches = Build.DEVICE.equals("RE645F", ignoreCase = true)
-        val productMatches = Build.PRODUCT.equals("RE645F", ignoreCase = true)
         val androidMatches = Build.VERSION.SDK_INT == 36
-        val fingerprintMatches = Build.FINGERPRINT.startsWith("realme/RMX5566RU/RE645F:16/")
-        return manufacturerMatches && modelMatches && deviceMatches &&
-            productMatches && androidMatches && fingerprintMatches
+        val arm64Matches = Build.SUPPORTED_ABIS?.any { it.equals("arm64-v8a", ignoreCase = true) } == true
+        return manufacturerMatches && modelMatches && androidMatches && arm64Matches
     }
 
     private fun publishReport(contents: String) {

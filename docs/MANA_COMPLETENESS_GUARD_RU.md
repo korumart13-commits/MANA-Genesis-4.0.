@@ -30,8 +30,17 @@
 - [ ] MANA Brain Core: диалог, планирование, задачи, инструменты, политики, память, отчётность.
 - [ ] Единый UI/Launcher, Settings, статус Brain и системных возможностей.
 - [ ] One-action setup: идемпотентный, возобновляемый, с итогом READY / READY_WITH_LIMITATIONS / OWNER_ACTION_REQUIRED.
+- [ ] Главная кнопка строго «УСТАНОВИТЬ MANA»; повтор — «ПРОДОЛЖИТЬ УСТАНОВКУ MANA»; нет ручных команд Termux или настройки модулей по одному.
+- [ ] Для realme C85 4G / RMX5566 Gemma автоматически загружается через DownloadManager после согласия владельца, проверяется SHA-256 и автоматически подключается по завершении/следующему запуску.
 - [ ] Capability registry и профили Core / Local AI / Advanced / Platform.
 - [ ] Task journal, фоновой supervisor, восстановление после перезапуска.
+
+### Диагностика и ChatGPT handoff
+- [ ] Версионированный MANA diagnostic report: runtime evidence, statuses, Android API/ABI, permission states and known limitations.
+- [ ] Allow-list export and redaction tests for API keys, bearer/GitHub tokens, passwords, email, phone numbers and URL secrets.
+- [ ] Owner-reviewed JSON/Markdown export through Android Sharesheet and FileProvider with temporary read grants.
+- [ ] No claim of direct access to the user's current ChatGPT conversation; manual share is the supported handoff.
+- [ ] No module is marked IMPLEMENTED without corresponding runtime/test proof.
 
 ### Локальный интеллект и провайдеры
 - [ ] Реальный локальный inference runtime, а не имитация загрузки модели.
@@ -85,7 +94,7 @@
 ### Платформа и прошивка
 - [ ] Универсальное приложение: базовая цель Android 10/API 29+; реальная поддержка по матрице API/ABI/OEM.
 - [ ] Эмуляторная матрица API 29, 33, 36 и актуального target.
-- [ ] Физические тесты нескольких производителей/классов устройств; RMX5566RU/RE645F/Android 16 — один профиль, не универсальное доказательство.
+- [ ] Физические тесты нескольких производителей/классов устройств; realme C85 4G / RMX5566 / Android 16 — приоритетный физический профиль; RMX5566RU/RE645F — runtime aliases, C85 5G исключён.
 - [ ] Отдельный AOSP track: manifest/revision, device tree, kernel/DTS/DTBO, vendor, VINTF/HAL, partitions, AVB, SELinux, recovery.
 - [ ] Отдельная Soong/AOSP сборка и реальные boot/system tests.
 - [ ] OTA только после device bring-up, подписей, recovery, staged install, health-check и rollback.

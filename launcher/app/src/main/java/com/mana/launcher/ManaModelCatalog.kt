@@ -18,9 +18,34 @@ class ManaModelCatalog(context: Context) {
     private val directory = app.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
         ?: error("Android app-specific downloads storage is unavailable.")
 
-    fun enqueueGemma4E2B(licenseAccepted: Boolean): Long {
-        require(licenseAccepted) { "Owner must review and accept the Gemma terms before downloading this model." }
-        prefs.edit().putBoolean(KEY_LICENSE_ACCEPTED, true).apply()
+    fun hasAcknowledgedGemmaLicense(): Boolean = prefs.getBoolean(KEY_LICENSE_ACKNOWLEDGED, false)
+
+    /** Record the owner's acknowledgement of the included Apache 2.0 license. */
+    fun acknowledgeGemmaLicense() {
+        prefs.edit().putBoolean(KEY_LICENSE_ACKNOWLEDGED, true).apply()
+    }
+
+    fun enqueueGemma4E2B(licenseAcknowledged: Boolean): Long {
+        require(licenseAcknowledged) { "Owner must acknowledge the included Apache 2.0 license before downloading this model." }
+        prefs.edit().putBoolean(KEY_LICENSE_ACKNOWLEDGED, true).apply()
+
+        // Reuse an existing DownloadManager request instead of creating duplicate
+        // multi-gigabyte downloads after an Activity/process restart.
+        val existingId = prefs.getLong(KEY_DOWNLOAD_ID, -1L)
+        if (existingId >= 0L) {
+            val existing = manager.query(DownloadManager.Query().setFilterById(existingId))
+            val existingStatus = existing.use {
+                if (!it.moveToFirst()) null
+                else it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+            }
+            if (existingStatus == DownloadManager.STATUS_PENDING ||
+                existingStatus == DownloadManager.STATUS_RUNNING ||
+                existingStatus == DownloadManager.STATUS_PAUSED ||
+                existingStatus == DownloadManager.STATUS_SUCCESSFUL) {
+                return existingId
+            }
+            prefs.edit().remove(KEY_DOWNLOAD_ID).apply()
+        }
         val target = File(directory, MODEL_FILE)
         if (ModelArtifactIntegrity.matches(target, MODEL_SIZE, SHA256, directory)) {
             prefs.edit().putString(KEY_ACTIVE_PATH, target.canonicalPath).apply()
@@ -43,10 +68,45 @@ class ManaModelCatalog(context: Context) {
         return id
     }
 
-    fun savedModelPath(): String? = if (prefs.getBoolean(KEY_LICENSE_ACCEPTED, false)) prefs.getString(KEY_ACTIVE_PATH, null) else null
+    fun savedModelPath(): String? = if (prefs.getBoolean(KEY_LICENSE_ACKNOWLEDGED, false)) prefs.getString(KEY_ACTIVE_PATH, null) else null
+
+    /** Human-readable DownloadManager state for the MANA install screen. */
+    fun downloadProgressText(): String? {
+        val id = prefs.getLong(KEY_DOWNLOAD_ID, -1L)
+        if (id < 0L) return null
+        val cursor = manager.query(DownloadManager.Query().setFilterById(id))
+        return cursor.use {
+            if (!it.moveToFirst()) return null
+            val status = it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+            val downloaded = it.getLong(it.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
+            val total = it.getLong(it.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+            val reason = it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
+            when (status) {
+                DownloadManager.STATUS_PENDING -> "Gemma: ожидание загрузки по Wi-Fi…"
+                DownloadManager.STATUS_RUNNING -> {
+                    val amount = formatBytes(downloaded)
+                    if (total > 0L) {
+                        val percent = ((downloaded * 100L) / total).coerceIn(0L, 100L)
+                        "Загрузка Gemma: ${percent}% (${amount} из ${formatBytes(total)})"
+                    } else {
+                        "Загрузка Gemma: ${amount} получено"
+                    }
+                }
+                DownloadManager.STATUS_PAUSED -> "Загрузка Gemma приостановлена (код ${reason}); Android продолжит её, когда условия сети позволят."
+                DownloadManager.STATUS_SUCCESSFUL -> "Gemma загружена; проверяю SHA-256 и подключаю модель…"
+                else -> "Загрузка Gemma завершилась ошибкой (код ${reason}). Можно безопасно повторить установку."
+            }
+        }
+    }
+
+    private fun formatBytes(value: Long): String {
+        if (value < 0L) return "неизвестно"
+        val gib = value / (1024.0 * 1024.0 * 1024.0)
+        return String.format(java.util.Locale.US, "%.2f ГБ", gib)
+    }
 
     fun verifiedSavedModel(): File? {
-        if (!prefs.getBoolean(KEY_LICENSE_ACCEPTED, false)) return null
+        if (!prefs.getBoolean(KEY_LICENSE_ACKNOWLEDGED, false)) return null
         val path = savedModelPath() ?: return null
         val file = File(path)
         if (!ModelArtifactIntegrity.matches(file, MODEL_SIZE, SHA256, directory)) {
@@ -60,7 +120,7 @@ class ManaModelCatalog(context: Context) {
     fun verifyCompletedDownload(): File? {
         val id = prefs.getLong(KEY_DOWNLOAD_ID, -1L)
         if (id < 0L) {
-            if (!prefs.getBoolean(KEY_LICENSE_ACCEPTED, false)) return null
+            if (!prefs.getBoolean(KEY_LICENSE_ACKNOWLEDGED, false)) return null
             // A previously verified file can be selected again in this process without
             // requiring a second DownloadManager record.
             val existing = File(directory, MODEL_FILE)
@@ -99,7 +159,7 @@ class ManaModelCatalog(context: Context) {
         const val MODEL_FILE = "gemma-4-E2B-it.litertlm"
         const val SHA256 = "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c"
         private val KEY_DOWNLOAD_ID = "gemma4_download_id"
-        private val KEY_LICENSE_ACCEPTED = "gemma4_license_accepted"
+        private val KEY_LICENSE_ACKNOWLEDGED = "gemma4_license_acknowledged"
         private val KEY_ACTIVE_PATH = "active_model_path"
         const val MODEL_SIZE = 2_588_147_712L
         private val REQUIRED_FREE_BYTES = 3_300_000_000L
