@@ -1,0 +1,25 @@
+{
+  "name": "MANA XZ Omega",
+  "style": "android_first_material",
+  "colors": {
+    "background": "#071426",
+    "surface": "#102B50",
+    "primary": "#1765A8",
+    "accent": "#54C8F5",
+    "text": "#EAF4FF",
+    "secondary": "#91A9C5"
+  },
+  "shape": {
+    "cardRadiusDp": 22,
+    "spacingDp": [8, 12, 16, 24],
+    "minimumTouchTargetDp": 48
+  },
+  "navigation": ["Главная", "Чат", "Модули", "Приложения"],
+  "principles": [
+    "one central MANA identity",
+    "local AI status is always visible",
+    "module availability is truthful",
+    "avatar never blocks core controls",
+    "owner approval for consequential actions"
+  ]
+}
