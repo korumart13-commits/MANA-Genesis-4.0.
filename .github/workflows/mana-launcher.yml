@@ -373,15 +373,15 @@ jobs:
           (cd "$PACKAGE" && find . -type f ! -path './SHA256SUMS.txt' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt)
           (cd "$PACKAGE" && sha256sum --check SHA256SUMS.txt)
           (cd release/offline && zip -0 -q -r ../MANA-Omega-FULL-INSTALLER.zip Ω/)
-          sha256sum release/MANA-Omega-FULL-INSTALLER.zip > release/MANA-XZ-FULL-INSTALLER.zip.sha256
+          sha256sum release/MANA-Omega-FULL-INSTALLER.zip > release/MANA-Omega-FULL-INSTALLER.zip.sha256
 
       - name: Upload one-button MANA installer and source bundle
         uses: actions/upload-artifact@v4
         with:
-          name: MANA-XZ-FULL-INSTALLER
+          name: MANA-Omega-FULL-INSTALLER
           path: |
-            release/MANA-XZ-FULL-INSTALLER.zip
-            release/MANA-XZ-FULL-INSTALLER.zip.sha256
+            release/MANA-Omega-FULL-INSTALLER.zip
+            release/MANA-Omega-FULL-INSTALLER.zip.sha256
           if-no-files-found: error
           compression-level: 0
           retention-days: 14
