@@ -18,7 +18,8 @@ object ManaResourceGovernor {
         val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val memory = ActivityManager.MemoryInfo()
         manager.getMemoryInfo(memory)
-        val pss = Debug.MemoryInfo().also(Debug::getMemoryInfo)
+        val pss = Debug.MemoryInfo()
+        Debug.getMemoryInfo(pss)
         val total = memory.totalMem / (1024L * 1024L)
         val available = memory.availMem / (1024L * 1024L)
         val appPss = pss.totalPss.toLong() / 1024L
