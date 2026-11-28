@@ -107,6 +107,9 @@ assert "Intent(this, ManaLockScreenActivity::class.java)" in activity
 assert 'private var appCategory = "Все"' in activity
 assert "appCategoryFor(info)" in activity
 assert "ЦЕНТР ПРИЛОЖЕНИЙ MANA" in activity
+assert "Settings.ACTION_HOME_SETTINGS" in activity
+assert "android.intent.category.LAUNCHER" in android_manifest
+assert "<queries>" in android_manifest
 assert "androidx.compose.material3:material3" in app_gradle
 
 for required in (
