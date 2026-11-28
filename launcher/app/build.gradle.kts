@@ -1,3 +1,7 @@
+import java.io.File
+import java.net.URL
+import java.security.MessageDigest
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -66,7 +70,7 @@ val prepareManaOfflineVoice by tasks.registering {
         val archiveFile = archive.get().asFile
         archiveFile.parentFile.mkdirs()
         if (!archiveFile.isFile) {
-            java.net.URL("https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-ru_RU-irina-medium.tar.bz2")
+            URL("https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-ru_RU-irina-medium.tar.bz2")
                 .openStream().use { input -> archiveFile.outputStream().use { output -> input.copyTo(output) } }
         }
         val unpack = unpackDir.get().asFile
@@ -77,7 +81,7 @@ val prepareManaOfflineVoice by tasks.registering {
         }
         val model = unpack.walkTopDown().firstOrNull { it.isFile && it.name == "ru_RU-irina-medium.onnx" }
             ?: error("Russian Piper ONNX voice model is missing from the official archive")
-        val md5 = java.security.MessageDigest.getInstance("MD5")
+        val md5 = MessageDigest.getInstance("MD5")
         val actualMd5 = model.inputStream().use { input ->
             val digest = md5
             val buffer = ByteArray(1024 * 1024)
