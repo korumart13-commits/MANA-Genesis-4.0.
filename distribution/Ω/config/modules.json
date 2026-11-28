@@ -62,7 +62,7 @@
       "id": "smart_receptionist",
       "name": "MANA Smart Receptionist",
       "required": false,
-      "status": "policy_source_present_android_call_screening_role_not_granted"
+      "status": "policy_and_settings_ui_present_real_call_screening_role_not_granted"
     },
     {
       "id": "contact_intelligence",
@@ -145,13 +145,13 @@
       "id": "game.intelligence",
       "name": "MANA Game Intelligence",
       "required": false,
-      "status": "game_source_prototype_not_integrated_into_android_runtime"
+      "status": "foreground_game_detection_source_present_no_game_control_adapter"
     },
     {
       "id": "game.minecraft",
       "name": "Minecraft companion and world bridge",
       "required": false,
-      "status": "bedrock_pack_source_present_game_client_compatibility_test_pending"
+      "status": "bedrock_behavior_pack_source_and_ci_present_android_bridge_not_implemented_bedrock_test_pending"
     },
     {
       "id": "devices.companions",
