@@ -83,6 +83,7 @@ class MainActivity : Activity() {
     private var apps: List<ResolveInfo> = emptyList()
     private val voiceRequestCode = 4107
     private val modelRequestCode = 4108
+    private val secureAccessRequestCode = 4114
     private lateinit var localRuntime: LocalModelRuntime
     private lateinit var cloudGateway: ManaCloudGateway
     private lateinit var yandexProvider: ManaYandexAiStudioProvider
