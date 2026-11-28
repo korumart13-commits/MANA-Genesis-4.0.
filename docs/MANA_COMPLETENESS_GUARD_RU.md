@@ -66,6 +66,7 @@
 - [ ] Life Manager: задачи, календарь, планы, напоминания и безопасные автоматизации.
 - [ ] Yandex integration через официальные API/SDK.
 - [ ] VK integration через официальные API/SDK.
+- [ ] Google ecosystem services: Calendar, Maps, Search, Drive/files and productivity connectors through supported official APIs/SDKs, with separate OAuth/capability grants; keep this distinct from the Gemini model provider.
 - [ ] Game Intelligence и Minecraft: профиль знаний, рецепты/ресурсы/стратегии, взаимодействие только через совместимые интерфейсы.
 - [ ] Wearables: часы и иные совместимые устройства.
 - [ ] Earbuds/headphones: совместимые функции через разрешённые интерфейсы.
